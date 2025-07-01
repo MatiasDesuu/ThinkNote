@@ -18,13 +18,29 @@
 ### 🎨 Theme Customization
 ![Theme Customization](screenshots/6.png)
 
-### 🔍 Search & Navigation
+### 🔍 Diary screen
 ![Diary Screen](screenshots/3.png)
 
 ### 🔗 Bookmarks Screen
 ![Diary Screen](screenshots/4.png)
 
+### 📱 Mobile Screenshots
+<div align="center">
+
+![Mobile Notes](screenshots/mobile_3.png) ![Mobile Tasks](screenshots/1.png) ![Mobile Bookmarks](screenshots/2.png)
+
 </div>
+
+### 📱 Extension Screenshots
+<div align="center">
+
+![Mobile Notes](screenshots/extension.png)
+
+</div>
+
+</div>
+
+
 
 ## ✨ Key Features
 
