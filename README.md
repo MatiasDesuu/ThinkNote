@@ -25,18 +25,16 @@
 ![Diary Screen](screenshots/4.png)
 
 ### 📱 Mobile Screenshots
-<div align="center">
-
-![Mobile Notes](screenshots/mobile_3.png) ![Mobile Tasks](screenshots/1.png) ![Mobile Bookmarks](screenshots/2.png)
-
-</div>
+<p align="center">
+  <img src="screenshots/mobile_3.png" alt="Home" width="200"/>
+  <img src="screenshots/mobile_1.png" alt="Tasks" width="200"/>
+  <img src="screenshots/mobile_2.png" alt="Bookmarks" width="200"/>
+</p>
 
 ### 📱 Extension Screenshots
-<div align="center">
-
-![Mobile Notes](screenshots/extension.png)
-
-</div>
+<p align="center">
+  <img src="screenshots/extension.png" alt="Home" width="200"/>
+</p>
 
 </div>
 
