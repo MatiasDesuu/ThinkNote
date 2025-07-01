@@ -2,6 +2,30 @@
 
 **NoteThink** is a comprehensive productivity and knowledge management application designed to help you organize your ideas, tasks, and thoughts efficiently. Built with Flutter, it offers a cross-platform experience that works seamlessly on **desktop** (Windows and Linux) and **mobile** (Android).
 
+## 📱 Screenshots
+
+<div align="center">
+
+### 🖥️ Desktop Interface
+![Desktop Interface](screenshots/1.png)
+
+### 📝 Notes Editor (distraction free mode)
+![Notes Editor](screenshots/5.png)
+
+### ✅ Task Management
+![Task Management](screenshots/2.png)
+
+### 🎨 Theme Customization
+![Theme Customization](screenshots/6.png)
+
+### 🔍 Search & Navigation
+![Diary Screen](screenshots/3.png)
+
+### 🔗 Bookmarks Screen
+![Diary Screen](screenshots/4.png)
+
+</div>
+
 ## ✨ Key Features
 
 ### 📝 Content Management
@@ -68,9 +92,6 @@
 - 📝 Database tatistics
 - 📝 File attachment support
 
-## 📱 Screenshots
-
-*[Add screenshots of different features here]*
 
 ## 🤝 Contributing
 
