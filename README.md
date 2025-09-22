@@ -1,6 +1,6 @@
-# 📘 NoteThink
+# 📘 ThinkNote
 
-**NoteThink** is a comprehensive productivity and knowledge management application designed to help you organize your ideas, tasks, and thoughts efficiently. Built with Flutter, it offers a cross-platform experience that works seamlessly on **desktop** (Windows and Linux) and **mobile** (Android).
+**ThinkNote** is a comprehensive productivity and knowledge management application designed to help you organize your ideas, tasks, and thoughts efficiently. Built with Flutter, it offers a cross-platform experience that works seamlessly on **desktop** (Windows and Linux) and **mobile** (Android).
 
 <p><strong><span style="color:#d35400">Important</span>:</strong> I'm not a developer, I'm just a simple guy that uses AI to make apps that thinks are useful for himself (and maybe others too).</p>
 
