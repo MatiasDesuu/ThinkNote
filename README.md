@@ -29,7 +29,7 @@
   <img src="Screenshots/mobile_2.png" alt="Bookmarks" width="200"/>
 </p>
 
-### 📱 [Extension Screenshots](https://github.com/MatiasDesuu/ThinkNote-Extension)
+### 🌐 [Extension Screenshots](https://github.com/MatiasDesuu/ThinkNote-Extension)
 <p align="center">
   <a href="https://github.com/MatiasDesuu/ThinkNote-Extension" target="_blank" rel="noopener noreferrer">
     <img src="Screenshots/extension.png" alt="Extension screenshot" width="200"/>
