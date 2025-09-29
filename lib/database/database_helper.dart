@@ -428,6 +428,32 @@ class DatabaseHelper {
       } catch (e) {
         // Si la columna ya existe, ignorar el error
       }
+      try {
+        final result = db.select("PRAGMA table_info(bookmarks)");
+
+        final hasDescription = result.any((row) => row['name'] == 'description');
+        if (!hasDescription) {
+          db.execute('ALTER TABLE bookmarks ADD COLUMN description TEXT;');
+        }
+
+        final hasTimestamp = result.any((row) => row['name'] == 'timestamp');
+        if (!hasTimestamp) {
+          // Add a timestamp column with a safe default to avoid NOT NULL issues on existing rows
+          db.execute("ALTER TABLE bookmarks ADD COLUMN timestamp TEXT NOT NULL DEFAULT '';");
+        }
+
+        final hasHidden = result.any((row) => row['name'] == 'hidden');
+        if (!hasHidden) {
+          db.execute('ALTER TABLE bookmarks ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0;');
+        }
+
+        final hasTagIds = result.any((row) => row['name'] == 'tag_ids');
+        if (!hasTagIds) {
+          db.execute("ALTER TABLE bookmarks ADD COLUMN tag_ids TEXT DEFAULT '[]';");
+        }
+      } catch (e) {
+        // Ignorar si alguna columna ya existe o si la migración falla por compatibilidad
+      }
 
       // Migración para notebooks - deleted_at
       try {
