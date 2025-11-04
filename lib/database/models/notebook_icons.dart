@@ -152,7 +152,7 @@ class NotebookIconsRepository {
 
     // Social
     NotebookIcon(id: 88, icon: Icons.chat_rounded, name: 'Chat'),
-    NotebookIcon(id: 89, icon: Icons.message_rounded, name: 'Message'),
+    NotebookIcon(id: 89, icon: Icons.task_alt_rounded, name: 'Task'),
     NotebookIcon(id: 90, icon: Icons.email_rounded, name: 'Email'),
     NotebookIcon(id: 91, icon: Icons.forum_rounded, name: 'Forum'),
     NotebookIcon(id: 92, icon: Icons.group_rounded, name: 'Group'),
@@ -236,8 +236,8 @@ class NotebookIconsRepository {
     ),
     NotebookIcon(
       id: 131,
-      icon: Icons.favorite_border_rounded,
-      name: 'Favorite Border',
+      icon: Icons.heart_broken_rounded,
+      name: 'Broken Heart',
     ),
     NotebookIcon(id: 132, icon: Icons.download_rounded, name: 'Download'),
     NotebookIcon(id: 133, icon: Icons.upload_rounded, name: 'Upload'),
@@ -469,12 +469,12 @@ class NotebookIconsRepository {
       icon: Icons.arrow_circle_left_rounded,
       name: 'Previous',
     ),
-    NotebookIcon(id: 222, icon: Icons.work_rounded, name: 'Work'),
-    NotebookIcon(id: 223, icon: Icons.lightbulb_rounded, name: 'Lightbulb'),
+    NotebookIcon(id: 222, icon: Icons.work_history_rounded, name: 'Work History'),
+    NotebookIcon(id: 223, icon: Icons.light_mode_rounded, name: 'Light Mode'),
     NotebookIcon(id: 224, icon: Icons.podcasts_rounded, name: 'Podcast'),
     NotebookIcon(id: 225, icon: Icons.web_rounded, name: 'Web'),
-    NotebookIcon(id: 226, icon: Icons.mic_rounded, name: 'Mic'),
-    NotebookIcon(id: 227, icon: Icons.image_rounded, name: 'Image'),
+    NotebookIcon(id: 226, icon: Icons.mic_external_on_rounded, name: 'External Mic'),
+    NotebookIcon(id: 227, icon: Icons.image_search_rounded, name: 'Image Search'),
     NotebookIcon(
       id: 228,
       icon: Icons.video_collection_rounded,
@@ -503,7 +503,11 @@ class NotebookIconsRepository {
     NotebookIcon(id: 245, icon: FontAwesomeIcons.book, name: 'Book'),
     NotebookIcon(id: 246, icon: Icons.coffee_rounded, name: 'Coffee'),
     NotebookIcon(id: 247, icon: Icons.newspaper_rounded, name: 'Newspaper'),
-  ];
+    NotebookIcon(id: 248, icon: Icons.calendar_month_rounded, name: 'Calendar'),
+    NotebookIcon(id: 249, icon: Icons.calendar_today_rounded, name: 'Calendar Today'),
+    NotebookIcon(id: 250, icon: Icons.alarm_rounded, name: 'Alarm'),
+
+    ];
 
   static NotebookIcon? getIconById(int id) {
     try {

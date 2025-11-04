@@ -3,9 +3,13 @@ import 'dart:async';
 import '../database/models/calendar_event.dart';
 import '../database/models/calendar_event_status.dart';
 import '../database/models/note.dart';
+import '../database/models/notebook.dart';
+import '../database/models/notebook_icons.dart';
 import '../database/repositories/calendar_event_repository.dart';
 import '../database/repositories/calendar_event_status_repository.dart';
+import '../database/repositories/notebook_repository.dart';
 import '../database/database_helper.dart';
+import '../database/database_service.dart';
 import '../services/notification_service.dart';
 import 'custom_snackbar.dart';
 import 'calendar_event_status_manager.dart';
@@ -15,6 +19,7 @@ class CalendarPanel extends StatefulWidget {
   final Function(Note) onNoteSelected;
   final Function(Note)? onNoteSelectedFromPanel;
   final Function(Note)? onNoteOpenInNewTab;
+  final Function(Notebook)? onNotebookSelected;
   final FocusNode appFocusNode;
 
   const CalendarPanel({
@@ -23,6 +28,7 @@ class CalendarPanel extends StatefulWidget {
     required this.appFocusNode,
     this.onNoteSelectedFromPanel,
     this.onNoteOpenInNewTab,
+    this.onNotebookSelected,
   });
 
   @override
@@ -40,10 +46,12 @@ class _CalendarPanelState extends State<CalendarPanel>
   late DateTime _selectedDate;
   List<CalendarEvent> _events = [];
   List<CalendarEventStatus> _statuses = [];
+  List<Notebook> _favoriteNotebooks = [];
   bool _isLoading = true;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late StreamSubscription<Note> _noteUpdateSubscription;
+  late StreamSubscription<void> _databaseChangeSubscription;
   late StreamController<List<CalendarEvent>> _eventsController;
   int _eventsLoadCounter = 0;
 
@@ -67,15 +75,22 @@ class _CalendarPanelState extends State<CalendarPanel>
     _noteUpdateSubscription = NotificationService().noteUpdateStream.listen(
       _handleNoteUpdate,
     );
+    _databaseChangeSubscription = DatabaseService().onDatabaseChanged.listen((
+      _,
+    ) {
+      _loadFavoriteNotebooks();
+    });
   _eventsController = StreamController<List<CalendarEvent>>.broadcast();
     _loadEvents();
     _loadStatuses();
+    _loadFavoriteNotebooks();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     _noteUpdateSubscription.cancel();
+    _databaseChangeSubscription.cancel();
   _eventsController.close();
     super.dispose();
   }
@@ -201,6 +216,44 @@ class _CalendarPanelState extends State<CalendarPanel>
       }
     } catch (e) {
       // Handle error silently for now
+    }
+  }
+
+  Future<void> _loadFavoriteNotebooks() async {
+    if (!mounted) return;
+
+    try {
+      final repo = NotebookRepository(DatabaseHelper());
+      final rootNotebooks = await repo.getNotebooksByParentId(null);
+      
+      List<Notebook> allNotebooks = [];
+      
+      Future<void> loadAllNotebooks(Notebook notebook) async {
+        allNotebooks.add(notebook);
+        if (notebook.id != null) {
+          try {
+            final children = await repo.getNotebooksByParentId(notebook.id);
+            for (final child in children) {
+              await loadAllNotebooks(child);
+            }
+          } catch (e) {
+            // Ignore errors
+          }
+        }
+      }
+      
+      for (final notebook in rootNotebooks) {
+        await loadAllNotebooks(notebook);
+      }
+      
+      final favorites = allNotebooks.where((n) => n.isFavorite).toList();
+      if (mounted) {
+        setState(() {
+          _favoriteNotebooks = favorites;
+        });
+      }
+    } catch (e) {
+      // Handle error silently
     }
   }
 
@@ -576,26 +629,36 @@ class _CalendarPanelState extends State<CalendarPanel>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      // Use the selected date's month name so selecting days from
-                      // previous/next months shows the correct month in the header.
-                      'Notes for ${_selectedDate.day}-${[
-                        'January',
-                        'February',
-                        'March',
-                        'April',
-                        'May',
-                        'June',
-                        'July',
-                        'August',
-                        'September',
-                        'October',
-                        'November',
-                        'December'
-                      ][_selectedDate.month - 1]}-${_selectedDate.year}',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: colorScheme.onSurface,
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.event_note_rounded,
+                          size: 20,
+                          color: colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          // Use the selected date's month name so selecting days from
+                          // previous/next months shows the correct month in the header.
+                          'Notes for ${[
+                            'January',
+                            'February',
+                            'March',
+                            'April',
+                            'May',
+                            'June',
+                            'July',
+                            'August',
+                            'September',
+                            'October',
+                            'November',
+                            'December'
+                          ][_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
                     ),
                     IconButton(
                       icon: Icon(
@@ -800,10 +863,88 @@ class _CalendarPanelState extends State<CalendarPanel>
                           },
                         ),
               ),
+              if (_favoriteNotebooks.isNotEmpty) _buildFavoriteNotebooksPanel(),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildFavoriteNotebooksPanel() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.favorite_rounded,
+                size: 20,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Favorite Notebooks',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 130),
+            child: SingleChildScrollView(
+              child: SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _favoriteNotebooks.map((notebook) {
+              final notebookIcon = notebook.iconId != null
+                  ? NotebookIconsRepository.getIconById(notebook.iconId!)
+                  : null;
+              final iconToShow = notebookIcon ?? NotebookIconsRepository.getDefaultIcon();
+              return Material(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  onTap: () => widget.onNotebookSelected?.call(notebook),
+                  borderRadius: BorderRadius.circular(8),
+                  hoverColor: colorScheme.primary.withAlpha(20),
+                  child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        iconToShow.icon,
+                        color: colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        notebook.name,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                  ),
+                ),
+              );
+            }).toList(),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

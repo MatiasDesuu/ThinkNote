@@ -225,9 +225,17 @@ class TabManager extends ChangeNotifier {
   void closeTab(EditorTab tab) {
     final index = _tabs.indexOf(tab);
     if (index != -1) {
-      // Dispose controllers
-      tab.noteController.dispose();
-      tab.titleController.dispose();
+      // Dispose controllers safely
+      try {
+        tab.noteController.dispose();
+      } catch (e) {
+        // Controller already disposed
+      }
+      try {
+        tab.titleController.dispose();
+      } catch (e) {
+        // Controller already disposed
+      }
 
       _tabs.removeAt(index);
 
@@ -251,8 +259,16 @@ class TabManager extends ChangeNotifier {
 
   void closeAllTabs() {
     for (final tab in _tabs) {
-      tab.noteController.dispose();
-      tab.titleController.dispose();
+      try {
+        tab.noteController.dispose();
+      } catch (e) {
+        // Already disposed
+      }
+      try {
+        tab.titleController.dispose();
+      } catch (e) {
+        // Already disposed
+      }
     }
     _tabs.clear();
     _activeTab = null;
@@ -584,8 +600,16 @@ class TabManager extends ChangeNotifier {
     saveTabsToStorage();
 
     for (final tab in _tabs) {
-      tab.noteController.dispose();
-      tab.titleController.dispose();
+      try {
+        tab.noteController.dispose();
+      } catch (e) {
+        // Already disposed
+      }
+      try {
+        tab.titleController.dispose();
+      } catch (e) {
+        // Already disposed
+      }
     }
     super.dispose();
   }

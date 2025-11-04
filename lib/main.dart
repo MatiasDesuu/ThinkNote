@@ -1947,6 +1947,7 @@ class _NoteThinkHomeState extends State<NoteThinkHome>
                         _onNoteSelected(note);
                       },
                       onNoteOpenInNewTab: _onNoteOpenInNewTab,
+                      onNotebookSelected: _onNotebookSelected,
                       appFocusNode: _appFocusNode,
                     ),
                   ),

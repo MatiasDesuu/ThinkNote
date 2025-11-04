@@ -1,6 +1,7 @@
 import '../database_helper.dart';
 import '../database_config.dart' as config;
 import '../models/notebook.dart';
+import '../database_service.dart';
 import 'package:collection/collection.dart';
 
 class NotebookRepository {
@@ -37,7 +38,7 @@ class NotebookRepository {
         notebook.deletedAt?.millisecondsSinceEpoch,
         notebook.iconId,
       ]);
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
       return db.lastInsertRowId;
     } finally {
       stmt.dispose();
@@ -94,7 +95,7 @@ class NotebookRepository {
         notebook.iconId,
         notebook.id,
       ]);
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
       stmt.dispose();
@@ -388,7 +389,7 @@ class NotebookRepository {
 
     try {
       stmt.execute([newOrder, notebookId]);
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
       stmt.dispose();
@@ -439,7 +440,7 @@ class NotebookRepository {
 
       stmt.dispose();
       db.execute('COMMIT');
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
     } catch (e) {
       db.execute('ROLLBACK');
       rethrow;
