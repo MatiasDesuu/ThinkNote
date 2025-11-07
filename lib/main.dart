@@ -1530,6 +1530,14 @@ class _NoteThinkHomeState extends State<NoteThinkHome>
     _databaseSidebarKey.currentState?.handleNotebookSelection(notebook);
   }
 
+  void _onNotebookSelectedFromFavorite(Notebook notebook) async {
+    setState(() {
+      _selectedNotebook = notebook;
+    });
+    final expand = await EditorSettings.getExpandNotebooksOnSelection();
+    _databaseSidebarKey.currentState?.handleNotebookSelection(notebook, expand: expand);
+  }
+
   void _onTrashUpdated() {
     _databaseSidebarKey.currentState?.reloadSidebar();
   }
@@ -1948,6 +1956,7 @@ class _NoteThinkHomeState extends State<NoteThinkHome>
                       },
                       onNoteOpenInNewTab: _onNoteOpenInNewTab,
                       onNotebookSelected: _onNotebookSelected,
+                      onNotebookSelectedFromFavorite: _onNotebookSelectedFromFavorite,
                       appFocusNode: _appFocusNode,
                     ),
                   ),

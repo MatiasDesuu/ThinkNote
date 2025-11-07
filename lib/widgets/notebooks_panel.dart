@@ -155,14 +155,14 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
   void didUpdateWidget(DatabaseSidebar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.selectedNotebook?.id != oldWidget.selectedNotebook?.id) {
-      if (widget.selectedNotebook?.id != null) {
-        handleNotebookSelection(widget.selectedNotebook);
-      }
+      // No llamar handleNotebookSelection aquí, se maneja en los métodos de selección
     }
   }
 
-  Future<void> handleNotebookSelection(Notebook? notebook) async {
+  Future<void> handleNotebookSelection(Notebook? notebook, {bool expand = true}) async {
     if (notebook?.id == null) return;
+
+    if (!expand) return;
 
     // Expandir todas las carpetas padre
     Notebook? currentParent = notebook;

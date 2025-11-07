@@ -20,6 +20,7 @@ class CalendarPanel extends StatefulWidget {
   final Function(Note)? onNoteSelectedFromPanel;
   final Function(Note)? onNoteOpenInNewTab;
   final Function(Notebook)? onNotebookSelected;
+  final Function(Notebook)? onNotebookSelectedFromFavorite;
   final FocusNode appFocusNode;
 
   const CalendarPanel({
@@ -29,6 +30,7 @@ class CalendarPanel extends StatefulWidget {
     this.onNoteSelectedFromPanel,
     this.onNoteOpenInNewTab,
     this.onNotebookSelected,
+    this.onNotebookSelectedFromFavorite,
   });
 
   @override
@@ -913,7 +915,7 @@ class _CalendarPanelState extends State<CalendarPanel>
                 color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(8),
                 child: InkWell(
-                  onTap: () => widget.onNotebookSelected?.call(notebook),
+                  onTap: () => widget.onNotebookSelectedFromFavorite?.call(notebook) ?? widget.onNotebookSelected?.call(notebook),
                   borderRadius: BorderRadius.circular(8),
                   hoverColor: colorScheme.primary.withAlpha(20),
                   child: Container(

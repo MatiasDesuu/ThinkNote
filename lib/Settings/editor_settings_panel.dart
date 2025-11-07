@@ -31,6 +31,7 @@ class EditorSettingsCache {
   bool? _showNotebookIcons;
   bool? _showNoteIcons;
   bool? _hideTabsInImmersive;
+  bool? _expandNotebooksOnSelection;
 
   double get fontSize => _fontSize ?? EditorSettings.defaultFontSize;
   double get lineSpacing => _lineSpacing ?? EditorSettings.defaultLineSpacing;
@@ -51,6 +52,8 @@ class EditorSettingsCache {
       _showNoteIcons ?? EditorSettings.defaultShowNoteIcons;
   bool get hideTabsInImmersive =>
       _hideTabsInImmersive ?? EditorSettings.defaultHideTabsInImmersive;
+  bool get expandNotebooksOnSelection =>
+      _expandNotebooksOnSelection ?? EditorSettings.defaultExpandNotebooksOnSelection;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -68,6 +71,7 @@ class EditorSettingsCache {
         EditorSettings.getShowNotebookIcons(),
         EditorSettings.getShowNoteIcons(),
         EditorSettings.getHideTabsInImmersive(),
+        EditorSettings.getExpandNotebooksOnSelection(),
       ]);
 
       _fontSize = results[0] as double;
@@ -81,6 +85,7 @@ class EditorSettingsCache {
       _showNotebookIcons = results[8] as bool;
       _showNoteIcons = results[9] as bool;
       _hideTabsInImmersive = results[10] as bool;
+      _expandNotebooksOnSelection = results[11] as bool;
       _isInitialized = true;
     } catch (e) {
       print('Error initializing editor settings cache: $e');
@@ -96,6 +101,7 @@ class EditorSettingsCache {
       _showNotebookIcons = EditorSettings.defaultShowNotebookIcons;
       _showNoteIcons = EditorSettings.defaultShowNoteIcons;
       _hideTabsInImmersive = EditorSettings.defaultHideTabsInImmersive;
+      _expandNotebooksOnSelection = EditorSettings.defaultExpandNotebooksOnSelection;
       _isInitialized = true;
     }
   }
@@ -147,6 +153,10 @@ class EditorSettingsCache {
   void updateHideTabsInImmersive(bool hide) {
     _hideTabsInImmersive = hide;
   }
+
+  void updateExpandNotebooksOnSelection(bool expand) {
+    _expandNotebooksOnSelection = expand;
+  }
 }
 
 // Eventos de configuración
@@ -162,6 +172,8 @@ class EditorSettingsEvents {
       StreamController<bool>.broadcast();
   static final _showNoteIconsController = StreamController<bool>.broadcast();
   static final _hideTabsInImmersiveController =
+      StreamController<bool>.broadcast();
+  static final _expandNotebooksOnSelectionController =
       StreamController<bool>.broadcast();
 
   static Stream<double> get fontSizeStream => _fontSizeController.stream;
@@ -180,6 +192,8 @@ class EditorSettingsEvents {
       _showNoteIconsController.stream;
   static Stream<bool> get hideTabsInImmersiveStream =>
       _hideTabsInImmersiveController.stream;
+  static Stream<bool> get expandNotebooksOnSelectionStream =>
+      _expandNotebooksOnSelectionController.stream;
 
   static void notifyFontSizeChanged(double size) {
     _fontSizeController.add(size);
@@ -221,6 +235,10 @@ class EditorSettingsEvents {
     _hideTabsInImmersiveController.add(hide);
   }
 
+  static void notifyExpandNotebooksOnSelectionChanged(bool expand) {
+    _expandNotebooksOnSelectionController.add(expand);
+  }
+
   static void dispose() {
     _fontSizeController.close();
     _lineSpacingController.close();
@@ -232,6 +250,7 @@ class EditorSettingsEvents {
     _showNotebookIconsController.close();
     _showNoteIconsController.close();
     _hideTabsInImmersiveController.close();
+    _expandNotebooksOnSelectionController.close();
   }
 }
 
@@ -247,6 +266,7 @@ class EditorSettings {
   static const String _showNotebookIconsKey = 'show_notebook_icons';
   static const String _showNoteIconsKey = 'show_note_icons';
   static const String _hideTabsInImmersiveKey = 'hide_tabs_in_immersive';
+  static const String _expandNotebooksOnSelectionKey = 'expand_notebooks_on_selection';
   static const double defaultLineSpacing = 1.0;
 
   // Default values
@@ -260,6 +280,7 @@ class EditorSettings {
   static const bool defaultShowNotebookIcons = true;
   static const bool defaultShowNoteIcons = true;
   static const bool defaultHideTabsInImmersive = false;
+  static const bool defaultExpandNotebooksOnSelection = true;
 
   // Fuentes disponibles
   static const List<String> availableFonts = [
@@ -448,6 +469,21 @@ class EditorSettings {
     EditorSettingsEvents.notifyHideTabsInImmersiveChanged(value);
   }
 
+  // Get expand notebooks on selection setting
+  static Future<bool> getExpandNotebooksOnSelection() async {
+    return await PlatformSettings.get(
+      _expandNotebooksOnSelectionKey,
+      defaultExpandNotebooksOnSelection,
+    );
+  }
+
+  // Save expand notebooks on selection setting
+  static Future<void> setExpandNotebooksOnSelection(bool value) async {
+    await PlatformSettings.set(_expandNotebooksOnSelectionKey, value);
+    EditorSettingsCache.instance.updateExpandNotebooksOnSelection(value);
+    EditorSettingsEvents.notifyExpandNotebooksOnSelectionChanged(value);
+  }
+
   // Método para precargar todas las configuraciones del editor
   static Future<void> preloadSettings() async {
     await EditorSettingsCache.instance.initialize();
@@ -473,6 +509,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
   bool _showNotebookIcons = true;
   bool _showNoteIcons = true;
   bool _hideTabsInImmersive = false;
+  bool _expandNotebooksOnSelection = true;
   bool _isLoading = true;
 
   @override
@@ -493,6 +530,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
     final showNotebookIcons = await EditorSettings.getShowNotebookIcons();
     final showNoteIcons = await EditorSettings.getShowNoteIcons();
     final hideTabsInImmersive = await EditorSettings.getHideTabsInImmersive();
+    final expandNotebooksOnSelection = await EditorSettings.getExpandNotebooksOnSelection();
     setState(() {
       _fontSize = fontSize;
       _lineSpacing = lineSpacing;
@@ -505,6 +543,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
       _showNotebookIcons = showNotebookIcons;
       _showNoteIcons = showNoteIcons;
       _hideTabsInImmersive = hideTabsInImmersive;
+      _expandNotebooksOnSelection = expandNotebooksOnSelection;
       _isLoading = false;
     });
   }
@@ -575,6 +614,12 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
     setState(() => _hideTabsInImmersive = value);
     await EditorSettings.setHideTabsInImmersive(value);
     EditorSettingsEvents.notifyHideTabsInImmersiveChanged(value);
+  }
+
+  Future<void> _updateExpandNotebooksOnSelection(bool value) async {
+    setState(() => _expandNotebooksOnSelection = value);
+    await EditorSettings.setExpandNotebooksOnSelection(value);
+    EditorSettingsEvents.notifyExpandNotebooksOnSelectionChanged(value);
   }
 
   void _showFontSelector() {
@@ -803,6 +848,34 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                     Switch(
                       value: _hideTabsInImmersive,
                       onChanged: _updateHideTabsInImmersive,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Expand Notebooks on Selection
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Auto-expand notebooks when selecting favorites', style: textStyle),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Automatically expand parent folders when selecting notebooks from calendar favorites',
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: _expandNotebooksOnSelection,
+                      onChanged: _updateExpandNotebooksOnSelection,
                     ),
                   ],
                 ),
