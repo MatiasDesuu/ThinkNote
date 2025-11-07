@@ -380,44 +380,32 @@ void main() async {
       await windowManager.setPosition(defaultPosition);
     }
 
-    if (Platform.isWindows || Platform.isLinux) {
-      doWhenWindowReady(() async {
-        final win = appWindow;
-        win.alignment = Alignment.center;
-        win.title = "ThinkNote";
-
-        // Agregar listener antes de mostrar
-        windowManager.addListener(WindowEventHandler());
-        
-        // Mostrar la ventana
-        await windowManager.show();
-      });
-    } else {
-      // Para macOS, aplicar directamente
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      // Agregar listener antes de mostrar
       windowManager.addListener(WindowEventHandler());
     }
   }
 
-  runApp(NoteThinkApp(initialTheme: initialTheme));
+  runApp(ThinkNoteApp(initialTheme: initialTheme));
 }
 
-class NoteThinkApp extends StatefulWidget {
+class ThinkNoteApp extends StatefulWidget {
   final ThemeData initialTheme;
 
-  const NoteThinkApp({super.key, required this.initialTheme});
+  const ThinkNoteApp({super.key, required this.initialTheme});
 
   @override
-  State<NoteThinkApp> createState() => _NoteThinkAppState();
+  State<ThinkNoteApp> createState() => _ThinkNoteAppState();
 }
 
-class _NoteThinkAppState extends State<NoteThinkApp> {
+class _ThinkNoteAppState extends State<ThinkNoteApp> {
   late Future<Color> _colorFuture;
   late Future<Brightness> _brightnessFuture;
   late Future<bool> _colorModeFuture;
   late ThemeData _currentTheme;
 
-  final GlobalKey<_NoteThinkHomeState> noteThinkHomeKey =
-      GlobalKey<_NoteThinkHomeState>();
+  final GlobalKey<_ThinkNoteHomeState> thinkNoteHomeKey =
+      GlobalKey<_ThinkNoteHomeState>();
 
   @override
   void initState() {
@@ -541,7 +529,7 @@ class _NoteThinkAppState extends State<NoteThinkApp> {
       theme: _currentTheme,
       home:
           Platform.isAndroid
-              ? const NoteThinkMobile()
+              ? const ThinkNoteMobile()
               : (Platform.isWindows || Platform.isLinux)
               ? Builder(
                 builder: (context) {
@@ -552,8 +540,8 @@ class _NoteThinkAppState extends State<NoteThinkApp> {
                         WindowBorder(
                           color: Colors.transparent,
                           width: 0,
-                          child: NoteThinkHome(
-                            key: noteThinkHomeKey,
+                          child: ThinkNoteHome(
+                            key: thinkNoteHomeKey,
                             onThemeUpdated: _updateTheme,
                           ),
                         ),
@@ -653,24 +641,24 @@ class _NoteThinkAppState extends State<NoteThinkApp> {
                   );
                 },
               )
-              : NoteThinkHome(
-                key: noteThinkHomeKey,
+              : ThinkNoteHome(
+                key: thinkNoteHomeKey,
                 onThemeUpdated: _updateTheme,
               ),
     );
   }
 }
 
-class NoteThinkHome extends StatefulWidget {
+class ThinkNoteHome extends StatefulWidget {
   final VoidCallback onThemeUpdated;
 
-  const NoteThinkHome({super.key, required this.onThemeUpdated});
+  const ThinkNoteHome({super.key, required this.onThemeUpdated});
 
   @override
-  State<NoteThinkHome> createState() => _NoteThinkHomeState();
+  State<ThinkNoteHome> createState() => _ThinkNoteHomeState();
 }
 
-class _NoteThinkHomeState extends State<NoteThinkHome>
+class _ThinkNoteHomeState extends State<ThinkNoteHome>
     with SingleTickerProviderStateMixin {
   Note? _selectedNote;
   Notebook? _selectedNotebook;

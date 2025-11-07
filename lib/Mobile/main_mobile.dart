@@ -30,14 +30,14 @@ import 'widgets/think_editor.dart';
 import 'screens/calendar_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class NoteThinkMobile extends StatefulWidget {
-  const NoteThinkMobile({super.key});
+class ThinkNoteMobile extends StatefulWidget {
+  const ThinkNoteMobile({super.key});
 
   @override
-  State<NoteThinkMobile> createState() => _NoteThinkMobileState();
+  State<ThinkNoteMobile> createState() => _ThinkNoteMobileState();
 }
 
-class _NoteThinkMobileState extends State<NoteThinkMobile>
+class _ThinkNoteMobileState extends State<ThinkNoteMobile>
     with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   bool _isImmersiveMode = false;
@@ -180,7 +180,7 @@ class _NoteThinkMobileState extends State<NoteThinkMobile>
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => NoteThinkMobile(),
+                        builder: (context) => ThinkNoteMobile(),
                       ),
                     ).then((_) {
                       if (mounted) {
@@ -735,7 +735,7 @@ class _NoteThinkMobileState extends State<NoteThinkMobile>
                                               MaterialPageRoute(
                                                 builder:
                                                     (context) =>
-                                                        NoteThinkMobile(),
+                                                        ThinkNoteMobile(),
                                               ),
                                             ).then((_) {
                                               if (mounted) {
