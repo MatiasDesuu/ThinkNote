@@ -50,6 +50,7 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
   late StreamSubscription<void> _databaseChangeSubscription;
   bool _showNotebookIcons = true;
   StreamSubscription<bool>? _showNotebookIconsSubscription;
+  final Map<int?, int> _lastClickTimes = {};
 
   bool get areAllNotebooksExpanded {
     bool checkNotebookRecursively(Notebook notebook) {
@@ -1113,7 +1114,14 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
           builder: (context, candidateData, rejectedData) {
             return InkWell(
               onTap: () {
-                widget.onNotebookSelected(notebook);
+                int currMills = DateTime.now().millisecondsSinceEpoch;
+                int last = _lastClickTimes[notebook.id] ?? 0;
+                if ((currMills - last) < 500) {
+                  _handleChevronClick(notebook);
+                } else {
+                  widget.onNotebookSelected(notebook);
+                }
+                _lastClickTimes[notebook.id] = currMills;
               },
               borderRadius: BorderRadius.circular(4),
               hoverColor: Theme.of(context).colorScheme.surfaceContainerHigh,
