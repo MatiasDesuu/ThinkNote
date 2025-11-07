@@ -271,7 +271,7 @@ class ThemeManager {
       appBarTheme: AppBarTheme(
         scrolledUnderElevation: 2,
         surfaceTintColor: Colors.transparent,
-        color:
+        backgroundColor:
             brightness == Brightness.light
                 ? const Color.fromRGBO(19, 19, 19, 1)
                 : const Color(0xFF252525),

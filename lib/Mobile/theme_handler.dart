@@ -150,7 +150,7 @@ class ThemeManager {
       appBarTheme: const AppBarTheme(
         scrolledUnderElevation: 2,
         surfaceTintColor: Colors.transparent,
-        color: Color(0xFFFAFAFA),
+        backgroundColor: Color(0xFFFAFAFA),
       ),
       textSelectionTheme: const TextSelectionThemeData(
         selectionColor: Color(0x4D222222),
@@ -196,7 +196,7 @@ class ThemeManager {
       appBarTheme: const AppBarTheme(
         scrolledUnderElevation: 2,
         surfaceTintColor: Colors.transparent,
-        color: Color(0xFF131313),
+        backgroundColor: Color(0xFF131313),
       ),
       textSelectionTheme: const TextSelectionThemeData(
         selectionColor: Color(0x4DDADADA),

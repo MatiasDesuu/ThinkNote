@@ -383,9 +383,11 @@ class _TrashScreenState extends State<TrashScreen>
                               math.sin(_sweepAnimation.value * 2 * math.pi) *
                                   0.2,
                             )
-                            ..translate(
+                            ..translateByDouble(
                               0.0,
                               4 * (1 - _sweepAnimation.value.abs()),
+                              0.0,
+                              1.0,
                             ),
                       child: child,
                     );
