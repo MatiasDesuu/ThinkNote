@@ -380,8 +380,20 @@ void main() async {
       await windowManager.setPosition(defaultPosition);
     }
 
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      // Agregar listener antes de mostrar
+    if (Platform.isWindows || Platform.isLinux) {
+      doWhenWindowReady(() async {
+        final win = appWindow;
+        win.alignment = Alignment.center;
+        win.title = "ThinkNote";
+
+        // Agregar listener antes de mostrar
+        windowManager.addListener(WindowEventHandler());
+        
+        // Mostrar la ventana
+        await windowManager.show();
+      });
+    } else {
+      // Para macOS, aplicar directamente
       windowManager.addListener(WindowEventHandler());
     }
   }
