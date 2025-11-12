@@ -248,7 +248,7 @@ class ResizablePanelState extends State<ResizablePanel>
                             left: 0,
                             right:
                                 widget.trailing != null
-                                    ? 48
+                                    ? 100
                                     : 0, // Excluir área del botón
                             height: 48,
                             child: MoveWindow(),

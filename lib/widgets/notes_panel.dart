@@ -10,6 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'context_menu.dart';
 
+enum SortMode { order, date, completion }
+
 class NotesPanel extends StatefulWidget {
   final int? selectedNotebookId;
   final Note? selectedNote;
@@ -44,9 +46,11 @@ class NotesPanelState extends State<NotesPanel> {
   bool _isLoading = true;
   String? _errorMessage;
   bool _isExpanded = true;
-  bool _sortByDate = false;
+  SortMode _sortMode = SortMode.order;
+  bool _completionSubSortByDate = false;
   late StreamSubscription<void> _databaseChangeSubscription;
-  static const String _sortPreferenceKey = 'notes_sort_by_date';
+  static const String _sortPreferenceKey = 'notes_sort_mode';
+  static const String _completionSubSortPreferenceKey = 'notes_completion_sub_sort_by_date';
   bool _showNoteIcons = true;
   StreamSubscription<bool>? _showNoteIconsSubscription;
 
@@ -76,29 +80,81 @@ class NotesPanelState extends State<NotesPanel> {
   // Visual position tracking
   double? _currentVisualLineY;
 
-  bool get sortByDate => _sortByDate;
+  bool get sortByDate => _sortMode == SortMode.date;
   bool get isExpanded => _isExpanded;
 
+  IconData _getSortIcon() {
+    switch (_sortMode) {
+      case SortMode.order:
+        return Icons.sort_by_alpha_rounded;
+      case SortMode.date:
+        return Icons.hourglass_bottom_rounded;
+      case SortMode.completion:
+        return Icons.check_circle_outline;
+    }
+  }
+
   Widget buildTrailingButton() {
-    return IconButton(
-      icon: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 200),
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          return ScaleTransition(
-            scale: animation,
-            child: FadeTransition(opacity: animation, child: child),
-          );
-        },
-        child: Icon(
-          sortByDate
-              ? Icons.sort_by_alpha_rounded
-              : Icons.hourglass_bottom_rounded,
-          size: 16,
-          key: ValueKey<bool>(sortByDate),
+    if (_sortMode == SortMode.completion) {
+      return Row(
+        key: ValueKey<bool>(_completionSubSortByDate),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return ScaleTransition(
+                  scale: animation,
+                  child: FadeTransition(opacity: animation, child: child),
+                );
+              },
+              child: Icon(
+                _completionSubSortByDate ? Icons.access_time : Icons.sort_by_alpha,
+                size: 16,
+                key: ValueKey<bool>(_completionSubSortByDate),
+              ),
+            ),
+            onPressed: toggleCompletionSubSort,
+          ),
+          IconButton(
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return ScaleTransition(
+                  scale: animation,
+                  child: FadeTransition(opacity: animation, child: child),
+                );
+              },
+              child: Icon(
+                _getSortIcon(),
+                size: 16,
+                key: ValueKey<SortMode>(_sortMode),
+              ),
+            ),
+            onPressed: toggleSortOrder,
+          ),
+        ],
+      );
+    } else {
+      return IconButton(
+        icon: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return ScaleTransition(
+              scale: animation,
+              child: FadeTransition(opacity: animation, child: child),
+            );
+          },
+          child: Icon(
+            _getSortIcon(),
+            size: 16,
+            key: ValueKey<SortMode>(_sortMode),
+          ),
         ),
-      ),
-      onPressed: toggleSortOrder,
-    );
+        onPressed: toggleSortOrder,
+      );
+    }
   }
 
   void _handleNoteSelection(
@@ -390,6 +446,7 @@ class NotesPanelState extends State<NotesPanel> {
     _initializeRepository();
     _loadExpandedState();
     _loadSortPreference();
+    _loadCompletionSubSortPreference();
     _loadIconSettings();
     _setupIconSettingsListener();
     _databaseChangeSubscription = DatabaseService().onDatabaseChanged.listen((
@@ -493,21 +550,49 @@ class NotesPanelState extends State<NotesPanel> {
   Future<void> _loadSortPreference() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
+    final sortModeString = prefs.getString(_sortPreferenceKey) ?? 'order';
     setState(() {
-      _sortByDate = prefs.getBool(_sortPreferenceKey) ?? false;
+      _sortMode = SortMode.values.firstWhere(
+        (mode) => mode.name == sortModeString,
+        orElse: () => SortMode.order,
+      );
     });
   }
 
   Future<void> _saveSortPreference() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_sortPreferenceKey, _sortByDate);
+    await prefs.setString(_sortPreferenceKey, _sortMode.name);
+  }
+
+  Future<void> _loadCompletionSubSortPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _completionSubSortByDate = prefs.getBool(_completionSubSortPreferenceKey) ?? false;
+    });
+  }
+
+  Future<void> _saveCompletionSubSortPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_completionSubSortPreferenceKey, _completionSubSortByDate);
   }
 
   Future<void> toggleSortOrder() async {
     setState(() {
-      _sortByDate = !_sortByDate;
+      final modes = SortMode.values;
+      final currentIndex = modes.indexOf(_sortMode);
+      _sortMode = modes[(currentIndex + 1) % modes.length];
     });
     await _saveSortPreference();
+    await _loadNotes();
+    widget.onSortChanged?.call();
+  }
+
+  Future<void> toggleCompletionSubSort() async {
+    setState(() {
+      _completionSubSortByDate = !_completionSubSortByDate;
+    });
+    await _saveCompletionSubSortPreference();
     await _loadNotes();
     widget.onSortChanged?.call();
   }
@@ -559,10 +644,26 @@ class NotesPanelState extends State<NotesPanel> {
 
       if (!mounted) return;
 
-      if (_sortByDate) {
-        notes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      } else {
-        notes.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+      switch (_sortMode) {
+        case SortMode.date:
+          notes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          break;
+        case SortMode.order:
+          notes.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+          break;
+        case SortMode.completion:
+          notes.sort((a, b) {
+            if (a.isCompleted == b.isCompleted) {
+              if (_completionSubSortByDate) {
+                return b.createdAt.compareTo(a.createdAt); // Más reciente primero
+              } else {
+                return a.title.compareTo(b.title);
+              }
+            } else {
+              return a.isCompleted ? 1 : -1;
+            }
+          });
+          break;
       }
 
       setState(() {
@@ -1334,12 +1435,12 @@ class NotesPanelState extends State<NotesPanel> {
   Future<void> _moveNote(Note draggedNote, int targetIndex) async {
     if (targetIndex < 0 || targetIndex > _notes.length) return;
 
-    if (_sortByDate) {
+    if (_sortMode != SortMode.order) {
       if (mounted) {
         CustomSnackbar.show(
           context: context,
-          message: 'Cannot reorder notes while sorting by date',
-          type: CustomSnackbarType.warning,
+          message: 'Cannot reorder notes while sorting by date or completion',
+          type: CustomSnackbarType.error,
         );
       }
       return;

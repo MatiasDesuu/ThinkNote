@@ -17,6 +17,7 @@ import '../find_bar.dart';
 import '../context_menu.dart';
 import 'unified_text_handler.dart';
 import 'list_continuation_handler.dart';
+import 'search_handler.dart';
 import '../../services/tab_manager.dart';
 
 // Global reference to the current active editor's toggle read mode function
@@ -86,8 +87,7 @@ class _NotaEditorState extends State<NotaEditor>
   StreamSubscription? _editorCenteredSubscription;
   StreamSubscription? _autoSaveEnabledSubscription;
   late ImmersiveModeService _immersiveModeService;
-  int _currentFindIndex = -1;
-  List<int> _findMatches = [];
+  late SearchManager _searchManager;
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _exportButtonKey = GlobalKey();
 
@@ -158,7 +158,9 @@ class _NotaEditorState extends State<NotaEditor>
     widget.noteController.addListener(_onContentChanged);
     widget.titleController.addListener(_onTitleChanged);
     _findController.addListener(() {
-      _performFind(_findController.text);
+      _searchManager.performFind(_findController.text, () {
+        if (mounted) setState(() {});
+      });
     });
     _detectScriptMode();
     _setupSettingsListeners();
@@ -166,6 +168,17 @@ class _NotaEditorState extends State<NotaEditor>
 
     // Register this editor as the active one for global toggle function
     _currentActiveEditorToggleReadMode = _toggleReadMode;
+
+    // Initialize SearchManager
+    _searchManager = SearchManager(
+      noteController: widget.noteController,
+      scrollController: _scrollController,
+      textStyle: TextStyle(
+        fontSize: _fontSize,
+        height: _lineSpacing,
+        fontFamily: _fontFamily,
+      ),
+    );
 
     // Inicializar configuraciones después de que el widget esté completamente montado
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -634,132 +647,29 @@ class _NotaEditorState extends State<NotaEditor>
   }
 
   void _hideFindBar() {
-    setState(() {
-      _showFindBar = false;
-      _currentFindIndex = -1;
-      _findMatches.clear();
+    _searchManager.clear(() {
+      if (mounted) {
+        setState(() {
+          _showFindBar = false;
+        });
+      }
     });
     _findController.clear();
     _editorFocusNode.requestFocus();
   }
 
-  void _performFind(String query) {
-    if (query.isEmpty) {
-      setState(() {
-        _currentFindIndex = -1;
-        _findMatches.clear();
-      });
-      return;
-    }
-
-    final text = widget.noteController.text;
-    final lowerText = text.toLowerCase();
-    final lowerQuery = query.toLowerCase();
-
-    List<int> matches = [];
-    int index = 0;
-
-    while ((index = lowerText.indexOf(lowerQuery, index)) != -1) {
-      matches.add(index);
-      index += 1;
-    }
-
-    setState(() {
-      _findMatches = matches;
-      _currentFindIndex = matches.isNotEmpty ? 0 : -1;
-    });
-
-    if (matches.isNotEmpty) {
-      _selectCurrentMatch();
-      // Keep focus on find bar
-      _findBarFocusNode.requestFocus();
-    }
-  }
-
-  void _selectCurrentMatch() {
-    if (_currentFindIndex >= 0 && _currentFindIndex < _findMatches.length) {
-      // Check if ScrollController is attached
-      if (!_scrollController.hasClients) {
-        // If not attached, schedule for next frame
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _scrollController.hasClients) {
-            _selectCurrentMatch();
-          }
-        });
-        return;
-      }
-
-      // Calculate the position of the current match
-      final matchPosition = _findMatches[_currentFindIndex];
-      final text = widget.noteController.text;
-
-      // Calculate scroll position more accurately
-      final textBeforeMatch = text.substring(0, matchPosition);
-      final lines = textBeforeMatch.split('\n');
-      final lineNumber = lines.length - 1;
-
-      // Estimate position based on line number and average line height
-      final lineHeight = _fontSize * _lineSpacing;
-      final estimatedPosition = lineNumber * lineHeight;
-
-      // Get current scroll position and viewport height
-      final viewportHeight = _scrollController.position.viewportDimension;
-
-      // Calculate target position to center the match in the viewport
-      final targetPosition = (estimatedPosition - viewportHeight / 2).clamp(
-        0.0,
-        _scrollController.position.maxScrollExtent,
-      );
-
-      // Animate scroll to the target position
-      _scrollController.animateTo(
-        targetPosition,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-
-      // Keep focus on find bar
-      _findBarFocusNode.requestFocus();
-    }
-  }
-
   void _nextMatch() {
-    if (_findMatches.isEmpty) return;
-
-    setState(() {
-      _currentFindIndex = (_currentFindIndex + 1) % _findMatches.length;
+    _searchManager.nextMatch(() {
+      if (mounted) setState(() {});
     });
-
-    // Force rebuild to update highlighting
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
-
-    _selectCurrentMatch();
     // Keep focus on find bar
     _findBarFocusNode.requestFocus();
   }
 
   void _previousMatch() {
-    if (_findMatches.isEmpty) return;
-
-    setState(() {
-      _currentFindIndex =
-          _currentFindIndex <= 0
-              ? _findMatches.length - 1
-              : _currentFindIndex - 1;
+    _searchManager.previousMatch(() {
+      if (mounted) setState(() {});
     });
-
-    // Force rebuild to update highlighting
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
-
-    _selectCurrentMatch();
     // Keep focus on find bar
     _findBarFocusNode.requestFocus();
   }
@@ -931,6 +841,9 @@ class _NotaEditorState extends State<NotaEditor>
         },
         child: LayoutBuilder(
           builder: (context, constraints) {
+            // Update SearchManager's textStyle when building
+            _searchManager.updateTextStyle(_textStyle);
+            
             return Focus(
               onKeyEvent: (node, event) {
                 if (_showFindBar) {
@@ -1197,12 +1110,16 @@ class _NotaEditorState extends State<NotaEditor>
                                   textController: _findController,
                                   focusNode: _findBarFocusNode,
                                   onClose: _hideFindBar,
-                                  onFind: _performFind,
+                                  onFind: (query) {
+                                    _searchManager.performFind(query, () {
+                                      if (mounted) setState(() {});
+                                    });
+                                  },
                                   onNext: _nextMatch,
                                   onPrevious: _previousMatch,
-                                  currentIndex: _currentFindIndex,
-                                  totalMatches: _findMatches.length,
-                                  hasMatches: _findMatches.isNotEmpty,
+                                  currentIndex: _searchManager.currentFindIndex,
+                                  totalMatches: _searchManager.findMatches.length,
+                                  hasMatches: _searchManager.hasMatches,
                                 ),
                               ),
                           ],
@@ -1246,221 +1163,51 @@ class _NotaEditorState extends State<NotaEditor>
   }
 
   Widget _buildHighlightedTextField() {
-    // If no search query or no matches, show normal TextField
-    if (_findController.text.isEmpty || _findMatches.isEmpty) {
-      return Focus(
-        onKeyEvent: (node, event) {
-          // Handle Enter key for list continuation
-          if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
-            final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
-            
-            // Try to handle list continuation
-            if (ListContinuationHandler.handleEnterKey(widget.noteController, isShiftPressed)) {
-              widget.onContentChanged();
-              return KeyEventResult.handled;
-            }
-            
-            // If not handled by list continuation, let default behavior proceed
+    return Focus(
+      onKeyEvent: (node, event) {
+        // Handle Enter key for list continuation
+        if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
+          final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+          
+          // Try to handle list continuation
+          if (ListContinuationHandler.handleEnterKey(widget.noteController, isShiftPressed)) {
+            widget.onContentChanged();
+            return KeyEventResult.handled;
           }
           
-          // Allow global shortcuts to propagate
-          if (event is KeyDownEvent) {
-            if (event.logicalKey == LogicalKeyboardKey.keyT &&
-                HardwareKeyboard.instance.isControlPressed) {
-              return KeyEventResult.ignored;
-            }
-            if (event.logicalKey == LogicalKeyboardKey.keyN &&
-                HardwareKeyboard.instance.isControlPressed) {
-              return KeyEventResult.ignored;
-            }
-            if (event.logicalKey == LogicalKeyboardKey.keyW &&
-                HardwareKeyboard.instance.isControlPressed) {
-              return KeyEventResult.ignored;
-            }
-            if (event.logicalKey == LogicalKeyboardKey.keyS &&
-                HardwareKeyboard.instance.isControlPressed) {
-              return KeyEventResult.ignored;
-            }
+          // If not handled by list continuation, let default behavior proceed
+        }
+        
+        // Allow global shortcuts to propagate
+        if (event is KeyDownEvent) {
+          if (event.logicalKey == LogicalKeyboardKey.keyT &&
+              HardwareKeyboard.instance.isControlPressed) {
+            return KeyEventResult.ignored;
           }
-          return KeyEventResult.ignored;
-        },
-        child: TextField(
-          controller: widget.noteController,
-          focusNode: _editorFocusNode,
-          style: _textStyle,
-          maxLines: null,
-          expands: true,
-          decoration: InputDecoration(
-            border: InputBorder.none,
-            hintText: 'Start writing...',
-            hintStyle: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: _fontSize,
-              height: _lineSpacing,
-            ),
-          ),
-          onChanged: (value) {
-            widget.onContentChanged();
-          },
-        ),
-      );
-    }
-
-    // For search mode, use a Stack with ScrollView containing both TextField and overlay
-    return SingleChildScrollView(
-      controller: _scrollController,
-      child: Stack(
-        children: [
-          // Main TextField for editing
-          Focus(
-            onKeyEvent: (node, event) {
-              // Handle Enter key for list continuation
-              if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
-                final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
-                
-                // Try to handle list continuation
-                if (ListContinuationHandler.handleEnterKey(widget.noteController, isShiftPressed)) {
-                  widget.onContentChanged();
-                  return KeyEventResult.handled;
-                }
-                
-                // If not handled by list continuation, let default behavior proceed
-              }
-              
-              // Allow global shortcuts to propagate
-              if (event is KeyDownEvent) {
-                if (event.logicalKey == LogicalKeyboardKey.keyT &&
-                    HardwareKeyboard.instance.isControlPressed) {
-                  return KeyEventResult.ignored;
-                }
-                if (event.logicalKey == LogicalKeyboardKey.keyN &&
-                    HardwareKeyboard.instance.isControlPressed) {
-                  return KeyEventResult.ignored;
-                }
-                if (event.logicalKey == LogicalKeyboardKey.keyW &&
-                    HardwareKeyboard.instance.isControlPressed) {
-                  return KeyEventResult.ignored;
-                }
-                if (event.logicalKey == LogicalKeyboardKey.keyS &&
-                    HardwareKeyboard.instance.isControlPressed) {
-                  return KeyEventResult.ignored;
-                }
-              }
-              return KeyEventResult.ignored;
-            },
-            child: TextField(
-              controller: widget.noteController,
-              focusNode: _editorFocusNode,
-              style: _textStyle,
-              maxLines: null,
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: 'Start writing...',
-                hintStyle: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: _fontSize,
-                  height: _lineSpacing,
-                ),
-              ),
-              onChanged: (value) {
-                widget.onContentChanged();
-                // Don't perform search while editing to avoid focus issues
-                // Search will be performed when find bar is used
-              },
-            ),
-          ),
-          // Overlay for highlighting (non-interactive)
-          Positioned.fill(
-            child: IgnorePointer(child: _buildHighlightOverlay()),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHighlightOverlay() {
-    final text = widget.noteController.text;
-    final query = _findController.text;
-
-    if (query.isEmpty || _findMatches.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final lowerText = text.toLowerCase();
-    final lowerQuery = query.toLowerCase();
-
-    List<TextSpan> spans = [];
-    int lastIndex = 0;
-
-    // Find all matches and build text spans
-    int index = 0;
-    int matchIndex = 0;
-    while ((index = lowerText.indexOf(lowerQuery, index)) != -1) {
-      // Add text before match
-      if (index > lastIndex) {
-        spans.add(
-          TextSpan(
-            text: text.substring(lastIndex, index),
-            style: _textStyle.copyWith(color: Colors.transparent),
-          ),
-        );
-      }
-
-      // Add highlighted match - only current match gets bold
-      final isCurrentMatch = matchIndex == _currentFindIndex;
-      spans.add(
-        TextSpan(
-          text: text.substring(index, index + query.length),
-          style: _textStyle.copyWith(
-            backgroundColor:
-                isCurrentMatch
-                    ? Theme.of(context).colorScheme.primary.withAlpha(120)
-                    : Theme.of(context).colorScheme.primary.withAlpha(50),
-            fontWeight: isCurrentMatch ? FontWeight.w600 : FontWeight.normal,
-            color: Colors.transparent,
-          ),
-        ),
-      );
-
-      lastIndex = index + query.length;
-      index = lastIndex;
-      matchIndex++;
-    }
-
-    // Add remaining text
-    if (lastIndex < text.length) {
-      spans.add(
-        TextSpan(
-          text: text.substring(lastIndex),
-          style: _textStyle.copyWith(color: Colors.transparent),
-        ),
-      );
-    }
-
-    // If no spans were created, use original text
-    if (spans.isEmpty) {
-      spans.add(
-        TextSpan(
-          text: text,
-          style: _textStyle.copyWith(color: Colors.transparent),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.only(
-        top: 4.0, // Match TextField's default padding
-        bottom: 4.0,
-        left: 0.0,
-        right: 0.0,
-      ),
-      alignment: Alignment.topLeft,
-      child: RichText(
-        text: TextSpan(children: spans),
-        textAlign: TextAlign.start,
-        textHeightBehavior: TextHeightBehavior(
-          leadingDistribution: TextLeadingDistribution.even,
-        ),
+          if (event.logicalKey == LogicalKeyboardKey.keyN &&
+              HardwareKeyboard.instance.isControlPressed) {
+            return KeyEventResult.ignored;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.keyW &&
+              HardwareKeyboard.instance.isControlPressed) {
+            return KeyEventResult.ignored;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.keyS &&
+              HardwareKeyboard.instance.isControlPressed) {
+            return KeyEventResult.ignored;
+          }
+        }
+        return KeyEventResult.ignored;
+      },
+      child: HighlightedTextField(
+        controller: widget.noteController,
+        focusNode: _editorFocusNode,
+        textStyle: _textStyle,
+        hintText: 'Start writing...',
+        onChanged: widget.onContentChanged,
+        scrollController: _scrollController,
+        searchManager: _searchManager,
+        searchQuery: _findController.text,
       ),
     );
   }

@@ -505,9 +505,8 @@ class NotebookIconsRepository {
     NotebookIcon(id: 247, icon: Icons.newspaper_rounded, name: 'Newspaper'),
     NotebookIcon(id: 248, icon: Icons.calendar_month_rounded, name: 'Calendar'),
     NotebookIcon(id: 249, icon: Icons.calendar_today_rounded, name: 'Calendar Today'),
-    NotebookIcon(id: 250, icon: Icons.alarm_rounded, name: 'Alarm'),
-
-    ];
+    NotebookIcon(id: 250, icon: Icons.alarm_rounded, name: 'Alarm')
+        ];
 
   static NotebookIcon? getIconById(int id) {
     try {
