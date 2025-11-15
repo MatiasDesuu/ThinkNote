@@ -49,8 +49,8 @@ class NotesPanelState extends State<NotesPanel> {
   SortMode _sortMode = SortMode.order;
   bool _completionSubSortByDate = false;
   late StreamSubscription<void> _databaseChangeSubscription;
-  static const String _sortPreferenceKey = 'notes_sort_mode';
-  static const String _completionSubSortPreferenceKey = 'notes_completion_sub_sort_by_date';
+  String get _sortPreferenceKey => 'notes_sort_mode_${widget.selectedNotebookId ?? 0}';
+  String get _completionSubSortPreferenceKey => 'notes_completion_sub_sort_by_date_${widget.selectedNotebookId ?? 0}';
   bool _showNoteIcons = true;
   StreamSubscription<bool>? _showNoteIconsSubscription;
 
@@ -445,8 +445,6 @@ class NotesPanelState extends State<NotesPanel> {
     super.initState();
     _initializeRepository();
     _loadExpandedState();
-    _loadSortPreference();
-    _loadCompletionSubSortPreference();
     _loadIconSettings();
     _setupIconSettingsListener();
     _databaseChangeSubscription = DatabaseService().onDatabaseChanged.listen((
@@ -602,6 +600,10 @@ class NotesPanelState extends State<NotesPanel> {
       final dbHelper = DatabaseHelper();
       await dbHelper.database;
       _noteRepository = NoteRepository(dbHelper);
+      await Future.wait([
+        _loadSortPreference(),
+        _loadCompletionSubSortPreference(),
+      ]);
       await _loadNotes();
     } catch (e) {
       print('Error initializing repository: $e');
@@ -623,6 +625,17 @@ class NotesPanelState extends State<NotesPanel> {
         _notes[index] = updatedNote;
       }
     });
+  }
+
+  Future<void> _loadPreferencesAndNotes() async {
+    await Future.wait([
+      _loadSortPreference(),
+      _loadCompletionSubSortPreference(),
+    ]);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onSortChanged?.call();
+    });
+    await _loadNotes();
   }
 
   Future<void> _loadNotes() async {
@@ -1665,7 +1678,7 @@ class NotesPanelState extends State<NotesPanel> {
   void didUpdateWidget(NotesPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.selectedNotebookId != oldWidget.selectedNotebookId) {
-      _loadNotes();
+      _loadPreferencesAndNotes();
     } else if (widget.selectedNote?.id != oldWidget.selectedNote?.id ||
         widget.selectedNote?.title != oldWidget.selectedNote?.title) {
       if (widget.selectedNote != null) {

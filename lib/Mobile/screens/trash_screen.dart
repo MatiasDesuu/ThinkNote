@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'dart:math' as math;
 import '../../database/models/notebook.dart';
 import '../../database/models/note.dart';
 import '../../database/models/think.dart';
@@ -29,13 +28,10 @@ class TrashScreen extends StatefulWidget {
   State<TrashScreen> createState() => _TrashScreenState();
 }
 
-class _TrashScreenState extends State<TrashScreen>
-    with TickerProviderStateMixin {
+class _TrashScreenState extends State<TrashScreen> {
   late final NoteRepository _noteRepository;
   late final NotebookRepository _notebookRepository;
   late final ThinkRepository _thinkRepository;
-  late final AnimationController _sweepController;
-  late final Animation<double> _sweepAnimation;
   bool _isClearing = false;
   bool _isLoading = true;
   List<Notebook> _deletedNotebooks = [];
@@ -45,15 +41,6 @@ class _TrashScreenState extends State<TrashScreen>
   @override
   void initState() {
     super.initState();
-    _sweepController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-      value: 0.5,
-    );
-
-    _sweepAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _sweepController, curve: const SawTooth(3)),
-    );
     _initializeRepositories();
   }
 
@@ -94,23 +81,6 @@ class _TrashScreenState extends State<TrashScreen>
           type: CustomSnackbarType.error,
         );
       }
-    }
-  }
-
-  void _toggleSweepAnimation(bool sweeping) {
-    if (sweeping) {
-      _sweepController.repeat();
-    } else {
-      _sweepController
-          .fling(
-            velocity: 0.5,
-            springDescription: SpringDescription.withDampingRatio(
-              mass: 0.5,
-              stiffness: 100.0,
-              ratio: 1.1,
-            ),
-          )
-          .then((_) => _sweepController.reset());
     }
   }
 
@@ -283,7 +253,6 @@ class _TrashScreenState extends State<TrashScreen>
     );
 
     if (confirmed == true) {
-      _toggleSweepAnimation(true);
       setState(() => _isClearing = true);
 
       try {
@@ -314,7 +283,6 @@ class _TrashScreenState extends State<TrashScreen>
           );
         }
       } finally {
-        _toggleSweepAnimation(false);
         setState(() => _isClearing = false);
       }
     }
@@ -322,7 +290,6 @@ class _TrashScreenState extends State<TrashScreen>
 
   @override
   void dispose() {
-    _sweepController.dispose();
     super.dispose();
   }
 
@@ -372,35 +339,9 @@ class _TrashScreenState extends State<TrashScreen>
             Padding(
               padding: const EdgeInsets.only(right: 4.0),
               child: IconButton(
-                icon: AnimatedBuilder(
-                  animation: _sweepController,
-                  builder: (context, child) {
-                    return Transform(
-                      alignment: Alignment.topCenter,
-                      transform:
-                          Matrix4.identity()
-                            ..rotateZ(
-                              math.sin(_sweepAnimation.value * 2 * math.pi) *
-                                  0.2,
-                            )
-                            ..translate(
-                              0.0,
-                              4 * (1 - _sweepAnimation.value.abs()),
-                              0.0,
-                            ),
-                      child: child,
-                    );
-                  },
-                  child: Icon(
-                    Symbols.mop,
-                    size: 32,
-                    color:
-                        allItems.isNotEmpty
-                            ? Theme.of(context).colorScheme.error
-                            : Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withAlpha(100),
-                  ),
+                icon: Icon(
+                  Symbols.mop,
+                  size: 32,
                 ),
                 onPressed:
                     allItems.isNotEmpty && !_isClearing
