@@ -32,6 +32,7 @@ class EditorSettingsCache {
   bool? _showNoteIcons;
   bool? _hideTabsInImmersive;
   bool? _expandNotebooksOnSelection;
+  bool? _expandNotebooksOnNoteOpen;
 
   double get fontSize => _fontSize ?? EditorSettings.defaultFontSize;
   double get lineSpacing => _lineSpacing ?? EditorSettings.defaultLineSpacing;
@@ -54,6 +55,8 @@ class EditorSettingsCache {
       _hideTabsInImmersive ?? EditorSettings.defaultHideTabsInImmersive;
   bool get expandNotebooksOnSelection =>
       _expandNotebooksOnSelection ?? EditorSettings.defaultExpandNotebooksOnSelection;
+  bool get expandNotebooksOnNoteOpen =>
+      _expandNotebooksOnNoteOpen ?? EditorSettings.defaultExpandNotebooksOnNoteOpen;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -72,6 +75,7 @@ class EditorSettingsCache {
         EditorSettings.getShowNoteIcons(),
         EditorSettings.getHideTabsInImmersive(),
         EditorSettings.getExpandNotebooksOnSelection(),
+        EditorSettings.getExpandNotebooksOnNoteOpen(),
       ]);
 
       _fontSize = results[0] as double;
@@ -86,6 +90,7 @@ class EditorSettingsCache {
       _showNoteIcons = results[9] as bool;
       _hideTabsInImmersive = results[10] as bool;
       _expandNotebooksOnSelection = results[11] as bool;
+      _expandNotebooksOnNoteOpen = results[12] as bool;
       _isInitialized = true;
     } catch (e) {
       print('Error initializing editor settings cache: $e');
@@ -102,6 +107,7 @@ class EditorSettingsCache {
       _showNoteIcons = EditorSettings.defaultShowNoteIcons;
       _hideTabsInImmersive = EditorSettings.defaultHideTabsInImmersive;
       _expandNotebooksOnSelection = EditorSettings.defaultExpandNotebooksOnSelection;
+      _expandNotebooksOnNoteOpen = EditorSettings.defaultExpandNotebooksOnNoteOpen;
       _isInitialized = true;
     }
   }
@@ -157,6 +163,10 @@ class EditorSettingsCache {
   void updateExpandNotebooksOnSelection(bool expand) {
     _expandNotebooksOnSelection = expand;
   }
+
+  void updateExpandNotebooksOnNoteOpen(bool expand) {
+    _expandNotebooksOnNoteOpen = expand;
+  }
 }
 
 // Eventos de configuración
@@ -174,6 +184,8 @@ class EditorSettingsEvents {
   static final _hideTabsInImmersiveController =
       StreamController<bool>.broadcast();
   static final _expandNotebooksOnSelectionController =
+      StreamController<bool>.broadcast();
+  static final _expandNotebooksOnNoteOpenController =
       StreamController<bool>.broadcast();
 
   static Stream<double> get fontSizeStream => _fontSizeController.stream;
@@ -194,6 +206,8 @@ class EditorSettingsEvents {
       _hideTabsInImmersiveController.stream;
   static Stream<bool> get expandNotebooksOnSelectionStream =>
       _expandNotebooksOnSelectionController.stream;
+  static Stream<bool> get expandNotebooksOnNoteOpenStream =>
+      _expandNotebooksOnNoteOpenController.stream;
 
   static void notifyFontSizeChanged(double size) {
     _fontSizeController.add(size);
@@ -239,6 +253,10 @@ class EditorSettingsEvents {
     _expandNotebooksOnSelectionController.add(expand);
   }
 
+  static void notifyExpandNotebooksOnNoteOpenChanged(bool expand) {
+    _expandNotebooksOnNoteOpenController.add(expand);
+  }
+
   static void dispose() {
     _fontSizeController.close();
     _lineSpacingController.close();
@@ -251,6 +269,7 @@ class EditorSettingsEvents {
     _showNoteIconsController.close();
     _hideTabsInImmersiveController.close();
     _expandNotebooksOnSelectionController.close();
+    _expandNotebooksOnNoteOpenController.close();
   }
 }
 
@@ -267,6 +286,7 @@ class EditorSettings {
   static const String _showNoteIconsKey = 'show_note_icons';
   static const String _hideTabsInImmersiveKey = 'hide_tabs_in_immersive';
   static const String _expandNotebooksOnSelectionKey = 'expand_notebooks_on_selection';
+  static const String _expandNotebooksOnNoteOpenKey = 'expand_notebooks_on_note_open';
   static const double defaultLineSpacing = 1.0;
 
   // Default values
@@ -281,6 +301,7 @@ class EditorSettings {
   static const bool defaultShowNoteIcons = true;
   static const bool defaultHideTabsInImmersive = false;
   static const bool defaultExpandNotebooksOnSelection = true;
+  static const bool defaultExpandNotebooksOnNoteOpen = true;
 
   // Fuentes disponibles
   static const List<String> availableFonts = [
@@ -484,6 +505,21 @@ class EditorSettings {
     EditorSettingsEvents.notifyExpandNotebooksOnSelectionChanged(value);
   }
 
+  // Get expand notebooks on note open setting
+  static Future<bool> getExpandNotebooksOnNoteOpen() async {
+    return await PlatformSettings.get(
+      _expandNotebooksOnNoteOpenKey,
+      defaultExpandNotebooksOnNoteOpen,
+    );
+  }
+
+  // Save expand notebooks on note open setting
+  static Future<void> setExpandNotebooksOnNoteOpen(bool value) async {
+    await PlatformSettings.set(_expandNotebooksOnNoteOpenKey, value);
+    EditorSettingsCache.instance.updateExpandNotebooksOnNoteOpen(value);
+    EditorSettingsEvents.notifyExpandNotebooksOnNoteOpenChanged(value);
+  }
+
   // Método para precargar todas las configuraciones del editor
   static Future<void> preloadSettings() async {
     await EditorSettingsCache.instance.initialize();
@@ -510,6 +546,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
   bool _showNoteIcons = true;
   bool _hideTabsInImmersive = false;
   bool _expandNotebooksOnSelection = true;
+  bool _expandNotebooksOnNoteOpen = true;
   bool _isLoading = true;
 
   @override
@@ -531,6 +568,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
     final showNoteIcons = await EditorSettings.getShowNoteIcons();
     final hideTabsInImmersive = await EditorSettings.getHideTabsInImmersive();
     final expandNotebooksOnSelection = await EditorSettings.getExpandNotebooksOnSelection();
+    final expandNotebooksOnNoteOpen = await EditorSettings.getExpandNotebooksOnNoteOpen();
     setState(() {
       _fontSize = fontSize;
       _lineSpacing = lineSpacing;
@@ -544,6 +582,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
       _showNoteIcons = showNoteIcons;
       _hideTabsInImmersive = hideTabsInImmersive;
       _expandNotebooksOnSelection = expandNotebooksOnSelection;
+      _expandNotebooksOnNoteOpen = expandNotebooksOnNoteOpen;
       _isLoading = false;
     });
   }
@@ -620,6 +659,12 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
     setState(() => _expandNotebooksOnSelection = value);
     await EditorSettings.setExpandNotebooksOnSelection(value);
     EditorSettingsEvents.notifyExpandNotebooksOnSelectionChanged(value);
+  }
+
+  Future<void> _updateExpandNotebooksOnNoteOpen(bool value) async {
+    setState(() => _expandNotebooksOnNoteOpen = value);
+    await EditorSettings.setExpandNotebooksOnNoteOpen(value);
+    EditorSettingsEvents.notifyExpandNotebooksOnNoteOpenChanged(value);
   }
 
   void _showFontSelector() {
@@ -876,6 +921,34 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                     Switch(
                       value: _expandNotebooksOnSelection,
                       onChanged: _updateExpandNotebooksOnSelection,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Expand Notebooks on Note Open
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Auto-expand notebooks when opening notes', style: textStyle),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Automatically expand parent folders when opening notes',
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: _expandNotebooksOnNoteOpen,
+                      onChanged: _updateExpandNotebooksOnNoteOpen,
                     ),
                   ],
                 ),

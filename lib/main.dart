@@ -1523,11 +1523,12 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     }
   }
 
-  void _onNotebookSelected(Notebook notebook) {
+  void _onNotebookSelected(Notebook notebook) async {
     setState(() {
       _selectedNotebook = notebook;
     });
-    _databaseSidebarKey.currentState?.handleNotebookSelection(notebook);
+    final expand = await EditorSettings.getExpandNotebooksOnNoteOpen();
+    _databaseSidebarKey.currentState?.handleNotebookSelection(notebook, expand: expand);
   }
 
   void _onNotebookSelectedFromFavorite(Notebook notebook) async {
