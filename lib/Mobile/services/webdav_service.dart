@@ -1,6 +1,8 @@
 import 'dart:io' as io;
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:webdav_client/webdav_client.dart';
+import 'package:dio/dio.dart';
+import 'package:xml/xml.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../database/database_helper.dart';
 import '../../database/database_config.dart';
@@ -9,7 +11,7 @@ class WebDAVService {
   static const String _dbFileName = 'thinknote.db';
   static const int _syncToleranceSeconds = 0;
 
-  late final dynamic _client;
+  late Dio _dio;
   bool _isInitialized = false;
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
@@ -36,11 +38,16 @@ class WebDAVService {
       throw Exception('WebDAV not configured');
     }
 
-    _client = newClient(url, user: username, password: password);
-
-    _client.setConnectTimeout(8000);
-    _client.setSendTimeout(8000);
-    _client.setReceiveTimeout(8000);
+    final auth = base64Encode(utf8.encode('$username:$password'));
+    _dio = Dio(BaseOptions(
+      baseUrl: url,
+      headers: {
+        'Authorization': 'Basic $auth',
+      },
+      connectTimeout: Duration(seconds: 8),
+      sendTimeout: Duration(seconds: 8),
+      receiveTimeout: Duration(seconds: 8),
+    ));
 
     _isInitialized = true;
   }
@@ -76,7 +83,8 @@ class WebDAVService {
       final tempPath = '$dbPath.temp';
       DatabaseHelper? tempDb;
       try {
-        await _client.read2File('/$_dbFileName', tempPath);
+        final response = await _dio.get('/$_dbFileName', options: Options(responseType: ResponseType.bytes));
+        await io.File(tempPath).writeAsBytes(response.data);
         tempDb = DatabaseHelper();
         await tempDb.initialize(tempPath);
         final remoteLastModified = await tempDb.getLastModified();
@@ -120,12 +128,21 @@ class WebDAVService {
     }
   }
 
-  Future<dynamic> _getRemoteFile() async {
+  Future<Map<String, dynamic>?> _getRemoteFile() async {
     try {
-      final files = await _client.readDir('/');
-      for (var file in files) {
-        if (file.name == _dbFileName) {
-          return file;
+      final response = await _dio.request('/', options: Options(method: 'PROPFIND', headers: {'Depth': '1'}));
+      final xml = XmlDocument.parse(response.data as String);
+      final responses = xml.findAllElements('d:response', namespace: 'DAV:');
+      for (var res in responses) {
+        final href = res.findElements('d:href', namespace: 'DAV:').first.innerText;
+        if (href == '/$_dbFileName' || href == '/$_dbFileName/') {
+          final propstat = res.findElements('d:propstat', namespace: 'DAV:').first;
+          final prop = propstat.findElements('d:prop', namespace: 'DAV:').first;
+          final mtimeElement = prop.findElements('d:getlastmodified', namespace: 'DAV:');
+          if (mtimeElement.isNotEmpty) {
+            final mtime = DateTime.parse(mtimeElement.first.innerText);
+            return {'mtime': mtime};
+          }
         }
       }
       return null;
@@ -141,10 +158,13 @@ class WebDAVService {
     }
 
     try {
-      await _client.writeFromFile(dbPath, '/$_dbFileName');
+      final bytes = await localFile.readAsBytes();
+      await _dio.put('/$_dbFileName', data: bytes, options: Options(headers: {'Content-Type': 'application/octet-stream'}));
 
-      final remoteFile = await _getRemoteFile();
-      if (remoteFile == null) {
+      // Verify upload by checking if the file exists
+      try {
+        await _dio.head('/$_dbFileName');
+      } catch (e) {
         throw Exception('Upload failed: Remote file not found after upload');
       }
     } catch (e) {
@@ -162,7 +182,8 @@ class WebDAVService {
         await _dbHelper.close();
       }
 
-      await _client.read2File('/$_dbFileName', dbPath);
+      final response = await _dio.get('/$_dbFileName', options: Options(responseType: ResponseType.bytes));
+      await localFile.writeAsBytes(response.data);
 
       if (!await localFile.exists()) {
         throw Exception('Downloaded file not found at $dbPath');
@@ -198,13 +219,18 @@ class WebDAVService {
     String password,
   ) async {
     try {
-      final client = newClient(url, user: username, password: password);
+      final auth = base64Encode(utf8.encode('$username:$password'));
+      final dio = Dio(BaseOptions(
+        baseUrl: url,
+        headers: {
+          'Authorization': 'Basic $auth',
+        },
+        connectTimeout: Duration(seconds: 5),
+        sendTimeout: Duration(seconds: 5),
+        receiveTimeout: Duration(seconds: 5),
+      ));
 
-      client.setConnectTimeout(5000);
-      client.setSendTimeout(5000);
-      client.setReceiveTimeout(5000);
-
-      await client.ping();
+      await dio.head('/');
       return true;
     } catch (e) {
       return false;
@@ -245,7 +271,8 @@ class WebDAVService {
     
     try {
       // Download directly, overwriting local file
-      await _client.read2File('/$_dbFileName', dbPath);
+      final response = await _dio.get('/$_dbFileName', options: Options(responseType: ResponseType.bytes));
+      await io.File(dbPath).writeAsBytes(response.data);
       
       // Reinitialize database helper with the new file
       await _dbHelper.initialize(dbPath);
