@@ -1,7 +1,7 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
-export "FLUTTER_ROOT=/home/matiasdesu/Documents/Programming/FlutterSDK/flutter"
-export "FLUTTER_APPLICATION_PATH=/home/matiasdesu/Documents/Gitea/ThinkNote"
+export "FLUTTER_ROOT=E:\Documents\flutter"
+export "FLUTTER_APPLICATION_PATH=E:\Documents\Projects\Apps\thinknote"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_BUILD_DIR=build"
 export "FLUTTER_BUILD_NAME=1.0.0"
