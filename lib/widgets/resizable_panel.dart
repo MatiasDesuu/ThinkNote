@@ -11,6 +11,7 @@ class ResizablePanel extends StatefulWidget {
   final String title;
   final String preferencesKey;
   final Widget? trailing;
+  final bool showLeftSeparator;
 
   const ResizablePanel({
     super.key,
@@ -21,6 +22,7 @@ class ResizablePanel extends StatefulWidget {
     required this.title,
     required this.preferencesKey,
     this.trailing,
+    this.showLeftSeparator = false,
   });
 
   @override
@@ -85,15 +87,19 @@ class ResizablePanelState extends State<ResizablePanel>
   Future<void> _loadSavedSettings() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
+    final savedExpanded = prefs.getBool('${widget.preferencesKey}_expanded') ?? true;
     setState(() {
       _width = prefs.getDouble('${widget.preferencesKey}_width') ?? 250;
-      _isExpanded = true;
+      _isExpanded = savedExpanded;
       _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
         CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
       );
     });
-    await _saveExpandedState(true);
-    _animationController.forward();
+    if (_isExpanded) {
+      _animationController.forward();
+    } else {
+      _animationController.value = 0;
+    }
   }
 
   Future<void> _saveExpandedState(bool isExpanded) async {
@@ -182,38 +188,50 @@ class ResizablePanelState extends State<ResizablePanel>
 
   @override
   Widget build(BuildContext context) {
+    final separatorWidth = widget.showLeftSeparator ? 1.0 : 0.0;
+    
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AnimatedBuilder(
           animation: _animationController,
           builder: (context, child) {
+            final animatedWidth = _widthAnimation.value + (separatorWidth * _animationController.value);
             return ClipRect(
               child: SizedBox(
-                width: _widthAnimation.value,
+                width: animatedWidth,
                 child: OverflowBox(
                   alignment: Alignment.centerLeft,
-                  minWidth: _width,
-                  maxWidth: _width,
+                  minWidth: _width + separatorWidth,
+                  maxWidth: _width + separatorWidth,
                   child: child,
                 ),
               ),
             );
           },
-          child: Stack(
-            fit: StackFit.expand,
+          child: Row(
             children: [
-              Container(
-                width: double.infinity,
-                height: double.infinity,
-                color: Theme.of(context).colorScheme.surfaceContainerLow,
-                child: Column(
+              if (widget.showLeftSeparator)
+                Container(
+                  width: 1,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                ),
+              SizedBox(
+                width: _width,
+                child: Stack(
+                  fit: StackFit.expand,
                   children: [
-                    if (widget.title.isNotEmpty)
-                      Stack(
+                    Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      color: Theme.of(context).colorScheme.surfaceContainerLow,
+                      child: Column(
                         children: [
-                          Container(
-                            height: 48,
+                          if (widget.title.isNotEmpty)
+                            Stack(
+                              children: [
+                                Container(
+                                  height: 48,
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Center(
                               child: Row(
@@ -290,6 +308,9 @@ class ResizablePanelState extends State<ResizablePanel>
             ],
           ),
         ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -329,15 +350,19 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
   Future<void> _loadSavedSettings() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
+    final savedExpanded = prefs.getBool('${widget.preferencesKey}_expanded') ?? true;
     setState(() {
       _width = prefs.getDouble('${widget.preferencesKey}_width') ?? 250;
-      _isExpanded = true;
+      _isExpanded = savedExpanded;
       _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
         CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
       );
     });
-    await _saveExpandedState(true);
-    _animationController.forward();
+    if (_isExpanded) {
+      _animationController.forward();
+    } else {
+      _animationController.value = 0;
+    }
   }
 
   Future<void> _saveExpandedState(bool isExpanded) async {

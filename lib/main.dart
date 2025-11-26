@@ -1806,11 +1806,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                 calendarPanelKey: _calendarPanelKey,
                 appFocusNode: _appFocusNode,
               ),
-              if (!_immersiveModeService.isImmersiveMode)
-                Container(
-                  width: 1,
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                ),
               ResizablePanel(
                 key: _sidebarKey,
                 minWidth: 200,
@@ -1818,6 +1813,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                 appFocusNode: _appFocusNode,
                 title: 'Notebooks',
                 preferencesKey: 'notebooks_panel',
+                showLeftSeparator: !_immersiveModeService.isImmersiveMode,
                 trailing: Builder(
                   builder: (context) {
                     final databaseSidebarState =
@@ -1854,11 +1850,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                   onNotebookDeleted: _onNotebookDeleted,
                 ),
               ),
-              if (!_immersiveModeService.isImmersiveMode)
-                Container(
-                  width: 1,
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                ),
               ResizablePanel(
                 key: _notesPanelKey,
                 minWidth: 200,
@@ -1866,6 +1857,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                 appFocusNode: _appFocusNode,
                 title: 'Notes',
                 preferencesKey: 'notes_panel',
+                showLeftSeparator: !_immersiveModeService.isImmersiveMode,
                 trailing: Builder(
                   builder: (context) {
                     final notesPanel = _notesPanelStateKey.currentState;
