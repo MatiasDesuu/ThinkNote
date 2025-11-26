@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 
-class ContextMenu extends StatelessWidget {
+class ContextMenu extends StatefulWidget {
   final Offset tapPosition;
   final List<ContextMenuItem> items;
   final VoidCallback onClose;
@@ -16,40 +16,68 @@ class ContextMenu extends StatelessWidget {
   });
 
   @override
+  State<ContextMenu> createState() => _ContextMenuState();
+}
+
+class _ContextMenuState extends State<ContextMenu> {
+  final GlobalKey _menuKey = GlobalKey();
+  double? _menuWidth;
+  double? _menuHeight;
+  bool _isPositioned = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _measureMenu();
+    });
+  }
+
+  void _measureMenu() {
+    final RenderBox? renderBox = _menuKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null && mounted) {
+      setState(() {
+        _menuWidth = renderBox.size.width;
+        _menuHeight = renderBox.size.height;
+        _isPositioned = true;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
-    final double menuHeight = items.length * 48.0;
-    final double menuWidth =
-        240.0; // Valor fijo o estimado para el ancho del menú
+    
+    // Usar dimensiones medidas o estimadas
+    final double menuWidth = _menuWidth ?? 200.0;
+    final double menuHeight = _menuHeight ?? (widget.items.length * 48.0);
 
     final bool wouldOverflowBottom =
-        tapPosition.dy + menuHeight > screenSize.height;
-    final bool wouldOverflowTop = tapPosition.dy < 0;
+        widget.tapPosition.dy + menuHeight > screenSize.height;
     final bool wouldOverflowRight =
-        tapPosition.dx + menuWidth > screenSize.width;
-    final bool wouldOverflowLeft = tapPosition.dx < 0;
+        widget.tapPosition.dx + menuWidth > screenSize.width;
 
-    double menuY = tapPosition.dy;
+    double menuY = widget.tapPosition.dy;
     if (wouldOverflowBottom) {
-      menuY = tapPosition.dy - menuHeight;
-    } else if (wouldOverflowTop) {
-      menuY = 0;
+      menuY = (widget.tapPosition.dy - menuHeight).clamp(0.0, screenSize.height - menuHeight);
     }
 
-    double menuX = tapPosition.dx;
+    double menuX = widget.tapPosition.dx;
     if (wouldOverflowRight) {
-      menuX = screenSize.width - menuWidth;
-    } else if (wouldOverflowLeft) {
-      menuX = 0;
+      menuX = (screenSize.width - menuWidth - 8).clamp(0.0, screenSize.width);
     }
+
+    // Asegurar que no se salga por la izquierda o arriba
+    menuX = menuX.clamp(8.0, screenSize.width - 8);
+    menuY = menuY.clamp(8.0, screenSize.height - 8);
 
     return Stack(
       children: [
         Positioned.fill(
           child: GestureDetector(
             onTap: () {
-              onClose();
-              onOutsideTap?.call();
+              widget.onClose();
+              widget.onOutsideTap?.call();
             },
             child: Container(color: Colors.transparent),
           ),
@@ -57,24 +85,35 @@ class ContextMenu extends StatelessWidget {
         Positioned(
           left: menuX,
           top: menuY,
-          child: Material(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(8),
-            elevation: 8,
-            child: IntrinsicWidth(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withAlpha(26),
+          child: Opacity(
+            opacity: _isPositioned ? 1.0 : 0.0,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: screenSize.width - 16,
+                maxHeight: screenSize.height - 16,
+              ),
+              child: Material(
+                key: _menuKey,
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(8),
+                elevation: 8,
+                child: IntrinsicWidth(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline.withAlpha(26),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children:
+                          widget.items
+                              .map((item) => _buildMenuItem(context, item))
+                              .toList(),
+                    ),
                   ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children:
-                      items
-                          .map((item) => _buildMenuItem(context, item))
-                          .toList(),
                 ),
               ),
             ),
@@ -90,7 +129,7 @@ class ContextMenu extends StatelessWidget {
       child: Listener(
         onPointerDown: (event) {
           if (event.buttons == kMiddleMouseButton && item.onMiddleClick != null) {
-            onClose();
+            widget.onClose();
             try {
               item.onMiddleClick!();
             } catch (e) {
@@ -100,7 +139,7 @@ class ContextMenu extends StatelessWidget {
         },
         child: InkWell(
           onTap: () {
-            onClose();
+            widget.onClose();
             try {
               item.onTap();
             } catch (e) {
@@ -114,6 +153,7 @@ class ContextMenu extends StatelessWidget {
               vertical: item.customWidget != null ? 8 : 12,
             ),
             child: item.customWidget ?? Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   item.icon,

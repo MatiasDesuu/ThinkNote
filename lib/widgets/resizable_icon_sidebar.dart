@@ -229,74 +229,81 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
+        final targetWidth = _globalIconSidebarState.isExpanded
+            ? _widthAnimation.value
+            : 0.0;
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              width:
-                  _globalIconSidebarState.isExpanded
-                      ? _widthAnimation.value
-                      : 0,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    color: Theme.of(context).colorScheme.surfaceContainerLow,
-                    child: IconSidebar(
-                      rootDir: widget.rootDir,
-                      onOpenNote: widget.onOpenNote,
-                      onOpenFolder: widget.onOpenFolder,
-                      onNotebookSelected: widget.onNotebookSelected,
-                      onNoteSelected: widget.onNoteSelected,
-                      onNoteSelectedWithSearch: widget.onNoteSelectedWithSearch,
-                      onBack: widget.onBack,
-                      onDirectorySet: widget.onDirectorySet,
-                      onThemeUpdated: widget.onThemeUpdated,
-                      onFavoriteRemoved: widget.onFavoriteRemoved,
-                      onNavigateToMain: widget.onNavigateToMain,
-                      onClose: widget.onClose,
-                      onCreateNewNote: widget.onCreateNewNote,
-                      onCreateNewNotebook: widget.onCreateNewNotebook,
-                      onCreateNewTodo: widget.onCreateNewTodo,
-                      onShowManageTags: widget.onShowManageTags,
-                      onCreateThink: widget.onCreateThink,
-                      onOpenSettings: widget.onOpenSettings,
-                      onOpenTrash: widget.onOpenTrash,
-                      onOpenFavorites: widget.onOpenFavorites,
-                      showBackButton: widget.showBackButton,
-                      isWorkflowsScreen: widget.isWorkflowsScreen,
-                      isTasksScreen: widget.isTasksScreen,
-                      isThinksScreen: widget.isThinksScreen,
-                      isSettingsScreen: widget.isSettingsScreen,
-                      isBookmarksScreen: widget.isBookmarksScreen,
-                      isDiaryScreen: widget.isDiaryScreen,
-                      onPageChanged: widget.onPageChanged,
-                      onAddBookmark: widget.onAddBookmark,
-                      onManageTags: widget.onManageTags,
-                      onToggleView: widget.onToggleView,
-                      isGridView: widget.isGridView,
-                      searchLayerLink: widget.searchLayerLink,
-                      calendarPanelKey: widget.calendarPanelKey,
-                      onToggleCalendar: widget.onToggleCalendar,
-                      iconSize: _getIconSize(),
-                    ),
-                  ),
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    bottom: 0,
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.resizeLeftRight,
-                      child: GestureDetector(
-                        onPanUpdate: _onDragUpdate,
-                        onPanEnd: _onDragEnd,
-                        child: Container(width: 8, color: Colors.transparent),
+            ClipRect(
+              child: SizedBox(
+                width: targetWidth,
+                child: OverflowBox(
+                  alignment: Alignment.centerLeft,
+                  minWidth: _currentWidth,
+                  maxWidth: _currentWidth,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: double.infinity,
+                        color: Theme.of(context).colorScheme.surfaceContainerLow,
+                        child: IconSidebar(
+                          rootDir: widget.rootDir,
+                          onOpenNote: widget.onOpenNote,
+                          onOpenFolder: widget.onOpenFolder,
+                          onNotebookSelected: widget.onNotebookSelected,
+                          onNoteSelected: widget.onNoteSelected,
+                          onNoteSelectedWithSearch: widget.onNoteSelectedWithSearch,
+                          onBack: widget.onBack,
+                          onDirectorySet: widget.onDirectorySet,
+                          onThemeUpdated: widget.onThemeUpdated,
+                          onFavoriteRemoved: widget.onFavoriteRemoved,
+                          onNavigateToMain: widget.onNavigateToMain,
+                          onClose: widget.onClose,
+                          onCreateNewNote: widget.onCreateNewNote,
+                          onCreateNewNotebook: widget.onCreateNewNotebook,
+                          onCreateNewTodo: widget.onCreateNewTodo,
+                          onShowManageTags: widget.onShowManageTags,
+                          onCreateThink: widget.onCreateThink,
+                          onOpenSettings: widget.onOpenSettings,
+                          onOpenTrash: widget.onOpenTrash,
+                          onOpenFavorites: widget.onOpenFavorites,
+                          showBackButton: widget.showBackButton,
+                          isWorkflowsScreen: widget.isWorkflowsScreen,
+                          isTasksScreen: widget.isTasksScreen,
+                          isThinksScreen: widget.isThinksScreen,
+                          isSettingsScreen: widget.isSettingsScreen,
+                          isBookmarksScreen: widget.isBookmarksScreen,
+                          isDiaryScreen: widget.isDiaryScreen,
+                          onPageChanged: widget.onPageChanged,
+                          onAddBookmark: widget.onAddBookmark,
+                          onManageTags: widget.onManageTags,
+                          onToggleView: widget.onToggleView,
+                          isGridView: widget.isGridView,
+                          searchLayerLink: widget.searchLayerLink,
+                          calendarPanelKey: widget.calendarPanelKey,
+                          onToggleCalendar: widget.onToggleCalendar,
+                          iconSize: _getIconSize(),
+                        ),
                       ),
-                    ),
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        bottom: 0,
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.resizeLeftRight,
+                          child: GestureDetector(
+                            onPanUpdate: _onDragUpdate,
+                            onPanEnd: _onDragEnd,
+                            child: Container(width: 8, color: Colors.transparent),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ],

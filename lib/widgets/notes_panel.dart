@@ -54,10 +54,15 @@ class NotesPanelState extends State<NotesPanel> {
   bool _showNoteIcons = true;
   StreamSubscription<bool>? _showNoteIconsSubscription;
 
+  // Selection state - using a dedicated approach similar to Obsidian/Joplin
   final Set<int> _selectedNoteIds = {};
   bool get hasSelection => _selectedNoteIds.isNotEmpty;
+  int get selectionCount => _selectedNoteIds.length;
 
-  int? _lastSelectedNoteId;
+  // Anchor note for shift-selection (the starting point of a range selection)
+  int? _selectionAnchorId;
+  // Last clicked note (for tracking the most recent selection action)
+  int? _lastClickedNoteId;
 
   bool _isProcessingAction = false;
 
@@ -73,6 +78,11 @@ class NotesPanelState extends State<NotesPanel> {
   int? _dragTargetIndex;
   bool _dragTargetIsAbove = false;
   bool _isDragging = false;
+  
+  // Deferred selection state - for handling click vs drag on selected notes
+  // When clicking a note that's already selected (without modifiers), we defer
+  // the single-selection until we know it wasn't a drag operation
+  int? _pendingDeselectionNoteId;
 
   // Element bounds tracking
   final Map<int, Rect> _elementBounds = {};
@@ -157,56 +167,177 @@ class NotesPanelState extends State<NotesPanel> {
     }
   }
 
+  /// Handles note selection with Ctrl and Shift modifiers
+  /// Implements a professional selection model similar to Obsidian/Joplin:
+  /// - Click: Select single note, clear others
+  /// - Ctrl+Click: Toggle note in selection (add/remove)
+  /// - Shift+Click: Select range from anchor to clicked note
   void _handleNoteSelection(
     Note note,
     bool isCtrlPressed,
     bool isShiftPressed,
   ) {
+    if (note.id == null) return;
+    
     setState(() {
-      if (isShiftPressed && _lastSelectedNoteId != null) {
-        final startIndex = _notes.indexWhere(
-          (n) => n.id == _lastSelectedNoteId,
-        );
-        final endIndex = _notes.indexWhere((n) => n.id == note.id);
-
-        if (startIndex != -1 && endIndex != -1) {
-          final start = startIndex < endIndex ? startIndex : endIndex;
-          final end = startIndex < endIndex ? endIndex : startIndex;
-
-          for (int i = start; i <= end; i++) {
-            _selectedNoteIds.add(_notes[i].id!);
-          }
-        }
-
-        _lastSelectedNoteId = note.id;
-        widget.onNoteSelected(note);
+      if (isShiftPressed) {
+        // Shift+Click: Range selection from anchor to current note
+        _handleShiftSelection(note);
       } else if (isCtrlPressed) {
-        if (_selectedNoteIds.isEmpty && widget.selectedNote != null) {
-          _selectedNoteIds.add(widget.selectedNote!.id!);
-        }
-
-        if (_selectedNoteIds.contains(note.id)) {
-          _selectedNoteIds.remove(note.id);
-        } else {
-          _selectedNoteIds.add(note.id!);
-        }
-
-        _lastSelectedNoteId = note.id;
-        widget.onNoteSelected(note);
+        // Ctrl+Click: Toggle individual note in selection
+        _handleCtrlSelection(note);
       } else {
-        _selectedNoteIds.clear();
-        _lastSelectedNoteId = note.id;
-        widget.onNoteSelected(note);
+        // Normal click: Single selection, clear all others
+        _handleSingleSelection(note);
       }
     });
+    
+    widget.onNoteSelected(note);
   }
 
+  /// Handles Shift+Click range selection
+  void _handleShiftSelection(Note note) {
+    // If no anchor exists, use the currently selected note or the first selected note
+    if (_selectionAnchorId == null) {
+      if (widget.selectedNote != null) {
+        _selectionAnchorId = widget.selectedNote!.id;
+      } else if (_selectedNoteIds.isNotEmpty) {
+        _selectionAnchorId = _selectedNoteIds.first;
+      } else {
+        // No anchor available, treat as single selection
+        _handleSingleSelection(note);
+        return;
+      }
+    }
+
+    final anchorIndex = _notes.indexWhere((n) => n.id == _selectionAnchorId);
+    final targetIndex = _notes.indexWhere((n) => n.id == note.id);
+
+    // If anchor note no longer exists, use the first note as anchor
+    if (anchorIndex == -1) {
+      if (_notes.isNotEmpty) {
+        _selectionAnchorId = _notes.first.id;
+        _handleShiftSelection(note); // Retry with new anchor
+      } else {
+        _handleSingleSelection(note);
+      }
+      return;
+    }
+
+    if (targetIndex == -1) return;
+
+    // Clear current selection and select the range
+    _selectedNoteIds.clear();
+    
+    final start = anchorIndex <= targetIndex ? anchorIndex : targetIndex;
+    final end = anchorIndex <= targetIndex ? targetIndex : anchorIndex;
+
+    for (int i = start; i <= end; i++) {
+      final noteId = _notes[i].id;
+      if (noteId != null) {
+        _selectedNoteIds.add(noteId);
+      }
+    }
+
+    _lastClickedNoteId = note.id;
+    // Keep anchor unchanged for consecutive shift-clicks
+  }
+
+  /// Handles Ctrl+Click toggle selection
+  void _handleCtrlSelection(Note note) {
+    // If starting multi-selection and nothing is selected yet,
+    // include the currently visible/active note
+    if (_selectedNoteIds.isEmpty && widget.selectedNote != null) {
+      final currentNoteId = widget.selectedNote!.id;
+      if (currentNoteId != null) {
+        _selectedNoteIds.add(currentNoteId);
+        _selectionAnchorId = currentNoteId;
+      }
+    }
+
+    final noteId = note.id!;
+    if (_selectedNoteIds.contains(noteId)) {
+      _selectedNoteIds.remove(noteId);
+      // If we removed the anchor, update it to another selected note
+      if (_selectionAnchorId == noteId) {
+        _selectionAnchorId = _selectedNoteIds.isNotEmpty ? _selectedNoteIds.first : null;
+      }
+    } else {
+      _selectedNoteIds.add(noteId);
+    }
+
+    _lastClickedNoteId = note.id;
+    // Update anchor to clicked note for future shift-selections
+    _selectionAnchorId = note.id;
+  }
+
+  /// Handles normal single click selection
+  void _handleSingleSelection(Note note) {
+    _selectedNoteIds.clear();
+    _lastClickedNoteId = note.id;
+    _selectionAnchorId = note.id; // Set anchor for future shift-selections
+  }
+
+  /// Clears all selection state
   void _clearSelection() {
     setState(() {
       _selectedNoteIds.clear();
-      _lastSelectedNoteId = null;
+      _selectionAnchorId = null;
+      _lastClickedNoteId = null;
     });
     _pendingCompletionChanges.clear();
+  }
+
+  /// Gets an immutable copy of currently selected note IDs
+  /// This is important for async operations to prevent race conditions
+  List<int> _getSelectedNoteIdsCopy() {
+    return List<int>.unmodifiable(_selectedNoteIds.toList());
+  }
+
+  /// Converts selected notes to tasks or regular notes
+  /// Uses immutable copy of selection to prevent race conditions
+  Future<void> _convertSelectedNotes({required bool toTask}) async {
+    if (_isProcessingAction) return;
+    _isProcessingAction = true;
+
+    // Capture selection state BEFORE any async operations
+    final noteIdsToConvert = _getSelectedNoteIdsCopy();
+    
+    if (noteIdsToConvert.isEmpty) {
+      _isProcessingAction = false;
+      _isContextMenuOpen = false;
+      return;
+    }
+
+    try {
+      for (final noteId in noteIdsToConvert) {
+        try {
+          final note = await _noteRepository.getNote(noteId);
+          if (note != null) {
+            await _noteRepository.updateNote(
+              note.copyWith(isTask: toTask, isCompleted: false),
+            );
+          }
+        } catch (e) {
+          print('Error converting note $noteId: $e');
+        }
+      }
+
+      if (mounted) {
+        _loadNotes();
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomSnackbar.show(
+          context: context,
+          message: 'Error converting notes: ${e.toString()}',
+          type: CustomSnackbarType.error,
+        );
+      }
+    } finally {
+      _isProcessingAction = false;
+      _isContextMenuOpen = false;
+    }
   }
 
   void _toggleNoteCompletion(int noteId) {
@@ -276,23 +407,47 @@ class NotesPanelState extends State<NotesPanel> {
     }
   }
 
+  /// Deletes all selected notes safely
+  /// Uses immutable copy of selection to prevent race conditions
   Future<void> _deleteSelectedNotes() async {
+    if (_isProcessingAction) return;
+    _isProcessingAction = true;
+
+    // Capture selection state BEFORE any async operations
+    final noteIdsToDelete = _getSelectedNoteIdsCopy();
+    
+    if (noteIdsToDelete.isEmpty) {
+      _isProcessingAction = false;
+      _isContextMenuOpen = false;
+      return;
+    }
+
+    // Clear selection immediately for responsive UI
+    _clearSelection();
+
+    final List<Note> deletedNotes = [];
+
     try {
-      for (final noteId in _selectedNoteIds) {
-        final note = await _noteRepository.getNote(noteId);
-        if (note != null) {
-          await _noteRepository.deleteNote(noteId);
-          widget.onNoteDeleted?.call(note);
+      // Process deletions sequentially to avoid race conditions
+      for (final noteId in noteIdsToDelete) {
+        try {
+          final note = await _noteRepository.getNote(noteId);
+          if (note != null) {
+            await _noteRepository.deleteNote(noteId);
+            deletedNotes.add(note);
+          }
+        } catch (e) {
+          print('Error deleting note $noteId: $e');
         }
       }
-      _clearSelection();
+
+      // Notify about deleted notes
+      for (final note in deletedNotes) {
+        widget.onNoteDeleted?.call(note);
+      }
+
       if (mounted) {
         widget.onTrashUpdated?.call();
-        CustomSnackbar.show(
-          context: context,
-          message: 'Selected notes moved to trash',
-          type: CustomSnackbarType.success,
-        );
       }
     } catch (e) {
       if (mounted) {
@@ -303,6 +458,7 @@ class NotesPanelState extends State<NotesPanel> {
         );
       }
     } finally {
+      _isProcessingAction = false;
       _isContextMenuOpen = false;
     }
   }
@@ -344,88 +500,12 @@ class NotesPanelState extends State<NotesPanel> {
         ContextMenuItem(
           icon: Icons.check_circle_outline_rounded,
           label: 'Convert Selected to Todo',
-          onTap: () {
-            if (_isProcessingAction) return;
-            _isProcessingAction = true;
-
-            Future.wait(
-                  _selectedNoteIds.map((noteId) async {
-                    final note = await _noteRepository.getNote(noteId);
-                    if (note != null) {
-                      return _noteRepository.updateNote(
-                        note.copyWith(isTask: true, isCompleted: false),
-                      );
-                    }
-                    return 0;
-                  }),
-                )
-                .then((_) {
-                  if (mounted) {
-                    _loadNotes();
-                    CustomSnackbar.show(
-                      context: context,
-                      message: 'Selected notes converted to todos',
-                      type: CustomSnackbarType.success,
-                    );
-                  }
-                })
-                .catchError((e) {
-                  if (mounted) {
-                    CustomSnackbar.show(
-                      context: context,
-                      message: 'Error converting notes: ${e.toString()}',
-                      type: CustomSnackbarType.error,
-                    );
-                  }
-                })
-                .whenComplete(() {
-                  _isProcessingAction = false;
-                  _isContextMenuOpen = false;
-                });
-          },
+          onTap: () => _convertSelectedNotes(toTask: true),
         ),
         ContextMenuItem(
           icon: Icons.description_outlined,
           label: 'Convert Selected to Note',
-          onTap: () {
-            if (_isProcessingAction) return;
-            _isProcessingAction = true;
-
-            Future.wait(
-                  _selectedNoteIds.map((noteId) async {
-                    final note = await _noteRepository.getNote(noteId);
-                    if (note != null) {
-                      return _noteRepository.updateNote(
-                        note.copyWith(isTask: false, isCompleted: false),
-                      );
-                    }
-                    return 0;
-                  }),
-                )
-                .then((_) {
-                  if (mounted) {
-                    _loadNotes();
-                    CustomSnackbar.show(
-                      context: context,
-                      message: 'Selected todos converted to notes',
-                      type: CustomSnackbarType.success,
-                    );
-                  }
-                })
-                .catchError((e) {
-                  if (mounted) {
-                    CustomSnackbar.show(
-                      context: context,
-                      message: 'Error converting todos: ${e.toString()}',
-                      type: CustomSnackbarType.error,
-                    );
-                  }
-                })
-                .whenComplete(() {
-                  _isProcessingAction = false;
-                  _isContextMenuOpen = false;
-                });
-          },
+          onTap: () => _convertSelectedNotes(toTask: false),
         ),
         ContextMenuItem(
           icon: Icons.delete_rounded,
@@ -642,7 +722,6 @@ class NotesPanelState extends State<NotesPanel> {
     if (!mounted || _isReloading) return;
 
     final currentSelection = Set<int>.from(_selectedNoteIds);
-    final currentLastSelected = _lastSelectedNoteId;
 
     _isReloading = true;
     setState(() {
@@ -682,15 +761,25 @@ class NotesPanelState extends State<NotesPanel> {
       setState(() {
         _notes = notes;
         _isLoading = false;
+        
+        // Preserve selection state - only keep IDs that still exist
         _selectedNoteIds.clear();
         for (final noteId in currentSelection) {
           if (notes.any((note) => note.id == noteId)) {
             _selectedNoteIds.add(noteId);
           }
         }
-        if (currentLastSelected != null &&
-            notes.any((note) => note.id == currentLastSelected)) {
-          _lastSelectedNoteId = currentLastSelected;
+        
+        // Preserve anchor if it still exists
+        if (_selectionAnchorId != null &&
+            !notes.any((note) => note.id == _selectionAnchorId)) {
+          _selectionAnchorId = _selectedNoteIds.isNotEmpty ? _selectedNoteIds.first : null;
+        }
+        
+        // Preserve last clicked if it still exists
+        if (_lastClickedNoteId != null &&
+            !notes.any((note) => note.id == _lastClickedNoteId)) {
+          _lastClickedNoteId = null;
         }
       });
       _isReloading = false;
@@ -1040,6 +1129,9 @@ class NotesPanelState extends State<NotesPanel> {
 
   Widget _buildNoteRow(Note note) {
     final isSelected = _selectedNoteIds.contains(note.id);
+    // Don't show selection highlight when dragging a single note
+    // Only show selection highlight for multi-selection (2+ notes)
+    final showSelectionHighlight = isSelected && _selectedNoteIds.length > 1;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -1057,7 +1149,7 @@ class NotesPanelState extends State<NotesPanel> {
           hoverColor: Theme.of(context).colorScheme.surfaceContainerHigh,
           child: Container(
             color:
-                isSelected
+                showSelectionHighlight
                     ? Theme.of(context).colorScheme.primaryContainer
                     : widget.selectedNote?.id == note.id
                     ? Theme.of(context).colorScheme.surfaceContainerHigh
@@ -1100,7 +1192,7 @@ class NotesPanelState extends State<NotesPanel> {
                                   Icons.description_outlined,
                                   size: 20,
                                   color:
-                                      isSelected
+                                      showSelectionHighlight
                                           ? Theme.of(
                                             context,
                                           ).colorScheme.onPrimaryContainer
@@ -1121,7 +1213,7 @@ class NotesPanelState extends State<NotesPanel> {
                               ? FontWeight.bold
                               : FontWeight.normal,
                       color:
-                          isSelected
+                          showSelectionHighlight
                               ? Theme.of(context).colorScheme.onPrimaryContainer
                               : note.isTask && note.isCompleted
                               ? Theme.of(
@@ -1140,7 +1232,7 @@ class NotesPanelState extends State<NotesPanel> {
                       Icons.favorite_rounded,
                       size: 16,
                       color:
-                          isSelected
+                          showSelectionHighlight
                               ? Theme.of(context).colorScheme.onPrimaryContainer
                               : Theme.of(context).colorScheme.primary,
                     ),
@@ -1153,20 +1245,237 @@ class NotesPanelState extends State<NotesPanel> {
     );
   }
 
+  /// Builds the drag feedback widget showing stacked notes for multi-selection
+  Widget _buildDragFeedback(Note primaryNote, List<Note> allNotes) {
+    final noteCount = allNotes.length;
+    final isMultiDrag = noteCount > 1;
+    
+    // Note row height: padding vertical 2 * 2 + icon height 24 = 28
+    const noteRowHeight = 28.0;
+    const noteWidth = 200.0;
+    
+    if (!isMultiDrag) {
+      // Single note drag - simple feedback
+      return Container(
+        width: noteWidth,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(51),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Opacity(opacity: 0.9, child: _buildDragNoteRow(primaryNote)),
+        ),
+      );
+    }
+    
+    // Maximum notes to show in the stack (including the primary one)
+    const maxStackedNotes = 3;
+    final stackedCount = noteCount.clamp(1, maxStackedNotes);
+    
+    // Offsets for stacked effect - smaller for tighter stack
+    const stackOffsetX = 3.0;
+    const stackOffsetY = 3.0;
+    
+    // Calculate total size needed for the stack
+    final totalWidth = noteWidth + (stackedCount - 1) * stackOffsetX;
+    final totalHeight = noteRowHeight + (stackedCount - 1) * stackOffsetY;
+    
+    // Multi-note drag - stacked cards effect
+    return SizedBox(
+      width: totalWidth + 24, // Extra space for badge
+      height: totalHeight + 8,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Background stacked cards (showing there are more notes)
+          for (int i = stackedCount - 1; i > 0; i--)
+            Positioned(
+              left: i * stackOffsetX,
+              top: i * stackOffsetY,
+              child: Container(
+                width: noteWidth,
+                height: noteRowHeight,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline.withAlpha(40),
+                    width: 0.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(51),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          // Primary note on top
+          Positioned(
+            left: 0,
+            top: 0,
+            child: Container(
+              width: noteWidth,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(51),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Opacity(opacity: 0.95, child: _buildDragNoteRow(primaryNote)),
+              ),
+            ),
+          ),
+          // Badge showing total count
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withAlpha(80),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(51),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  '$noteCount',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds a note row specifically for drag feedback (without selection highlight)
+  Widget _buildDragNoteRow(Note note) {
+    return Container(
+      color: Colors.transparent,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            height: 24,
+            child:
+                _showNoteIcons
+                    ? (note.isTask
+                        ? Container(
+                          padding: const EdgeInsets.all(2),
+                          child: Icon(
+                            note.isCompleted
+                                ? Icons.check_circle_rounded
+                                : Icons.radio_button_unchecked_rounded,
+                            size: 20,
+                            color:
+                                note.isCompleted
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        )
+                        : Container(
+                          padding: const EdgeInsets.all(2),
+                          child: Icon(
+                            Icons.description_outlined,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ))
+                    : null,
+          ),
+          if (_showNoteIcons) const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              note.title,
+              style: TextStyle(
+                fontWeight: FontWeight.normal,
+                color: note.isTask && note.isCompleted
+                    ? Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(153)
+                    : null,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (_showNoteIcons && note.isFavorite)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Icon(
+                Icons.favorite_rounded,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDraggableNote(Note note) {
+    // Determine if this note is part of a multi-selection
+    final isNoteInSelection = _selectedNoteIds.contains(note.id);
+    // If dragging a selected note, include all selected notes
+    // If dragging an unselected note, just drag that one note
+    final notesToDrag = isNoteInSelection && hasSelection
+        ? _notes.where((n) => _selectedNoteIds.contains(n.id)).toList()
+        : [note];
+    
     return Draggable<Map<String, dynamic>>(
       data: {
         'type': 'note',
         'note': note,
-        'isMultiDrag': hasSelection,
-        'selectedNotes':
-            hasSelection
-                ? _notes.where((n) => _selectedNoteIds.contains(n.id)).toList()
-                : [note],
+        'isMultiDrag': isNoteInSelection && _selectedNoteIds.length > 1,
+        'selectedNotes': notesToDrag,
       },
+      dragAnchorStrategy: pointerDragAnchorStrategy,
       onDragStarted: () {
         setState(() {
           _isDragging = true;
+          // Cancel any pending deselection - user is dragging, not clicking
+          _pendingDeselectionNoteId = null;
+          
+          // If dragging an unselected note, clear selection and select just this note
+          if (!isNoteInSelection) {
+            _selectedNoteIds.clear();
+            _selectedNoteIds.add(note.id!);
+            _selectionAnchorId = note.id;
+            _lastClickedNoteId = note.id;
+          }
         });
       },
       onDragEnd: (details) {
@@ -1175,57 +1484,25 @@ class NotesPanelState extends State<NotesPanel> {
           _dragTargetIndex = null;
           _currentVisualLineY = null;
           _elementBounds.clear(); // Clear bounds when drag ends
+          _pendingDeselectionNoteId = null;
         });
       },
       feedback: Material(
         color: Colors.transparent,
-        child: Container(
-          width: 220,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(51),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Opacity(opacity: 0.9, child: _buildNoteRow(note)),
-              ),
-              if (hasSelection)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, bottom: 4),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${_selectedNoteIds.length} notes selected',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
+        child: _buildDragFeedback(note, notesToDrag),
       ),
       child: GestureDetector(
-        onTap: () => widget.onNoteSelectedFromPanel?.call(note) ?? widget.onNoteSelected(note),
+        onTap: () {
+          // Handle deferred single-selection for previously selected notes
+          // This fires when it was a click, not a drag
+          if (_pendingDeselectionNoteId == note.id) {
+            setState(() {
+              _pendingDeselectionNoteId = null;
+            });
+            _handleSingleSelection(note);
+            widget.onNoteSelected(note);
+          }
+        },
         onSecondaryTapDown: (details) {
           if (_selectedNoteIds.contains(note.id)) {
             _showMultiSelectionMenu(context, details.globalPosition);
@@ -1239,14 +1516,26 @@ class NotesPanelState extends State<NotesPanel> {
             widget.onNoteOpenInNewTab!(note);
           }
         },
-    child: Listener(
+        child: Listener(
           onPointerDown: (event) {
             if (event.down && event.buttons == 1) {
               final isCtrlPressed = HardwareKeyboard.instance.isControlPressed;
               final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
-      // Selection via pointer should be treated as originating from the panel
-      widget.onNoteSelectedFromPanel?.call(note);
-      _handleNoteSelection(note, isCtrlPressed, isShiftPressed);
+              final isNoteAlreadySelected = _selectedNoteIds.contains(note.id);
+              
+              // If clicking on an already-selected note without modifiers,
+              // defer the single-selection until we know it's not a drag
+              if (isNoteAlreadySelected && !isCtrlPressed && !isShiftPressed && hasSelection) {
+                // Mark this note for potential deselection on click completion
+                _pendingDeselectionNoteId = note.id;
+                // Still notify the panel about selection for visual feedback
+                widget.onNoteSelectedFromPanel?.call(note);
+              } else {
+                // Normal selection behavior
+                _pendingDeselectionNoteId = null;
+                widget.onNoteSelectedFromPanel?.call(note);
+                _handleNoteSelection(note, isCtrlPressed, isShiftPressed);
+              }
             }
           },
           child: _buildNoteRow(note),

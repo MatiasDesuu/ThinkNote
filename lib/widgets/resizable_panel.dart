@@ -188,7 +188,17 @@ class ResizablePanelState extends State<ResizablePanel>
         AnimatedBuilder(
           animation: _animationController,
           builder: (context, child) {
-            return SizedBox(width: _widthAnimation.value, child: child);
+            return ClipRect(
+              child: SizedBox(
+                width: _widthAnimation.value,
+                child: OverflowBox(
+                  alignment: Alignment.centerLeft,
+                  minWidth: _width,
+                  maxWidth: _width,
+                  child: child,
+                ),
+              ),
+            );
           },
           child: Stack(
             fit: StackFit.expand,
@@ -423,7 +433,17 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
         AnimatedBuilder(
           animation: _animationController,
           builder: (context, child) {
-            return SizedBox(width: _widthAnimation.value, child: child);
+            return ClipRect(
+              child: SizedBox(
+                width: _widthAnimation.value,
+                child: OverflowBox(
+                  alignment: Alignment.centerRight,
+                  minWidth: _width,
+                  maxWidth: _width,
+                  child: child,
+                ),
+              ),
+            );
           },
           child: Stack(
             fit: StackFit.expand,

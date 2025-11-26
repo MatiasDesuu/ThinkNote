@@ -553,7 +553,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
       }
     }
 
-    Future<String?> _getRedditTitle(String url) async {
+    Future<String?> getRedditTitle(String url) async {
       try {
         final uri = Uri.parse(url);
         if (!uri.path.contains('/comments/')) return null;
@@ -601,7 +601,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
           } else {
             // Check if it's a Reddit URL and use API
             if (url.contains('reddit.com')) {
-              pageTitle = await _getRedditTitle(url);
+              pageTitle = await getRedditTitle(url);
             }
             if (pageTitle == null || pageTitle.isEmpty) {
               pageTitle = document.querySelector('title')?.text;

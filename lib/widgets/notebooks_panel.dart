@@ -51,6 +51,7 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
   bool _showNotebookIcons = true;
   StreamSubscription<bool>? _showNotebookIconsSubscription;
   final Map<int?, int> _lastClickTimes = {};
+  bool _isDraggingOverNotebook = false;
 
   bool get areAllNotebooksExpanded {
     bool checkNotebookRecursively(Notebook notebook) {
@@ -835,7 +836,16 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
             }
             return false;
           },
+          onMove: (details) {
+            if (!_isDraggingOverNotebook) {
+              setState(() => _isDraggingOverNotebook = true);
+            }
+          },
+          onLeave: (data) {
+            setState(() => _isDraggingOverNotebook = false);
+          },
           onAcceptWithDetails: (details) async {
+            setState(() => _isDraggingOverNotebook = false);
             final data = details.data;
             if (data['type'] == 'notebook') {
               final draggedNotebook = data['notebook'] as Notebook;
@@ -879,24 +889,35 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
           onWillAcceptWithDetails: (details) {
             final data = details.data;
             if (data['type'] == 'notebook') {
-              final dragged = data['notebook'] as Notebook;
-              return dragged.id != notebook.id;
+              return true;
             }
             return false;
           },
+          onMove: (details) {
+            if (!_isDraggingOverNotebook) {
+              setState(() => _isDraggingOverNotebook = true);
+            }
+          },
+          onLeave: (data) {
+            setState(() => _isDraggingOverNotebook = false);
+          },
           onAcceptWithDetails: (details) async {
+            setState(() => _isDraggingOverNotebook = false);
             final data = details.data;
             if (data['type'] == 'notebook') {
               final draggedNotebook = data['notebook'] as Notebook;
-              await _moveNotebook(draggedNotebook, notebook, false);
-              if (mounted) {
-                await _loadData();
+              if (draggedNotebook.id != notebook.id) {
+                await _moveNotebook(draggedNotebook, notebook, false);
+                if (mounted) {
+                  await _loadData();
+                }
               }
             }
           },
           builder: (context, candidateData, rejectedData) {
             return Draggable<Map<String, dynamic>>(
               data: {'type': 'notebook', 'notebook': notebook},
+              dragAnchorStrategy: pointerDragAnchorStrategy,
               feedback: Material(
                 color: Colors.transparent,
                 child: Container(
@@ -980,7 +1001,16 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                     }
                     return false;
                   },
+                  onMove: (details) {
+                    if (!_isDraggingOverNotebook) {
+                      setState(() => _isDraggingOverNotebook = true);
+                    }
+                  },
+                  onLeave: (data) {
+                    setState(() => _isDraggingOverNotebook = false);
+                  },
                   onAcceptWithDetails: (details) async {
+                    setState(() => _isDraggingOverNotebook = false);
                     final data = details.data;
                     if (data['type'] == 'notebook') {
                       final draggedNotebook = data['notebook'] as Notebook;
@@ -1307,6 +1337,8 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
           }
         },
         builder: (context, candidateData, rejectedData) {
+          // Solo mostrar el indicador de "mover al root" si no estamos sobre un notebook
+          final showRootDropIndicator = candidateData.isNotEmpty && !_isDraggingOverNotebook;
           return Stack(
             children: [
               Positioned.fill(
@@ -1324,7 +1356,7 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                   },
                   child: Container(
                     color:
-                        candidateData.isNotEmpty
+                        showRootDropIndicator
                             ? Theme.of(
                               context,
                             ).colorScheme.primaryContainer.withAlpha(76)
@@ -1354,7 +1386,16 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                         }
                         return false;
                       },
+                      onMove: (details) {
+                        if (!_isDraggingOverNotebook) {
+                          setState(() => _isDraggingOverNotebook = true);
+                        }
+                      },
+                      onLeave: (data) {
+                        setState(() => _isDraggingOverNotebook = false);
+                      },
                       onAcceptWithDetails: (details) async {
+                        setState(() => _isDraggingOverNotebook = false);
                         final data = details.data;
                         if (data['type'] == 'notebook') {
                           final draggedNotebook = data['notebook'] as Notebook;

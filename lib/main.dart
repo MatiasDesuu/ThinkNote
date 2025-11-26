@@ -1112,6 +1112,11 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       final createdNotebook = await notebookRepository.getNotebook(notebookId);
 
       if (createdNotebook != null) {
+        // If the new notebook has a parent, expand it so the new notebook is visible
+        if (_selectedNotebook != null && _selectedNotebook!.id != null) {
+          await _databaseSidebarKey.currentState?.forceExpandNotebook(_selectedNotebook!);
+        }
+        
         setState(() {
           _selectedNotebook = createdNotebook;
         });
@@ -1725,25 +1730,23 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
   @override
   Widget build(BuildContext context) {
-    return AppShortcuts(
-      shortcuts: ShortcutsHandler.getAppShortcuts(
-        onCloseDialog: closeCurrentDialog,
-        onToggleSidebar: _toggleSidebar,
-        onToggleEditorCentered: _toggleEditorCentered,
-        onCreateNote: createNewNote,
-        onCreateNotebook: createNewNotebook,
-        onCreateTodo: createNewTodo,
-        onSaveNote: _handleSave,
-        onToggleNotesPanel: _toggleNotesPanel,
-        onForceSync: _forceSync,
-        onSearch: _openSearchScreen,
-        onToggleImmersiveMode:
-            () => _immersiveModeService.toggleImmersiveMode(),
-        onGlobalSearch: _openGlobalSearchScreen,
-        onCloseTab: _closeCurrentTab,
-        onNewTab: _onNewTab,
-        onToggleReadMode: toggleActiveEditorReadMode,
-      ),
+    return GlobalAppShortcuts(
+      onCloseDialog: closeCurrentDialog,
+      onToggleSidebar: _toggleSidebar,
+      onToggleEditorCentered: _toggleEditorCentered,
+      onCreateNote: createNewNote,
+      onCreateNotebook: createNewNotebook,
+      onCreateTodo: createNewTodo,
+      onSaveNote: _handleSave,
+      onToggleNotesPanel: _toggleNotesPanel,
+      onForceSync: _forceSync,
+      onSearch: _openSearchScreen,
+      onToggleImmersiveMode:
+          () => _immersiveModeService.toggleImmersiveMode(),
+      onGlobalSearch: _openGlobalSearchScreen,
+      onCloseTab: _closeCurrentTab,
+      onNewTab: _onNewTab,
+      onToggleReadMode: toggleActiveEditorReadMode,
       child: Focus(
         focusNode: _appFocusNode,
         autofocus: true,

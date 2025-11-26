@@ -68,6 +68,104 @@ class ShortcutsHandler {
     };
   }
 
+  /// Checks if a keyboard event matches a global shortcut and handles it.
+  /// Returns true if the event was handled (to stop propagation).
+  static bool handleGlobalKeyEvent(
+    KeyEvent event, {
+    required VoidCallback onCloseDialog,
+    required VoidCallback onToggleSidebar,
+    required VoidCallback onToggleEditorCentered,
+    required VoidCallback onCreateNote,
+    required VoidCallback onCreateNotebook,
+    required VoidCallback onCreateTodo,
+    required VoidCallback onSaveNote,
+    required VoidCallback onToggleNotesPanel,
+    required VoidCallback onForceSync,
+    required VoidCallback onSearch,
+    required VoidCallback onToggleImmersiveMode,
+    required VoidCallback onGlobalSearch,
+    required VoidCallback onCloseTab,
+    required VoidCallback onNewTab,
+    required VoidCallback onToggleReadMode,
+  }) {
+    // Only handle key down events
+    if (event is! KeyDownEvent) return false;
+
+    final bool isControlPressed = HardwareKeyboard.instance.isControlPressed;
+    final bool isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+    final LogicalKeyboardKey key = event.logicalKey;
+
+    // Ctrl+Shift combinations (check first as they're more specific)
+    if (isControlPressed && isShiftPressed) {
+      if (key == LogicalKeyboardKey.keyN) {
+        onCreateNotebook();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.keyF) {
+        onGlobalSearch();
+        return true;
+      }
+    }
+
+    // Ctrl combinations (without Shift)
+    if (isControlPressed && !isShiftPressed) {
+      if (key == LogicalKeyboardKey.keyN) {
+        onCreateNote();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.keyD) {
+        onCreateTodo();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.keyT) {
+        onNewTab();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.keyS) {
+        onSaveNote();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.keyW) {
+        onCloseTab();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.keyP) {
+        onToggleReadMode();
+        return true;
+      }
+    }
+
+    // Function keys (no modifiers needed)
+    if (!isControlPressed && !isShiftPressed) {
+      if (key == LogicalKeyboardKey.escape) {
+        onCloseDialog();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.f1) {
+        onToggleEditorCentered();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.f2) {
+        onToggleSidebar();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.f3) {
+        onToggleNotesPanel();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.f4) {
+        onToggleImmersiveMode();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.f5) {
+        onForceSync();
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   // Editor shortcuts
   static Map<ShortcutActivator, Intent> getEditorShortcuts({
     required VoidCallback onCreateScriptBlock,
@@ -126,5 +224,90 @@ class AppShortcuts extends StatelessWidget {
       canRequestFocus: true,
       child: CallbackShortcuts(bindings: shortcuts, child: child),
     );
+  }
+}
+
+/// A widget that captures keyboard shortcuts globally, regardless of focus.
+/// This ensures shortcuts like Ctrl+N, Ctrl+Shift+N, Ctrl+D, Ctrl+Shift+F
+/// work from anywhere in the application.
+class GlobalAppShortcuts extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onCloseDialog;
+  final VoidCallback onToggleSidebar;
+  final VoidCallback onToggleEditorCentered;
+  final VoidCallback onCreateNote;
+  final VoidCallback onCreateNotebook;
+  final VoidCallback onCreateTodo;
+  final VoidCallback onSaveNote;
+  final VoidCallback onToggleNotesPanel;
+  final VoidCallback onForceSync;
+  final VoidCallback onSearch;
+  final VoidCallback onToggleImmersiveMode;
+  final VoidCallback onGlobalSearch;
+  final VoidCallback onCloseTab;
+  final VoidCallback onNewTab;
+  final VoidCallback onToggleReadMode;
+
+  const GlobalAppShortcuts({
+    super.key,
+    required this.child,
+    required this.onCloseDialog,
+    required this.onToggleSidebar,
+    required this.onToggleEditorCentered,
+    required this.onCreateNote,
+    required this.onCreateNotebook,
+    required this.onCreateTodo,
+    required this.onSaveNote,
+    required this.onToggleNotesPanel,
+    required this.onForceSync,
+    required this.onSearch,
+    required this.onToggleImmersiveMode,
+    required this.onGlobalSearch,
+    required this.onCloseTab,
+    required this.onNewTab,
+    required this.onToggleReadMode,
+  });
+
+  @override
+  State<GlobalAppShortcuts> createState() => _GlobalAppShortcutsState();
+}
+
+class _GlobalAppShortcutsState extends State<GlobalAppShortcuts> {
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
+    super.dispose();
+  }
+
+  bool _handleKeyEvent(KeyEvent event) {
+    return ShortcutsHandler.handleGlobalKeyEvent(
+      event,
+      onCloseDialog: widget.onCloseDialog,
+      onToggleSidebar: widget.onToggleSidebar,
+      onToggleEditorCentered: widget.onToggleEditorCentered,
+      onCreateNote: widget.onCreateNote,
+      onCreateNotebook: widget.onCreateNotebook,
+      onCreateTodo: widget.onCreateTodo,
+      onSaveNote: widget.onSaveNote,
+      onToggleNotesPanel: widget.onToggleNotesPanel,
+      onForceSync: widget.onForceSync,
+      onSearch: widget.onSearch,
+      onToggleImmersiveMode: widget.onToggleImmersiveMode,
+      onGlobalSearch: widget.onGlobalSearch,
+      onCloseTab: widget.onCloseTab,
+      onNewTab: widget.onNewTab,
+      onToggleReadMode: widget.onToggleReadMode,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }

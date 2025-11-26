@@ -200,10 +200,27 @@ class _NotaEditorState extends State<NotaEditor>
   void didUpdateWidget(NotaEditor oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Si cambió la nota, reconfigurar los listeners para los nuevos controladores
-    if (oldWidget.selectedNote != widget.selectedNote) {
+    // Si cambió la nota (por ID), reconfigurar los listeners para los nuevos controladores
+    // Usamos el ID en lugar de comparar objetos porque Note no tiene operator ==
+    final noteChanged = oldWidget.selectedNote.id != widget.selectedNote.id;
+    
+    if (noteChanged) {
       _reconfigureListeners();
       _detectScriptMode();
+      
+      // Siempre actualizar el SearchManager con los nuevos controladores
+      _searchManager.updateControllers(
+        newNoteController: widget.noteController,
+        newScrollController: _scrollController,
+      );
+      
+      // Cerrar el find bar y limpiar el texto de búsqueda cuando cambia la nota
+      if (_showFindBar) {
+        _findController.clear();
+        setState(() {
+          _showFindBar = false;
+        });
+      }
     }
 
     if (oldWidget.searchQuery != widget.searchQuery ||

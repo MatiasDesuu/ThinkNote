@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 /// Manager class that handles all search-related functionality in the editor
 class SearchManager {
-  final TextEditingController noteController;
-  final ScrollController scrollController;
+  TextEditingController noteController;
+  ScrollController scrollController;
   TextStyle textStyle;
   
   // Search state
@@ -19,6 +19,24 @@ class SearchManager {
   /// Update the text style when it changes
   void updateTextStyle(TextStyle newStyle) {
     textStyle = newStyle;
+  }
+  
+  /// Update controllers when the note changes
+  void updateControllers({
+    required TextEditingController newNoteController,
+    required ScrollController newScrollController,
+  }) {
+    noteController = newNoteController;
+    scrollController = newScrollController;
+    // Reset search state when note changes
+    _currentFindIndex = -1;
+    _findMatches = [];
+  }
+  
+  /// Reset search state without changing controllers
+  void reset() {
+    _currentFindIndex = -1;
+    _findMatches = [];
   }
   
   // Getters
