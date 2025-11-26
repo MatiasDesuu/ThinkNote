@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:html/parser.dart' as html;
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../database/database_service.dart';
 import '../../database/models/bookmark.dart';
 import '../../Bookmarks/bookmarks_handler_db.dart';
@@ -552,6 +553,32 @@ class BookmarksScreenState extends State<BookmarksScreen> {
       }
     }
 
+    Future<String?> _getRedditTitle(String url) async {
+      try {
+        final uri = Uri.parse(url);
+        if (!uri.path.contains('/comments/')) return null;
+
+        final pathSegments = uri.pathSegments;
+        final postIdIndex = pathSegments.indexOf('comments');
+        if (postIdIndex == -1 || postIdIndex + 1 >= pathSegments.length) return null;
+
+        final postId = pathSegments[postIdIndex + 1];
+        final apiUrl = 'https://www.reddit.com/comments/$postId.json';
+
+        final response = await http.get(Uri.parse(apiUrl)).timeout(const Duration(seconds: 3));
+        if (response.statusCode == 200) {
+          final jsonData = jsonDecode(response.body);
+          if (jsonData is List && jsonData.isNotEmpty) {
+            final postData = jsonData[0]['data']['children'][0]['data'];
+            return postData['title'];
+          }
+        }
+      } catch (e) {
+        print('Error getting Reddit title: $e');
+      }
+      return null;
+    }
+
     Future<void> fetchWebTitle(String url) async {
       if (url.isEmpty) return;
 
@@ -566,7 +593,20 @@ class BookmarksScreenState extends State<BookmarksScreen> {
             .timeout(const Duration(seconds: 3));
         if (response.statusCode == 200) {
           final document = html.parse(response.body);
-          final pageTitle = document.querySelector('title')?.text;
+          final ogTitle = document.querySelector('meta[property="og:title"]')?.attributes['content'];
+          String? pageTitle;
+
+          if (ogTitle != null && ogTitle.isNotEmpty) {
+            pageTitle = ogTitle;
+          } else {
+            // Check if it's a Reddit URL and use API
+            if (url.contains('reddit.com')) {
+              pageTitle = await _getRedditTitle(url);
+            }
+            if (pageTitle == null || pageTitle.isEmpty) {
+              pageTitle = document.querySelector('title')?.text;
+            }
+          }
 
           if (pageTitle != null && pageTitle.isNotEmpty && !isTitleEdited) {
             titleController.text = pageTitle;
