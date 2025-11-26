@@ -854,9 +854,11 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                         : Icons.arrow_upward_rounded,
                     color: _handler.isOldestFirst ? colorScheme.primary : null,
                   ),
-                  onPressed: () {
+                  onPressed: () async {
+                    _handler.toggleSortOrder();
+                    final bookmarks = await _handler.getFilteredBookmarks();
                     setState(() {
-                      _handler.toggleSortOrder();
+                      _bookmarks = bookmarks;
                     });
                   },
                   tooltip:
@@ -960,9 +962,11 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                onChanged: (value) {
+                onChanged: (value) async {
+                  _handler.setSearchQuery(value);
+                  final bookmarks = await _handler.getFilteredBookmarks();
                   setState(() {
-                    _handler.setSearchQuery(value);
+                    _bookmarks = bookmarks;
                   });
                 },
               ),

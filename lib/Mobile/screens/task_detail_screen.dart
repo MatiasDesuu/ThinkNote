@@ -222,6 +222,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         _taskChanged = true;
       });
       await _saveTask();
+
+      // Notify database changed to refresh cached subtasks
+      try {
+        widget.databaseService.notifyDatabaseChanged();
+      } catch (_) {}
     } catch (e) {
       print('Error toggling subtask: $e');
       if (!mounted) return;
@@ -256,6 +261,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         _taskChanged = true;
       });
       await _saveTask();
+
+      // Notify database changed to refresh cached subtasks
+      try {
+        widget.databaseService.notifyDatabaseChanged();
+      } catch (_) {}
     } catch (e) {
       print('Error reordering subtasks: $e');
       if (!mounted) return;
@@ -336,6 +346,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         _taskChanged = true;
       });
       await _saveTask();
+
+      // Notify database changed to refresh cached subtasks
+      try {
+        widget.databaseService.notifyDatabaseChanged();
+      } catch (_) {}
     } catch (e) {
       print('Error saving subtask edit: $e');
       if (!mounted) return;
@@ -366,6 +381,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         _taskChanged = true;
       });
       await _saveTask();
+
+      // Notify database changed to refresh cached subtasks
+      try {
+        widget.databaseService.notifyDatabaseChanged();
+      } catch (_) {}
     } catch (e) {
       print('Error updating subtask priority: $e');
       if (!mounted) return;
@@ -441,6 +461,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   _taskChanged = true;
                 });
                 _saveTask();
+
+                // Notify database changed to refresh cached subtasks
+                try {
+                  widget.databaseService.notifyDatabaseChanged();
+                } catch (_) {}
               })
               .catchError((e) {
                 if (!mounted) return;
