@@ -1747,6 +1747,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       onCloseTab: _closeCurrentTab,
       onNewTab: _onNewTab,
       onToggleReadMode: toggleActiveEditorReadMode,
+      onToggleCalendarPanel: _toggleCalendarPanel,
       child: Focus(
         focusNode: _appFocusNode,
         autofocus: true,
@@ -1974,6 +1975,12 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   void _toggleNotesPanel() {
     if (_notesPanelKey.currentState != null) {
       _notesPanelKey.currentState!.togglePanel();
+    }
+  }
+
+  void _toggleCalendarPanel() {
+    if (_calendarPanelKey.currentState != null) {
+      _calendarPanelKey.currentState!.togglePanel();
     }
   }
 

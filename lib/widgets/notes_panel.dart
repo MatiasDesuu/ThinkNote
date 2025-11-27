@@ -1191,14 +1191,7 @@ class NotesPanelState extends State<NotesPanel> {
                                 child: Icon(
                                   Icons.description_outlined,
                                   size: 20,
-                                  color:
-                                      showSelectionHighlight
-                                          ? Theme.of(
-                                            context,
-                                          ).colorScheme.onPrimaryContainer
-                                          : Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ))
                           : null,
@@ -1231,10 +1224,7 @@ class NotesPanelState extends State<NotesPanel> {
                     child: Icon(
                       Icons.favorite_rounded,
                       size: 16,
-                      color:
-                          showSelectionHighlight
-                              ? Theme.of(context).colorScheme.onPrimaryContainer
-                              : Theme.of(context).colorScheme.primary,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
               ],

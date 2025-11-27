@@ -31,6 +31,10 @@ class NewThinkIntent extends Intent {
   const NewThinkIntent();
 }
 
+class _ToggleSidebarIntent extends Intent {
+  const _ToggleSidebarIntent();
+}
+
 class ThinksScreen extends StatefulWidget {
   final Directory rootDir;
   final Function(File) onOpenNote;
@@ -47,7 +51,8 @@ class ThinksScreen extends StatefulWidget {
   _ThinksScreenState createState() => _ThinksScreenState();
 }
 
-class _ThinksScreenState extends State<ThinksScreen> {
+class _ThinksScreenState extends State<ThinksScreen>
+    with TickerProviderStateMixin {
   List<Think> _thinks = [];
   final ScrollController _scrollController = ScrollController();
   Think? _selectedThink;
@@ -60,6 +65,9 @@ class _ThinksScreenState extends State<ThinksScreen> {
   // Variables for resizable panel
   double _sidebarWidth = 240;
   bool _isDragging = false;
+  bool _isSidebarVisible = true;
+  late AnimationController _sidebarAnimController;
+  late Animation<double> _sidebarWidthAnimation;
 
   // Loading state
   bool _isLoading = true;
@@ -71,6 +79,16 @@ class _ThinksScreenState extends State<ThinksScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Inicializar animación del sidebar
+    _sidebarAnimController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+      value: 1.0, // Empieza visible
+    );
+    _sidebarWidthAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _sidebarAnimController, curve: Curves.easeInOut),
+    );
 
     // Initialize database service and repository
     final dbHelper = DatabaseHelper();
@@ -137,6 +155,7 @@ class _ThinksScreenState extends State<ThinksScreen> {
     _debounceNote?.cancel();
     _thinkChangesSubscription?.cancel();
     _appFocusNode.dispose();
+    _sidebarAnimController.dispose();
     super.dispose();
   }
 
@@ -291,6 +310,21 @@ class _ThinksScreenState extends State<ThinksScreen> {
 
   void _onDragEnd(DragEndDetails details) async {
     await _saveWidth(_sidebarWidth);
+  }
+
+  void _toggleSidebar() {
+    if (_isSidebarVisible) {
+      _sidebarAnimController.reverse().then((_) {
+        setState(() {
+          _isSidebarVisible = false;
+        });
+      });
+    } else {
+      setState(() {
+        _isSidebarVisible = true;
+      });
+      _sidebarAnimController.forward();
+    }
   }
 
   Widget _buildThinkItem(Think think) {
@@ -552,6 +586,7 @@ class _ThinksScreenState extends State<ThinksScreen> {
             const SaveThinkIntent(),
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyN):
             const NewThinkIntent(),
+        LogicalKeySet(LogicalKeyboardKey.f2): const _ToggleSidebarIntent(),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
@@ -566,6 +601,12 @@ class _ThinksScreenState extends State<ThinksScreen> {
           NewThinkIntent: CallbackAction<NewThinkIntent>(
             onInvoke: (intent) async {
               await _createNewThink();
+              return null;
+            },
+          ),
+          _ToggleSidebarIntent: CallbackAction<_ToggleSidebarIntent>(
+            onInvoke: (intent) {
+              _toggleSidebar();
               return null;
             },
           ),
@@ -605,56 +646,79 @@ class _ThinksScreenState extends State<ThinksScreen> {
                       isThinksScreen: true,
                       isSettingsScreen: false,
                       isBookmarksScreen: false,
+                      onToggleSidebar: _toggleSidebar,
                       appFocusNode: _appFocusNode,
                     ),
 
-                    VerticalDivider(
-                      width: 1,
-                      thickness: 1,
-                      color: colorScheme.surfaceContainerHighest,
-                    ),
-
-                    // Central panel with thinks list (resizable)
-                    Container(
-                      width: _sidebarWidth,
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerLow,
-                      ),
-                      child: Stack(
+                    // Animated sidebar
+                    AnimatedBuilder(
+                      animation: _sidebarWidthAnimation,
+                      builder: (context, child) {
+                        final animatedWidth = _sidebarWidthAnimation.value * (_sidebarWidth + 1);
+                        if (animatedWidth == 0 && !_isSidebarVisible) {
+                          return const SizedBox.shrink();
+                        }
+                        return ClipRect(
+                          child: SizedBox(
+                            width: animatedWidth,
+                            child: OverflowBox(
+                              alignment: Alignment.centerLeft,
+                              minWidth: 0,
+                              maxWidth: _sidebarWidth + 1,
+                              child: child,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Row(
                         children: [
-                          Column(
+                          VerticalDivider(
+                            width: 1,
+                            thickness: 1,
+                            color: colorScheme.surfaceContainerHighest,
+                          ),
+
+                          // Central panel with thinks list (resizable)
+                          Container(
+                          width: _sidebarWidth,
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerLow,
+                          ),
+                          child: Stack(
                             children: [
-                              // Thinks header
-                              Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Symbols.neurology_rounded,
-                                      size: 20,
-                                      color: colorScheme.primary,
+                              Column(
+                                children: [
+                                  // Thinks header
+                                  Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Symbols.neurology_rounded,
+                                          size: 20,
+                                          color: colorScheme.primary,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Thinks',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        Text(
+                                          '${_thinks.length}',
+                                          style: TextStyle(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Thinks',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    Text(
-                                      '${_thinks.length}',
-                                      style: TextStyle(
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Thinks list
-                              Expanded(
-                                child:
+                                  ),
+                                  // Thinks list
+                                  Expanded(
+                                    child:
                                     _thinks.isEmpty
                                         ? Center(
                                           child: Column(
@@ -772,6 +836,9 @@ class _ThinksScreenState extends State<ThinksScreen> {
                               ),
                             ),
                           ),
+                        ],
+                      ),
+                    ),
                         ],
                       ),
                     ),

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:any_link_preview/any_link_preview.dart';
+import 'package:flutter/services.dart';
 import '../widgets/resizable_icon_sidebar.dart';
 import '../Settings/settings_screen.dart';
 import '../database/database_service.dart';
@@ -599,6 +600,11 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                 tapPosition: details.globalPosition,
                 items: [
                   ContextMenuItem(
+                    icon: Icons.copy,
+                    label: 'Copy Link',
+                    onTap: () => _copyLinkToClipboard(bookmark.url),
+                  ),
+                  ContextMenuItem(
                     icon: Icons.edit,
                     label: 'Edit',
                     onTap: () => _showEditLinkDialog(bookmark),
@@ -871,6 +877,7 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
           colorScheme: colorScheme,
           onEdit: () => _showEditLinkDialog(bookmark),
           onDelete: () => _showDeleteConfirmation(bookmark),
+          onCopy: () => _copyLinkToClipboard(bookmark.url),
           onTap: () async {
             if (uri != null && await canLaunchUrl(uri)) {
               await _launchUrl(bookmark.url);
@@ -912,6 +919,10 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
         );
       }
     }
+  }
+
+  Future<void> _copyLinkToClipboard(String url) async {
+    await Clipboard.setData(ClipboardData(text: url));
   }
 
   Future<void> _showEditLinkDialog(Bookmark bookmark) async {
@@ -1894,6 +1905,7 @@ class _BookmarkCard extends StatefulWidget {
   final ColorScheme colorScheme;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onCopy;
   final VoidCallback onTap;
 
   const _BookmarkCard({
@@ -1901,6 +1913,7 @@ class _BookmarkCard extends StatefulWidget {
     required this.colorScheme,
     required this.onEdit,
     required this.onDelete,
+    required this.onCopy,
     required this.onTap,
   });
 
@@ -1925,6 +1938,11 @@ class _BookmarkCardState extends State<_BookmarkCard> {
             context: context,
             tapPosition: details.globalPosition,
             items: [
+              ContextMenuItem(
+                icon: Icons.copy,
+                label: 'Copy Link',
+                onTap: () => widget.onCopy(),
+              ),
               ContextMenuItem(
                 icon: Icons.edit_rounded,
                 label: 'Edit',

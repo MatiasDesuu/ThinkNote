@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
@@ -15,6 +16,10 @@ import '../widgets/confirmation_dialogue.dart';
 import '../widgets/resizable_icon_sidebar.dart';
 import '../Settings/settings_screen.dart';
 import 'package:flutter/gestures.dart';
+
+class _ToggleSidebarIntent extends Intent {
+  const _ToggleSidebarIntent();
+}
 
 class TodoScreenDB extends StatefulWidget {
   final Directory rootDir;
@@ -61,6 +66,9 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   // Interfaz
   double _sidebarWidth = 240;
   bool _isDragging = false;
+  bool _isSidebarVisible = true;
+  late AnimationController _sidebarAnimController;
+  late Animation<double> _sidebarWidthAnimation;
   DateTime? _selectedDate;
   String? _editingSubtaskId;
   Timer? _debounceTimer;
@@ -75,6 +83,16 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     _syncController = SyncAnimationController(vsync: this);
     _tasksTabController = TabController(length: 2, vsync: this);
     _subtasksTabController = TabController(length: 2, vsync: this);
+
+    // Inicializar animación del sidebar
+    _sidebarAnimController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+      value: 1.0, // Empieza visible
+    );
+    _sidebarWidthAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _sidebarAnimController, curve: Curves.easeInOut),
+    );
 
     _loadSavedSettings();
     _loadTasks();
@@ -106,6 +124,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     _subtasksTabController.dispose();
     _searchController.dispose();
     _appFocusNode.dispose();
+    _sidebarAnimController.dispose();
     super.dispose();
   }
 
@@ -617,79 +636,133 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     await _saveWidth(_sidebarWidth);
   }
 
+  void _toggleSidebar() {
+    if (_isSidebarVisible) {
+      _sidebarAnimController.reverse().then((_) {
+        setState(() {
+          _isSidebarVisible = false;
+        });
+      });
+    } else {
+      setState(() {
+        _isSidebarVisible = true;
+      });
+      _sidebarAnimController.forward();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Main content
-          Row(
-            children: [
-              // Icon sidebar
-              ResizableIconSidebar(
-                rootDir: widget.rootDir,
-                onOpenNote: (_) {},
-                onOpenFolder: (_) {},
-                onNotebookSelected: null,
-                onNoteSelected: null,
-                onBack: () async {
-                  Navigator.of(context).pop();
-                },
-                onDirectorySet: widget.onDirectorySet,
-                onThemeUpdated: widget.onThemeUpdated,
-                onFavoriteRemoved: () {},
-                onNavigateToMain: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pop();
-                },
-                onClose: () {},
-                onCreateNewNote: null,
-                onCreateNewNotebook: null,
-                onCreateNewTodo: _createNewTask,
-                onShowManageTags: _showManageTagsDialog,
-                onCreateThink: null,
-                onOpenSettings: _openSettings,
-                onOpenTrash: null,
-                onOpenFavorites: null,
-                showBackButton: true,
-                isWorkflowsScreen: false,
-                isTasksScreen: true,
-                isThinksScreen: false,
-                isSettingsScreen: false,
-                isBookmarksScreen: false,
-                appFocusNode: _appFocusNode,
-              ),
-
-              VerticalDivider(
-                width: 1,
-                thickness: 1,
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              ),
-
-              // Central sidebar with task list (resizable)
-              Container(
-                width: _sidebarWidth,
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerLow,
-                ),
-                child: Stack(
+    return Shortcuts(
+      shortcuts: <LogicalKeySet, Intent>{
+        LogicalKeySet(LogicalKeyboardKey.f2): const _ToggleSidebarIntent(),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          _ToggleSidebarIntent: CallbackAction<_ToggleSidebarIntent>(
+            onInvoke: (intent) {
+              _toggleSidebar();
+              return null;
+            },
+          ),
+        },
+        child: Focus(
+          focusNode: _appFocusNode,
+          autofocus: true,
+          child: Scaffold(
+            body: Stack(
+              children: [
+                // Main content
+                Row(
                   children: [
-                    Column(
-                      children: [
-                        // Tabs for Pending and Completed tasks
-                        TabBar(
-                          controller: _tasksTabController,
-                          onTap: (index) {
-                            // Al cambiar de tab, resetear el filtro de tag y mostrar todas las tareas
-                            setState(() {
-                              _selectedTag = null;
-                              _tasks = List.from(_allPendingTasks);
-                              _completedTasks = List.from(_allCompletedTasks);
-                            });
-                            // Actualizar tags para la nueva tab después de un pequeño delay
-                            Future.delayed(const Duration(milliseconds: 50), () {
+                    // Icon sidebar
+                    ResizableIconSidebar(
+                      rootDir: widget.rootDir,
+                      onOpenNote: (_) {},
+                      onOpenFolder: (_) {},
+                      onNotebookSelected: null,
+                      onNoteSelected: null,
+                      onBack: () async {
+                        Navigator.of(context).pop();
+                      },
+                      onDirectorySet: widget.onDirectorySet,
+                      onThemeUpdated: widget.onThemeUpdated,
+                      onFavoriteRemoved: () {},
+                      onNavigateToMain: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pop();
+                      },
+                      onClose: () {},
+                      onCreateNewNote: null,
+                      onCreateNewNotebook: null,
+                      onCreateNewTodo: _createNewTask,
+                      onShowManageTags: _showManageTagsDialog,
+                      onCreateThink: null,
+                      onOpenSettings: _openSettings,
+                      onOpenTrash: null,
+                      onOpenFavorites: null,
+                      showBackButton: true,
+                      isWorkflowsScreen: false,
+                      isTasksScreen: true,
+                      isThinksScreen: false,
+                      isSettingsScreen: false,
+                      isBookmarksScreen: false,
+                      onToggleSidebar: _toggleSidebar,
+                      appFocusNode: _appFocusNode,
+                    ),
+
+                    // Animated sidebar
+                    AnimatedBuilder(
+                      animation: _sidebarWidthAnimation,
+                      builder: (context, child) {
+                        final animatedWidth = _sidebarWidthAnimation.value * (_sidebarWidth + 1);
+                        if (animatedWidth == 0 && !_isSidebarVisible) {
+                          return const SizedBox.shrink();
+                        }
+                        return ClipRect(
+                          child: SizedBox(
+                            width: animatedWidth,
+                            child: OverflowBox(
+                              alignment: Alignment.centerLeft,
+                              minWidth: 0,
+                              maxWidth: _sidebarWidth + 1,
+                              child: child,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Row(
+                        children: [
+                          VerticalDivider(
+                            width: 1,
+                            thickness: 1,
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          ),
+
+                          // Central sidebar with task list (resizable)
+                          Container(
+                            width: _sidebarWidth,
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerLow,
+                            ),
+                            child: Stack(
+                              children: [
+                                Column(
+                                  children: [
+                                    // Tabs for Pending and Completed tasks
+                                    TabBar(
+                                      controller: _tasksTabController,
+                                      onTap: (index) {
+                                        // Al cambiar de tab, resetear el filtro de tag y mostrar todas las tareas
+                                        setState(() {
+                                          _selectedTag = null;
+                                          _tasks = List.from(_allPendingTasks);
+                                          _completedTasks = List.from(_allCompletedTasks);
+                                        });
+                                        // Actualizar tags para la nueva tab después de un pequeño delay
+                                        Future.delayed(const Duration(milliseconds: 50), () {
                               _updateFilteredTagsForCurrentTab();
                             });
                           },
@@ -711,25 +784,13 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(width: 4),
-                                  Container(
-                                    width: 22,
-                                    height: 22,
-                                    decoration: BoxDecoration(
+                                  Text(
+                                    '(${_tasks.length})',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
                                       color: _tasksTabController.index == 0
-                                          ? colorScheme.primary.withAlpha(26)
-                                          : colorScheme.surfaceContainerHighest.withAlpha(77),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      '${_tasks.length}',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: _tasksTabController.index == 0
-                                            ? colorScheme.primary
-                                            : colorScheme.onSurfaceVariant,
-                                      ),
+                                          ? colorScheme.primary
+                                          : colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ],
@@ -946,6 +1007,9 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                   ],
                 ),
               ),
+                        ],
+                      ),
+                    ),
 
               // Right content panel (editor)
               Expanded(
@@ -1086,25 +1150,13 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                                                   overflow: TextOverflow.ellipsis,
                                                                 ),
                                                                 const SizedBox(width: 4),
-                                                                Container(
-                                                                  width: 22,
-                                                                  height: 22,
-                                                                  decoration: BoxDecoration(
+                                                                Text(
+                                                                  '(${_getPendingSubtasks().length})',
+                                                                  style: TextStyle(
+                                                                    fontWeight: FontWeight.w600,
                                                                     color: _subtasksTabController.index == 0
-                                                                        ? colorScheme.primary.withAlpha(26)
-                                                                        : colorScheme.surfaceContainerHighest.withAlpha(77),
-                                                                    shape: BoxShape.circle,
-                                                                  ),
-                                                                  alignment: Alignment.center,
-                                                                  child: Text(
-                                                                    '${_getPendingSubtasks().length}',
-                                                                    style: TextStyle(
-                                                                      fontSize: 10,
-                                                                      fontWeight: FontWeight.w600,
-                                                                      color: _subtasksTabController.index == 0
-                                                                          ? colorScheme.primary
-                                                                          : colorScheme.onSurfaceVariant,
-                                                                    ),
+                                                                        ? colorScheme.primary
+                                                                        : colorScheme.onSurfaceVariant,
                                                                   ),
                                                                 ),
                                                               ],
@@ -1273,14 +1325,17 @@ class _TodoScreenDBState extends State<TodoScreenDB>
           ),
 
           // Title drag area - correctly placed
-          Positioned(
-            top: 0,
-            left: 60 + _sidebarWidth, // Skip left sidebar + central task sidebar
-            right: 138, // Control buttons width
-            height: 40,
-            child: MoveWindow(),
+                Positioned(
+                  top: 0,
+                  left: 60 + (_isSidebarVisible ? _sidebarWidth : 0), // Skip left sidebar + central task sidebar
+                  right: 138, // Control buttons width
+                  height: 40,
+                  child: MoveWindow(),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }

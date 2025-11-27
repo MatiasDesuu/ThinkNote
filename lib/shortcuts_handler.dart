@@ -35,6 +35,7 @@ class ShortcutsHandler {
     required VoidCallback onCloseTab,
     required VoidCallback onNewTab,
     required VoidCallback onToggleReadMode,
+    required VoidCallback onToggleCalendarPanel,
   }) {
     return {
       const SingleActivator(LogicalKeyboardKey.escape): onCloseDialog,
@@ -57,6 +58,7 @@ class ShortcutsHandler {
       const SingleActivator(LogicalKeyboardKey.keyF, control: true): onSearch,
       const SingleActivator(LogicalKeyboardKey.f4): onToggleImmersiveMode,
       const SingleActivator(LogicalKeyboardKey.f5): onForceSync,
+      const SingleActivator(LogicalKeyboardKey.f6): onToggleCalendarPanel,
       const SingleActivator(
             LogicalKeyboardKey.keyF,
             control: true,
@@ -87,16 +89,18 @@ class ShortcutsHandler {
     required VoidCallback onCloseTab,
     required VoidCallback onNewTab,
     required VoidCallback onToggleReadMode,
+    required VoidCallback onToggleCalendarPanel,
   }) {
     // Only handle key down events
     if (event is! KeyDownEvent) return false;
 
     final bool isControlPressed = HardwareKeyboard.instance.isControlPressed;
     final bool isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+    final bool isAltPressed = HardwareKeyboard.instance.isAltPressed;
     final LogicalKeyboardKey key = event.logicalKey;
 
     // Ctrl+Shift combinations (check first as they're more specific)
-    if (isControlPressed && isShiftPressed) {
+    if (isControlPressed && isShiftPressed && !isAltPressed) {
       if (key == LogicalKeyboardKey.keyN) {
         onCreateNotebook();
         return true;
@@ -108,7 +112,7 @@ class ShortcutsHandler {
     }
 
     // Ctrl combinations (without Shift)
-    if (isControlPressed && !isShiftPressed) {
+    if (isControlPressed && !isShiftPressed && !isAltPressed) {
       if (key == LogicalKeyboardKey.keyN) {
         onCreateNote();
         return true;
@@ -134,7 +138,7 @@ class ShortcutsHandler {
     }
 
     // Function keys (no modifiers needed)
-    if (!isControlPressed && !isShiftPressed) {
+    if (!isControlPressed && !isShiftPressed && !isAltPressed) {
       if (key == LogicalKeyboardKey.escape) {
         onCloseDialog();
         return true;
@@ -157,6 +161,10 @@ class ShortcutsHandler {
       }
       if (key == LogicalKeyboardKey.f5) {
         onForceSync();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.f6) {
+        onToggleCalendarPanel();
         return true;
       }
     }
@@ -228,6 +236,8 @@ class AppShortcuts extends StatelessWidget {
 /// A widget that captures keyboard shortcuts globally, regardless of focus.
 /// This ensures shortcuts like Ctrl+N, Ctrl+Shift+N, Ctrl+D, Ctrl+Shift+F
 /// work from anywhere in the application.
+/// 
+/// The shortcuts only execute when the main screen is active (no dialogs open).
 class GlobalAppShortcuts extends StatefulWidget {
   final Widget child;
   final VoidCallback onCloseDialog;
@@ -245,6 +255,10 @@ class GlobalAppShortcuts extends StatefulWidget {
   final VoidCallback onCloseTab;
   final VoidCallback onNewTab;
   final VoidCallback onToggleReadMode;
+  final VoidCallback onToggleCalendarPanel;
+  /// Optional callback to check if shortcuts should be enabled.
+  /// If null, shortcuts are always enabled when the main route is active.
+  final bool Function()? isEnabled;
 
   const GlobalAppShortcuts({
     super.key,
@@ -264,6 +278,8 @@ class GlobalAppShortcuts extends StatefulWidget {
     required this.onCloseTab,
     required this.onNewTab,
     required this.onToggleReadMode,
+    required this.onToggleCalendarPanel,
+    this.isEnabled,
   });
 
   @override
@@ -284,6 +300,17 @@ class _GlobalAppShortcutsState extends State<GlobalAppShortcuts> {
   }
 
   bool _handleKeyEvent(KeyEvent event) {
+    // Check if we're on the main screen (no dialogs or other routes on top)
+    final modalRoute = ModalRoute.of(context);
+    final isMainRouteActive = modalRoute?.isCurrent ?? false;
+    
+    // If isEnabled callback is provided, use it; otherwise check route
+    final shouldHandle = widget.isEnabled?.call() ?? isMainRouteActive;
+    
+    if (!shouldHandle) {
+      return false;
+    }
+    
     return ShortcutsHandler.handleGlobalKeyEvent(
       event,
       onCloseDialog: widget.onCloseDialog,
@@ -301,6 +328,7 @@ class _GlobalAppShortcutsState extends State<GlobalAppShortcuts> {
       onCloseTab: widget.onCloseTab,
       onNewTab: widget.onNewTab,
       onToggleReadMode: widget.onToggleReadMode,
+      onToggleCalendarPanel: widget.onToggleCalendarPanel,
     );
   }
 

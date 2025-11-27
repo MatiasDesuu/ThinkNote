@@ -41,6 +41,7 @@ class ResizableIconSidebar extends StatefulWidget {
   final LayerLink? searchLayerLink;
   final GlobalKey<dynamic>? calendarPanelKey;
   final VoidCallback? onToggleCalendar;
+  final VoidCallback? onToggleSidebar;
   final FocusNode appFocusNode;
 
   const ResizableIconSidebar({
@@ -80,6 +81,7 @@ class ResizableIconSidebar extends StatefulWidget {
     this.searchLayerLink,
     this.calendarPanelKey,
     this.onToggleCalendar,
+    this.onToggleSidebar,
     required this.appFocusNode,
   });
 
@@ -285,6 +287,7 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
                           searchLayerLink: widget.searchLayerLink,
                           calendarPanelKey: widget.calendarPanelKey,
                           onToggleCalendar: widget.onToggleCalendar,
+                          onToggleSidebar: widget.onToggleSidebar,
                           iconSize: _getIconSize(),
                         ),
                       ),

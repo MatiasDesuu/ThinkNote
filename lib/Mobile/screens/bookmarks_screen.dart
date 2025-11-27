@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:html/parser.dart' as html;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/services.dart';
 import '../../database/database_service.dart';
 import '../../database/models/bookmark.dart';
 import '../../Bookmarks/bookmarks_handler_db.dart';
@@ -329,6 +330,98 @@ class BookmarksScreenState extends State<BookmarksScreen> {
         }
       }
     }
+  }
+
+  void _showBookmarkOptions(Bookmark bookmark) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      isScrollControlled: true,
+      builder:
+          (context) => Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).padding.bottom,
+            ),
+            child: Container(
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withAlpha(50),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showEditDialog(bookmark);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.edit,
+                              size: 20,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Edit'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        Clipboard.setData(ClipboardData(text: bookmark.url));
+                        CustomSnackbar.show(
+                          context: context,
+                          message: 'Link copied to clipboard',
+                          type: CustomSnackbarType.success,
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.copy,
+                              size: 20,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Copy link'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
   }
 
   void _showEditDialog(Bookmark bookmark) {
@@ -1206,7 +1299,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
         onTap: () {
           if (uri != null) launchUrl(uri);
         },
-        onLongPress: () => _showEditDialog(bookmark),
+        onLongPress: () => _showBookmarkOptions(bookmark),
       ),
     );
   }

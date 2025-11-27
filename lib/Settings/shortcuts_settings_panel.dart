@@ -166,7 +166,7 @@ class ShortcutsSettingsPanel extends StatelessWidget {
                 ),
                 _buildShortcutItem(
                   context: context,
-                  label: 'Hide/show Notebooks panel)',
+                  label: 'Hide/show sidebar panel',
                   shortcut: 'F2',
                 ),
                 _buildShortcutItem(
@@ -179,6 +179,11 @@ class ShortcutsSettingsPanel extends StatelessWidget {
                   context: context,
                   label: 'Toggle immersive mode',
                   shortcut: 'F4',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Hide/show Calendar panel',
+                  shortcut: 'F6',
                 ),
                 _buildShortcutItem(
                   context: context,

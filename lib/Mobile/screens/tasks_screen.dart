@@ -313,8 +313,6 @@ class TasksScreenState extends State<TasksScreen>
     }
   }
 
-  // ...existing code...
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;

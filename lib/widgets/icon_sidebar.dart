@@ -209,6 +209,7 @@ class IconSidebar extends StatefulWidget {
   final LayerLink? searchLayerLink;
   final GlobalKey<dynamic>? calendarPanelKey;
   final VoidCallback? onToggleCalendar;
+  final VoidCallback? onToggleSidebar;
   final double iconSize;
 
   const IconSidebar({
@@ -248,6 +249,7 @@ class IconSidebar extends StatefulWidget {
     this.searchLayerLink,
     this.calendarPanelKey,
     this.onToggleCalendar,
+    this.onToggleSidebar,
     this.iconSize = 24,
   });
 
@@ -873,6 +875,12 @@ class _IconSidebarState extends State<IconSidebar>
           icon: Icons.delete_rounded,
           color: colorScheme.error,
           onPressed: _openTrashScreen,
+        ),
+      // Botón para ocultar/mostrar panel lateral en tasks, thinks y diary
+      if ((widget.isTasksScreen || widget.isThinksScreen || widget.isDiaryScreen) && widget.onToggleSidebar != null)
+        IconSidebarButton(
+          icon: Icons.view_sidebar_rounded,
+          onPressed: widget.onToggleSidebar!,
         ),
       IconSidebarButton(
         icon: Icons.settings_rounded,

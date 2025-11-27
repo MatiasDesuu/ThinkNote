@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,6 +32,10 @@ class NewDiaryIntent extends Intent {
   const NewDiaryIntent();
 }
 
+class _ToggleSidebarIntent extends Intent {
+  const _ToggleSidebarIntent();
+}
+
 class DiaryScreen extends StatefulWidget {
   final Directory rootDir;
   final Function(File) onOpenNote;
@@ -48,7 +53,7 @@ class DiaryScreen extends StatefulWidget {
 }
 
 class _DiaryScreenState extends State<DiaryScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   DiaryEntry? _selectedEntry;
   final TextEditingController _contentController = TextEditingController();
@@ -60,6 +65,9 @@ class _DiaryScreenState extends State<DiaryScreen>
   // Variables for resizable panel
   double _sidebarWidth = 240;
   bool _isCalendarExpanded = true;
+  bool _isSidebarVisible = true;
+  late AnimationController _sidebarAnimController;
+  late Animation<double> _sidebarWidthAnimation;
   DateTime? _selectedDate;
 
   // Loading state
@@ -79,6 +87,16 @@ class _DiaryScreenState extends State<DiaryScreen>
   @override
   void initState() {
     super.initState();
+
+    // Inicializar animación del sidebar
+    _sidebarAnimController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+      value: 1.0, // Empieza visible
+    );
+    _sidebarWidthAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _sidebarAnimController, curve: Curves.easeInOut),
+    );
 
     // Initialize database service and repository
     final dbHelper = DatabaseHelper();
@@ -135,6 +153,7 @@ class _DiaryScreenState extends State<DiaryScreen>
     _syncController.dispose();
     _syncService.dispose();
     _appFocusNode.dispose();
+    _sidebarAnimController.dispose();
     super.dispose();
   }
 
@@ -266,6 +285,21 @@ class _DiaryScreenState extends State<DiaryScreen>
     await prefs.setBool('diary_calendar_expanded', _isCalendarExpanded);
   }
 
+  void _toggleSidebar() {
+    if (_isSidebarVisible) {
+      _sidebarAnimController.reverse().then((_) {
+        setState(() {
+          _isSidebarVisible = false;
+        });
+      });
+    } else {
+      setState(() {
+        _isSidebarVisible = true;
+      });
+      _sidebarAnimController.forward();
+    }
+  }
+
   void _onDateSelected(DateTime date) {
     setState(() {
       _selectedDate = date;
@@ -308,24 +342,34 @@ class _DiaryScreenState extends State<DiaryScreen>
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Actions(
-      actions: <Type, Action<Intent>>{
-        SaveDiaryIntent: CallbackAction<SaveDiaryIntent>(
-          onInvoke: (intent) async {
-            if (_selectedEntry != null) {
-              await _saveDiaryEntry();
-            }
-            return null;
-          },
-        ),
-        NewDiaryIntent: CallbackAction<NewDiaryIntent>(
-          onInvoke: (intent) async {
-            await _createNewDiaryEntry();
-            return null;
-          },
-        ),
+    return Shortcuts(
+      shortcuts: <LogicalKeySet, Intent>{
+        LogicalKeySet(LogicalKeyboardKey.f2): const _ToggleSidebarIntent(),
       },
-      child: Focus(
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          SaveDiaryIntent: CallbackAction<SaveDiaryIntent>(
+            onInvoke: (intent) async {
+              if (_selectedEntry != null) {
+                await _saveDiaryEntry();
+              }
+              return null;
+            },
+          ),
+          NewDiaryIntent: CallbackAction<NewDiaryIntent>(
+            onInvoke: (intent) async {
+              await _createNewDiaryEntry();
+              return null;
+            },
+          ),
+          _ToggleSidebarIntent: CallbackAction<_ToggleSidebarIntent>(
+            onInvoke: (intent) {
+              _toggleSidebar();
+              return null;
+            },
+          ),
+        },
+        child: Focus(
         autofocus: true,
         child: Scaffold(
           body: Stack(
@@ -365,53 +409,76 @@ class _DiaryScreenState extends State<DiaryScreen>
                       isBookmarksScreen: false,
                       isDiaryScreen: true,
                       onToggleCalendar: _toggleCalendar,
+                      onToggleSidebar: _toggleSidebar,
                       appFocusNode: _appFocusNode,
                     ),
 
-                    VerticalDivider(
-                      width: 1,
-                      thickness: 1,
-                      color: colorScheme.surfaceContainerHighest,
-                    ),
-
-                    // Central panel with calendar and entries (resizable)
-                    Container(
-                      width: _sidebarWidth,
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerLow,
-                      ),
-                      child: Stack(
+                    // Animated sidebar
+                    AnimatedBuilder(
+                      animation: _sidebarWidthAnimation,
+                      builder: (context, child) {
+                        final animatedWidth = _sidebarWidthAnimation.value * (_sidebarWidth + 1);
+                        if (animatedWidth == 0 && !_isSidebarVisible) {
+                          return const SizedBox.shrink();
+                        }
+                        return ClipRect(
+                          child: SizedBox(
+                            width: animatedWidth,
+                            child: OverflowBox(
+                              alignment: Alignment.centerLeft,
+                              minWidth: 0,
+                              maxWidth: _sidebarWidth + 1,
+                              child: child,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Row(
                         children: [
-                          Column(
+                          VerticalDivider(
+                            width: 1,
+                            thickness: 1,
+                            color: colorScheme.surfaceContainerHighest,
+                          ),
+
+                          // Central panel with calendar and entries (resizable)
+                          Container(
+                          width: _sidebarWidth,
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerLow,
+                          ),
+                          child: Stack(
                             children: [
-                              // Calendar panel (expandable) - Fixed height like main calendar
-                              if (_isCalendarExpanded)
-                                Expanded(
-                                  flex: 6,
-                                  child: DiaryCalendarPanel(
-                                    key: _calendarPanelKey,
-                                    onDiaryEntrySelected: _openDiaryEntry,
-                                    onDateSelected: _onDateSelected,
-                                    selectedDate: _selectedDate,
-                                    appFocusNode: _appFocusNode,
-                                  ),
-                                ),
-                              if (_isCalendarExpanded)
-                                Divider(
-                                  height: 1,
-                                  thickness: 1,
-                                  color: colorScheme.surfaceContainerHighest,
-                                ),
-                              // Entries list
-                              Expanded(
-                                flex: 10,
-                                child: DiaryEntriesPanel(
-                                  key: _entriesPanelKey,
-                                  selectedEntry: _selectedEntry,
-                                  onEntrySelected: _openDiaryEntry,
-                                  onEntryDeleted: () async {
-                                    // Reload calendar data to update the dots
-                                    await _loadDiaryEntries();
+                              Column(
+                                children: [
+                                  // Calendar panel (expandable) - Fixed height like main calendar
+                                  if (_isCalendarExpanded)
+                                    Expanded(
+                                      flex: 6,
+                                      child: DiaryCalendarPanel(
+                                        key: _calendarPanelKey,
+                                        onDiaryEntrySelected: _openDiaryEntry,
+                                        onDateSelected: _onDateSelected,
+                                        selectedDate: _selectedDate,
+                                        appFocusNode: _appFocusNode,
+                                      ),
+                                    ),
+                                  if (_isCalendarExpanded)
+                                    Divider(
+                                      height: 1,
+                                      thickness: 1,
+                                      color: colorScheme.surfaceContainerHighest,
+                                    ),
+                                  // Entries list
+                                  Expanded(
+                                    flex: 10,
+                                    child: DiaryEntriesPanel(
+                                      key: _entriesPanelKey,
+                                      selectedEntry: _selectedEntry,
+                                      onEntrySelected: _openDiaryEntry,
+                                      onEntryDeleted: () async {
+                                        // Reload calendar data to update the dots
+                                        await _loadDiaryEntries();
                                     _calendarPanelKey.currentState
                                         ?.reloadEntries();
                                     setState(() {});
@@ -437,6 +504,9 @@ class _DiaryScreenState extends State<DiaryScreen>
                               ),
                             ),
                           ),
+                        ],
+                      ),
+                    ),
                         ],
                       ),
                     ),
@@ -543,16 +613,22 @@ class _DiaryScreenState extends State<DiaryScreen>
                 ),
               // MoveWindow for the rest of the screen (only the editor area)
               if (Platform.isWindows || Platform.isLinux)
-                Positioned(
-                  top: 0,
-                  left: 60 + _sidebarWidth,
-                  right: 138,
-                  height: 40,
-                  child: MoveWindow(),
+                AnimatedBuilder(
+                  animation: _sidebarWidthAnimation,
+                  builder: (context, child) {
+                    return Positioned(
+                      top: 0,
+                      left: 60 + (_sidebarWidthAnimation.value * _sidebarWidth),
+                      right: 138,
+                      height: 40,
+                      child: MoveWindow(),
+                    );
+                  },
                 ),
             ],
           ),
         ),
+      ),
       ),
     );
   }
