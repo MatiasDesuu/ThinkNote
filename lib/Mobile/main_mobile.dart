@@ -48,6 +48,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey<TasksScreenState> _tasksKey = GlobalKey<TasksScreenState>();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  final GlobalKey<CalendarScreenState> _calendarKey = GlobalKey<CalendarScreenState>();
   Note? _selectedNote;
   Notebook? _selectedNotebook;
   final TextEditingController _titleController = TextEditingController();
@@ -123,7 +124,19 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
         onNotebookSelected: _handleNotebookSelected,
         onTrashUpdated: _handleTrashUpdated,
       ),
-      const SearchScreen(),
+      CalendarScreen(
+        key: _calendarKey,
+        onNoteSelected: (note) {
+          setState(() {
+            _selectedNote = note;
+            _titleController.text = note.title;
+            _noteController.text = note.content;
+            _selectedIndex = 0;
+            _isEditing = true;
+          });
+          _initializeScreens();
+        },
+      ),
       TasksScreen(key: _tasksKey),
       BookmarksScreen(key: _bookmarksKey),
     ];
@@ -154,66 +167,66 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
   }
 
   void _onItemTapped(int index) {
-    if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) => SearchScreen(
-                onNoteSelected: (Note note) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  void _openSearchScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => SearchScreen(
+              onNoteSelected: (Note note) {
+                setState(() {
+                  _selectedNote = note;
+                  _titleController.text = note.title;
+                  _noteController.text = note.content;
+                  _selectedIndex = 0;
+                  _isEditing = true;
+                });
+                _initializeScreens();
+              },
+              onNotebookSelected: (Notebook notebook) async {
+                if (mounted) {
                   setState(() {
-                    _selectedNote = note;
-                    _titleController.text = note.title;
-                    _noteController.text = note.content;
+                    _selectedNotebook = notebook;
                     _selectedIndex = 0;
-                    _isEditing = true;
                   });
                   _initializeScreens();
-                },
-                onNotebookSelected: (Notebook notebook) async {
-                  if (mounted) {
-                    setState(() {
-                      _selectedNotebook = notebook;
-                      _selectedIndex = 0;
-                    });
-                    _initializeScreens();
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ThinkNoteMobile(),
-                      ),
-                    ).then((_) {
-                      if (mounted) {
-                        _scaffoldKey.currentState?.openDrawer();
-                        Future.delayed(const Duration(milliseconds: 300), () {
-                          if (mounted) {
-                            setState(() {
-                              _selectedNotebook = null;
-                            });
-                            Future.delayed(
-                              const Duration(milliseconds: 50),
-                              () {
-                                if (mounted) {
-                                  setState(() {
-                                    _selectedNotebook = notebook;
-                                  });
-                                }
-                              },
-                            );
-                          }
-                        });
-                      }
-                    });
-                  }
-                },
-              ),
-        ),
-      );
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
-    }
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ThinkNoteMobile(),
+                    ),
+                  ).then((_) {
+                    if (mounted) {
+                      _scaffoldKey.currentState?.openDrawer();
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        if (mounted) {
+                          setState(() {
+                            _selectedNotebook = null;
+                          });
+                          Future.delayed(
+                            const Duration(milliseconds: 50),
+                            () {
+                              if (mounted) {
+                                setState(() {
+                                  _selectedNotebook = notebook;
+                                });
+                              }
+                            },
+                          );
+                        }
+                      });
+                    }
+                  });
+                }
+              },
+            ),
+      ),
+    );
   }
 
   void _updateTheme({
@@ -600,7 +613,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                               _selectedIndex == 0
                                   ? Icons.home_rounded
                                   : _selectedIndex == 1
-                                  ? Icons.search_rounded
+                                  ? Icons.calendar_month_rounded
                                   : _selectedIndex == 2
                                   ? Icons.check_circle_rounded
                                   : Icons.bookmarks_rounded,
@@ -612,7 +625,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                               _selectedIndex == 0
                                   ? 'Home'
                                   : _selectedIndex == 1
-                                  ? 'Search'
+                                  ? 'Calendar'
                                   : _selectedIndex == 2
                                   ? 'Tasks'
                                   : 'Bookmarks',
@@ -651,31 +664,10 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                           if (_selectedIndex == 0)
                             IconButton(
                               icon: Icon(
-                                Icons.calendar_month_rounded,
+                                Icons.search_rounded,
                                 color: colorScheme.primary,
                               ),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (context) => CalendarScreen(
-                                          onNoteSelected: (note) {
-                                            setState(() {
-                                              _selectedNote = note;
-                                              _titleController.text =
-                                                  note.title;
-                                              _noteController.text =
-                                                  note.content;
-                                              _isEditing = true;
-                                            });
-                                            _initializeScreens();
-                                            Navigator.pop(context);
-                                          },
-                                        ),
-                                  ),
-                                );
-                              },
+                              onPressed: _openSearchScreen,
                             ),
                           if (_selectedIndex == 2)
                             IconButton(
@@ -708,6 +700,16 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                             const bookmarks.TagsScreen(),
                                   ),
                                 );
+                              },
+                            ),
+                          if (_selectedIndex == 1)
+                            IconButton(
+                              icon: Icon(
+                                Icons.label_rounded,
+                                color: colorScheme.primary,
+                              ),
+                              onPressed: () {
+                                _calendarKey.currentState?.showStatusManager();
                               },
                             ),
                           IconButton(
@@ -832,12 +834,12 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                             label: 'Home',
                           ),
                           NavigationDestination(
-                            icon: const Icon(Icons.search_rounded),
+                            icon: const Icon(Icons.calendar_month_outlined),
                             selectedIcon: Icon(
-                              Icons.search_rounded,
+                              Icons.calendar_month_rounded,
                               color: colorScheme.primary,
                             ),
-                            label: 'Search',
+                            label: 'Calendar',
                           ),
                           NavigationDestination(
                             icon: const Icon(
@@ -863,15 +865,14 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                             NavigationDestinationLabelBehavior.onlyShowSelected,
                       ),
                       floatingActionButton:
-                          !isKeyboardVisible && !_isImmersiveMode
+                          !isKeyboardVisible && !_isImmersiveMode && _selectedIndex != 1
                               ? GestureDetector(
                                 onTapDown: (_) {
                                   _scaleController.forward();
                                 },
                                 onTapUp: (_) {
                                   HapticFeedback.lightImpact();
-                                  if (_selectedIndex == 0 ||
-                                      _selectedIndex == 1) {
+                                  if (_selectedIndex == 0) {
                                     _createNewThink();
                                   } else if (_selectedIndex == 2) {
                                     _tasksKey.currentState?.createNewTask();
@@ -884,16 +885,14 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                   _scaleController.reverse();
                                 },
                                 onLongPressStart: (_) {
-                                  if (_selectedIndex == 0 ||
-                                      _selectedIndex == 1) {
+                                  if (_selectedIndex == 0) {
                                     _scaleController.forward();
                                   } else if (_selectedIndex == 3) {
                                     _scaleController.forward();
                                   }
                                 },
                                 onLongPress: () {
-                                  if ((_selectedIndex == 0 ||
-                                          _selectedIndex == 1) &&
+                                  if (_selectedIndex == 0 &&
                                       _scaleController.status ==
                                           AnimationStatus.completed) {
                                     _showThinksScreen();
@@ -905,7 +904,6 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                 },
                                 onLongPressEnd: (_) {
                                   if (_selectedIndex == 0 ||
-                                      _selectedIndex == 1 ||
                                       _selectedIndex == 3) {
                                     _scaleController.reverse();
                                   }
@@ -924,11 +922,11 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                       foregroundColor: colorScheme.onPrimary,
                                       elevation: 4,
                                       child: Icon(
-                                        _selectedIndex == 2
+                                        _selectedIndex == 0
+                                            ? Symbols.neurology_rounded
+                                            : _selectedIndex == 2
                                             ? Symbols.add_task_rounded
-                                            : _selectedIndex == 3
-                                            ? Icons.bookmark_add_rounded
-                                            : Symbols.neurology_rounded,
+                                            : Icons.bookmark_add_rounded,
                                         size: 36,
                                         grade: 200,
                                       ),

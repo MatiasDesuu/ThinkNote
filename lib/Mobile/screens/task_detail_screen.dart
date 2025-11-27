@@ -658,13 +658,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 }
               },
             ),
-            IconButton(
-              icon: const Icon(Icons.check_rounded),
-              color: colorScheme.primary,
-              onPressed: () async {
-                await _saveAndExit();
-              },
-            ),
           ],
         ),
         body: ListView(
@@ -1301,7 +1294,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.start,
-
             children: [
               Icon(Icons.calendar_today_rounded, color: colorScheme.primary),
               const SizedBox(width: 8),
@@ -1311,6 +1303,38 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     : DateFormat('dd/MM/yyyy').format(_task.date!),
                 style: TextStyle(fontSize: 13, color: colorScheme.onSurface),
               ),
+              if (_task.date != null) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () async {
+                    try {
+                      final updatedTask = _task.copyWith(
+                        clearDate: true,
+                        updatedAt: DateTime.now(),
+                      );
+                      await widget.databaseService.taskService.updateTask(updatedTask);
+                      if (!mounted) return;
+                      setState(() {
+                        _task = updatedTask;
+                        _selectedDate = null;
+                        _taskChanged = false;
+                      });
+                    } catch (e) {
+                      if (!mounted) return;
+                      CustomSnackbar.show(
+                        context: context,
+                        message: 'Error clearing date: ${e.toString()}',
+                        type: CustomSnackbarType.error,
+                      );
+                    }
+                  },
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

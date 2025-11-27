@@ -1074,7 +1074,9 @@ class _CalendarPanelState extends State<CalendarPanel>
                         decoration: BoxDecoration(
                           color:
                               isSelected
-                                  ? colorScheme.primaryFixed.withAlpha(50)
+                                  ? (Theme.of(context).brightness == Brightness.light
+                                      ? colorScheme.primaryContainer
+                                      : colorScheme.primaryFixed.withAlpha(50))
                                   : candidateData.isNotEmpty
                                   ? colorScheme.primaryContainer.withAlpha(50)
                                   : null,
@@ -1133,7 +1135,9 @@ class _CalendarPanelState extends State<CalendarPanel>
                                     style: TextStyle(
                                       color:
                                           isSelected
-                                              ? colorScheme.primaryFixed
+                                              ? (Theme.of(context).brightness == Brightness.light
+                                                  ? colorScheme.onPrimaryContainer
+                                                  : colorScheme.primaryFixed)
                                               : isCurrentMonth
                                                   ? colorScheme.onSurface
                                                   : colorScheme.onSurfaceVariant

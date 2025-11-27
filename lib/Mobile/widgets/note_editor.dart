@@ -54,6 +54,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
   late Future<bool> _brightnessFuture;
   late Future<bool> _colorModeFuture;
   late Future<bool> _monochromeFuture;
+  String _lastTextContent = '';
 
   @override
   void initState() {
@@ -63,6 +64,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 200),
     );
     _saveController = SaveAnimationController(vsync: this);
+    _lastTextContent = widget.contentController.text;
     widget.contentController.addListener(_onContentChanged);
     widget.titleController.addListener(_onTitleChanged);
     _detectScriptMode();
@@ -85,6 +87,14 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
   }
 
   void _onContentChanged() {
+    final currentText = widget.contentController.text;
+    
+    // Only trigger updates if the actual text changed, not just selection
+    if (currentText == _lastTextContent) {
+      return;
+    }
+    _lastTextContent = currentText;
+    
     widget.onContentChanged();
 
     _scriptDetectionDebouncer?.cancel();
@@ -389,6 +399,36 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                                   (_) =>
                                                       widget.onContentChanged(),
                                               readOnly: _isReadMode,
+                                              contextMenuBuilder: (context, editableTextState) {
+                                                final buttonItems = editableTextState.contextMenuButtonItems;
+                                                final anchors = editableTextState.contextMenuAnchors;
+                                                final mediaQuery = MediaQuery.of(context);
+                                                
+                                                // Define visible bounds
+                                                final topBound = mediaQuery.padding.top + kToolbarHeight + 20;
+                                                final bottomBound = mediaQuery.size.height - mediaQuery.viewInsets.bottom - 20;
+                                                
+                                                // Check if primary anchor is outside visible area
+                                                final primaryY = anchors.primaryAnchor.dy;
+                                                
+                                                if (primaryY < topBound || primaryY > bottomBound) {
+                                                  // Clamp to visible area
+                                                  final clampedY = primaryY.clamp(topBound, bottomBound);
+                                                  final centerX = mediaQuery.size.width / 2;
+                                                  
+                                                  return AdaptiveTextSelectionToolbar.buttonItems(
+                                                    anchors: TextSelectionToolbarAnchors(
+                                                      primaryAnchor: Offset(centerX, clampedY),
+                                                    ),
+                                                    buttonItems: buttonItems,
+                                                  );
+                                                }
+                                                
+                                                return AdaptiveTextSelectionToolbar.buttonItems(
+                                                  anchors: anchors,
+                                                  buttonItems: buttonItems,
+                                                );
+                                              },
                                             ),
                                           ),
                                         )

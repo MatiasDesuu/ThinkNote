@@ -68,11 +68,13 @@ class Task {
     int? id,
     String? name,
     DateTime? date,
+    bool clearDate = false,
     bool? completed,
     TaskState? state,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? deletedAt,
+    bool clearDeletedAt = false,
     int? orderIndex,
     bool? sortByPriority,
     bool? isPinned,
@@ -81,16 +83,12 @@ class Task {
     return Task(
       id: id ?? this.id,
       name: name ?? this.name,
-      date:
-          date ??
-          this.date, // Volver a usar ?? para mantener valor original si no se pasa
+      date: clearDate ? null : (date ?? this.date),
       completed: completed ?? this.completed,
       state: state ?? this.state,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      deletedAt:
-          deletedAt ??
-          this.deletedAt, // Volver a usar ?? para mantener valor original si no se pasa
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
       orderIndex: orderIndex ?? this.orderIndex,
       sortByPriority: sortByPriority ?? this.sortByPriority,
       isPinned: isPinned ?? this.isPinned,

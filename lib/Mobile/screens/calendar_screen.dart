@@ -19,10 +19,10 @@ class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key, required this.onNoteSelected});
 
   @override
-  State<CalendarScreen> createState() => _CalendarScreenState();
+  State<CalendarScreen> createState() => CalendarScreenState();
 }
 
-class _CalendarScreenState extends State<CalendarScreen> {
+class CalendarScreenState extends State<CalendarScreen> {
   static const String _calendarExpandedKey = 'calendar_expanded';
   late CalendarEventRepository _calendarEventRepository;
   late CalendarEventStatusRepository _statusRepository;
@@ -443,7 +443,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           borderRadius: BorderRadius.circular(12),
                           onTap: () {
                             Navigator.pop(context);
-                            _showStatusManager();
+                            showStatusManager();
                           },
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(
@@ -472,7 +472,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Future<void> _showStatusManager() async {
+  Future<void> showStatusManager() async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const CalendarEventStatusScreen(),
@@ -577,158 +577,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final today = DateTime.now();
     final firstDayOfWeek = today.subtract(Duration(days: today.weekday - 1));
 
-    return Container(
-      height: 80,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: List.generate(7, (index) {
-          final date = firstDayOfWeek.add(Duration(days: index));
-          final isSelected =
-              date.year == _selectedDate.year &&
-              date.month == _selectedDate.month &&
-              date.day == _selectedDate.day;
-
-          final hasEvents = _events.any(
-            (event) =>
-                event.date.year == date.year &&
-                event.date.month == date.month &&
-                event.date.day == date.day,
-          );
-
-          return Expanded(
-            child: DragTarget<Note>(
-              onWillAcceptWithDetails: (details) => details.data.id != null,
-              onAcceptWithDetails:
-                  (details) => _handleNoteDrop(details.data, date.day),
-              builder: (context, candidateData, rejectedData) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                  decoration: BoxDecoration(
-                    color:
-                        isSelected
-                            ? colorScheme.primaryFixed.withAlpha(50)
-                            : candidateData.isNotEmpty
-                            ? colorScheme.primaryContainer.withAlpha(50)
-                            : null,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          _selectedDate = date;
-                        });
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              [
-                                'Mon',
-                                'Tue',
-                                'Wed',
-                                'Thu',
-                                'Fri',
-                                'Sat',
-                                'Sun',
-                              ][index],
-                              style: TextStyle(
-                                color: colorScheme.onSurfaceVariant,
-                                fontSize: 10,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              date.day.toString(),
-                              style: TextStyle(
-                                color:
-                                    isSelected
-                                        ? colorScheme.primaryFixed
-                                        : colorScheme.onSurface,
-                                fontWeight:
-                                    isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                fontSize: isSelected ? 14 : 12,
-                              ),
-                            ),
-                            if (hasEvents)
-                              Container(
-                                width: 3,
-                                height: 3,
-                                margin: const EdgeInsets.only(top: 1),
-                                decoration: BoxDecoration(
-                                  color:
-                                      isSelected
-                                          ? colorScheme.primary
-                                          : colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        }),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    if (!_isInitialized) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Calendar'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.label_rounded, color: colorScheme.primary),
-            onPressed: _showStatusManager,
-          ),
-          IconButton(
-            icon: Icon(_isExpanded ? Icons.expand_less : Icons.expand_more),
-            onPressed: _toggleCalendar,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            height: _isExpanded ? 400 : 80,
-            child: _isExpanded ? _buildExpandedCalendar() : _buildWeekView(),
-          ),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(color: colorScheme.surfaceContainer),
-              child: _buildEventsPanel(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExpandedCalendar() {
-    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       children: [
+        // Month navigation bar - same as expanded view
         Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16),
+          padding: const EdgeInsets.only(left: 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -776,6 +629,230 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   IconButton(
                     icon: const Icon(Icons.chevron_right_rounded),
                     onPressed: _goToNextMonth,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    padding: EdgeInsets.zero,
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _isExpanded ? Icons.expand_less : Icons.expand_more,
+                    ),
+                    onPressed: _toggleCalendar,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    padding: EdgeInsets.zero,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        // Week days row
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: List.generate(7, (index) {
+          final date = firstDayOfWeek.add(Duration(days: index));
+          final isSelected =
+              date.year == _selectedDate.year &&
+              date.month == _selectedDate.month &&
+              date.day == _selectedDate.day;
+
+          final hasEvents = _events.any(
+            (event) =>
+                event.date.year == date.year &&
+                event.date.month == date.month &&
+                event.date.day == date.day,
+          );
+
+          return Expanded(
+            child: DragTarget<Note>(
+              onWillAcceptWithDetails: (details) => details.data.id != null,
+              onAcceptWithDetails:
+                  (details) => _handleNoteDrop(details.data, date.day),
+              builder: (context, candidateData, rejectedData) {
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  decoration: BoxDecoration(
+                    color:
+                        isSelected
+                            ? (Theme.of(context).brightness == Brightness.light
+                                ? colorScheme.primaryContainer
+                                : colorScheme.primaryFixed.withAlpha(50))
+                            : candidateData.isNotEmpty
+                            ? colorScheme.primaryContainer.withAlpha(50)
+                            : null,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _selectedDate = date;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              [
+                                'Mon',
+                                'Tue',
+                                'Wed',
+                                'Thu',
+                                'Fri',
+                                'Sat',
+                                'Sun',
+                              ][index],
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 10,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              date.day.toString(),
+                              style: TextStyle(
+                                color:
+                                    isSelected
+                                        ? (Theme.of(context).brightness == Brightness.light
+                                            ? colorScheme.onPrimaryContainer
+                                            : colorScheme.primaryFixed)
+                                        : colorScheme.onSurface,
+                                fontWeight:
+                                    isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                fontSize: isSelected ? 14 : 12,
+                              ),
+                            ),
+                            if (hasEvents)
+                              Container(
+                                width: 3,
+                                height: 3,
+                                margin: const EdgeInsets.only(top: 1),
+                                decoration: BoxDecoration(
+                                  color:
+                                      isSelected
+                                          ? colorScheme.primary
+                                          : colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        }),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    if (!_isInitialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return Column(
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          height: _isExpanded ? 400 : 100,
+          child: _isExpanded ? _buildExpandedCalendar() : _buildWeekView(),
+        ),
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(color: colorScheme.surfaceContainer),
+            child: _buildEventsPanel(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExpandedCalendar() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_month_rounded,
+                      size: 20,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _formattedMonth,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: colorScheme.onSurface,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left_rounded),
+                    onPressed: _goToPreviousMonth,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    padding: EdgeInsets.zero,
+                  ),
+                  TextButton(
+                    onPressed: _goToCurrentMonth,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: const Size(40, 32),
+                    ),
+                    child: const Text('Today'),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right_rounded),
+                    onPressed: _goToNextMonth,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    padding: EdgeInsets.zero,
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _isExpanded ? Icons.expand_less : Icons.expand_more,
+                    ),
+                    onPressed: _toggleCalendar,
                     constraints: const BoxConstraints(
                       minWidth: 32,
                       minHeight: 32,
@@ -849,7 +926,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       decoration: BoxDecoration(
                         color:
                             isSelected
-                                ? colorScheme.primaryFixed.withAlpha(50)
+                                ? (Theme.of(context).brightness == Brightness.light
+                                    ? colorScheme.primaryContainer
+                                    : colorScheme.primaryFixed.withAlpha(50))
                                 : candidateData.isNotEmpty
                                 ? colorScheme.primaryContainer.withAlpha(50)
                                 : null,
@@ -876,7 +955,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                   style: TextStyle(
                                     color:
                                         isSelected
-                                            ? colorScheme.primaryFixed
+                                            ? (Theme.of(context).brightness == Brightness.light
+                                                ? colorScheme.onPrimaryContainer
+                                                : colorScheme.primaryFixed)
                                             : colorScheme.onSurface,
                                     fontWeight:
                                         isSelected
