@@ -121,10 +121,8 @@ class ShortcutsHandler {
         onNewTab();
         return true;
       }
-      if (key == LogicalKeyboardKey.keyS) {
-        onSaveNote();
-        return true;
-      }
+      // Ctrl+S is NOT handled globally - it's handled by the editor's
+      // Shortcuts widget to preserve focus and cursor position (like Obsidian/Joplin)
       if (key == LogicalKeyboardKey.keyW) {
         onCloseTab();
         return true;

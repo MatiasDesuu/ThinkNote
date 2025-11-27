@@ -898,11 +898,8 @@ class _NotaEditorState extends State<NotaEditor>
                     // Let the global shortcut handler deal with this
                     return KeyEventResult.ignored;
                   }
-                  if (event.logicalKey == LogicalKeyboardKey.keyS &&
-                      HardwareKeyboard.instance.isControlPressed) {
-                    // Let the global shortcut handler deal with this
-                    return KeyEventResult.ignored;
-                  }
+                  // Ctrl+S is handled by the Shortcuts widget with SaveIntent
+                  // Don't propagate it to global handlers to preserve focus
                 }
 
                 return KeyEventResult.ignored;
@@ -961,13 +958,8 @@ class _NotaEditorState extends State<NotaEditor>
                                             .isControlPressed) {
                                       return KeyEventResult.ignored;
                                     }
-                                    if (event.logicalKey ==
-                                            LogicalKeyboardKey.keyS &&
-                                        HardwareKeyboard
-                                            .instance
-                                            .isControlPressed) {
-                                      return KeyEventResult.ignored;
-                                    }
+                                    // Ctrl+S is handled by the Shortcuts widget with SaveIntent
+                                    // Don't propagate it to global handlers to preserve focus
                                   }
                                   return KeyEventResult.ignored;
                                 },
@@ -1209,10 +1201,8 @@ class _NotaEditorState extends State<NotaEditor>
               HardwareKeyboard.instance.isControlPressed) {
             return KeyEventResult.ignored;
           }
-          if (event.logicalKey == LogicalKeyboardKey.keyS &&
-              HardwareKeyboard.instance.isControlPressed) {
-            return KeyEventResult.ignored;
-          }
+          // Ctrl+S is handled by the Shortcuts widget with SaveIntent
+          // Don't propagate it to global handlers to preserve focus
         }
         return KeyEventResult.ignored;
       },
