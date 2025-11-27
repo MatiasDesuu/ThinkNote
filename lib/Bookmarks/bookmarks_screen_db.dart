@@ -49,6 +49,7 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
   @override
   void initState() {
     super.initState();
+    _linksHandler.resetSearch();
     _initializeBookmarks();
     _loadViewPreference();
     _loadRootDir();

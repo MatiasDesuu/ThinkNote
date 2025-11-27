@@ -1150,7 +1150,7 @@ class NotesPanelState extends State<NotesPanel> {
           child: Container(
             color:
                 showSelectionHighlight
-                    ? Theme.of(context).colorScheme.primaryContainer
+                    ? Theme.of(context).colorScheme.surfaceContainerHigh
                     : widget.selectedNote?.id == note.id
                     ? Theme.of(context).colorScheme.surfaceContainerHigh
                     : Colors.transparent,
@@ -1213,8 +1213,8 @@ class NotesPanelState extends State<NotesPanel> {
                               ? FontWeight.bold
                               : FontWeight.normal,
                       color:
-                          showSelectionHighlight
-                              ? Theme.of(context).colorScheme.onPrimaryContainer
+                          showSelectionHighlight || widget.selectedNote?.id == note.id
+                              ? Theme.of(context).colorScheme.onSurface
                               : note.isTask && note.isCompleted
                               ? Theme.of(
                                 context,

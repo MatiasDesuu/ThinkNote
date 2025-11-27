@@ -33,14 +33,16 @@ class TodoScreenDB extends StatefulWidget {
 }
 
 class _TodoScreenDBState extends State<TodoScreenDB>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   // Estado
   List<Task> _tasks = [];
   List<Task> _completedTasks = [];
+  List<Task> _allPendingTasks = []; // Todas las tareas pendientes sin filtrar
+  List<Task> _allCompletedTasks = []; // Todas las tareas completadas sin filtrar
   Task? _selectedTask;
   List<Subtask> _subtasks = [];
   String? _selectedTag;
-  List<String> _allTags = [];
+  List<String> _filteredTagsForCurrentTab = [];
   List<String> _selectedTaskTags = [];
 
   // Controladores
@@ -51,14 +53,14 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   final ScrollController _scrollController = ScrollController();
   final ScrollController _tagsScrollController = ScrollController();
   late SyncAnimationController _syncController;
+  late TabController _tasksTabController;
+  late TabController _subtasksTabController;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _appFocusNode = FocusNode();
 
   // Interfaz
   double _sidebarWidth = 240;
   bool _isDragging = false;
-  bool _showCompleted = false;
-  bool _showCompletedSubtasks = false;
   DateTime? _selectedDate;
   String? _editingSubtaskId;
   Timer? _debounceTimer;
@@ -71,6 +73,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   void initState() {
     super.initState();
     _syncController = SyncAnimationController(vsync: this);
+    _tasksTabController = TabController(length: 2, vsync: this);
+    _subtasksTabController = TabController(length: 2, vsync: this);
 
     _loadSavedSettings();
     _loadTasks();
@@ -98,6 +102,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     _editingFocusNode.dispose();
     _debounceTimer?.cancel();
     _syncController.dispose();
+    _tasksTabController.dispose();
+    _subtasksTabController.dispose();
     _searchController.dispose();
     _appFocusNode.dispose();
     super.dispose();
@@ -135,6 +141,66 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     await prefs.setDouble('todo_sidebar_width', width);
   }
 
+  Future<void> _updateFilteredTagsForCurrentTab() async {
+    // Usar las listas de tareas sin filtrar para obtener todos los tags disponibles
+    final tasksForCurrentTab =
+        _tasksTabController.index == 0 ? _allPendingTasks : _allCompletedTasks;
+    
+    if (tasksForCurrentTab.isEmpty) {
+      setState(() {
+        _filteredTagsForCurrentTab = [];
+      });
+      return;
+    }
+
+    final tagsSet = <String>{};
+    
+    // Obtener tags que están presentes en las tareas de la tab actual (sin filtrar por tag)
+    for (final task in tasksForCurrentTab) {
+      if (task.id != null) {
+        final taskTags = await _databaseService.taskService.getTagsByTaskId(task.id!);
+        tagsSet.addAll(taskTags);
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _filteredTagsForCurrentTab = tagsSet.toList()..sort();
+      });
+    }
+  }
+
+  Future<void> _filterTasksByTag(String? tag) async {
+    if (tag == null) {
+      // Sin filtro - mostrar todas las tareas de cada tab
+      setState(() {
+        _tasks = List.from(_allPendingTasks);
+        _completedTasks = List.from(_allCompletedTasks);
+      });
+    } else {
+      // Filtrar solo la tab actual
+      final currentTabIndex = _tasksTabController.index;
+      final tasksToFilter = currentTabIndex == 0 ? _allPendingTasks : _allCompletedTasks;
+      
+      final tasksWithTag = await _databaseService.taskService.getTasksByTag(tag);
+      
+      final filteredTasks = tasksToFilter
+          .where((task) => tasksWithTag.any((t) => t.id == task.id))
+          .toList();
+      
+      setState(() {
+        if (currentTabIndex == 0) {
+          _tasks = filteredTasks;
+        } else {
+          _completedTasks = filteredTasks;
+        }
+      });
+    }
+    
+    // Actualizar tags filtrados para la tab actual
+    await _updateFilteredTagsForCurrentTab();
+  }
+
   Future<void> _updateTaskListsOnly() async {
     try {
       // Cargar tareas pendientes y completadas
@@ -143,33 +209,21 @@ class _TodoScreenDBState extends State<TodoScreenDB>
       List<Task> completedTasks =
           await _databaseService.taskService.getCompletedTasks();
 
+      // Guardar todas las tareas sin filtrar
+      final allPendingTasks = List<Task>.from(pendingTasks);
+      final allCompletedTasks = List<Task>.from(completedTasks);
+
       // Cargar todos los tags
-      final allTags = await _databaseService.taskService.getAllTags();
-
-      // Aplicar filtro por etiqueta si es necesario
-      if (_selectedTag != null) {
-        final tasksWithTag = await _databaseService.taskService.getTasksByTag(
-          _selectedTag!,
-        );
-
-        // Filtrar las tareas pendientes y completadas por la etiqueta seleccionada
-        pendingTasks =
-            pendingTasks
-                .where((task) => tasksWithTag.any((t) => t.id == task.id))
-                .toList();
-
-        completedTasks =
-            completedTasks
-                .where((task) => tasksWithTag.any((t) => t.id == task.id))
-                .toList();
-      }
 
       if (mounted) {
         setState(() {
-          _tasks = pendingTasks;
-          _completedTasks = completedTasks;
-          _allTags = allTags;
+          _tasks = allPendingTasks; // Inicialmente mostrar todas las tareas
+          _completedTasks = allCompletedTasks; // Inicialmente mostrar todas las tareas
+          _allPendingTasks = allPendingTasks;
+          _allCompletedTasks = allCompletedTasks;
         });
+        // Aplicar filtro actual si existe
+        await _filterTasksByTag(_selectedTag);
       }
     } catch (e) {
       print('Error updating task lists: $e');
@@ -191,26 +245,11 @@ class _TodoScreenDBState extends State<TodoScreenDB>
       List<Task> completedTasks =
           await _databaseService.taskService.getCompletedTasks();
 
+      // Guardar todas las tareas sin filtrar
+      final allPendingTasks = List<Task>.from(pendingTasks);
+      final allCompletedTasks = List<Task>.from(completedTasks);
+
       // Cargar todos los tags
-      final allTags = await _databaseService.taskService.getAllTags();
-
-      // Aplicar filtro por etiqueta si es necesario
-      if (_selectedTag != null) {
-        final tasksWithTag = await _databaseService.taskService.getTasksByTag(
-          _selectedTag!,
-        );
-
-        // Filtrar las tareas pendientes y completadas por la etiqueta seleccionada
-        pendingTasks =
-            pendingTasks
-                .where((task) => tasksWithTag.any((t) => t.id == task.id))
-                .toList();
-
-        completedTasks =
-            completedTasks
-                .where((task) => tasksWithTag.any((t) => t.id == task.id))
-                .toList();
-      }
 
       // Cargar subtareas si hay una tarea seleccionada
       List<Subtask> subtasks = [];
@@ -234,11 +273,14 @@ class _TodoScreenDBState extends State<TodoScreenDB>
 
       if (mounted) {
         setState(() {
-          _tasks = pendingTasks;
-          _completedTasks = completedTasks;
-          _allTags = allTags;
+          _tasks = allPendingTasks; // Inicialmente mostrar todas las tareas
+          _completedTasks = allCompletedTasks; // Inicialmente mostrar todas las tareas
+          _allPendingTasks = allPendingTasks;
+          _allCompletedTasks = allCompletedTasks;
           _subtasks = subtasks;
         });
+        // Aplicar filtro actual si existe
+        await _filterTasksByTag(_selectedTag);
       }
     } catch (e) {
       print('Error loading tasks: $e');
@@ -636,36 +678,85 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                   children: [
                     Column(
                       children: [
-                        // Pending tasks section
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.pending_actions_rounded,
-                                size: 20,
-                                color: colorScheme.primary,
+                        // Tabs for Pending and Completed tasks
+                        TabBar(
+                          controller: _tasksTabController,
+                          onTap: (index) {
+                            // Al cambiar de tab, resetear el filtro de tag y mostrar todas las tareas
+                            setState(() {
+                              _selectedTag = null;
+                              _tasks = List.from(_allPendingTasks);
+                              _completedTasks = List.from(_allCompletedTasks);
+                            });
+                            // Actualizar tags para la nueva tab después de un pequeño delay
+                            Future.delayed(const Duration(milliseconds: 50), () {
+                              _updateFilteredTagsForCurrentTab();
+                            });
+                          },
+                          tabAlignment: TabAlignment.fill,
+                          labelPadding: EdgeInsets.zero,
+                          tabs: [
+                            Tab(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.pending_actions_rounded,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Pending',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration: BoxDecoration(
+                                      color: _tasksTabController.index == 0
+                                          ? colorScheme.primary.withAlpha(26)
+                                          : colorScheme.surfaceContainerHighest.withAlpha(77),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      '${_tasks.length}',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: _tasksTabController.index == 0
+                                            ? colorScheme.primary
+                                            : colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Pending Tasks',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
+                            ),
+                            Tab(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.check_circle_rounded,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Completed',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
-                              const Spacer(),
-                              Text(
-                                '${_tasks.length}',
-                                style: TextStyle(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        // Tag filters
-                        if (_allTags.isNotEmpty) ...[
+                        // Tag filters (filtered by current tab)
+                        if (_filteredTagsForCurrentTab.isNotEmpty) ...[
+                          const SizedBox(height: 4),
                           SizedBox(
                             height: 40,
                             child: Listener(
@@ -708,7 +799,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                       width: 1,
                                     ),
                                   ),
-                                  ..._allTags.map(
+                                  ..._filteredTagsForCurrentTab.map(
                                     (tag) => Padding(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 2,
@@ -747,10 +838,13 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                             ),
                           ),
                         ],
-                        const SizedBox(height: 4),
-                        // Pending tasks list with reordering
+                        const SizedBox(height: 2),
+                        // TabBarView for tasks content
                         Expanded(
-                          child:
+                          child: TabBarView(
+                            controller: _tasksTabController,
+                            children: [
+                              // Pending tasks tab
                               _tasks.isEmpty
                                   ? Center(
                                     child: Column(
@@ -798,83 +892,29 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                       return _buildTaskItem(_tasks[index]);
                                     },
                                   ),
-                        ),
-                        // Completed tasks section
-                        InkWell(
-                          onTap: () {
-                            setState(() {
-                              _showCompleted = !_showCompleted;
-                            });
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.check_circle_rounded,
-                                  size: 20,
-                                  color: colorScheme.primary,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Completed',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                                const Spacer(),
-                                Icon(
-                                  _showCompleted
-                                      ? Icons.expand_less_rounded
-                                      : Icons.expand_more_rounded,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '${_completedTasks.length}',
-                                  style: TextStyle(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        // Completed tasks list
-                        if (_showCompleted)
-                          Container(
-                            height: 200,
-                            decoration: BoxDecoration(
-                              color: colorScheme.surface,
-                              border: Border(
-                                top: BorderSide(
-                                  color: colorScheme.outlineVariant,
-                                  width: 0.5,
-                                ),
-                              ),
-                            ),
-                            child:
-                                _completedTasks.isEmpty
-                                    ? Center(
-                                      child: Text(
-                                        'No completed tasks',
-                                        style: TextStyle(
-                                          color: colorScheme.onSurfaceVariant
-                                              .withAlpha(150),
-                                        ),
+                              // Completed tasks tab
+                              _completedTasks.isEmpty
+                                  ? Center(
+                                    child: Text(
+                                      'No completed tasks',
+                                      style: TextStyle(
+                                        color: colorScheme.onSurfaceVariant
+                                            .withAlpha(150),
                                       ),
-                                    )
-                                    : ListView.builder(
-                                      padding: const EdgeInsets.only(bottom: 8),
-                                      itemCount: _completedTasks.length,
-                                      itemBuilder: (context, index) {
-                                        return _buildTaskItem(
-                                          _completedTasks[index],
-                                        );
-                                      },
                                     ),
+                                  )
+                                  : ListView.builder(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    itemCount: _completedTasks.length,
+                                    itemBuilder: (context, index) {
+                                      return _buildTaskItem(
+                                        _completedTasks[index],
+                                      );
+                                    },
+                                  ),
+                            ],
                           ),
+                        ),
                       ],
                     ),
                     // Resize control
@@ -1009,102 +1049,156 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                               )
                                             : Column(
                                                 children: [
-                                                  // Pending subtasks section
-                                                  Expanded(
-                                                    child: _getPendingSubtasks().isEmpty
-                                                        ? Center(
-                                                            child: Text(
-                                                              'No pending subtasks',
-                                                              style: TextStyle(
-                                                                color: colorScheme
-                                                                    .onSurfaceVariant
-                                                                    .withAlpha(150),
-                                                              ),
-                                                            ),
-                                                          )
-                                                        : ReorderableListView.builder(
-                                                            padding: const EdgeInsets.only(
-                                                              bottom: 8,
-                                                            ),
-                                                            itemCount: _getPendingSubtasks().length,
-                                                            buildDefaultDragHandles: false,
-                                                            onReorder: _reorderSubtasks,
-                                                            itemBuilder: (context, index) {
-                                                              final subtask = _getPendingSubtasks()[index];
-                                                              final isEditing = _editingSubtaskId == subtask.id.toString();
-                                                              return _buildSubtaskItem(
-                                                                subtask,
-                                                                isEditing,
-                                                                colorScheme,
-                                                              );
-                                                            },
-                                                          ),
-                                                  ),
-
-                                                  // Completed subtasks section
-                                                  if (_getCompletedSubtasks().isNotEmpty) ...[
-                                                    InkWell(
-                                                      onTap: () {
-                                                        setState(() {
-                                                          _showCompletedSubtasks = !_showCompletedSubtasks;
-                                                        });
-                                                      },
-                                                      hoverColor: Colors.transparent,
-                                                      splashColor: Colors.transparent,
-                                                      highlightColor: Colors.transparent,
-                                                      child: Padding(
-                                                        padding: const EdgeInsets.all(16.0),
-                                                        child: Row(
-                                                          children: [
-                                                            Icon(
-                                                              Icons.check_circle_rounded,
-                                                              size: 20,
-                                                              color: colorScheme.primary,
-                                                            ),
-                                                            const SizedBox(width: 8),
-                                                            Text(
-                                                              'Completed',
-                                                              style: TextStyle(
-                                                                fontWeight: FontWeight.bold,
-                                                                color: colorScheme.onSurfaceVariant,
-                                                              ),
-                                                            ),
-                                                            const Spacer(),
-                                                            Icon(
-                                                              _showCompletedSubtasks ? Icons.expand_less_rounded : Icons.expand_more_rounded,
-                                                              color: colorScheme.onSurfaceVariant,
-                                                            ),
-                                                            const SizedBox(width: 8),
-                                                            Text(
-                                                              '${_getCompletedSubtasks().length}',
-                                                              style: TextStyle(
-                                                                color: colorScheme.onSurfaceVariant,
-                                                              ),
-                                                            ),
-                                                          ],
+                                                  // Subtasks tabs
+                                                  Container(
+                                                    decoration: BoxDecoration(
+                                                      color: colorScheme.surfaceContainerLow,
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                    padding: const EdgeInsets.all(4),
+                                                    child: SizedBox(
+                                                      height: 36,
+                                                      child: TabBar(
+                                                        controller: _subtasksTabController,
+                                                        tabAlignment: TabAlignment.fill,
+                                                        labelPadding: EdgeInsets.zero,
+                                                        indicatorSize: TabBarIndicatorSize.tab,
+                                                        dividerColor: Colors.transparent,
+                                                        splashFactory: NoSplash.splashFactory,
+                                                        overlayColor: WidgetStateProperty.all(Colors.transparent),
+                                                        indicator: BoxDecoration(
+                                                          color: colorScheme.surface,
+                                                          borderRadius: BorderRadius.circular(8),
                                                         ),
+                                                        tabs: [
+                                                          Tab(
+                                                            child: Row(
+                                                              mainAxisAlignment: MainAxisAlignment.center,
+                                                              mainAxisSize: MainAxisSize.min,
+                                                              children: [
+                                                                Icon(
+                                                                  Icons.pending_actions_rounded,
+                                                                  size: 16,
+                                                                ),
+                                                                const SizedBox(width: 6),
+                                                                Text(
+                                                                  'Pending',
+                                                                  overflow: TextOverflow.ellipsis,
+                                                                ),
+                                                                const SizedBox(width: 4),
+                                                                Container(
+                                                                  width: 22,
+                                                                  height: 22,
+                                                                  decoration: BoxDecoration(
+                                                                    color: _subtasksTabController.index == 0
+                                                                        ? colorScheme.primary.withAlpha(26)
+                                                                        : colorScheme.surfaceContainerHighest.withAlpha(77),
+                                                                    shape: BoxShape.circle,
+                                                                  ),
+                                                                  alignment: Alignment.center,
+                                                                  child: Text(
+                                                                    '${_getPendingSubtasks().length}',
+                                                                    style: TextStyle(
+                                                                      fontSize: 10,
+                                                                      fontWeight: FontWeight.w600,
+                                                                      color: _subtasksTabController.index == 0
+                                                                          ? colorScheme.primary
+                                                                          : colorScheme.onSurfaceVariant,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                          Tab(
+                                                            child: Row(
+                                                              mainAxisAlignment: MainAxisAlignment.center,
+                                                              mainAxisSize: MainAxisSize.min,
+                                                              children: [
+                                                                Icon(
+                                                                  Icons.check_circle_rounded,
+                                                                  size: 16,
+                                                                ),
+                                                                const SizedBox(width: 6),
+                                                                Text(
+                                                                  'Completed',
+                                                                  overflow: TextOverflow.ellipsis,
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                        onTap: (index) {
+                                                          setState(() {});
+                                                        },
                                                       ),
                                                     ),
-                                                    if (_showCompletedSubtasks)
-                                                      Container(
-                                                        height: 200,
-                                                        decoration: BoxDecoration(
-                                                          color: colorScheme.surface,
-                                                        ),
-                                                        child: ListView.builder(
-                                                          itemCount: _getCompletedSubtasks().length,
-                                                          itemBuilder: (context, index) {
-                                                            final subtask = _getCompletedSubtasks()[index];
-                                                            final isEditing = _editingSubtaskId == subtask.id.toString();
-                                                            return _buildSubtaskItem(
-                                                              subtask,
-                                                              isEditing,
-                                                              colorScheme,
-                                                            );
-                                                          },
-                                                        ),
-                                                      ),
-                                                  ],
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  // Subtasks TabBarView
+                                                  Expanded(
+                                                    child: TabBarView(
+                                                      controller: _subtasksTabController,
+                                                      children: [
+                                                        // Pending subtasks tab
+                                                        _getPendingSubtasks().isEmpty
+                                                            ? Center(
+                                                                child: Text(
+                                                                  'No pending subtasks',
+                                                                  style: TextStyle(
+                                                                    color: colorScheme
+                                                                        .onSurfaceVariant
+                                                                        .withAlpha(150),
+                                                                  ),
+                                                                ),
+                                                              )
+                                                            : ReorderableListView.builder(
+                                                                padding: const EdgeInsets.only(
+                                                                  bottom: 8,
+                                                                ),
+                                                                itemCount: _getPendingSubtasks().length,
+                                                                buildDefaultDragHandles: false,
+                                                                onReorder: _reorderSubtasks,
+                                                                itemBuilder: (context, index) {
+                                                                  final subtask = _getPendingSubtasks()[index];
+                                                                  final isEditing = _editingSubtaskId == subtask.id.toString();
+                                                                  return _buildSubtaskItem(
+                                                                    subtask,
+                                                                    isEditing,
+                                                                    colorScheme,
+                                                                  );
+                                                                },
+                                                              ),
+                                                        // Completed subtasks tab
+                                                        _getCompletedSubtasks().isEmpty
+                                                            ? Center(
+                                                                child: Text(
+                                                                  'No completed subtasks',
+                                                                  style: TextStyle(
+                                                                    color: colorScheme
+                                                                        .onSurfaceVariant
+                                                                        .withAlpha(150),
+                                                                  ),
+                                                                ),
+                                                              )
+                                                            : ListView.builder(
+                                                                padding: const EdgeInsets.only(
+                                                                  bottom: 8,
+                                                                ),
+                                                                itemCount: _getCompletedSubtasks().length,
+                                                                itemBuilder: (context, index) {
+                                                                  final subtask = _getCompletedSubtasks()[index];
+                                                                  final isEditing = _editingSubtaskId == subtask.id.toString();
+                                                                  return _buildSubtaskItem(
+                                                                    subtask,
+                                                                    isEditing,
+                                                                    colorScheme,
+                                                                  );
+                                                                },
+                                                              ),
+                                                      ],
+                                                    ),
+                                                  ),
                                                 ],
                                               ),
                                       ),
@@ -1181,7 +1275,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
           // Title drag area - correctly placed
           Positioned(
             top: 0,
-            left: 60, // Left sidebar width
+            left: 60 + _sidebarWidth, // Skip left sidebar + central task sidebar
             right: 138, // Control buttons width
             height: 40,
             child: MoveWindow(),
@@ -1201,7 +1295,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
       child: MouseRegionHoverItem(
         builder: (context, isHovering) {
           return Card(
-            margin: const EdgeInsets.only(bottom: 8, left: 8, right: 8),
+            margin: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
             color:
                 isSelected
                     ? colorScheme.surfaceContainerHighest
@@ -1311,7 +1405,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                                 : null,
                                           ),
                                         ),
-                                        const SizedBox(height: 6),
+                                        const SizedBox(height: 4),
                                         Wrap(
                                           spacing: 4,
                                           runSpacing: 2,
@@ -1517,7 +1611,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
       enabled: !ordenarPorPrioridad && !isCompleted,
       child: Card(
         elevation: 0,
-        margin: const EdgeInsets.symmetric(vertical: 4),
+        margin: const EdgeInsets.symmetric(vertical: 2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
           side: BorderSide(
@@ -1694,7 +1788,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
           height: 48,
           width: 48,
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHigh,
+            color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Material(
@@ -2130,7 +2224,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     setState(() {
       _selectedTag = tag;
     });
-    _loadTasks(); // Recargar las tareas con el nuevo filtro
+    _filterTasksByTag(tag); // Aplicar filtro solo a la tab actual
   }
 
   void _openSettings() {

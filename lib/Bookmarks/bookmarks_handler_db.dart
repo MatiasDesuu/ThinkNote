@@ -85,6 +85,11 @@ class LinksHandlerDB {
     _searchQuery = query;
   }
 
+  void resetSearch() {
+    _isSearching = false;
+    _searchQuery = '';
+  }
+
   Future<void> loadBookmarks() async {
     try {
       // Cargar todos los bookmarks con sus tags en una sola consulta

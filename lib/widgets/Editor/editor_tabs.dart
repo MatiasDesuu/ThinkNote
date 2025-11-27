@@ -854,13 +854,10 @@ class EditorTabsState extends State<EditorTabs> {
   margin: const EdgeInsets.symmetric(horizontal: 2),
   constraints: BoxConstraints(minWidth: tabWidth, maxWidth: tabWidth),
         decoration: BoxDecoration(
-          color: isActive ? colorScheme.primaryContainer : Colors.transparent,
+          color: isActive ? colorScheme.surfaceContainerHighest : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color:
-                isActive
-                    ? colorScheme.primary.withAlpha(50)
-                    : colorScheme.outlineVariant.withAlpha(50),
+            color: colorScheme.outlineVariant.withAlpha(50),
             width: 1,
           ),
         ),
@@ -909,7 +906,7 @@ class EditorTabsState extends State<EditorTabs> {
                                 isActive ? FontWeight.w600 : FontWeight.normal,
                             color:
                                 isActive
-                                    ? colorScheme.onPrimaryContainer
+                                    ? colorScheme.onSurface
                                     : colorScheme.onSurfaceVariant,
                           ),
                           maxLines: 1,
@@ -939,7 +936,7 @@ class EditorTabsState extends State<EditorTabs> {
                                   Icons.push_pin_rounded,
                                   size: 14,
                                   color: isActive
-                                      ? colorScheme.onPrimaryContainer.withAlpha(200)
+                                      ? colorScheme.onSurface.withAlpha(200)
                                       : colorScheme.onSurfaceVariant,
                                 ),
                               ),
@@ -955,7 +952,7 @@ class EditorTabsState extends State<EditorTabs> {
                         decoration: BoxDecoration(
                           color:
                               isActive
-                                  ? colorScheme.onPrimaryContainer
+                                  ? colorScheme.primary
                                   : colorScheme.primary,
                           shape: BoxShape.circle,
                         ),
@@ -988,7 +985,7 @@ class EditorTabsState extends State<EditorTabs> {
                               size: 16,
                               color:
                                   isActive
-                                      ? colorScheme.onPrimaryContainer
+                                      ? colorScheme.onSurfaceVariant
                                           .withAlpha(150)
                                       : colorScheme.onSurfaceVariant,
                             ),
