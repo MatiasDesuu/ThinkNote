@@ -333,7 +333,7 @@ class TasksScreenState extends State<TasksScreen>
           automaticallyImplyLeading: false,
           toolbarHeight: 0,
           bottom: PreferredSize(
-            preferredSize: Size.fromHeight(_allTags.isNotEmpty ? 96 : 48),
+            preferredSize: Size.fromHeight(_allTags.isNotEmpty ? 86 : 48),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
