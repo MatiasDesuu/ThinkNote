@@ -1,4 +1,4 @@
-enum TaskState { pending, inProgress, completed }
+enum TaskState { pending, inProgress, completed, none }
 
 class Task {
   final int? id;
@@ -19,7 +19,7 @@ class Task {
     required this.name,
     this.date,
     this.completed = false,
-    this.state = TaskState.pending,
+    this.state = TaskState.none,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,

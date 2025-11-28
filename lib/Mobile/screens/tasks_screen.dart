@@ -288,6 +288,8 @@ class TasksScreenState extends State<TasksScreen>
         return const Color(0xFFFFE0B2);
       case TaskState.completed:
         return colorScheme.primaryContainer.withAlpha(120);
+      case TaskState.none:
+        return Colors.transparent;
     }
   }
 
@@ -299,6 +301,8 @@ class TasksScreenState extends State<TasksScreen>
         return const Color(0xFFB75D0A);
       case TaskState.completed:
         return colorScheme.primary;
+      case TaskState.none:
+        return colorScheme.onSurfaceVariant;
     }
   }
 
@@ -310,6 +314,8 @@ class TasksScreenState extends State<TasksScreen>
         return 'In progress';
       case TaskState.completed:
         return 'Completed';
+      case TaskState.none:
+        return 'No status';
     }
   }
 
@@ -690,12 +696,12 @@ class TasksScreenState extends State<TasksScreen>
                   ),
                 ),
                 const SizedBox(width: 8),
-                // State label (hidden for Habits-tagged tasks)
+                // State label (hidden for Habits-tagged tasks or no status)
                 FutureBuilder<List<String>>(
                   future: _databaseService.taskService.getTagsByTaskId(task.id!),
                   builder: (context, snapshot) {
                     final hasHabitsTag = snapshot.data?.contains('Habits') ?? false;
-                    if (hasHabitsTag) return const SizedBox.shrink();
+                    if (hasHabitsTag || task.state == TaskState.none) return const SizedBox.shrink();
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(

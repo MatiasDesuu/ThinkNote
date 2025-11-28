@@ -33,7 +33,7 @@ class BottomNavigation extends StatelessWidget {
             Symbols.search_rounded,
             color: colorScheme.primary,
           ),
-          label: 'Search',
+          label: 'Calendar',
         ),
         NavigationDestination(
           icon: Icon(Symbols.task_rounded, color: colorScheme.onSurfaceVariant),

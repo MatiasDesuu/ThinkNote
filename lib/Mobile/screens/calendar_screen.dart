@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../database/models/calendar_event.dart';
 import '../../database/models/calendar_event_status.dart';
@@ -677,7 +678,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                   (details) => _handleNoteDrop(details.data, date.day),
               builder: (context, candidateData, rejectedData) {
                 return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  margin: const EdgeInsets.only(left: 2, right: 2, top: 2, bottom: 4),
                   decoration: BoxDecoration(
                     color:
                         isSelected
@@ -776,7 +777,7 @@ class CalendarScreenState extends State<CalendarScreen> {
       children: [
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          height: _isExpanded ? 400 : 100,
+          height: _isExpanded ? 400 : max(100.0, MediaQuery.of(context).size.height * 0.12),
           child: _isExpanded ? _buildExpandedCalendar() : _buildWeekView(),
         ),
         Expanded(

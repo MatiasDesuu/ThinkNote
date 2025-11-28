@@ -49,8 +49,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   String? _selectedTag;
   List<String> _filteredTagsForCurrentTab = [];
   List<String> _selectedTaskTags = [];
-
-  // Controladores
+  final Set<String> _expandedSubtasks = <String>{};
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _newSubtaskController = TextEditingController();
   final TextEditingController _editingController = TextEditingController();
@@ -1537,12 +1536,12 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                         ),
                       ),
                       const SizedBox(width: 8),
-                      // Estado visual como etiqueta (hide for Habits-tagged tasks)
+                      // Estado visual como etiqueta (hide for Habits-tagged tasks or no status)
                       FutureBuilder<List<String>>(
                         future: _databaseService.taskService.getTagsByTaskId(task.id!),
                         builder: (context, snapshot) {
                           final hasHabitsTag = snapshot.data?.contains('Habits') ?? false;
-                          if (hasHabitsTag) return const SizedBox.shrink();
+                          if (hasHabitsTag || task.state == TaskState.none) return const SizedBox.shrink();
                           return Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -1602,6 +1601,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
         return const Color(0xFFFFE0B2); // Orange pastel
       case TaskState.completed:
         return colorScheme.primaryContainer.withAlpha(120);
+      case TaskState.none:
+        return Colors.transparent; // No mostrar contenedor
     }
   }
 
@@ -1613,6 +1614,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
         return const Color(0xFFB75D0A);
       case TaskState.completed:
         return colorScheme.primary;
+      case TaskState.none:
+        return colorScheme.onSurfaceVariant; // Aunque no se use si es transparente
     }
   }
 
@@ -1736,11 +1739,12 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                     onTapOutside: (_) => _cancelSubtaskEditing(),
                   )
                   : GestureDetector(
+                    onTap: () => _toggleSubtaskExpansion(subtask.id.toString()),
                     onDoubleTap: () => _editSubtask(subtask),
                     child: Text(
                       subtask.text,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: _expandedSubtasks.contains(subtask.id.toString()) ? null : 1,
+                      overflow: _expandedSubtasks.contains(subtask.id.toString()) ? TextOverflow.visible : TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         decoration:
                             subtask.completed
@@ -2034,6 +2038,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
         return 'In progress';
       case TaskState.completed:
         return 'Completed';
+      case TaskState.none:
+        return 'No status';
     }
   }
 
@@ -2045,6 +2051,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
         return const Color(0xFFB75D0A); // Darker orange for text
       case TaskState.completed:
         return colorScheme.onPrimaryContainer;
+      case TaskState.none:
+        return colorScheme.onSurfaceVariant;
     }
   }
 
@@ -2067,6 +2075,12 @@ class _TodoScreenDBState extends State<TodoScreenDB>
           Icons.check_circle_rounded,
           size: 16,
           color: colorScheme.primary,
+        );
+      case TaskState.none:
+        return Icon(
+          Icons.remove_circle_outline,
+          size: 16,
+          color: colorScheme.onSurfaceVariant,
         );
     }
   }
@@ -2302,6 +2316,16 @@ class _TodoScreenDBState extends State<TodoScreenDB>
             },
           ),
     );
+  }
+
+  void _toggleSubtaskExpansion(String id) {
+    setState(() {
+      if (_expandedSubtasks.contains(id)) {
+        _expandedSubtasks.remove(id);
+      } else {
+        _expandedSubtasks.add(id);
+      }
+    });
   }
 }
 
@@ -2921,6 +2945,14 @@ class _StatusSelectorDialog extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    _buildStatusOption(
+                      context,
+                      TaskState.none,
+                      Icons.remove_circle_outline,
+                      colorScheme.onSurfaceVariant,
+                      'No status',
+                    ),
+                    const SizedBox(height: 8),
                     _buildStatusOption(
                       context,
                       TaskState.pending,
