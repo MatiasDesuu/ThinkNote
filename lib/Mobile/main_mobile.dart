@@ -17,11 +17,9 @@ import '../database/models/note.dart';
 import '../database/models/notebook.dart';
 import '../database/models/think.dart';
 import '../database/database_helper.dart';
-import '../database/database_service.dart';
 import '../database/repositories/note_repository.dart';
 import '../database/repositories/think_repository.dart';
 import '../database/services/think_service.dart';
-import '../database/sync_service.dart';
 import 'services/webdav_service.dart';
 import 'services/bookmark_sharing_handler.dart';
 import '../widgets/custom_snackbar.dart';
@@ -78,13 +76,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
 
   Future<void> _initializeWebDAV() async {
     try {
-      await DatabaseService().initializeDatabase();
-
-      // Verify DatabaseHelper initialization
-      final dbHelper = DatabaseHelper();
-      await dbHelper.database;
-
-      // Check WebDAV configuration
+      // Check WebDAV configuration first (fast operation)
       final prefs = await SharedPreferences.getInstance();
       final isEnabled = prefs.getBool('webdav_enabled') ?? false;
 
@@ -92,14 +84,15 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
         return;
       }
 
-      // Initialize sync service to listen for database changes
-      final syncService = SyncService();
-      await syncService.initialize();
-
-      // Initialize WebDAV service
+      // Initialize and sync WebDAV in background (don't block UI)
+      // Database and SyncService are already initialized in main()
       final webdavService = WebDAVService();
       await webdavService.initialize();
-      await webdavService.sync();
+      
+      // Run sync in background without blocking
+      webdavService.sync().catchError((e) {
+        print('WebDAV sync error: $e');
+      });
     } catch (e) {
       print('Error initializing WebDAV: $e');
     }
