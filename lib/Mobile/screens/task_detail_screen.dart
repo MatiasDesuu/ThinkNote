@@ -673,7 +673,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
           children: [
             // Título
             Padding(
-              padding: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 8),
+              padding: const EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 8),
               child: TextField(
                 controller: _nameController,
                 textCapitalization: TextCapitalization.sentences,
