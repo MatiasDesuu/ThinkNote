@@ -845,18 +845,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
                 final completedSubtasks =
                     subtasks.where((s) => s.completed).toList();
 
-                if (subtasks.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        'No subtasks',
-                        style: TextStyle(color: colorScheme.onSurfaceVariant),
-                      ),
-                    ),
-                  );
-                }
-
                 return Column(
                   children: [
                     Padding(
@@ -907,43 +895,69 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
                         ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    TabBar(
-                      controller: _subtasksTabController,
-                      labelColor: colorScheme.primary,
-                      unselectedLabelColor: colorScheme.onSurfaceVariant,
-                      indicatorColor: colorScheme.primary,
-                      labelStyle: const TextStyle(fontSize: 13),
-                      unselectedLabelStyle: const TextStyle(fontSize: 13),
-                      dividerHeight: 1.0,
-                      tabs: [
-                        Tab(
-                          height: 40,
+                    if (subtasks.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
                           child: Text(
-                            'Pending (${pendingSubtasks.length})',
-                            overflow: TextOverflow.ellipsis,
+                            'No subtasks',
+                            style: TextStyle(color: colorScheme.onSurfaceVariant),
                           ),
                         ),
-                        Tab(
-                          height: 40,
-                          child: Text(
-                            'Completed (${completedSubtasks.length})',
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    SizedBox(
-                      height: 400,
-                      child: TabBarView(
+                      )
+                    else ...[
+                      const SizedBox(height: 4),
+                      TabBar(
                         controller: _subtasksTabController,
-                        children: [
-                          _buildPendingSubtasksTab(pendingSubtasks),
-                          _buildCompletedSubtasksTab(completedSubtasks),
+                        labelColor: colorScheme.primary,
+                        unselectedLabelColor: colorScheme.onSurfaceVariant,
+                        indicatorColor: colorScheme.primary,
+                        labelStyle: const TextStyle(fontSize: 13),
+                        unselectedLabelStyle: const TextStyle(fontSize: 13),
+                        dividerHeight: 1.0,
+                        tabs: [
+                          Tab(
+                            height: 40,
+                            child: Text(
+                              'Pending (${pendingSubtasks.length})',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Tab(
+                            height: 40,
+                            child: Text(
+                              'Completed (${completedSubtasks.length})',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
-                    ),
+                      const SizedBox(height: 4),
+                      Builder(
+                        builder: (context) {
+                          // Calculate dynamic height based on number of items
+                          // Each subtask item is approximately 60px high
+                          final maxItems = pendingSubtasks.length > completedSubtasks.length 
+                              ? pendingSubtasks.length 
+                              : completedSubtasks.length;
+                          final itemHeight = 60.0;
+                          final minHeight = 60.0;
+                          final maxHeight = MediaQuery.of(context).size.height * 0.5;
+                          final calculatedHeight = (maxItems * itemHeight).clamp(minHeight, maxHeight);
+                          
+                          return SizedBox(
+                            height: calculatedHeight,
+                            child: TabBarView(
+                              controller: _subtasksTabController,
+                              children: [
+                                _buildPendingSubtasksTab(pendingSubtasks),
+                                _buildCompletedSubtasksTab(completedSubtasks),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ],
                 );
               },
