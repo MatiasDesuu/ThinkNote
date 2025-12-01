@@ -23,7 +23,8 @@ class TaskDetailScreen extends StatefulWidget {
   State<TaskDetailScreen> createState() => _TaskDetailScreenState();
 }
 
-class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerProviderStateMixin {
+class _TaskDetailScreenState extends State<TaskDetailScreen>
+    with SingleTickerProviderStateMixin {
   late Task _task;
   bool _isHabits = false;
   List<Subtask>? _cachedSubtasks;
@@ -70,7 +71,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
     // Listen for external DB changes so tag updates (e.g., adding/removing 'Habits')
     // are reflected immediately in this screen without requiring navigation.
     try {
-      _dbChangeSubscription = widget.databaseService.onDatabaseChanged.listen((_) async {
+      _dbChangeSubscription = widget.databaseService.onDatabaseChanged.listen((
+        _,
+      ) async {
         // reload tags and subtasks when DB changes
         await _loadIsHabits();
         await _refreshCachedSubtasks();
@@ -81,12 +84,17 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
   Future<void> _prefetchSubtasks() async {
     if (_task.id == null) return;
     try {
-      final subs = _task.sortByPriority
-          ? await widget.databaseService.taskService.getSubtasksByTaskIdWithPrioritySort(_task.id!)
-          : await widget.databaseService.taskService.getSubtasksByTaskId(_task.id!);
+      final subs =
+          _task.sortByPriority
+              ? await widget.databaseService.taskService
+                  .getSubtasksByTaskIdWithPrioritySort(_task.id!)
+              : await widget.databaseService.taskService.getSubtasksByTaskId(
+                _task.id!,
+              );
       // Also prefetch habit completions for instant rendering in HabitsTracker
       try {
-        _cachedHabitCompletions = await widget.databaseService.taskService.getHabitCompletionsForTask(_task.id!);
+        _cachedHabitCompletions = await widget.databaseService.taskService
+            .getHabitCompletionsForTask(_task.id!);
       } catch (_) {
         _cachedHabitCompletions = null;
       }
@@ -107,7 +115,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
   Future<void> _loadIsHabits() async {
     if (_task.id == null) return;
     try {
-      final tags = await widget.databaseService.taskService.getTagsByTaskId(_task.id!);
+      final tags = await widget.databaseService.taskService.getTagsByTaskId(
+        _task.id!,
+      );
       if (!mounted) return;
       setState(() {
         _isHabits = tags.contains('Habits');
@@ -119,7 +129,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
 
   @override
   void dispose() {
-  _dbChangeSubscription?.cancel();
+    _dbChangeSubscription?.cancel();
     _nameController.dispose();
     _newSubtaskController.dispose();
     _editingController.dispose();
@@ -568,8 +578,14 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
                     onDoubleTap: () => _editSubtask(subtask),
                     child: Text(
                       subtask.text,
-                      maxLines: _expandedSubtasks.contains(subtask.id.toString()) ? null : 1,
-                      overflow: _expandedSubtasks.contains(subtask.id.toString()) ? TextOverflow.visible : TextOverflow.ellipsis,
+                      maxLines:
+                          _expandedSubtasks.contains(subtask.id.toString())
+                              ? null
+                              : 1,
+                      overflow:
+                          _expandedSubtasks.contains(subtask.id.toString())
+                              ? TextOverflow.visible
+                              : TextOverflow.ellipsis,
                       style: TextStyle(
                         decoration:
                             subtask.completed
@@ -618,18 +634,19 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           backgroundColor: Theme.of(context).colorScheme.surface,
-          title: _isHabits
-              ? Row(
-                  children: [
-                    Icon(
-                      Icons.self_improvement_rounded,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text('Habits Details'),
-                  ],
-                )
-              : const Text('Task Details'),
+          title:
+              _isHabits
+                  ? Row(
+                    children: [
+                      Icon(
+                        Icons.self_improvement_rounded,
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('Habits Details'),
+                    ],
+                  )
+                  : const Text('Task Details'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: _saveAndExit,
@@ -668,12 +685,16 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
             ),
           ],
         ),
-        body: ListView(
-          padding: EdgeInsets.zero,
+        body: Column(
           children: [
             // Título
             Padding(
-              padding: const EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 8),
+              padding: const EdgeInsets.only(
+                left: 8,
+                right: 8,
+                top: 8,
+                bottom: 8,
+              ),
               child: TextField(
                 controller: _nameController,
                 textCapitalization: TextCapitalization.sentences,
@@ -713,13 +734,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: _buildTagSelector(compact: true),
-                    ),
+                    Expanded(child: _buildTagSelector(compact: true)),
                     const SizedBox(width: 4),
-                    Expanded(
-                      child: _buildPinButton(compact: true),
-                    ),
+                    Expanded(child: _buildPinButton(compact: true)),
                   ],
                 ),
               ),
@@ -736,7 +753,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
             // For Habits mode show week navigation and add row here (we hide internals in the widget)
             if (_isHabits) ...[
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 4.0,
+                  horizontal: 8,
+                ),
                 child: Row(
                   children: [
                     IconButton(
@@ -744,29 +764,40 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
                       onPressed: () => setState(() => _habitsWeekOffset--),
                     ),
                     const SizedBox(width: 8),
-                          Expanded(
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton.icon(
-                                onPressed: () {
-                                  if (_habitsWeekOffset != 0) setState(() => _habitsWeekOffset = 0);
-                                },
-                                icon: Icon(Icons.date_range_rounded, size: 18, color: colorScheme.onSurfaceVariant),
-                                label: Text(
-                                  '${DateFormat('MMM d').format(DateTime.now().add(Duration(days: _habitsWeekOffset * 7 - DateTime.now().weekday + 1)))} - ${DateFormat('MMM d').format(DateTime.now().add(Duration(days: _habitsWeekOffset * 7 - DateTime.now().weekday + 7)))}',
-                                  textAlign: TextAlign.center,
-                                  style: Theme.of(context).textTheme.bodyLarge,
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  minimumSize: const Size.fromHeight(48),
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  backgroundColor: colorScheme.surface,
-                                  side: BorderSide(color: Colors.transparent),
-                                ),
-                              ),
-                            ),
+                    Expanded(
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            if (_habitsWeekOffset != 0) {
+                              setState(() => _habitsWeekOffset = 0);
+                            }
+                          },
+                          icon: Icon(
+                            Icons.date_range_rounded,
+                            size: 18,
+                            color: colorScheme.onSurfaceVariant,
                           ),
+                          label: Text(
+                            '${DateFormat('MMM d').format(DateTime.now().add(Duration(days: _habitsWeekOffset * 7 - DateTime.now().weekday + 1)))} - ${DateFormat('MMM d').format(DateTime.now().add(Duration(days: _habitsWeekOffset * 7 - DateTime.now().weekday + 7)))}',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(48),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            backgroundColor: colorScheme.surface,
+                            side: BorderSide(color: Colors.transparent),
+                          ),
+                        ),
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     IconButton(
                       icon: const Icon(Icons.arrow_forward_rounded),
@@ -816,151 +847,151 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
             ],
             const SizedBox(height: 4),
 
-            StreamBuilder<void>(
-              stream: widget.databaseService.onDatabaseChanged,
-              builder: (context, snapshot) {
-                // If we received a DB change event, refresh the cached subtasks.
-                if (snapshot.hasData) {
-                  // fire-and-forget refresh
-                  _refreshCachedSubtasks();
-                }
+            Expanded(
+              child: StreamBuilder<void>(
+                stream: widget.databaseService.onDatabaseChanged,
+                builder: (context, snapshot) {
+                  // If we received a DB change event, refresh the cached subtasks.
+                  if (snapshot.hasData) {
+                    // fire-and-forget refresh
+                    _refreshCachedSubtasks();
+                  }
 
-                final subtasks = _cachedSubtasks ?? <Subtask>[];
-                // If this task is a Habits task, render the HabitsTracker instead of the normal subtasks list
-                if (_isHabits) {
-                  // Render the HabitsTracker inline so it participates in the
-                  // parent ListView's scroll (matching subtasks behaviour).
-                  return HabitsTracker(
-                    databaseService: widget.databaseService,
-                    subtasks: subtasks,
-                    taskId: _task.id!,
-                    initialCompletions: _cachedHabitCompletions,
-                    hideControls: true,
-                    weekOffset: _habitsWeekOffset,
-                    showEmptyMessage: false,
-                  );
-                }
-                final pendingSubtasks =
-                    subtasks.where((s) => !s.completed).toList();
-                final completedSubtasks =
-                    subtasks.where((s) => s.completed).toList();
+                  final subtasks = _cachedSubtasks ?? <Subtask>[];
+                  // If this task is a Habits task, render the HabitsTracker instead of the normal subtasks list
+                  if (_isHabits) {
+                    // Render the HabitsTracker inline so it participates in the
+                    // parent ListView's scroll (matching subtasks behaviour).
+                    return HabitsTracker(
+                      databaseService: widget.databaseService,
+                      subtasks: subtasks,
+                      taskId: _task.id!,
+                      initialCompletions: _cachedHabitCompletions,
+                      hideControls: true,
+                      weekOffset: _habitsWeekOffset,
+                      showEmptyMessage: false,
+                    );
+                  }
+                  final pendingSubtasks =
+                      subtasks.where((s) => !s.completed).toList();
+                  final completedSubtasks =
+                      subtasks.where((s) => s.completed).toList();
 
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _newSubtaskController,
-                              textCapitalization: TextCapitalization.sentences,
-                              decoration: InputDecoration(
-                                hintText: 'Add new subtask',
-                                prefixIcon: Icon(
-                                  Icons.add_task_rounded,
-                                  color: colorScheme.primary,
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _newSubtaskController,
+                                textCapitalization:
+                                    TextCapitalization.sentences,
+                                decoration: InputDecoration(
+                                  hintText: 'Add new subtask',
+                                  prefixIcon: Icon(
+                                    Icons.add_task_rounded,
+                                    color: colorScheme.primary,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  filled: true,
+                                  fillColor: colorScheme.surfaceContainerHighest
+                                      .withAlpha(127),
+                                  hintStyle: TextStyle(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                filled: true,
-                                fillColor: colorScheme.surfaceContainerHighest.withAlpha(127),
-                                hintStyle: TextStyle(
+                                style: TextStyle(color: colorScheme.onSurface),
+                                onSubmitted: (_) => _addSubtask(),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_rounded),
+                              onPressed: _addSubtask,
+                              color: colorScheme.primary,
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                _task.sortByPriority
+                                    ? Icons.sort_by_alpha_rounded
+                                    : Icons.drag_indicator_rounded,
+                                color:
+                                    _task.sortByPriority
+                                        ? colorScheme.primary
+                                        : colorScheme.onSurfaceVariant,
+                              ),
+                              onPressed: () async {
+                                setState(() {
+                                  _task = _task.copyWith(
+                                    sortByPriority: !_task.sortByPriority,
+                                  );
+                                  _taskChanged = true;
+                                });
+                                await _saveTask();
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (subtasks.isEmpty)
+                        Expanded(
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                'No subtasks',
+                                style: TextStyle(
                                   color: colorScheme.onSurfaceVariant,
                                 ),
                               ),
-                              style: TextStyle(color: colorScheme.onSurface),
-                              onSubmitted: (_) => _addSubtask(),
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.add_circle_rounded),
-                            onPressed: _addSubtask,
-                            color: colorScheme.primary,
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              _task.sortByPriority ? Icons.sort_by_alpha_rounded : Icons.drag_indicator_rounded,
-                              color: _task.sortByPriority ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                        )
+                      else ...[
+                        const SizedBox(height: 4),
+                        TabBar(
+                          controller: _subtasksTabController,
+                          labelColor: colorScheme.primary,
+                          unselectedLabelColor: colorScheme.onSurfaceVariant,
+                          indicatorColor: colorScheme.primary,
+                          labelStyle: const TextStyle(fontSize: 13),
+                          unselectedLabelStyle: const TextStyle(fontSize: 13),
+                          dividerHeight: 1.0,
+                          tabs: [
+                            Tab(
+                              height: 40,
+                              child: Text(
+                                'Pending (${pendingSubtasks.length})',
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            onPressed: () async {
-                              setState(() {
-                                _task = _task.copyWith(sortByPriority: !_task.sortByPriority);
-                                _taskChanged = true;
-                              });
-                              await _saveTask();
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (subtasks.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'No subtasks',
-                            style: TextStyle(color: colorScheme.onSurfaceVariant),
+                            Tab(
+                              height: 40,
+                              child: Text(
+                                'Completed (${completedSubtasks.length})',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Expanded(
+                          child: TabBarView(
+                            controller: _subtasksTabController,
+                            children: [
+                              _buildPendingSubtasksTab(pendingSubtasks),
+                              _buildCompletedSubtasksTab(completedSubtasks),
+                            ],
                           ),
                         ),
-                      )
-                    else ...[
-                      const SizedBox(height: 4),
-                      TabBar(
-                        controller: _subtasksTabController,
-                        labelColor: colorScheme.primary,
-                        unselectedLabelColor: colorScheme.onSurfaceVariant,
-                        indicatorColor: colorScheme.primary,
-                        labelStyle: const TextStyle(fontSize: 13),
-                        unselectedLabelStyle: const TextStyle(fontSize: 13),
-                        dividerHeight: 1.0,
-                        tabs: [
-                          Tab(
-                            height: 40,
-                            child: Text(
-                              'Pending (${pendingSubtasks.length})',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Tab(
-                            height: 40,
-                            child: Text(
-                              'Completed (${completedSubtasks.length})',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Builder(
-                        builder: (context) {
-                          // Calculate dynamic height based on number of items
-                          // Each subtask item is approximately 60px high
-                          final maxItems = pendingSubtasks.length > completedSubtasks.length 
-                              ? pendingSubtasks.length 
-                              : completedSubtasks.length;
-                          final itemHeight = 60.0;
-                          final minHeight = 60.0;
-                          final maxHeight = MediaQuery.of(context).size.height * 0.5;
-                          final calculatedHeight = (maxItems * itemHeight).clamp(minHeight, maxHeight);
-                          
-                          return SizedBox(
-                            height: calculatedHeight,
-                            child: TabBarView(
-                              controller: _subtasksTabController,
-                              children: [
-                                _buildPendingSubtasksTab(pendingSubtasks),
-                                _buildCompletedSubtasksTab(completedSubtasks),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                      ],
                     ],
-                  ],
-                );
-              },
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -988,7 +1019,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
             ),
             child: Icon(
               _task.isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
-              color: _task.isPinned ? colorScheme.primary : colorScheme.onSurfaceVariant,
+              color:
+                  _task.isPinned
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -1077,14 +1111,20 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.calendar_today_rounded, color: colorScheme.primary),
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      color: colorScheme.primary,
+                    ),
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
                         _task.date == null
                             ? 'No date'
                             : DateFormat('dd/MM/yyyy').format(_task.date!),
-                        style: TextStyle(fontSize: 13, color: colorScheme.onSurface),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colorScheme.onSurface,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -1099,7 +1139,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
                         clearDate: true,
                         updatedAt: DateTime.now(),
                       );
-                      await widget.databaseService.taskService.updateTask(updatedTask);
+                      await widget.databaseService.taskService.updateTask(
+                        updatedTask,
+                      );
                       if (!mounted) return;
                       setState(() {
                         _task = updatedTask;
@@ -1294,6 +1336,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
         onTap: () => _showTagSelector(),
         borderRadius: BorderRadius.circular(12),
         child: Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerHighest.withAlpha(127),
@@ -1516,7 +1559,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
                                           // Notify database change so listeners (including this
                                           // screen) update immediately when tags change.
                                           try {
-                                            widget.databaseService.notifyDatabaseChanged();
+                                            widget.databaseService
+                                                .notifyDatabaseChanged();
                                           } catch (_) {}
                                           Navigator.pop(context);
                                         },
@@ -1710,7 +1754,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
   Widget _buildPendingSubtasksTab(List<Subtask> pendingSubtasks) {
     final colorScheme = Theme.of(context).colorScheme;
     return pendingSubtasks.isEmpty
-      ? Center(
+        ? Center(
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
@@ -1719,7 +1763,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
             ),
           ),
         )
-      : _task.sortByPriority
+        : _task.sortByPriority
         ? ListView.builder(
           itemCount: pendingSubtasks.length,
           itemBuilder: (context, index) {
@@ -1742,7 +1786,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
   Widget _buildCompletedSubtasksTab(List<Subtask> completedSubtasks) {
     final colorScheme = Theme.of(context).colorScheme;
     return completedSubtasks.isEmpty
-      ? Center(
+        ? Center(
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
@@ -1751,13 +1795,13 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with SingleTickerPr
             ),
           ),
         )
-      : ListView.builder(
-        itemCount: completedSubtasks.length,
-        itemBuilder: (context, index) {
-          final subtask = completedSubtasks[index];
-          final isEditing = _editingSubtaskId == subtask.id.toString();
-          return _buildSubtaskItem(subtask, isEditing, colorScheme);
-        },
-      );
+        : ListView.builder(
+          itemCount: completedSubtasks.length,
+          itemBuilder: (context, index) {
+            final subtask = completedSubtasks[index];
+            final isEditing = _editingSubtaskId == subtask.id.toString();
+            return _buildSubtaskItem(subtask, isEditing, colorScheme);
+          },
+        );
   }
 }
