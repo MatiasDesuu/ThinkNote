@@ -279,33 +279,6 @@ class TasksScreenState extends State<TasksScreen>
     }
   }
 
-  // Helpers para el color de la etiqueta de estado (copiados desde la versión desktop)
-  Color _getStateLabelColor(TaskState state, ColorScheme colorScheme) {
-    switch (state) {
-      case TaskState.pending:
-        return colorScheme.surfaceContainerHighest.withAlpha(80);
-      case TaskState.inProgress:
-        return const Color(0xFFFFE0B2);
-      case TaskState.completed:
-        return colorScheme.primaryContainer.withAlpha(120);
-      case TaskState.none:
-        return Colors.transparent;
-    }
-  }
-
-  Color _getStateLabelTextColor(TaskState state, ColorScheme colorScheme) {
-    switch (state) {
-      case TaskState.pending:
-        return colorScheme.onSurfaceVariant;
-      case TaskState.inProgress:
-        return const Color(0xFFB75D0A);
-      case TaskState.completed:
-        return colorScheme.primary;
-      case TaskState.none:
-        return colorScheme.onSurfaceVariant;
-    }
-  }
-
   String _getStateText(TaskState state) {
     switch (state) {
       case TaskState.pending:
@@ -317,6 +290,64 @@ class TasksScreenState extends State<TasksScreen>
       case TaskState.none:
         return 'No status';
     }
+  }
+
+  Widget _buildTagChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required ColorScheme colorScheme,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color:
+                isSelected
+                    ? colorScheme.primary.withAlpha(25)
+                    : colorScheme.surfaceContainerHighest.withAlpha(127),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color:
+                  isSelected
+                      ? colorScheme.primary.withAlpha(100)
+                      : Colors.transparent,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.label_outline_rounded,
+                size: 14,
+                color:
+                    isSelected
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                  color:
+                      isSelected
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -333,104 +364,116 @@ class TasksScreenState extends State<TasksScreen>
           automaticallyImplyLeading: false,
           toolbarHeight: 0,
           bottom: PreferredSize(
-            preferredSize: Size.fromHeight(_allTags.isNotEmpty ? 86 : 48),
+            preferredSize: Size.fromHeight(_allTags.isNotEmpty ? 88 : 48),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (_allTags.isNotEmpty)
                   Container(
-                    height: 40,
+                    height: 36,
                     margin: const EdgeInsets.only(bottom: 4),
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                       itemCount: _allTags.length + 1,
                       itemBuilder: (context, index) {
                         if (index == 0) {
                           return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: FilterChip(
-                              label: const Text('All'),
-                              selected: _selectedTag == null,
-                              onSelected: (_) {
+                            padding: const EdgeInsets.only(right: 6),
+                            child: _buildTagChip(
+                              label: 'All',
+                              isSelected: _selectedTag == null,
+                              onTap: () {
                                 setState(() {
                                   _selectedTag = null;
                                 });
                                 _loadTasks();
                               },
-                              selectedColor: colorScheme.primaryContainer,
-                              checkmarkColor: colorScheme.onPrimaryContainer,
-                              labelStyle: TextStyle(
-                                color:
-                                    _selectedTag == null
-                                        ? colorScheme.onPrimaryContainer
-                                        : colorScheme.onSurface,
-                              ),
-                              side: BorderSide(
-                                color:
-                                    _selectedTag == null
-                                        ? colorScheme.primary
-                                        : colorScheme.outline,
-                                width: 1,
-                              ),
+                              colorScheme: colorScheme,
                             ),
                           );
                         }
                         final tag = _allTags[index - 1];
                         return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: FilterChip(
-                            label: Text(tag),
-                            selected: _selectedTag == tag,
-                            onSelected: (selected) {
+                          padding: const EdgeInsets.only(right: 6),
+                          child: _buildTagChip(
+                            label: tag,
+                            isSelected: _selectedTag == tag,
+                            onTap: () {
                               setState(() {
-                                _selectedTag = selected ? tag : null;
+                                _selectedTag = _selectedTag == tag ? null : tag;
                               });
                               _loadTasks();
                             },
-                            selectedColor: colorScheme.primaryContainer,
-                            checkmarkColor: colorScheme.onPrimaryContainer,
-                            labelStyle: TextStyle(
-                              color:
-                                  _selectedTag == tag
-                                      ? colorScheme.onPrimaryContainer
-                                      : colorScheme.onSurface,
-                            ),
-                            side: BorderSide(
-                              color:
-                                  _selectedTag == tag
-                                      ? colorScheme.primary
-                                      : colorScheme.outline,
-                              width: 1,
-                            ),
+                            colorScheme: colorScheme,
                           ),
                         );
                       },
                     ),
                   ),
-                TabBar(
-                  labelColor: colorScheme.primary,
-                  unselectedLabelColor: colorScheme.onSurfaceVariant,
-                  indicatorColor: colorScheme.primary,
-                  labelStyle: const TextStyle(fontSize: 13),
-                  unselectedLabelStyle: const TextStyle(fontSize: 13),
-                  tabs: [
-                    Tab(
-                      height: 40,
-                      child: Text(
-                        'Pending (${_tasks.length})',
-                        overflow: TextOverflow.ellipsis,
+                // Modern tabs
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withAlpha(127),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: SizedBox(
+                    height: 32,
+                    child: TabBar(
+                      tabAlignment: TabAlignment.fill,
+                      labelPadding: EdgeInsets.zero,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: Colors.transparent,
+                      splashFactory: NoSplash.splashFactory,
+                      overlayColor: WidgetStateProperty.all(Colors.transparent),
+                      indicator: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
                       ),
+                      tabs: [
+                        Tab(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.pending_actions_rounded, size: 16),
+                                const SizedBox(width: 6),
+                                Text('Pending'),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '(${_tasks.length})',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Tab(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.check_circle_rounded, size: 16),
+                                const SizedBox(width: 6),
+                                Text('Completed'),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    Tab(
-                      height: 40,
-                      child: Text(
-                        'Completed (${_completedTasks.length})',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
+                const SizedBox(height: 4),
               ],
             ),
           ),
@@ -457,7 +500,7 @@ class TasksScreenState extends State<TasksScreen>
                               )
                               : ReorderableListView.builder(
                                 physics: const AlwaysScrollableScrollPhysics(),
-                                padding: const EdgeInsets.only(top: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
                                 itemCount: _tasks.length,
                                 onReorder: _reorderTasks,
                                 itemBuilder: (context, index) {
@@ -490,7 +533,7 @@ class TasksScreenState extends State<TasksScreen>
                               : ListView.builder(
                                 physics: const AlwaysScrollableScrollPhysics(),
                                 controller: _scrollController,
-                                padding: const EdgeInsets.only(top: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
                                 itemCount: _completedTasks.length,
                                 itemBuilder: (context, index) {
                                   return _buildTaskItem(_completedTasks[index]);
@@ -568,181 +611,295 @@ class TasksScreenState extends State<TasksScreen>
           );
         }
       },
-        child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: colorScheme.outlineVariant.withAlpha(127),
-            width: 0.5,
-          ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => _selectTask(task),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                    // Leading: state icon (no overlay pin badge)
-                GestureDetector(
-                  onTap: () => _updateTaskState(
-                    task,
-                    task.state == TaskState.completed
-                        ? TaskState.pending
-                        : TaskState.completed,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () => _selectTask(task),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Checkbox minimalista
+                  GestureDetector(
+                    onTap: () => _updateTaskState(
+                      task,
+                      task.state == TaskState.completed
+                          ? TaskState.pending
+                          : TaskState.completed,
+                    ),
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: task.state == TaskState.completed
+                            ? colorScheme.primary
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(7),
+                        border: Border.all(
+                          color: task.state == TaskState.completed
+                              ? colorScheme.primary
+                              : colorScheme.outline.withAlpha(150),
+                          width: 2,
+                        ),
+                      ),
+                      child: task.state == TaskState.completed
+                          ? Icon(
+                              Icons.check_rounded,
+                              size: 16,
+                              color: colorScheme.onPrimary,
+                            )
+                          : null,
+                    ),
                   ),
-                  child: Icon(
-                    task.state == TaskState.completed
-                        ? Icons.check_circle_rounded
-                        : Icons.radio_button_unchecked_rounded,
-                    color: task.state == TaskState.completed
-                        ? colorScheme.primary
-                        : colorScheme.onSurfaceVariant,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Title and chips — fixed-height container so title is vertically
-                // centered when chips are absent.
-                Expanded(
-                  child: SizedBox(
-                    height: 56,
+                  const SizedBox(width: 14),
+                  // Contenido principal
+                  Expanded(
                     child: FutureBuilder<List<String>>(
                       future: _databaseService.taskService.getTagsByTaskId(task.id!),
                       builder: (context, snapshot) {
-                        final hasTags = snapshot.hasData && snapshot.data!.isNotEmpty;
                         final tags = snapshot.data ?? <String>[];
-                        if (!hasTags) {
-                          // No tags: center the title vertically
-                          return Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
+                        final hasMetadata = task.date != null || tags.isNotEmpty || task.isPinned;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Task name
+                            Text(
                               task.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurface,
-                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: task.state == TaskState.completed
+                                    ? colorScheme.onSurfaceVariant.withAlpha(150)
+                                    : colorScheme.onSurface,
+                                fontSize: 15,
                                 decoration: task.state == TaskState.completed
                                     ? TextDecoration.lineThrough
                                     : null,
+                                decorationColor: colorScheme.onSurfaceVariant.withAlpha(150),
                               ),
                             ),
-                          );
-                        }
-
-                        // Has tags: title on top, chips below with spacing
-                        return Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 6.0),
-                              child: Text(
-                                task.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: colorScheme.onSurface,
-                                  fontSize: 16,
-                                  decoration: task.state == TaskState.completed
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                                ),
-                              ),
-                            ),
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 4,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                if (task.date != null)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.surfaceContainerHighest.withAlpha(80),
-                                      borderRadius: BorderRadius.circular(6),
+                            // Metadata row (date, tags, pin)
+                            if (hasMetadata) ...[
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  // Pin indicator
+                                  if (task.isPinned)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.push_pin_rounded,
+                                            size: 12,
+                                            color: colorScheme.primary,
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.calendar_today_rounded, size: 14, color: colorScheme.primary),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          DateFormat('dd/MM/yyyy').format(task.date!),
-                                          style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ...tags.map((tag) => Container(
+                                  // Date
+                                  if (task.date != null)
+                                    Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: colorScheme.primaryContainer.withAlpha(80),
+                                        color: _isDateOverdue(task.date!)
+                                            ? colorScheme.error.withAlpha(20)
+                                            : colorScheme.surfaceContainerHighest.withAlpha(150),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
-                                      child: Text('#$tag', style: TextStyle(fontSize: 11, color: colorScheme.primary, fontWeight: FontWeight.w500)),
-                                    )),
-                              ],
-                            ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.schedule_rounded,
+                                            size: 12,
+                                            color: _isDateOverdue(task.date!)
+                                                ? colorScheme.error
+                                                : colorScheme.onSurfaceVariant,
+                                          ),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            _formatTaskDate(task.date!),
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: _isDateOverdue(task.date!)
+                                                  ? colorScheme.error
+                                                  : colorScheme.onSurfaceVariant,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  // Tags (show first 2 max)
+                                  ...tags.take(2).map(
+                                    (tag) => Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.primary.withAlpha(20),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        tag,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: colorScheme.primary,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  if (tags.length > 2)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.surfaceContainerHighest.withAlpha(100),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        '+${tags.length - 2}',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: colorScheme.onSurfaceVariant,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
                           ],
                         );
                       },
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // State label (hidden for Habits-tagged tasks or no status)
-                FutureBuilder<List<String>>(
-                  future: _databaseService.taskService.getTagsByTaskId(task.id!),
-                  builder: (context, snapshot) {
-                    final hasHabitsTag = snapshot.data?.contains('Habits') ?? false;
-                    if (hasHabitsTag || task.state == TaskState.none) return const SizedBox.shrink();
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getStateLabelColor(task.state, colorScheme),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        _getStateText(task.state),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: _getStateLabelTextColor(task.state, colorScheme),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 4),
-                // Pin indicator/button: only visible when pinned (tap to unpin)
-                task.isPinned
-                    ? IconButton(
-                        icon: Icon(
-                          Icons.push_pin_rounded,
-                          size: 16,
-                          color: colorScheme.primary,
-                        ),
-                        onPressed: () async {
-                          await _databaseService.taskService.updateTaskPinnedState(task.id!, false);
-                          await _loadTasks();
-                        },
-                        tooltip: 'Unpin',
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                        padding: EdgeInsets.zero,
-                      )
-                    : const SizedBox.shrink(),
-              ],
+                  const SizedBox(width: 8),
+                  // Estado (solo si no es none o completed)
+                  if (task.state != TaskState.none && task.state != TaskState.completed)
+                    FutureBuilder<List<String>>(
+                      future: _databaseService.taskService.getTagsByTaskId(task.id!),
+                      builder: (context, snapshot) {
+                        final hasHabitsTag = snapshot.data?.contains('Habits') ?? false;
+                        if (hasHabitsTag) return const SizedBox.shrink();
+                        return _buildStateIndicator(task.state, colorScheme);
+                      },
+                    ),
+                  // Chevron para indicar navegación
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: colorScheme.onSurfaceVariant.withAlpha(100),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildStateIndicator(TaskState state, ColorScheme colorScheme) {
+    final color = _getStateIndicatorColor(state, colorScheme);
+    final icon = _getStateIndicatorIcon(state);
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withAlpha(20),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: color.withAlpha(50),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            _getStateText(state),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getStateIndicatorColor(TaskState state, ColorScheme colorScheme) {
+    switch (state) {
+      case TaskState.pending:
+        return colorScheme.onSurfaceVariant;
+      case TaskState.inProgress:
+        return const Color(0xFFE67E22);
+      case TaskState.completed:
+        return colorScheme.primary;
+      case TaskState.none:
+        return colorScheme.onSurfaceVariant;
+    }
+  }
+
+  IconData _getStateIndicatorIcon(TaskState state) {
+    switch (state) {
+      case TaskState.pending:
+        return Icons.schedule_rounded;
+      case TaskState.inProgress:
+        return Icons.trending_up_rounded;
+      case TaskState.completed:
+        return Icons.check_circle_rounded;
+      case TaskState.none:
+        return Icons.remove_rounded;
+    }
+  }
+
+  String _formatTaskDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+    final taskDate = DateTime(date.year, date.month, date.day);
+
+    if (taskDate == today) {
+      return 'Today';
+    } else if (taskDate == tomorrow) {
+      return 'Tomorrow';
+    } else if (taskDate.isBefore(today)) {
+      return 'Overdue';
+    } else {
+      return DateFormat('MMM d').format(date);
+    }
+  }
+
+  bool _isDateOverdue(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final taskDate = DateTime(date.year, date.month, date.day);
+    return taskDate.isBefore(today);
   }
 
   Widget _buildEmptyTasksList() {

@@ -447,22 +447,234 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     }
   }
 
+  Widget _buildActionChip({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+    required ColorScheme colorScheme,
+    VoidCallback? onClear,
+    Color? activeColor,
+  }) {
+    final chipColor = activeColor ?? colorScheme.primary;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color:
+                isActive
+                    ? chipColor.withAlpha(25)
+                    : colorScheme.surfaceContainerHighest.withAlpha(127),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isActive ? chipColor.withAlpha(100) : Colors.transparent,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: isActive ? chipColor : colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isActive ? FontWeight.w500 : FontWeight.normal,
+                  color: isActive ? chipColor : colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (onClear != null) ...[
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: onClear,
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 16,
+                    color: chipColor.withAlpha(180),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNewSubtaskInput({required ColorScheme colorScheme}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withAlpha(100),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Add button
+          Material(
+            color: colorScheme.primaryContainer.withAlpha(80),
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: _addSubtask,
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: Icon(
+                  Icons.add_rounded,
+                  color: colorScheme.primary,
+                  size: 22,
+                ),
+              ),
+            ),
+          ),
+
+          // Text field
+          Expanded(
+            child: TextField(
+              controller: _newSubtaskController,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                hintText: 'Add a subtask...',
+                hintStyle: TextStyle(
+                  color: colorScheme.onSurfaceVariant.withAlpha(150),
+                  fontSize: 14,
+                ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+              style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
+              onSubmitted: (_) => _addSubtask(),
+            ),
+          ),
+
+          // Sort toggle button
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: () async {
+                setState(() {
+                  _task = _task.copyWith(sortByPriority: !_task.sortByPriority);
+                  _taskChanged = true;
+                });
+                await _saveTask();
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: Icon(
+                  _task.sortByPriority
+                      ? Icons.sort_rounded
+                      : Icons.swap_vert_rounded,
+                  color:
+                      _task.sortByPriority
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                  size: 22,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _selectDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _task.date ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (date != null) {
+      try {
+        final updatedTask = _task.copyWith(
+          date: date,
+          updatedAt: DateTime.now(),
+        );
+        await widget.databaseService.taskService.updateTask(updatedTask);
+        if (!mounted) return;
+        setState(() {
+          _task = updatedTask;
+          _selectedDate = date;
+          _taskChanged = false;
+        });
+      } catch (e) {
+        if (!mounted) return;
+        CustomSnackbar.show(
+          context: context,
+          message: 'Error updating date: ${e.toString()}',
+          type: CustomSnackbarType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _clearDate() async {
+    try {
+      final updatedTask = _task.copyWith(
+        clearDate: true,
+        updatedAt: DateTime.now(),
+      );
+      await widget.databaseService.taskService.updateTask(updatedTask);
+      if (!mounted) return;
+      setState(() {
+        _task = updatedTask;
+        _selectedDate = null;
+        _taskChanged = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      CustomSnackbar.show(
+        context: context,
+        message: 'Error clearing date: ${e.toString()}',
+        type: CustomSnackbarType.error,
+      );
+    }
+  }
+
   Widget _buildSubtaskItem(
     Subtask subtask,
     bool isEditing,
     ColorScheme colorScheme,
   ) {
+    final isCompleted = subtask.completed;
+
     return Dismissible(
       key: Key(subtask.id.toString()),
       direction: DismissDirection.horizontal,
       background: Container(
-        color: colorScheme.tertiary,
+        decoration: BoxDecoration(
+          color: colorScheme.tertiary,
+          borderRadius: BorderRadius.circular(10),
+        ),
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.only(left: 20),
         child: Icon(Icons.check_rounded, color: colorScheme.onTertiary),
       ),
       secondaryBackground: Container(
-        color: colorScheme.error,
+        decoration: BoxDecoration(
+          color: colorScheme.error,
+          borderRadius: BorderRadius.circular(10),
+        ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         child: Icon(Icons.delete_rounded, color: colorScheme.onError),
@@ -488,7 +700,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                 if (!mounted) return;
                 scaffoldMessenger.showSnackBar(
                   SnackBar(
-                    content: Text('Error deleting subtask: ${e.toString()}'),
+                    content: Text('Error deleting subtask: \${e.toString()}'),
                     backgroundColor: colorScheme.error,
                   ),
                 );
@@ -506,113 +718,176 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
           context: context,
           title: 'Delete Subtask',
           message:
-              'Are you sure you want to delete this subtask?\n${subtask.text}',
+              'Are you sure you want to delete this subtask?\n\${subtask.text}',
           confirmText: 'Delete',
           confirmColor: colorScheme.error,
         );
         return result ?? false;
       },
-      child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: colorScheme.outlineVariant.withAlpha(127),
-            width: 0.5,
-          ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-          horizontalTitleGap: 0,
-          leading: Row(
-            mainAxisSize: MainAxisSize.min,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
             children: [
-              if (!_task.sortByPriority)
-                Icon(
-                  Icons.drag_indicator_rounded,
-                  color: colorScheme.onSurfaceVariant.withAlpha(127),
-                  size: 20,
+              // Drag handle (only for pending and manual sort)
+              if (!_task.sortByPriority && !isCompleted)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Icon(
+                    Icons.drag_indicator_rounded,
+                    color: colorScheme.onSurfaceVariant.withAlpha(100),
+                    size: 18,
+                  ),
                 ),
-              Checkbox(
-                value: subtask.completed,
-                onChanged: (_) => _toggleSubtask(subtask),
-                activeColor: colorScheme.primary,
-                checkColor: colorScheme.onPrimary,
-              ),
-            ],
-          ),
-          title:
-              isEditing
-                  ? TextField(
-                    controller: _editingController,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      filled: true,
-                      fillColor: colorScheme.surfaceContainerHighest.withAlpha(
-                        127,
-                      ),
-                      prefixIcon: Icon(
-                        Icons.edit_rounded,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                    style: TextStyle(
-                      decoration:
-                          subtask.completed ? TextDecoration.lineThrough : null,
+
+              // Custom checkbox
+              GestureDetector(
+                onTap: () => _toggleSubtask(subtask),
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color:
+                        isCompleted ? colorScheme.primary : Colors.transparent,
+                    borderRadius: BorderRadius.circular(5),
+                    border: Border.all(
                       color:
-                          subtask.completed
-                              ? colorScheme.onSurfaceVariant
-                              : colorScheme.onSurface,
+                          isCompleted
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant.withAlpha(150),
+                      width: 1.5,
                     ),
-                    onSubmitted: (_) => _saveSubtaskEditing(subtask),
-                    onEditingComplete: () => _saveSubtaskEditing(subtask),
-                    onTapOutside: (_) => _cancelSubtaskEditing(),
-                  )
-                  : GestureDetector(
-                    onTap: () => _toggleSubtaskExpansion(subtask.id.toString()),
-                    onDoubleTap: () => _editSubtask(subtask),
-                    child: Text(
-                      subtask.text,
-                      maxLines:
-                          _expandedSubtasks.contains(subtask.id.toString())
-                              ? null
-                              : 1,
-                      overflow:
-                          _expandedSubtasks.contains(subtask.id.toString())
-                              ? TextOverflow.visible
-                              : TextOverflow.ellipsis,
-                      style: TextStyle(
-                        decoration:
-                            subtask.completed
-                                ? TextDecoration.lineThrough
-                                : null,
-                        color:
-                            subtask.completed
-                                ? colorScheme.onSurfaceVariant
-                                : colorScheme.onSurface,
+                  ),
+                  child:
+                      isCompleted
+                          ? Icon(
+                            Icons.check_rounded,
+                            size: 14,
+                            color: colorScheme.onPrimary,
+                          )
+                          : null,
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // Priority indicator (only for pending)
+              if (!isCompleted && subtask.priority != SubtaskPriority.medium)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: _getPriorityColor(subtask.priority),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+
+              // Title or edit field
+              Expanded(
+                child:
+                    isEditing
+                        ? TextField(
+                          controller: _editingController,
+                          autofocus: true,
+                          decoration: InputDecoration(
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: colorScheme.primary.withAlpha(100),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: colorScheme.outlineVariant.withAlpha(
+                                  100,
+                                ),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: colorScheme.surface,
+                          ),
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: colorScheme.onSurface,
+                          ),
+                          onSubmitted: (_) => _saveSubtaskEditing(subtask),
+                          onEditingComplete: () => _saveSubtaskEditing(subtask),
+                          onTapOutside: (_) => _cancelSubtaskEditing(),
+                        )
+                        : GestureDetector(
+                          onTap:
+                              () => _toggleSubtaskExpansion(
+                                subtask.id.toString(),
+                              ),
+                          onDoubleTap: () => _editSubtask(subtask),
+                          child: Text(
+                            subtask.text,
+                            maxLines:
+                                _expandedSubtasks.contains(
+                                      subtask.id.toString(),
+                                    )
+                                    ? null
+                                    : 1,
+                            overflow:
+                                _expandedSubtasks.contains(
+                                      subtask.id.toString(),
+                                    )
+                                    ? TextOverflow.visible
+                                    : TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 15,
+                              decoration:
+                                  isCompleted
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                              color:
+                                  isCompleted
+                                      ? colorScheme.onSurfaceVariant
+                                      : colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+              ),
+
+              // Priority button (always visible on mobile)
+              if (!isCompleted)
+                Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  child: InkWell(
+                    onTap: () => _showPrioritySelector(subtask),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: Icon(
+                        _getPriorityIcon(subtask.priority),
+                        color: _getPriorityColor(subtask.priority),
+                        size: 18,
                       ),
                     ),
                   ),
-          trailing: Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            child: InkWell(
-              onTap: () => _showPrioritySelector(subtask),
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                child: Icon(
-                  _getPriorityIcon(subtask.priority),
-                  color: _getPriorityColor(subtask.priority),
-                  size: 20,
                 ),
-              ),
-            ),
+            ],
           ),
         ),
       ),
@@ -687,159 +962,297 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
         ),
         body: Column(
           children: [
-            // Título
-            Padding(
-              padding: const EdgeInsets.only(
-                left: 8,
-                right: 8,
-                top: 8,
-                bottom: 8,
+            // Header section
+            Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: TextField(
-                controller: _nameController,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  labelText: 'Title',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _nameController,
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: const InputDecoration(
+                            hintText: 'Task title...',
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      // Pin button
+                      Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        child: InkWell(
+                          onTap: _toggleTaskPinned,
+                          borderRadius: BorderRadius.circular(8),
+                          child: SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Icon(
+                              _task.isPinned
+                                  ? Icons.push_pin_rounded
+                                  : Icons.push_pin_outlined,
+                              size: 22,
+                              color:
+                                  _task.isPinned
+                                      ? colorScheme.primary
+                                      : colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withAlpha(127),
-                  prefixIcon: Icon(
-                    Icons.title_rounded,
-                    color: colorScheme.primary,
-                  ),
-                ),
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+
+                  if (!_isHabits) ...[
+                    const SizedBox(height: 12),
+
+                    // Action chips row
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          // Date chip
+                          _buildActionChip(
+                            icon: Icons.calendar_today_rounded,
+                            label:
+                                _task.date == null
+                                    ? 'Add date'
+                                    : DateFormat(
+                                      'MMM d, yyyy',
+                                    ).format(_task.date!),
+                            isActive: _task.date != null,
+                            onTap: () => _selectDate(),
+                            onClear:
+                                _task.date != null ? () => _clearDate() : null,
+                            colorScheme: colorScheme,
+                          ),
+                          const SizedBox(width: 8),
+
+                          // Status chip
+                          _buildActionChip(
+                            icon: _getStateIconData(_task.state),
+                            label: _getStateText(_task.state),
+                            isActive: _task.state != TaskState.none,
+                            onTap: _showStateSelector,
+                            colorScheme: colorScheme,
+                            activeColor: _getStateColor(_task.state),
+                          ),
+                          const SizedBox(width: 8),
+
+                          // Tags chip
+                          FutureBuilder<List<String>>(
+                            future: widget.databaseService.taskService
+                                .getTagsByTaskId(_task.id!),
+                            builder: (context, snapshot) {
+                              final tags = snapshot.data ?? [];
+                              return _buildActionChip(
+                                icon: Icons.label_outline_rounded,
+                                label:
+                                    tags.isEmpty
+                                        ? 'Add tags'
+                                        : tags.length == 1
+                                        ? tags.first
+                                        : '${tags.length} tags',
+                                isActive: tags.isNotEmpty,
+                                onTap: _showTagSelector,
+                                colorScheme: colorScheme,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // New subtask input
+                    _buildNewSubtaskInput(colorScheme: colorScheme),
+                  ] else ...[
+                    const SizedBox(height: 12),
+
+                    // Tags chip for habits
+                    FutureBuilder<List<String>>(
+                      future: widget.databaseService.taskService
+                          .getTagsByTaskId(_task.id!),
+                      builder: (context, snapshot) {
+                        final tags = snapshot.data ?? [];
+                        return _buildActionChip(
+                          icon: Icons.label_outline_rounded,
+                          label:
+                              tags.isEmpty
+                                  ? 'Add tags'
+                                  : tags.length == 1
+                                  ? tags.first
+                                  : '${tags.length} tags',
+                          isActive: tags.isNotEmpty,
+                          onTap: _showTagSelector,
+                          colorScheme: colorScheme,
+                        );
+                      },
+                    ),
+                  ],
+                ],
               ),
             ),
 
-            if (!_isHabits)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: [
-                    Expanded(child: _buildDateSelector()),
-                    const SizedBox(width: 4),
-                    Expanded(child: _buildStateSelector()),
-                    const SizedBox(width: 4),
-                    _buildPinButton(),
-                  ],
-                ),
-              )
-            else
-              // For Habits mode show Tag and Pin controls below the title,
-              // horizontally aligned and taking full width.
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: [
-                    Expanded(child: _buildTagSelector(compact: true)),
-                    const SizedBox(width: 4),
-                    Expanded(child: _buildPinButton(compact: true)),
-                  ],
-                ),
-              ),
-            SizedBox(height: _isHabits ? 0 : 8),
-
-            // Tags (only show the standalone tag row when NOT Habits; Habits shows tag in header)
-            if (!_isHabits)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: _buildTagSelector(),
-              ),
-            SizedBox(height: _isHabits ? 0 : 4),
-
-            // For Habits mode show week navigation and add row here (we hide internals in the widget)
+            // For Habits mode show week navigation and add row
             if (_isHabits) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 4.0,
-                  horizontal: 8,
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Row(
+                padding: const EdgeInsets.all(12),
+                child: Column(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_rounded),
-                      onPressed: () => setState(() => _habitsWeekOffset--),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            if (_habitsWeekOffset != 0) {
-                              setState(() => _habitsWeekOffset = 0);
-                            }
-                          },
-                          icon: Icon(
-                            Icons.date_range_rounded,
-                            size: 18,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          label: Text(
-                            '${DateFormat('MMM d').format(DateTime.now().add(Duration(days: _habitsWeekOffset * 7 - DateTime.now().weekday + 1)))} - ${DateFormat('MMM d').format(DateTime.now().add(Duration(days: _habitsWeekOffset * 7 - DateTime.now().weekday + 7)))}',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyLarge,
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(48),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
+                    // Week navigation row
+                    Row(
+                      children: [
+                        Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          child: InkWell(
+                            onTap: () => setState(() => _habitsWeekOffset--),
+                            borderRadius: BorderRadius.circular(8),
+                            child: SizedBox(
+                              width: 36,
+                              height: 36,
+                              child: Icon(
+                                Icons.chevron_left_rounded,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            backgroundColor: colorScheme.surface,
-                            side: BorderSide(color: Colors.transparent),
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_forward_rounded),
-                      onPressed: () => setState(() => _habitsWeekOffset++),
-                    ),
-                  ],
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _newSubtaskController,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(
-                          hintText: 'Add new habit',
-                          prefixIcon: Icon(
-                            Icons.add_task_rounded,
-                            color: colorScheme.primary,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          filled: true,
-                          fillColor: colorScheme.surfaceContainerHighest
-                              .withAlpha(127),
-                          hintStyle: TextStyle(
-                            color: colorScheme.onSurfaceVariant,
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              if (_habitsWeekOffset != 0) {
+                                setState(() => _habitsWeekOffset = 0);
+                              }
+                            },
+                            child: Container(
+                              height: 36,
+                              alignment: Alignment.center,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today_rounded,
+                                    size: 14,
+                                    color:
+                                        _habitsWeekOffset == 0
+                                            ? colorScheme.primary
+                                            : colorScheme.onSurfaceVariant,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${DateFormat('MMM d').format(DateTime.now().add(Duration(days: _habitsWeekOffset * 7 - DateTime.now().weekday + 1)))} - ${DateFormat('MMM d').format(DateTime.now().add(Duration(days: _habitsWeekOffset * 7 - DateTime.now().weekday + 7)))}',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color:
+                                          _habitsWeekOffset == 0
+                                              ? colorScheme.primary
+                                              : colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                        style: TextStyle(color: colorScheme.onSurface),
-                        onSubmitted: (_) => _addSubtask(),
-                      ),
+                        Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          child: InkWell(
+                            onTap: () => setState(() => _habitsWeekOffset++),
+                            borderRadius: BorderRadius.circular(8),
+                            child: SizedBox(
+                              width: 36,
+                              height: 36,
+                              child: Icon(
+                                Icons.chevron_right_rounded,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_rounded),
-                      onPressed: _addSubtask,
-                      color: colorScheme.primary,
+                    const SizedBox(height: 12),
+                    // Add habit input
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colorScheme.outlineVariant.withAlpha(100),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Material(
+                            color: colorScheme.primaryContainer.withAlpha(80),
+                            borderRadius: BorderRadius.circular(8),
+                            child: InkWell(
+                              onTap: _addSubtask,
+                              borderRadius: BorderRadius.circular(8),
+                              child: SizedBox(
+                                width: 36,
+                                height: 36,
+                                child: Icon(
+                                  Icons.add_rounded,
+                                  color: colorScheme.primary,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: _newSubtaskController,
+                              textCapitalization: TextCapitalization.sentences,
+                              decoration: InputDecoration(
+                                hintText: 'Add a habit...',
+                                hintStyle: TextStyle(
+                                  color: colorScheme.onSurfaceVariant.withAlpha(
+                                    150,
+                                  ),
+                                  fontSize: 14,
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                              ),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: colorScheme.onSurface,
+                              ),
+                              onSubmitted: (_) => _addSubtask(),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -860,8 +1273,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                   final subtasks = _cachedSubtasks ?? <Subtask>[];
                   // If this task is a Habits task, render the HabitsTracker instead of the normal subtasks list
                   if (_isHabits) {
-                    // Render the HabitsTracker inline so it participates in the
-                    // parent ListView's scroll (matching subtasks behaviour).
+                    // Render the HabitsTracker with scrolling enabled
                     return HabitsTracker(
                       databaseService: widget.databaseService,
                       subtasks: subtasks,
@@ -870,6 +1282,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                       hideControls: true,
                       weekOffset: _habitsWeekOffset,
                       showEmptyMessage: false,
+                      allowScroll: true, // Enable scrolling in mobile
                     );
                   }
                   final pendingSubtasks =
@@ -879,115 +1292,91 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
 
                   return Column(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _newSubtaskController,
-                                textCapitalization:
-                                    TextCapitalization.sentences,
-                                decoration: InputDecoration(
-                                  hintText: 'Add new subtask',
-                                  prefixIcon: Icon(
-                                    Icons.add_task_rounded,
-                                    color: colorScheme.primary,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  filled: true,
-                                  fillColor: colorScheme.surfaceContainerHighest
-                                      .withAlpha(127),
-                                  hintStyle: TextStyle(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
+                      // Subtasks tabs
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.all(4),
+                        child: SizedBox(
+                          height: 36,
+                          child: TabBar(
+                            controller: _subtasksTabController,
+                            tabAlignment: TabAlignment.fill,
+                            labelPadding: EdgeInsets.zero,
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            dividerColor: Colors.transparent,
+                            splashFactory: NoSplash.splashFactory,
+                            overlayColor: WidgetStateProperty.all(
+                              Colors.transparent,
+                            ),
+                            indicator: BoxDecoration(
+                              color: colorScheme.surface,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            tabs: [
+                              Tab(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.pending_actions_rounded,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Pending',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '(${pendingSubtasks.length})',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color:
+                                            _subtasksTabController.index == 0
+                                                ? colorScheme.primary
+                                                : colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                style: TextStyle(color: colorScheme.onSurface),
-                                onSubmitted: (_) => _addSubtask(),
                               ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.add_circle_rounded),
-                              onPressed: _addSubtask,
-                              color: colorScheme.primary,
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                _task.sortByPriority
-                                    ? Icons.sort_by_alpha_rounded
-                                    : Icons.drag_indicator_rounded,
-                                color:
-                                    _task.sortByPriority
-                                        ? colorScheme.primary
-                                        : colorScheme.onSurfaceVariant,
+                              Tab(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.check_circle_rounded, size: 16),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Completed',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
                               ),
-                              onPressed: () async {
-                                setState(() {
-                                  _task = _task.copyWith(
-                                    sortByPriority: !_task.sortByPriority,
-                                  );
-                                  _taskChanged = true;
-                                });
-                                await _saveTask();
-                              },
-                            ),
+                            ],
+                            onTap: (index) {
+                              setState(() {});
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      // Subtasks TabBarView
+                      Expanded(
+                        child: TabBarView(
+                          controller: _subtasksTabController,
+                          children: [
+                            _buildPendingSubtasksTab(pendingSubtasks),
+                            _buildCompletedSubtasksTab(completedSubtasks),
                           ],
                         ),
                       ),
-                      if (subtasks.isEmpty)
-                        Expanded(
-                          child: Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                'No subtasks',
-                                style: TextStyle(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                          ),
-                        )
-                      else ...[
-                        const SizedBox(height: 4),
-                        TabBar(
-                          controller: _subtasksTabController,
-                          labelColor: colorScheme.primary,
-                          unselectedLabelColor: colorScheme.onSurfaceVariant,
-                          indicatorColor: colorScheme.primary,
-                          labelStyle: const TextStyle(fontSize: 13),
-                          unselectedLabelStyle: const TextStyle(fontSize: 13),
-                          dividerHeight: 1.0,
-                          tabs: [
-                            Tab(
-                              height: 40,
-                              child: Text(
-                                'Pending (${pendingSubtasks.length})',
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Tab(
-                              height: 40,
-                              child: Text(
-                                'Completed (${completedSubtasks.length})',
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Expanded(
-                          child: TabBarView(
-                            controller: _subtasksTabController,
-                            children: [
-                              _buildPendingSubtasksTab(pendingSubtasks),
-                              _buildCompletedSubtasksTab(completedSubtasks),
-                            ],
-                          ),
-                        ),
-                      ],
                     ],
                   );
                 },
@@ -999,212 +1388,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     );
   }
 
-  Widget _buildPinButton({bool compact = false}) {
-    final colorScheme = Theme.of(context).colorScheme;
-    if (compact) {
-      return Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          onTap: () => _toggleTaskPinned(),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            width: 48,
-            height: 48,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withAlpha(127),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colorScheme.outline, width: 1),
-            ),
-            child: Icon(
-              _task.isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
-              color:
-                  _task.isPinned
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: () => _toggleTaskPinned(),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withAlpha(127),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colorScheme.outline, width: 1),
-          ),
-          child: Icon(
-            _task.isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
-            color:
-                _task.isPinned
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ),
-    );
-  }
-
   void _toggleTaskPinned() {
     setState(() {
       _task = _task.copyWith(isPinned: !_task.isPinned);
       _taskChanged = true;
     });
-  }
-
-  Widget _buildDateSelector() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: () async {
-          final date = await showDatePicker(
-            context: context,
-            initialDate: _task.date ?? DateTime.now(),
-            firstDate: DateTime.now().subtract(const Duration(days: 365)),
-            lastDate: DateTime.now().add(const Duration(days: 365)),
-          );
-          if (date != null) {
-            try {
-              final updatedTask = _task.copyWith(
-                date: date,
-                updatedAt: DateTime.now(),
-              );
-              await widget.databaseService.taskService.updateTask(updatedTask);
-              if (!mounted) return;
-              setState(() {
-                _task = updatedTask;
-                _taskChanged = false;
-              });
-            } catch (e) {
-              if (!mounted) return;
-              CustomSnackbar.show(
-                context: context,
-                message: 'Error updating date: ${e.toString()}',
-                type: CustomSnackbarType.error,
-              );
-            }
-          }
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withAlpha(127),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colorScheme.outline, width: 1),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.calendar_today_rounded,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        _task.date == null
-                            ? 'No date'
-                            : DateFormat('dd/MM/yyyy').format(_task.date!),
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: colorScheme.onSurface,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (_task.date != null)
-                GestureDetector(
-                  onTap: () async {
-                    try {
-                      final updatedTask = _task.copyWith(
-                        clearDate: true,
-                        updatedAt: DateTime.now(),
-                      );
-                      await widget.databaseService.taskService.updateTask(
-                        updatedTask,
-                      );
-                      if (!mounted) return;
-                      setState(() {
-                        _task = updatedTask;
-                        _selectedDate = null;
-                        _taskChanged = false;
-                      });
-                    } catch (e) {
-                      if (!mounted) return;
-                      CustomSnackbar.show(
-                        context: context,
-                        message: 'Error clearing date: ${e.toString()}',
-                        type: CustomSnackbarType.error,
-                      );
-                    }
-                  },
-                  child: Icon(
-                    Icons.close_rounded,
-                    size: 18,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStateSelector() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: () => _showStateSelector(),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withAlpha(127),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colorScheme.outline, width: 1),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                _getStateIconData(_task.state),
-                color: _getStateColor(_task.state),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _getStateText(_task.state),
-                style: TextStyle(
-                  fontSize: 14,
-                  color: _getStateColor(_task.state),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   IconData _getStateIconData(TaskState state) {
@@ -1302,100 +1490,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
           ),
         );
       },
-    );
-  }
-
-  Widget _buildTagSelector({bool compact = false}) {
-    final colorScheme = Theme.of(context).colorScheme;
-    if (compact) {
-      return Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          onTap: () => _showTagSelector(),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            width: 48,
-            height: 48,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withAlpha(127),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colorScheme.outline, width: 1),
-            ),
-            child: Icon(Icons.label_rounded, color: colorScheme.primary),
-          ),
-        ),
-      );
-    }
-
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: () => _showTagSelector(),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withAlpha(127),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colorScheme.outline, width: 1),
-          ),
-          child: FutureBuilder<List<String>>(
-            future: widget.databaseService.taskService.getTagsByTaskId(
-              _task.id!,
-            ),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.label_rounded, color: colorScheme.primary),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Tags',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                  ],
-                );
-              }
-
-              final tags = snapshot.data!;
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.label_rounded, color: colorScheme.primary),
-                  const SizedBox(width: 8),
-                  if (tags.isEmpty)
-                    Text(
-                      'Tags',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: colorScheme.onSurface,
-                      ),
-                    )
-                  else
-                    Flexible(
-                      child: Text(
-                        tags.join(', '),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colorScheme.onSurface,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
     );
   }
 
@@ -1755,16 +1849,27 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     final colorScheme = Theme.of(context).colorScheme;
     return pendingSubtasks.isEmpty
         ? Center(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              'No pending subtasks',
-              style: TextStyle(color: colorScheme.onSurfaceVariant),
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.checklist_rounded,
+                size: 48,
+                color: colorScheme.onSurfaceVariant.withAlpha(80),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'No pending subtasks',
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant.withAlpha(150),
+                ),
+              ),
+            ],
           ),
         )
         : _task.sortByPriority
         ? ListView.builder(
+          padding: const EdgeInsets.only(top: 4),
           itemCount: pendingSubtasks.length,
           itemBuilder: (context, index) {
             final subtask = pendingSubtasks[index];
@@ -1773,12 +1878,18 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
           },
         )
         : ReorderableListView.builder(
+          padding: const EdgeInsets.only(top: 4),
           itemCount: pendingSubtasks.length,
           onReorder: _reorderSubtasks,
+          buildDefaultDragHandles: false,
           itemBuilder: (context, index) {
             final subtask = pendingSubtasks[index];
             final isEditing = _editingSubtaskId == subtask.id.toString();
-            return _buildSubtaskItem(subtask, isEditing, colorScheme);
+            return ReorderableDragStartListener(
+              key: ValueKey(subtask.id!),
+              index: index,
+              child: _buildSubtaskItem(subtask, isEditing, colorScheme),
+            );
           },
         );
   }
@@ -1787,15 +1898,26 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     final colorScheme = Theme.of(context).colorScheme;
     return completedSubtasks.isEmpty
         ? Center(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              'No completed subtasks',
-              style: TextStyle(color: colorScheme.onSurfaceVariant),
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.task_alt_rounded,
+                size: 48,
+                color: colorScheme.onSurfaceVariant.withAlpha(80),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'No completed subtasks',
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant.withAlpha(150),
+                ),
+              ),
+            ],
           ),
         )
         : ListView.builder(
+          padding: const EdgeInsets.only(top: 4),
           itemCount: completedSubtasks.length,
           itemBuilder: (context, index) {
             final subtask = completedSubtasks[index];

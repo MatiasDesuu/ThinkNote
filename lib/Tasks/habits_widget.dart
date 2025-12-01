@@ -13,10 +13,14 @@ class HabitsTracker extends StatefulWidget {
   final DatabaseService databaseService;
   final List<Subtask> subtasks;
   final int taskId;
-  final bool hideControls; // if true, don't render internal week/nav and add row
+  final bool
+  hideControls; // if true, don't render internal week/nav and add row
   final int? weekOffset; // external week offset (parent-controlled)
-  final bool showEmptyMessage; // whether to show 'No habits' when subtasks empty
+  final bool
+  showEmptyMessage; // whether to show 'No habits' when subtasks empty
   final Map<int, List<String>>? initialCompletions;
+  final bool
+  allowScroll; // if true, allow scrolling even when hideControls is true
 
   const HabitsTracker({
     super.key,
@@ -25,8 +29,9 @@ class HabitsTracker extends StatefulWidget {
     required this.taskId,
     this.hideControls = false,
     this.weekOffset,
-  this.showEmptyMessage = true,
-  this.initialCompletions,
+    this.showEmptyMessage = true,
+    this.initialCompletions,
+    this.allowScroll = false,
   });
 
   @override
@@ -34,7 +39,8 @@ class HabitsTracker extends StatefulWidget {
 }
 
 class _HabitsTrackerState extends State<HabitsTracker> {
-  Map<String, List<String>> _data = {}; // subtaskId -> list of date strings (ISO yyyy-MM-dd)
+  Map<String, List<String>> _data =
+      {}; // subtaskId -> list of date strings (ISO yyyy-MM-dd)
   late DateTime _now;
   late List<Subtask> _localSubtasks;
   final TextEditingController _editingController = TextEditingController();
@@ -50,40 +56,45 @@ class _HabitsTrackerState extends State<HabitsTracker> {
   void initState() {
     super.initState();
     _now = DateTime.now();
-  _localSubtasks = List.from(widget.subtasks);
-  _editingFocusNode = FocusNode();
-  // Seed completions from parent if available for immediate rendering.
-  if (widget.initialCompletions != null) {
-    _data = {};
-    for (final sub in _localSubtasks) {
-      final key = sub.id?.toString() ?? '';
-      if (sub.id != null) {
-        final list = widget.initialCompletions![sub.id!] ?? <String>[];
-        _data[key] = List<String>.from(list);
-      } else {
-        _data[key] = [];
+    _localSubtasks = List.from(widget.subtasks);
+    _editingFocusNode = FocusNode();
+    // Seed completions from parent if available for immediate rendering.
+    if (widget.initialCompletions != null) {
+      _data = {};
+      for (final sub in _localSubtasks) {
+        final key = sub.id?.toString() ?? '';
+        if (sub.id != null) {
+          final list = widget.initialCompletions![sub.id!] ?? <String>[];
+          _data[key] = List<String>.from(list);
+        } else {
+          _data[key] = [];
+        }
       }
+      if (mounted) setState(() {});
+      // still load fresh data in background
+      _loadData();
+    } else {
+      _loadData();
     }
-    if (mounted) setState(() {});
-    // still load fresh data in background
-    _loadData();
-  } else {
-    _loadData();
-  }
-  // Listen for external DB changes so the tracker updates immediately.
-  try {
-    _dbSubscription = widget.databaseService.onDatabaseChanged.listen((_) async {
-      await _refreshLocalSubtasks();
-      await _loadData();
-    });
-  } catch (_) {}
-  _editingFocusNode.addListener(() {
+    // Listen for external DB changes so the tracker updates immediately.
+    try {
+      _dbSubscription = widget.databaseService.onDatabaseChanged.listen((
+        _,
+      ) async {
+        await _refreshLocalSubtasks();
+        await _loadData();
+      });
+    } catch (_) {}
+    _editingFocusNode.addListener(() {
       if (!_editingFocusNode.hasFocus && _editingSubtaskId != null) {
         // small delay to let button handlers run first
         Future.delayed(const Duration(milliseconds: 50), () {
-          if (mounted && !_editingFocusNode.hasFocus && _editingSubtaskId != null) {
+          if (mounted &&
+              !_editingFocusNode.hasFocus &&
+              _editingSubtaskId != null) {
             // restore original text and exit edit mode
-            _editingController.text = _originalEditingText ?? _editingController.text;
+            _editingController.text =
+                _originalEditingText ?? _editingController.text;
             setState(() => _editingSubtaskId = null);
           }
         });
@@ -103,8 +114,8 @@ class _HabitsTrackerState extends State<HabitsTracker> {
 
   @override
   void dispose() {
-  // No need to remove the anonymous listener explicitly; just dispose the FocusNode.
-  _editingFocusNode.dispose();
+    // No need to remove the anonymous listener explicitly; just dispose the FocusNode.
+    _editingFocusNode.dispose();
     _editingController.dispose();
     _newSubtaskController.dispose();
     _dbSubscription?.cancel();
@@ -115,7 +126,8 @@ class _HabitsTrackerState extends State<HabitsTracker> {
     // Load completions for all subtasks in a single DB query for instant rendering.
     _data = {};
     try {
-      final completionsMap = await widget.databaseService.taskService.getHabitCompletionsForTask(widget.taskId);
+      final completionsMap = await widget.databaseService.taskService
+          .getHabitCompletionsForTask(widget.taskId);
       // Initialize map entries for known subtasks and fill from results.
       for (final sub in _localSubtasks) {
         final key = sub.id?.toString() ?? '';
@@ -152,7 +164,11 @@ class _HabitsTrackerState extends State<HabitsTracker> {
     try {
       final numericId = int.tryParse(subtaskId);
       if (numericId != null) {
-        await widget.databaseService.taskService.setHabitCompletion(numericId, iso, !wasCompleted);
+        await widget.databaseService.taskService.setHabitCompletion(
+          numericId,
+          iso,
+          !wasCompleted,
+        );
         if (wasCompleted) {
           list.remove(iso);
         } else {
@@ -168,7 +184,9 @@ class _HabitsTrackerState extends State<HabitsTracker> {
 
   Future<void> _refreshLocalSubtasks() async {
     try {
-      final subs = await widget.databaseService.taskService.getSubtasksByTaskId(widget.taskId);
+      final subs = await widget.databaseService.taskService.getSubtasksByTaskId(
+        widget.taskId,
+      );
       if (mounted) {
         setState(() {
           _localSubtasks = subs;
@@ -183,7 +201,10 @@ class _HabitsTrackerState extends State<HabitsTracker> {
     final text = _newSubtaskController.text.trim();
     if (text.isEmpty) return;
     try {
-  await widget.databaseService.taskService.createSubtask(widget.taskId, text);
+      await widget.databaseService.taskService.createSubtask(
+        widget.taskId,
+        text,
+      );
       _newSubtaskController.clear();
       await _refreshLocalSubtasks();
     } catch (e) {
@@ -230,357 +251,659 @@ class _HabitsTrackerState extends State<HabitsTracker> {
   }
 
   List<DateTime> _weekDaysForOffset(int offset) {
-    final base = DateTime(_now.year, _now.month, _now.day).add(Duration(days: offset * 7));
+    final base = DateTime(
+      _now.year,
+      _now.month,
+      _now.day,
+    ).add(Duration(days: offset * 7));
     // Week start Monday
     final weekday = base.weekday; // 1..7
     final monday = base.subtract(Duration(days: weekday - 1));
     return List.generate(7, (i) => monday.add(Duration(days: i))).toList();
   }
 
-
   // ... no longer using _lastNDays
 
   @override
   Widget build(BuildContext context) {
-  final colorScheme = Theme.of(context).colorScheme;
-  final effectiveOffset = widget.weekOffset ?? _weekOffset;
-  final days = _weekDaysForOffset(effectiveOffset);
+    final colorScheme = Theme.of(context).colorScheme;
+    final effectiveOffset = widget.weekOffset ?? _weekOffset;
+    final days = _weekDaysForOffset(effectiveOffset);
 
     return Column(
       children: [
-        // Week navigation + add row (can be hidden when parent provides controls)
+        // Week navigation + add habit (can be hidden when parent provides controls)
         if (!widget.hideControls) ...[
-          // Week navigation
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Row(
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Column(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  onPressed: () {
-                    setState(() => _weekOffset--);
-                  },
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        // Return to current week
-                        if (_weekOffset != 0) {
-                          setState(() => _weekOffset = 0);
-                        }
-                      },
-                      icon: Icon(Icons.date_range_rounded, size: 18, color: colorScheme.onSurfaceVariant),
-                      label: Text(
-                        '${DateFormat('MMM d').format(days.first)} - ${DateFormat('MMM d').format(days.last)}',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        backgroundColor: colorScheme.surface,
-                        side: const BorderSide(color: Colors.transparent),
+                // Week navigation row
+                Row(
+                  children: [
+                    Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        onTap: () => setState(() => _weekOffset--),
+                        borderRadius: BorderRadius.circular(8),
+                        child: SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: Icon(
+                            Icons.chevron_left_rounded,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          if (_weekOffset != 0) {
+                            setState(() => _weekOffset = 0);
+                          }
+                        },
+                        child: Container(
+                          height: 36,
+                          alignment: Alignment.center,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.calendar_today_rounded,
+                                size: 14,
+                                color:
+                                    _weekOffset == 0
+                                        ? colorScheme.primary
+                                        : colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${DateFormat('MMM d').format(days.first)} - ${DateFormat('MMM d').format(days.last)}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color:
+                                      _weekOffset == 0
+                                          ? colorScheme.primary
+                                          : colorScheme.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        onTap: () => setState(() => _weekOffset++),
+                        borderRadius: BorderRadius.circular(8),
+                        child: SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: Icon(
+                            Icons.chevron_right_rounded,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.arrow_forward_rounded),
-                  onPressed: () {
-                    setState(() => _weekOffset++);
-                  },
+                const SizedBox(height: 12),
+                // Add habit input
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withAlpha(100),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Material(
+                        color: colorScheme.primaryContainer.withAlpha(80),
+                        borderRadius: BorderRadius.circular(8),
+                        child: InkWell(
+                          onTap: _addSubtask,
+                          borderRadius: BorderRadius.circular(8),
+                          child: SizedBox(
+                            width: 36,
+                            height: 36,
+                            child: Icon(
+                              Icons.add_rounded,
+                              color: colorScheme.primary,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: _newSubtaskController,
+                          decoration: InputDecoration(
+                            hintText: 'Add a habit...',
+                            hintStyle: TextStyle(
+                              color: colorScheme.onSurfaceVariant.withAlpha(
+                                150,
+                              ),
+                              fontSize: 14,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                            ),
+                          ),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: colorScheme.onSurface,
+                          ),
+                          onSubmitted: (_) => _addSubtask(),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-
-          Row(
-            children: [
-              Container(
-                height: 48,
-                width: 48,
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: _addSubtask,
-                    child: Center(
-                      child: Icon(
-                        Icons.add_rounded,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _newSubtaskController,
-                  decoration: InputDecoration(
-                    labelText: 'Add new habit',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    filled: true,
-                    fillColor: colorScheme.surfaceContainerHighest.withAlpha(127),
-                    prefixIcon: Icon(
-                      Icons.add_task_rounded,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                  onSubmitted: (_) => _addSubtask(),
-                ),
-              ),
-            ],
-          ),
         ],
 
-          // When hideControls is true (used in the mobile task detail screen)
-          // render the list inline so the outer page scrolls as a whole. In
-          // that case we must not use Expanded and the internal list should
-          // use shrinkWrap + NeverScrollableScrollPhysics, matching subtasks.
-          Builder(builder: (ctx) {
-            final inline = widget.hideControls == true;
+        // When hideControls is true (used in the mobile task detail screen)
+        // render the list inline so the outer page scrolls as a whole. In
+        // that case we must not use Expanded and the internal list should
+        // use shrinkWrap + NeverScrollableScrollPhysics, matching subtasks.
+        Builder(
+          builder: (ctx) {
+            // Use inline mode only if hideControls and not allowScroll
+            final inline = widget.hideControls == true && !widget.allowScroll;
 
-            final listPadding = inline
-                ? EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    top: 8,
-                    bottom: MediaQuery.of(context).viewPadding.bottom,
-                  )
-                : EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    top: 8,
-                    bottom: MediaQuery.of(context).viewPadding.bottom,
-                  );
+            final listPadding =
+                inline
+                    ? EdgeInsets.only(
+                      left: 8,
+                      right: 8,
+                      top: 4,
+                      bottom: MediaQuery.of(context).viewPadding.bottom,
+                    )
+                    : EdgeInsets.only(
+                      left: widget.hideControls ? 8 : 0,
+                      right: widget.hideControls ? 8 : 0,
+                      top: 4,
+                      bottom:
+                          widget.hideControls
+                              ? MediaQuery.of(context).viewPadding.bottom
+                              : 0,
+                    );
 
-            final listView = _localSubtasks.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Center(
-                      child: widget.showEmptyMessage
-                          ? Text('No habits', style: TextStyle(color: colorScheme.onSurfaceVariant))
-                          : const SizedBox.shrink(),
-                    ),
-                  )
-                : ReorderableListView.builder(
-                    buildDefaultDragHandles: false,
-                    padding: listPadding,
-                    shrinkWrap: inline,
-                    physics: inline ? const NeverScrollableScrollPhysics() : null,
-                    itemCount: _localSubtasks.length,
-                    onReorder: _reorderLocalSubtasks,
-                    itemBuilder: (context, index) {
-                      final sub = _localSubtasks[index];
-                      final id = sub.id?.toString() ?? index.toString();
-                      // compute completed count in the shown window (last N days)
-                      final int completedCount = days.where((d) => _isCompletedOn(id, d)).length;
-                      return ReorderableDelayedDragStartListener(
-                        key: ValueKey(sub.id ?? index),
-                        index: index,
-                        child: Card(
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
+            final listView =
+                _localSubtasks.isEmpty
+                    ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child:
+                            widget.showEmptyMessage
+                                ? Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    // leading habit icon (no background to match other list items)
-                                    SizedBox(
-                                      width: 36,
-                                      height: 36,
-                                      child: Center(
-                                        child: Icon(
-                                          Icons.self_improvement_rounded,
-                                          size: 20,
-                                          color: colorScheme.primary,
-                                        ),
+                                    Icon(
+                                      Icons.self_improvement_rounded,
+                                      size: 48,
+                                      color: colorScheme.onSurfaceVariant
+                                          .withAlpha(80),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'No habits yet',
+                                      style: TextStyle(
+                                        color: colorScheme.onSurfaceVariant
+                                            .withAlpha(150),
                                       ),
                                     ),
-                                    Expanded(
-                                      child: _editingSubtaskId == sub.id?.toString()
-                                          ? TextField(
-                                              controller: _editingController,
-                                              autofocus: true,
-                                              focusNode: _editingFocusNode,
-                                              decoration: InputDecoration(
-                                                isDense: true,
-                                                contentPadding: const EdgeInsets.symmetric(
-                                                  horizontal: 12,
-                                                  vertical: 8,
-                                                ),
-                                                border: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.circular(16),
-                                                ),
-                                                filled: true,
-                                                fillColor: colorScheme.surfaceContainerHighest.withAlpha(
-                                                  127,
-                                                ),
-                                                prefixIcon: Icon(
-                                                  Icons.edit_rounded,
-                                                  color: colorScheme.primary,
-                                                ),
-                                              ),
-                                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                                decoration:
-                                                    sub.completed ? TextDecoration.lineThrough : null,
-                                                color: sub.completed ? colorScheme.onSurfaceVariant : colorScheme.onSurface,
-                                              ),
-                                              onSubmitted: (_) => _saveSubtaskEditing(sub),
-                                              onEditingComplete: () => _saveSubtaskEditing(sub),
-                                            )
-                                          : GestureDetector(
-                                              onDoubleTap: () {
-                                                _editingController.text = sub.text;
-                                                _originalEditingText = sub.text;
-                                                setState(() => _editingSubtaskId = sub.id?.toString());
-                                                // request focus after frame so TextField is present
-                                                WidgetsBinding.instance.addPostFrameCallback((_) {
-                                                  if (mounted) _editingFocusNode.requestFocus();
-                                                });
-                                              },
-                                              child: Text(
-                                                sub.text,
-                                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                                      fontWeight: FontWeight.w600,
-                                                      color: colorScheme.onSurface,
+                                  ],
+                                )
+                                : const SizedBox.shrink(),
+                      ),
+                    )
+                    : ReorderableListView.builder(
+                      buildDefaultDragHandles: false,
+                      padding: listPadding,
+                      shrinkWrap: inline,
+                      physics:
+                          inline ? const NeverScrollableScrollPhysics() : null,
+                      itemCount: _localSubtasks.length,
+                      onReorder: _reorderLocalSubtasks,
+                      itemBuilder: (context, index) {
+                        final sub = _localSubtasks[index];
+                        final id = sub.id?.toString() ?? index.toString();
+                        // compute completed count in the shown window (last N days)
+                        final int completedCount =
+                            days.where((d) => _isCompletedOn(id, d)).length;
+                        return ReorderableDelayedDragStartListener(
+                          key: ValueKey(sub.id ?? index),
+                          index: index,
+                          child: _HabitItemHover(
+                            builder: (context, isHovering) {
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 6),
+                                decoration: BoxDecoration(
+                                  color:
+                                      isHovering
+                                          ? colorScheme.surfaceContainerHighest
+                                          : colorScheme.surfaceContainerLow,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Header row: drag + title + streak + actions
+                                      Row(
+                                        children: [
+                                          // Drag handle
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 8,
+                                            ),
+                                            child: Icon(
+                                              Icons.drag_indicator_rounded,
+                                              color:
+                                                  isHovering
+                                                      ? colorScheme
+                                                          .onSurfaceVariant
+                                                          .withAlpha(150)
+                                                      : colorScheme
+                                                          .onSurfaceVariant
+                                                          .withAlpha(60),
+                                              size: 18,
+                                            ),
+                                          ),
+                                          // Title or edit field
+                                          Expanded(
+                                            child:
+                                                _editingSubtaskId ==
+                                                        sub.id?.toString()
+                                                    ? TextField(
+                                                      controller:
+                                                          _editingController,
+                                                      autofocus: true,
+                                                      focusNode:
+                                                          _editingFocusNode,
+                                                      decoration: InputDecoration(
+                                                        isDense: true,
+                                                        contentPadding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 10,
+                                                              vertical: 8,
+                                                            ),
+                                                        border: OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                          borderSide: BorderSide(
+                                                            color: colorScheme
+                                                                .primary
+                                                                .withAlpha(100),
+                                                          ),
+                                                        ),
+                                                        enabledBorder: OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                          borderSide: BorderSide(
+                                                            color: colorScheme
+                                                                .outlineVariant
+                                                                .withAlpha(100),
+                                                          ),
+                                                        ),
+                                                        focusedBorder:
+                                                            OutlineInputBorder(
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    8,
+                                                                  ),
+                                                              borderSide: BorderSide(
+                                                                color:
+                                                                    colorScheme
+                                                                        .primary,
+                                                              ),
+                                                            ),
+                                                        filled: true,
+                                                        fillColor:
+                                                            colorScheme.surface,
+                                                      ),
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        color:
+                                                            colorScheme
+                                                                .onSurface,
+                                                      ),
+                                                      onSubmitted:
+                                                          (_) =>
+                                                              _saveSubtaskEditing(
+                                                                sub,
+                                                              ),
+                                                      onEditingComplete:
+                                                          () =>
+                                                              _saveSubtaskEditing(
+                                                                sub,
+                                                              ),
+                                                    )
+                                                    : GestureDetector(
+                                                      onDoubleTap: () {
+                                                        _editingController
+                                                            .text = sub.text;
+                                                        _originalEditingText =
+                                                            sub.text;
+                                                        setState(
+                                                          () =>
+                                                              _editingSubtaskId =
+                                                                  sub.id
+                                                                      ?.toString(),
+                                                        );
+                                                        WidgetsBinding.instance
+                                                            .addPostFrameCallback((
+                                                              _,
+                                                            ) {
+                                                              if (mounted) {
+                                                                _editingFocusNode
+                                                                    .requestFocus();
+                                                              }
+                                                            });
+                                                      },
+                                                      child: Text(
+                                                        sub.text,
+                                                        style: TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          color:
+                                                              colorScheme
+                                                                  .onSurface,
+                                                        ),
+                                                      ),
                                                     ),
+                                          ),
+                                          // Action buttons (edit/delete first, then streak)
+                                          if (_editingSubtaskId ==
+                                              sub.id?.toString()) ...[
+                                            const SizedBox(width: 4),
+                                            _buildHabitActionButton(
+                                              icon: Icons.check_rounded,
+                                              color: colorScheme.primary,
+                                              onTap:
+                                                  () =>
+                                                      _saveSubtaskEditing(sub),
+                                              colorScheme: colorScheme,
+                                            ),
+                                            _buildHabitActionButton(
+                                              icon: Icons.close_rounded,
+                                              color: colorScheme.error,
+                                              onTap: () {
+                                                _editingController.text =
+                                                    sub.text;
+                                                setState(
+                                                  () =>
+                                                      _editingSubtaskId = null,
+                                                );
+                                              },
+                                              colorScheme: colorScheme,
+                                            ),
+                                          ] else ...[
+                                            Opacity(
+                                              opacity: isHovering ? 1.0 : 0.0,
+                                              child: IgnorePointer(
+                                                ignoring: !isHovering,
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    _buildHabitActionButton(
+                                                      icon: Icons.edit_rounded,
+                                                      color:
+                                                          colorScheme
+                                                              .onSurfaceVariant,
+                                                      onTap: () {
+                                                        _editingController
+                                                            .text = sub.text;
+                                                        _originalEditingText =
+                                                            sub.text;
+                                                        setState(
+                                                          () =>
+                                                              _editingSubtaskId =
+                                                                  sub.id
+                                                                      ?.toString(),
+                                                        );
+                                                        WidgetsBinding.instance
+                                                            .addPostFrameCallback((
+                                                              _,
+                                                            ) {
+                                                              if (mounted)
+                                                                _editingFocusNode
+                                                                    .requestFocus();
+                                                            });
+                                                      },
+                                                      colorScheme: colorScheme,
+                                                    ),
+                                                    _buildHabitActionButton(
+                                                      icon:
+                                                          Icons
+                                                              .delete_outline_rounded,
+                                                      color: colorScheme.error
+                                                          .withAlpha(180),
+                                                      onTap:
+                                                          () => _deleteSubtask(
+                                                            sub,
+                                                          ),
+                                                      colorScheme: colorScheme,
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    // editing action buttons (accept/cancel) like in normal subtasks
-                                    if (_editingSubtaskId == sub.id?.toString()) ...[
-                                      IconButton(
-                                        icon: Icon(
-                                          Icons.check_rounded,
-                                          color: colorScheme.primary,
-                                          size: 20,
-                                        ),
-                                        tooltip: '',
-                                        onPressed: () => _saveSubtaskEditing(sub),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                      ),
-                                      IconButton(
-                                        icon: Icon(
-                                          Icons.close_rounded,
-                                          color: colorScheme.error,
-                                          size: 20,
-                                        ),
-                                        tooltip: '',
-                                        onPressed: () {
-                                          // restore original text and exit edit mode
-                                          _editingController.text = sub.text;
-                                          setState(() => _editingSubtaskId = null);
-                                        },
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                      ),
-                                    ],
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.surfaceContainerHigh,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.whatshot_rounded, size: 14, color: colorScheme.primary),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            '$completedCount',
-                                            style: TextStyle(color: colorScheme.onSurface),
+                                          ],
+                                          const SizedBox(width: 4),
+                                          // Streak counter (at the end)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  completedCount > 0
+                                                      ? colorScheme.primary
+                                                          .withAlpha(20)
+                                                      : colorScheme
+                                                          .surfaceContainerHigh,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons
+                                                      .local_fire_department_rounded,
+                                                  size: 14,
+                                                  color:
+                                                      completedCount > 0
+                                                          ? colorScheme.primary
+                                                          : colorScheme
+                                                              .onSurfaceVariant,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  '$completedCount/7',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    color:
+                                                        completedCount > 0
+                                                            ? colorScheme
+                                                                .primary
+                                                            : colorScheme
+                                                                .onSurfaceVariant,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ],
                                       ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    IconButton(
-                                      icon: Icon(Icons.delete_forever_rounded, color: colorScheme.error, size: 20),
-                                      tooltip: '',
-                                      onPressed: () => _deleteSubtask(sub),
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                ConstrainedBox(
-                                  constraints: const BoxConstraints(maxHeight: 58),
-                                  child: Row(
-                                    children: List.generate(days.length, (dayIndex) {
-                                      final day = days[dayIndex];
-                                      final isToday = DateUtils.dateOnly(day) == DateUtils.dateOnly(_now.add(Duration(days: (effectiveOffset) * 7)));
-                                      final completed = _isCompletedOn(id, day);
-                                      final label = DateFormat('E').format(day).substring(0, 1); // single letter day
-                                      return Expanded(
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                                          child: GestureDetector(
-                                            onTap: () => _toggleCompletion(id, day),
-                                            child: AnimatedContainer(
-                                              duration: const Duration(milliseconds: 180),
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                                              alignment: Alignment.center,
-                                              decoration: BoxDecoration(
-                                                color: completed ? colorScheme.primary : colorScheme.surface,
-                                                borderRadius: BorderRadius.circular(12),
-                                                border: Border.all(
-                                                  color: isToday ? colorScheme.primary : colorScheme.outline,
-                                                  width: isToday ? 1.5 : 1,
+                                      const SizedBox(height: 12),
+                                      // Days row - rectangular buttons that fill width
+                                      Row(
+                                        children: List.generate(days.length, (
+                                          dayIndex,
+                                        ) {
+                                          final day = days[dayIndex];
+                                          final isToday =
+                                              DateUtils.dateOnly(day) ==
+                                              DateUtils.dateOnly(_now);
+                                          final completed = _isCompletedOn(
+                                            id,
+                                            day,
+                                          );
+                                          final dayLabel = DateFormat(
+                                            'E',
+                                          ).format(day).substring(0, 1);
+                                          return Expanded(
+                                            child: Padding(
+                                              padding: EdgeInsets.only(
+                                                left: dayIndex == 0 ? 0 : 3,
+                                                right:
+                                                    dayIndex == days.length - 1
+                                                        ? 0
+                                                        : 3,
+                                              ),
+                                              child: GestureDetector(
+                                                onTap:
+                                                    () => _toggleCompletion(
+                                                      id,
+                                                      day,
+                                                    ),
+                                                child: AnimatedContainer(
+                                                  duration: const Duration(
+                                                    milliseconds: 150,
+                                                  ),
+                                                  height: 48,
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        completed
+                                                            ? colorScheme
+                                                                .primary
+                                                            : colorScheme
+                                                                .surface,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          10,
+                                                        ),
+                                                    border: Border.all(
+                                                      color:
+                                                          completed
+                                                              ? colorScheme
+                                                                  .primary
+                                                              : isToday
+                                                              ? colorScheme
+                                                                  .primary
+                                                              : colorScheme
+                                                                  .outlineVariant
+                                                                  .withAlpha(
+                                                                    100,
+                                                                  ),
+                                                      width:
+                                                          isToday && !completed
+                                                              ? 2
+                                                              : 1,
+                                                    ),
+                                                  ),
+                                                  child: Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Text(
+                                                        dayLabel,
+                                                        style: TextStyle(
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color:
+                                                              completed
+                                                                  ? colorScheme
+                                                                      .onPrimary
+                                                                  : isToday
+                                                                  ? colorScheme
+                                                                      .primary
+                                                                  : colorScheme
+                                                                      .onSurfaceVariant,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 2),
+                                                      completed
+                                                          ? Icon(
+                                                            Icons.check_rounded,
+                                                            size: 16,
+                                                            color:
+                                                                colorScheme
+                                                                    .onPrimary,
+                                                          )
+                                                          : Text(
+                                                            DateFormat(
+                                                              'd',
+                                                            ).format(day),
+                                                            style: TextStyle(
+                                                              fontSize: 13,
+                                                              fontWeight:
+                                                                  isToday
+                                                                      ? FontWeight
+                                                                          .w600
+                                                                      : FontWeight
+                                                                          .w500,
+                                                              color:
+                                                                  isToday
+                                                                      ? colorScheme
+                                                                          .primary
+                                                                      : colorScheme
+                                                                          .onSurface,
+                                                            ),
+                                                          ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    label,
-                                                    style: TextStyle(
-                                                      color: completed ? colorScheme.onPrimary : colorScheme.onSurface,
-                                                      fontWeight: FontWeight.w700,
-                                                    ),
-                                                  ),
-                                                  Text(
-                                                    DateFormat('d').format(day),
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: completed ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
                                             ),
-                                          ),
-                                        ),
-                                      );
-                                    }),
+                                          );
+                                        }),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
-                        ),
-                      );
-                    },
-                  );
+                        );
+                      },
+                    );
 
             // If inline, return the list directly (no Expanded). Otherwise keep
             // previous behavior and wrap in Expanded so standalone tracker fills
@@ -590,8 +913,52 @@ class _HabitsTrackerState extends State<HabitsTracker> {
             } else {
               return Expanded(child: listView);
             }
-          }),
+          },
+        ),
       ],
+    );
+  }
+
+  Widget _buildHabitActionButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+    required ColorScheme colorScheme,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Icon(icon, size: 16, color: color),
+        ),
+      ),
+    );
+  }
+}
+
+// Widget auxiliar para gestionar el estado de hover en habits
+class _HabitItemHover extends StatefulWidget {
+  final Widget Function(BuildContext, bool) builder;
+
+  const _HabitItemHover({required this.builder});
+
+  @override
+  State<_HabitItemHover> createState() => _HabitItemHoverState();
+}
+
+class _HabitItemHoverState extends State<_HabitItemHover> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: widget.builder(context, _isHovering),
     );
   }
 }
