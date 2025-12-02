@@ -655,6 +655,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     Subtask subtask,
     bool isEditing,
     ColorScheme colorScheme,
+    int index,
   ) {
     final isCompleted = subtask.completed;
 
@@ -736,12 +737,15 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
             children: [
               // Drag handle (only for pending and manual sort)
               if (!_task.sortByPriority && !isCompleted)
-                Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: Icon(
-                    Icons.drag_indicator_rounded,
-                    color: colorScheme.onSurfaceVariant.withAlpha(100),
-                    size: 18,
+                ReorderableDragStartListener(
+                  index: index,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Icon(
+                      Icons.drag_indicator_rounded,
+                      color: colorScheme.onSurfaceVariant.withAlpha(100),
+                      size: 18,
+                    ),
                   ),
                 ),
 
@@ -839,7 +843,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                               () => _toggleSubtaskExpansion(
                                 subtask.id.toString(),
                               ),
-                          onDoubleTap: () => _editSubtask(subtask),
+                          onLongPress: () => _editSubtask(subtask),
                           child: Text(
                             subtask.text,
                             maxLines:
@@ -1874,7 +1878,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
           itemBuilder: (context, index) {
             final subtask = pendingSubtasks[index];
             final isEditing = _editingSubtaskId == subtask.id.toString();
-            return _buildSubtaskItem(subtask, isEditing, colorScheme);
+            return _buildSubtaskItem(subtask, isEditing, colorScheme, index);
           },
         )
         : ReorderableListView.builder(
@@ -1885,11 +1889,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
           itemBuilder: (context, index) {
             final subtask = pendingSubtasks[index];
             final isEditing = _editingSubtaskId == subtask.id.toString();
-            return ReorderableDragStartListener(
-              key: ValueKey(subtask.id!),
-              index: index,
-              child: _buildSubtaskItem(subtask, isEditing, colorScheme),
-            );
+            return _buildSubtaskItem(subtask, isEditing, colorScheme, index);
           },
         );
   }
@@ -1922,7 +1922,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
           itemBuilder: (context, index) {
             final subtask = completedSubtasks[index];
             final isEditing = _editingSubtaskId == subtask.id.toString();
-            return _buildSubtaskItem(subtask, isEditing, colorScheme);
+            return _buildSubtaskItem(subtask, isEditing, colorScheme, index);
           },
         );
   }

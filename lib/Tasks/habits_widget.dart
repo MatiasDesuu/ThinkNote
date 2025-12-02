@@ -696,9 +696,10 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                                                             .addPostFrameCallback((
                                                               _,
                                                             ) {
-                                                              if (mounted)
+                                                              if (mounted) {
                                                                 _editingFocusNode
                                                                     .requestFocus();
+                                                              }
                                                             });
                                                       },
                                                       colorScheme: colorScheme,
