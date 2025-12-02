@@ -393,7 +393,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                         child: TextField(
                           controller: _newSubtaskController,
                           decoration: InputDecoration(
-                            hintText: 'Add a habit...',
+                            hintText: 'Add habit...',
                             hintStyle: TextStyle(
                               color: colorScheme.onSurfaceVariant.withAlpha(
                                 150,

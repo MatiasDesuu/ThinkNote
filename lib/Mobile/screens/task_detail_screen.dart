@@ -550,7 +550,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
               controller: _newSubtaskController,
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
-                hintText: 'Add a subtask...',
+                hintText: 'Add subtask...',
                 hintStyle: TextStyle(
                   color: colorScheme.onSurfaceVariant.withAlpha(150),
                   fontSize: 14,
@@ -968,7 +968,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
           children: [
             // Header section
             Container(
-              margin: const EdgeInsets.all(8),
+              margin: const EdgeInsets.only(left: 8, right: 8, bottom: 4),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(16),
@@ -1023,8 +1023,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                   ),
 
                   if (!_isHabits) ...[
-                    const SizedBox(height: 12),
-
                     // Action chips row
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -1045,7 +1043,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                                 _task.date != null ? () => _clearDate() : null,
                             colorScheme: colorScheme,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 4),
 
                           // Status chip
                           _buildActionChip(
@@ -1056,7 +1054,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                             colorScheme: colorScheme,
                             activeColor: _getStateColor(_task.state),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 4),
 
                           // Tags chip
                           FutureBuilder<List<String>>(
@@ -1082,12 +1080,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                       ),
                     ),
 
-                    const SizedBox(height: 16),
-
-                    // New subtask input
+                    const SizedBox(height: 8),
                     _buildNewSubtaskInput(colorScheme: colorScheme),
                   ] else ...[
-                    const SizedBox(height: 12),
 
                     // Tags chip for habits
                     FutureBuilder<List<String>>(
@@ -1236,7 +1231,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                               controller: _newSubtaskController,
                               textCapitalization: TextCapitalization.sentences,
                               decoration: InputDecoration(
-                                hintText: 'Add a habit...',
+                                hintText: 'Add habit...',
                                 hintStyle: TextStyle(
                                   color: colorScheme.onSurfaceVariant.withAlpha(
                                     150,
@@ -1262,7 +1257,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                 ),
               ),
             ],
-            const SizedBox(height: 4),
 
             Expanded(
               child: StreamBuilder<void>(
@@ -1370,7 +1364,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                           ),
                         ),
                       ),
-                      const SizedBox(height: 4),
                       // Subtasks TabBarView
                       Expanded(
                         child: TabBarView(

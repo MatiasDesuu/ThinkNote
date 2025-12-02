@@ -416,11 +416,11 @@ class TasksScreenState extends State<TasksScreen>
                   margin: const EdgeInsets.symmetric(horizontal: 8),
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withAlpha(127),
+                    color: colorScheme.surfaceContainerLow,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: SizedBox(
-                    height: 32,
+                    height: 36,
                     child: TabBar(
                       tabAlignment: TabAlignment.fill,
                       labelPadding: EdgeInsets.zero,
@@ -434,46 +434,39 @@ class TasksScreenState extends State<TasksScreen>
                       ),
                       tabs: [
                         Tab(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.pending_actions_rounded, size: 16),
-                                const SizedBox(width: 6),
-                                Text('Pending'),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '(${_tasks.length})',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: colorScheme.primary,
-                                  ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.pending_actions_rounded, size: 16),
+                              const SizedBox(width: 6),
+                              Text('Pending', overflow: TextOverflow.ellipsis),
+                              const SizedBox(width: 4),
+                              Text(
+                                '(${_tasks.length})',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.primary,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                         Tab(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.check_circle_rounded, size: 16),
-                                const SizedBox(width: 6),
-                                Text('Completed'),
-                              ],
-                            ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check_circle_rounded, size: 16),
+                              const SizedBox(width: 6),
+                              Text('Completed', overflow: TextOverflow.ellipsis),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
               ],
             ),
           ),

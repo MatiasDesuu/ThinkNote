@@ -381,7 +381,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
             child: TextField(
               controller: widget.newSubtaskController,
               decoration: InputDecoration(
-                hintText: 'Add a subtask...',
+                hintText: 'Add subtask...',
                 hintStyle: TextStyle(
                   color: colorScheme.onSurfaceVariant.withAlpha(150),
                   fontSize: 14,
