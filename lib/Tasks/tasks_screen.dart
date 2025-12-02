@@ -1102,9 +1102,9 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(
-                          left: 24.0,
-                          right: 24.0,
-                          top: 48.0,
+                          left: 16.0,
+                          right: 16.0,
+                          top: 44.0,
                         ),
                         child: TaskDetailsPanel(
                           selectedTask: _selectedTask,

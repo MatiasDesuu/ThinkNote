@@ -18,6 +18,8 @@ import '../../widgets/confirmation_dialogue.dart';
 import '../../database/sync_service.dart';
 import '../../animations/animations_handler.dart';
 
+enum SortMode { order, date, completion }
+
 class HomeScreen extends StatefulWidget {
   final Note? selectedNote;
   final Notebook? selectedNotebook;
@@ -65,8 +67,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final SyncService _syncService;
   bool _isInitialLoad = true;
   String? _errorMessage;
-  bool _sortByDate = false;
-  static const String _sortPreferenceKey = 'notes_sort_by_date';
+  SortMode _sortMode = SortMode.order;
+  bool _completionSubSortByDate = false;
+  static const String _sortPreferenceKey = 'mobile_notes_sort_mode';
+  static const String _completionSubSortPreferenceKey = 'mobile_notes_completion_sub_sort_by_date';
   static const String _lastSelectedNotebookIdKey =
       'mobile_last_selected_notebook_id';
 
@@ -87,6 +91,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _syncService = SyncService();
     _initializeRepository();
     _loadSortPreference();
+    _loadCompletionSubSortPreference();
     _loadLastSelectedNotebook();
     _loadIconSettings();
     _setupIconSettingsListener();
@@ -208,11 +213,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       final notebookId = widget.selectedNotebook?.id ?? 0;
       final notes = await _noteRepository.getNotesByNotebookId(notebookId);
 
-      if (_sortByDate) {
-        notes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      } else {
-        notes.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
-      }
+      _sortNotes(notes);
 
       final updatedNotes =
           notes.map((note) {
@@ -285,11 +286,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         setState(() {
           _isLocalUpdate = true;
           _notes = [..._notes, createdNote];
-          if (_sortByDate) {
-            _notes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          } else {
-            _notes.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
-          }
+          _sortNotes(_notes);
         });
         DatabaseHelper.notifyDatabaseChanged();
       }
@@ -340,11 +337,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         setState(() {
           _isLocalUpdate = true;
           _notes = [..._notes, createdTodo];
-          if (_sortByDate) {
-            _notes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          } else {
-            _notes.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
-          }
+          _sortNotes(_notes);
         });
         DatabaseHelper.notifyDatabaseChanged();
       }
@@ -408,11 +401,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         setState(() {
           if (!_notes.any((n) => n.id == note.id)) {
             _notes.add(note); // Restore note if deletion failed
-            if (_sortByDate) {
-              _notes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-            } else {
-              _notes.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
-            }
+            _sortNotes(_notes);
           }
         });
         CustomSnackbar.show(
@@ -492,14 +481,87 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _loadSortPreference() async {
     final prefs = await SharedPreferences.getInstance();
+    final sortModeString = prefs.getString(_sortPreferenceKey) ?? 'order';
     setState(() {
-      _sortByDate = prefs.getBool(_sortPreferenceKey) ?? false;
+      _sortMode = SortMode.values.firstWhere(
+        (mode) => mode.name == sortModeString,
+        orElse: () => SortMode.order,
+      );
     });
   }
 
   Future<void> _saveSortPreference() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_sortPreferenceKey, _sortByDate);
+    await prefs.setString(_sortPreferenceKey, _sortMode.name);
+  }
+
+  Future<void> _loadCompletionSubSortPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _completionSubSortByDate = prefs.getBool(_completionSubSortPreferenceKey) ?? false;
+    });
+  }
+
+  Future<void> _saveCompletionSubSortPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_completionSubSortPreferenceKey, _completionSubSortByDate);
+  }
+
+  IconData _getSortIcon() {
+    switch (_sortMode) {
+      case SortMode.order:
+        return Icons.sort_by_alpha_rounded;
+      case SortMode.date:
+        return Icons.hourglass_bottom_rounded;
+      case SortMode.completion:
+        return Icons.check_circle_outline;
+    }
+  }
+
+  Future<void> _toggleSortMode() async {
+    setState(() {
+      final modes = SortMode.values;
+      final currentIndex = modes.indexOf(_sortMode);
+      _sortMode = modes[(currentIndex + 1) % modes.length];
+    });
+    await _saveSortPreference();
+    _pendingCompletionChanges.clear();
+    _completionDebounceTimer?.cancel();
+    DatabaseHelper.notifyDatabaseChanged();
+  }
+
+  Future<void> _toggleCompletionSubSort() async {
+    setState(() {
+      _completionSubSortByDate = !_completionSubSortByDate;
+    });
+    await _saveCompletionSubSortPreference();
+    _pendingCompletionChanges.clear();
+    _completionDebounceTimer?.cancel();
+    DatabaseHelper.notifyDatabaseChanged();
+  }
+
+  void _sortNotes(List<Note> notes) {
+    switch (_sortMode) {
+      case SortMode.date:
+        notes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        break;
+      case SortMode.order:
+        notes.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+        break;
+      case SortMode.completion:
+        notes.sort((a, b) {
+          if (a.isCompleted == b.isCompleted) {
+            if (_completionSubSortByDate) {
+              return b.createdAt.compareTo(a.createdAt); // Más reciente primero
+            } else {
+              return a.title.compareTo(b.title);
+            }
+          } else {
+            return a.isCompleted ? 1 : -1;
+          }
+        });
+        break;
+    }
   }
 
   Future<void> _loadLastSelectedNotebook() async {
@@ -558,6 +620,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _notes[currentNoteIndex] = currentNote.copyWith(
         isCompleted: newCompletedState,
       );
+      // Re-sort the notes after completion change
+      _sortNotes(_notes);
     });
 
     _completionDebounceTimer?.cancel();
@@ -659,6 +723,30 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       );
     }
 
+    List<Widget> buildAppBarActions() {
+      if (_sortMode == SortMode.completion) {
+        return [
+          IconButton(
+            icon: Icon(
+              _completionSubSortByDate ? Icons.access_time : Icons.sort_by_alpha,
+            ),
+            onPressed: _toggleCompletionSubSort,
+          ),
+          IconButton(
+            icon: Icon(_getSortIcon()),
+            onPressed: _toggleSortMode,
+          ),
+        ];
+      } else {
+        return [
+          IconButton(
+            icon: Icon(_getSortIcon()),
+            onPressed: _toggleSortMode,
+          ),
+        ];
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         scrolledUnderElevation: 0,
@@ -682,24 +770,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             Text(widget.selectedNotebook?.name ?? 'Notes'),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _sortByDate
-                  ? Icons.sort_by_alpha_rounded
-                  : Icons.hourglass_bottom_rounded,
-            ),
-            onPressed: () async {
-              setState(() {
-                _sortByDate = !_sortByDate;
-              });
-              await _saveSortPreference();
-              _pendingCompletionChanges.clear();
-              _completionDebounceTimer?.cancel();
-              DatabaseHelper.notifyDatabaseChanged();
-            },
-          ),
-        ],
+        actions: buildAppBarActions(),
       ),
       body: StreamBuilder<void>(
         stream: DatabaseHelper.onDatabaseChanged,

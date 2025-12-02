@@ -98,7 +98,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
         // Header section with title and actions
         _buildHeader(colorScheme: colorScheme, isHabits: isHabits),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
 
         // Subtasks list or Habits view if task has 'Habits' tag
         Expanded(
@@ -161,8 +161,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
           ),
 
           if (!isHabits) ...[
-            const SizedBox(height: 12),
-
             // Action chips row
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -218,7 +216,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
 
             // New subtask input
             _buildNewSubtaskInput(colorScheme: colorScheme),
@@ -226,8 +224,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
 
           // Tag selector for habits
           if (isHabits) ...[
-            const SizedBox(height: 12),
-
             // Tags chip for habits
             _buildActionChip(
               icon: Icons.label_outline_rounded,
@@ -490,7 +486,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
             ),
           ),
         ),
-        const SizedBox(height: 4),
         // Subtasks TabBarView
         Expanded(
           child: TabBarView(
@@ -507,7 +502,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                           size: 48,
                           color: colorScheme.onSurfaceVariant.withAlpha(80),
                         ),
-                        const SizedBox(height: 12),
                         Text(
                           'No pending subtasks',
                           style: TextStyle(
@@ -540,7 +534,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                           size: 48,
                           color: colorScheme.onSurfaceVariant.withAlpha(80),
                         ),
-                        const SizedBox(height: 12),
                         Text(
                           'No completed subtasks',
                           style: TextStyle(

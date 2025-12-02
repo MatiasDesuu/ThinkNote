@@ -275,7 +275,6 @@ class _HabitsTrackerState extends State<HabitsTracker> {
         // Week navigation + add habit (can be hidden when parent provides controls)
         if (!widget.hideControls) ...[
           Container(
-            margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(16),
@@ -303,39 +302,40 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                       ),
                     ),
                     Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          if (_weekOffset != 0) {
-                            setState(() => _weekOffset = 0);
-                          }
-                        },
-                        child: Container(
-                          height: 36,
-                          alignment: Alignment.center,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.calendar_today_rounded,
-                                size: 14,
-                                color:
-                                    _weekOffset == 0
-                                        ? colorScheme.primary
-                                        : colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${DateFormat('MMM d').format(days.first)} - ${DateFormat('MMM d').format(days.last)}',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        child: InkWell(
+                          onTap: _weekOffset != 0 ? () => setState(() => _weekOffset = 0) : null,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            height: 36,
+                            alignment: Alignment.center,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_rounded,
+                                  size: 14,
                                   color:
                                       _weekOffset == 0
                                           ? colorScheme.primary
-                                          : colorScheme.onSurface,
+                                          : colorScheme.onSurfaceVariant,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${DateFormat('MMM d').format(days.first)} - ${DateFormat('MMM d').format(days.last)}',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color:
+                                        _weekOffset == 0
+                                            ? colorScheme.primary
+                                            : colorScheme.onSurface,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -358,8 +358,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                // Add habit input
+                const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
@@ -463,7 +462,6 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                                       color: colorScheme.onSurfaceVariant
                                           .withAlpha(80),
                                     ),
-                                    const SizedBox(height: 12),
                                     Text(
                                       'No habits yet',
                                       style: TextStyle(
@@ -770,7 +768,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 12),
+                                      const SizedBox(height: 4),
                                       // Days row - rectangular buttons that fill width
                                       Row(
                                         children: List.generate(days.length, (
