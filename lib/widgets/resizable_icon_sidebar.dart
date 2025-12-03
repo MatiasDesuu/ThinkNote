@@ -43,6 +43,7 @@ class ResizableIconSidebar extends StatefulWidget {
   final VoidCallback? onToggleCalendar;
   final VoidCallback? onToggleSidebar;
   final FocusNode appFocusNode;
+  final VoidCallback? onForceSync;
 
   const ResizableIconSidebar({
     super.key,
@@ -83,6 +84,7 @@ class ResizableIconSidebar extends StatefulWidget {
     this.onToggleCalendar,
     this.onToggleSidebar,
     required this.appFocusNode,
+    this.onForceSync,
   });
 
   @override
@@ -289,6 +291,7 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
                           onToggleCalendar: widget.onToggleCalendar,
                           onToggleSidebar: widget.onToggleSidebar,
                           iconSize: _getIconSize(),
+                          onForceSync: widget.onForceSync,
                         ),
                       ),
                       Positioned(

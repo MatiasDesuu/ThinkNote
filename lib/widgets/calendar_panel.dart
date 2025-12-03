@@ -34,10 +34,10 @@ class CalendarPanel extends StatefulWidget {
   });
 
   @override
-  State<CalendarPanel> createState() => _CalendarPanelState();
+  State<CalendarPanel> createState() => CalendarPanelState();
 }
 
-class _CalendarPanelState extends State<CalendarPanel>
+class CalendarPanelState extends State<CalendarPanel>
     with SingleTickerProviderStateMixin {
   // When false the panel will be removed from layout (shrinked to nothing)
   // to avoid internal widgets being squashed during parent width animations.
@@ -121,6 +121,14 @@ class _CalendarPanelState extends State<CalendarPanel>
         _isPanelVisible = false;
       });
     }
+  }
+
+  /// Reloads all calendar data (events, statuses, and favorite notebooks)
+  /// Used for refreshing after sync operations
+  void reloadCalendar() {
+    _loadEvents();
+    _loadStatuses();
+    _loadFavoriteNotebooks();
   }
 
   void _handleNoteUpdate(Note updatedNote) {

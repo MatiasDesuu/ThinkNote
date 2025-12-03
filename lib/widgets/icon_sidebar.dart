@@ -211,6 +211,7 @@ class IconSidebar extends StatefulWidget {
   final VoidCallback? onToggleCalendar;
   final VoidCallback? onToggleSidebar;
   final double iconSize;
+  final VoidCallback? onForceSync;
 
   const IconSidebar({
     super.key,
@@ -251,6 +252,7 @@ class IconSidebar extends StatefulWidget {
     this.onToggleCalendar,
     this.onToggleSidebar,
     this.iconSize = 24,
+    this.onForceSync,
   });
 
   @override
@@ -308,6 +310,9 @@ class _IconSidebarState extends State<IconSidebar>
       await syncService.forceSync();
 
       if (!mounted) return;
+
+      // Notify parent to refresh all panels after successful sync
+      widget.onForceSync?.call();
 
       CustomSnackbar.show(
         context: context,

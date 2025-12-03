@@ -671,7 +671,7 @@ class ThinkNoteHome extends StatefulWidget {
 }
 
 class _ThinkNoteHomeState extends State<ThinkNoteHome>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   Note? _selectedNote;
   Notebook? _selectedNotebook;
   late TextEditingController _noteController;
@@ -699,6 +699,8 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       GlobalKey<NotesPanelState>();
   final GlobalKey<ResizablePanelLeftState> _calendarPanelKey =
       GlobalKey<ResizablePanelLeftState>();
+  final GlobalKey<CalendarPanelState> _calendarPanelStateKey =
+      GlobalKey<CalendarPanelState>();
   final GlobalKey<EditorTabsState> _editorTabsKey =
       GlobalKey<EditorTabsState>();
   late SyncAnimationController _syncController;
@@ -717,6 +719,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _syncController = SyncAnimationController(vsync: this);
     _noteController = TextEditingController();
     _titleController = TextEditingController();
@@ -893,12 +896,8 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     try {
       await _syncService.forceSync();
 
-      DatabaseHelper.notifyDatabaseChanged();
-
-      if (mounted) {
-        _databaseSidebarKey.currentState?.reloadSidebar();
-        _notesPanelStateKey.currentState?.reloadSidebar();
-      }
+      // Refresh all panels after successful auto-sync
+      await _refreshAllPanels();
 
     } catch (e) {
       debugPrint('Auto-sync error: $e');
@@ -1708,8 +1707,21 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     _databaseSidebarKey.currentState?.reloadSidebar();
   }
 
+  /// Called when the app lifecycle state changes (e.g., app comes to foreground)
+  /// Refreshes all panels when the app is resumed to show any changes from
+  /// background sync operations or external database modifications.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // App came back to foreground, refresh all panels to show any changes
+      _refreshAllPanels();
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _noteController.dispose();
     _titleController.dispose();
     _debounceNote?.cancel();
@@ -1806,6 +1818,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                 showBackButton: false,
                 calendarPanelKey: _calendarPanelKey,
                 appFocusNode: _appFocusNode,
+                onForceSync: _refreshAllPanels,
               ),
               ResizablePanel(
                 key: _sidebarKey,
@@ -1943,6 +1956,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                     title: '',
                     preferencesKey: 'calendar_panel',
                     child: CalendarPanel(
+                      key: _calendarPanelStateKey,
                       onNoteSelected: _onNoteSelected,
                       onNoteSelectedFromPanel: (note) {
                         if (mounted && _editorTabsKey.currentState != null) {
@@ -2059,6 +2073,51 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     }
   }
 
+  /// Refreshes all panels after a sync operation to reflect any database changes.
+  /// This includes notebooks panel, notes panel, calendar panel, and reloads
+  /// the current note content if one is selected.
+  Future<void> _refreshAllPanels() async {
+    if (!mounted) return;
+
+    // Notify database changed to trigger any listeners
+    DatabaseHelper.notifyDatabaseChanged();
+
+    // Reload notebooks panel
+    _databaseSidebarKey.currentState?.reloadSidebar();
+
+    // Reload notes panel
+    _notesPanelStateKey.currentState?.reloadSidebar();
+
+    // Reload calendar panel
+    _calendarPanelStateKey.currentState?.reloadCalendar();
+
+    // Reload current note content if a note is selected
+    // This ensures any remote changes to the note are reflected
+    final activeTab = _tabManager.activeTab;
+    if (activeTab?.note != null && activeTab!.note!.id != null) {
+      try {
+        final dbHelper = DatabaseHelper();
+        final noteRepository = NoteRepository(dbHelper);
+        final refreshedNote = await noteRepository.getNote(activeTab.note!.id!);
+        
+        if (refreshedNote != null && mounted) {
+          // Update the tab's note reference
+          _tabManager.updateNoteInTab(refreshedNote);
+          
+          // Update the controllers with the refreshed content
+          activeTab.titleController.text = refreshedNote.title;
+          activeTab.noteController.text = refreshedNote.content;
+          
+          setState(() {
+            _selectedNote = refreshedNote;
+          });
+        }
+      } catch (e) {
+        debugPrint('Error refreshing current note: $e');
+      }
+    }
+  }
+
   void _forceSync() async {
     setState(() {
       _syncController.start();
@@ -2068,6 +2127,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       await _syncService.forceSync();
 
       if (!mounted) return;
+
+      // Refresh all panels after successful sync
+      await _refreshAllPanels();
 
       CustomSnackbar.show(
         context: context,
