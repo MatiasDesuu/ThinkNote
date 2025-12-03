@@ -64,6 +64,64 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     super.dispose();
   }
 
+  Widget _buildTagChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required ColorScheme colorScheme,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color:
+                isSelected
+                    ? colorScheme.primary.withAlpha(25)
+                    : colorScheme.surfaceContainerHighest.withAlpha(127),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color:
+                  isSelected
+                      ? colorScheme.primary.withAlpha(100)
+                      : Colors.transparent,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                label == LinksHandlerDB.hiddenTag ? Icons.visibility_off : Icons.label_outline_rounded,
+                size: 16,
+                color:
+                    isSelected
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                  color:
+                      isSelected
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _initializeBookmarks() async {
     setState(() {
       _isLoading = true;
@@ -282,95 +340,37 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                                   child: ListView(
                                     scrollDirection: Axis.horizontal,
                                     children: [
-                                      FilterChip(
-                                        label: const Text('All'),
-                                        selected:
-                                            _linksHandler.selectedTag == null,
-                                        onSelected: (_) {
-                                          _linksHandler.setSelectedTag(null);
-                                          _loadBookmarks();
-                                          setState(() {});
-                                        },
-                                        selectedColor:
-                                            colorScheme.primaryContainer,
-                                        checkmarkColor:
-                                            colorScheme.onPrimaryContainer,
-                                        labelStyle: TextStyle(
-                                          color:
-                                              _linksHandler.selectedTag == null
-                                                  ? colorScheme
-                                                      .onPrimaryContainer
-                                                  : colorScheme.onSurface,
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 2,
                                         ),
-                                        side: BorderSide(
-                                          color:
-                                              _linksHandler.selectedTag == null
-                                                  ? colorScheme.primary
-                                                  : colorScheme.outline,
-                                          width: 1,
+                                        child: _buildTagChip(
+                                          label: 'All',
+                                          isSelected: _linksHandler.selectedTag == null,
+                                          onTap: () {
+                                            _linksHandler.setSelectedTag(null);
+                                            _loadBookmarks();
+                                            setState(() {});
+                                          },
+                                          colorScheme: colorScheme,
                                         ),
                                       ),
                                       ..._linksHandler.allTags.map(
                                         (tag) => Padding(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 4,
+                                            horizontal: 2,
                                           ),
-                                          child: FilterChip(
-                                            label:
-                                                tag == LinksHandlerDB.hiddenTag
-                                                    ? Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Icon(
-                                                          Icons.visibility_off,
-                                                          size: 14,
-                                                          color:
-                                                              _linksHandler
-                                                                          .selectedTag ==
-                                                                      tag
-                                                                  ? colorScheme
-                                                                      .onPrimaryContainer
-                                                                  : colorScheme
-                                                                      .primary,
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 4,
-                                                        ),
-                                                        Text(tag),
-                                                      ],
-                                                    )
-                                                    : Text(tag),
-                                            selected:
-                                                _linksHandler.selectedTag ==
-                                                tag,
-                                            onSelected: (selected) {
+                                          child: _buildTagChip(
+                                            label: tag,
+                                            isSelected: _linksHandler.selectedTag == tag,
+                                            onTap: () {
                                               _linksHandler.setSelectedTag(
-                                                selected ? tag : null,
+                                                _linksHandler.selectedTag == tag ? null : tag,
                                               );
                                               _loadBookmarks();
                                               setState(() {});
                                             },
-                                            selectedColor:
-                                                colorScheme.primaryContainer,
-                                            checkmarkColor:
-                                                colorScheme.onPrimaryContainer,
-                                            labelStyle: TextStyle(
-                                              color:
-                                                  _linksHandler.selectedTag ==
-                                                          tag
-                                                      ? colorScheme
-                                                          .onPrimaryContainer
-                                                      : colorScheme.onSurface,
-                                            ),
-                                            side: BorderSide(
-                                              color:
-                                                  _linksHandler.selectedTag ==
-                                                          tag
-                                                      ? colorScheme.primary
-                                                      : colorScheme.outline,
-                                              width: 1,
-                                            ),
+                                            colorScheme: colorScheme,
                                           ),
                                         ),
                                       ),

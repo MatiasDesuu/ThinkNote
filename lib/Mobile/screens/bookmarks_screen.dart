@@ -313,6 +313,64 @@ class BookmarksScreenState extends State<BookmarksScreen> {
     super.dispose();
   }
 
+  Widget _buildTagChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required ColorScheme colorScheme,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color:
+                isSelected
+                    ? colorScheme.primary.withAlpha(25)
+                    : colorScheme.surfaceContainerHighest.withAlpha(127),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color:
+                  isSelected
+                      ? colorScheme.primary.withAlpha(100)
+                      : Colors.transparent,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                label == BookmarksHandler.hiddenTag ? Icons.visibility_off : Icons.label_outline_rounded,
+                size: 16,
+                color:
+                    isSelected
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                  color:
+                      isSelected
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _deleteBookmark(Bookmark bookmark) async {
     if (bookmark.id != null) {
       try {
@@ -1001,70 +1059,43 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                 ),
                 if (tags.isNotEmpty)
                   Expanded(
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: tags.length + 1,
-                      itemBuilder: (context, index) {
-                        if (index == 0) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              label: const Text('All'),
-                              selected: _handler.selectedTag == null,
-                              onSelected: (selected) async {
+                    child: SizedBox(
+                      height: 40,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: _buildTagChip(
+                              label: 'All',
+                              isSelected: _handler.selectedTag == null,
+                              onTap: () async {
                                 setState(() {
                                   _handler.setSelectedTag(null);
                                 });
                                 await loadData();
                               },
-                              selectedColor: colorScheme.primaryContainer,
-                              checkmarkColor: colorScheme.onPrimaryContainer,
-                              labelStyle: TextStyle(
-                                color:
-                                    _handler.selectedTag == null
-                                        ? colorScheme.onPrimaryContainer
-                                        : colorScheme.onSurface,
-                              ),
-                              side: BorderSide(
-                                color:
-                                    _handler.selectedTag == null
-                                        ? colorScheme.primary
-                                        : colorScheme.outline,
-                                width: 1,
-                              ),
-                            ),
-                          );
-                        }
-                        final tag = tags[index - 1];
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: FilterChip(
-                            label: Text(tag),
-                            selected: _handler.selectedTag == tag,
-                            onSelected: (selected) async {
-                              setState(() {
-                                _handler.setSelectedTag(selected ? tag : null);
-                              });
-                              await loadData();
-                            },
-                            selectedColor: colorScheme.primaryContainer,
-                            checkmarkColor: colorScheme.onPrimaryContainer,
-                            labelStyle: TextStyle(
-                              color:
-                                  _handler.selectedTag == tag
-                                      ? colorScheme.onPrimaryContainer
-                                      : colorScheme.onSurface,
-                            ),
-                            side: BorderSide(
-                              color:
-                                  _handler.selectedTag == tag
-                                      ? colorScheme.primary
-                                      : colorScheme.outline,
-                              width: 1,
+                              colorScheme: colorScheme,
                             ),
                           ),
-                        );
-                      },
+                          ...tags.map(
+                            (tag) => Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: _buildTagChip(
+                                label: tag,
+                                isSelected: _handler.selectedTag == tag,
+                                onTap: () async {
+                                  setState(() {
+                                    _handler.setSelectedTag(_handler.selectedTag == tag ? null : tag);
+                                  });
+                                  await loadData();
+                                },
+                                colorScheme: colorScheme,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
               ],

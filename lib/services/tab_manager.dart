@@ -121,6 +121,9 @@ class TabManager extends ChangeNotifier {
     final activeTabIndex = _tabs.indexOf(_activeTab!);
     if (activeTabIndex == -1) return;
 
+    final oldNoteController = _activeTab!.noteController;
+    final oldTitleController = _activeTab!.titleController;
+
     final updatedTab = _activeTab!.copyWith(
       note: note,
       noteController: TextEditingController(text: note.content),
@@ -129,15 +132,14 @@ class TabManager extends ChangeNotifier {
       isDirty: false, // Reset dirty state for new note
     );
 
-    // Dispose old controllers
-    _activeTab!.noteController.dispose();
-    _activeTab!.titleController.dispose();
-
     _tabs[activeTabIndex] = updatedTab;
     _activeTab = updatedTab;
 
     // Diferir la notificación para evitar problemas con los controladores
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Dispose old controllers after the frame
+      oldNoteController.dispose();
+      oldTitleController.dispose();
       notifyListeners();
     });
   }
@@ -225,17 +227,8 @@ class TabManager extends ChangeNotifier {
   void closeTab(EditorTab tab) {
     final index = _tabs.indexOf(tab);
     if (index != -1) {
-      // Dispose controllers safely
-      try {
-        tab.noteController.dispose();
-      } catch (e) {
-        // Controller already disposed
-      }
-      try {
-        tab.titleController.dispose();
-      } catch (e) {
-        // Controller already disposed
-      }
+      final noteController = tab.noteController;
+      final titleController = tab.titleController;
 
       _tabs.removeAt(index);
 
@@ -250,43 +243,49 @@ class TabManager extends ChangeNotifier {
 
       _saveTabsToStorage();
 
-      // Diferir la notificación para evitar problemas con los controladores
+      // Diferir la notificación y dispose para evitar problemas con los controladores
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        try {
+          noteController.dispose();
+        } catch (e) {
+          // Controller already disposed
+        }
+        try {
+          titleController.dispose();
+        } catch (e) {
+          // Controller already disposed
+        }
         notifyListeners();
       });
     }
   }
 
   void closeAllTabs() {
-    for (final tab in _tabs) {
-      try {
-        tab.noteController.dispose();
-      } catch (e) {
-        // Already disposed
-      }
-      try {
-        tab.titleController.dispose();
-      } catch (e) {
-        // Already disposed
-      }
-    }
+    final controllersToDispose = _tabs.map((tab) => (tab.noteController, tab.titleController)).toList();
     _tabs.clear();
     _activeTab = null;
 
-    // Diferir la notificación para evitar problemas con los controladores
+    // Diferir la notificación y dispose para evitar problemas con los controladores
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (final (noteController, titleController) in controllersToDispose) {
+        try {
+          noteController.dispose();
+        } catch (e) {
+          // Already disposed
+        }
+        try {
+          titleController.dispose();
+        } catch (e) {
+          // Already disposed
+        }
+      }
       notifyListeners();
     });
   }
 
   void closeOtherTabs(EditorTab keepTab) {
     final tabsToClose = _tabs.where((tab) => tab != keepTab).toList();
-
-    // Dispose controllers first
-    for (final tab in tabsToClose) {
-      tab.noteController.dispose();
-      tab.titleController.dispose();
-    }
+    final controllersToDispose = tabsToClose.map((tab) => (tab.noteController, tab.titleController)).toList();
 
     // Remove tabs
     _tabs.removeWhere((tab) => tab != keepTab);
@@ -302,8 +301,20 @@ class TabManager extends ChangeNotifier {
 
     _saveTabsToStorage();
 
-    // Single notification after all operations
+    // Single notification and dispose after all operations
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (final (noteController, titleController) in controllersToDispose) {
+        try {
+          noteController.dispose();
+        } catch (e) {
+          // Already disposed
+        }
+        try {
+          titleController.dispose();
+        } catch (e) {
+          // Already disposed
+        }
+      }
       notifyListeners();
     });
   }
@@ -311,6 +322,9 @@ class TabManager extends ChangeNotifier {
   void updateTabContent(EditorTab tab, String content, String title) {
     final index = _tabs.indexOf(tab);
     if (index != -1) {
+      final oldNoteController = tab.noteController;
+      final oldTitleController = tab.titleController;
+
       // Crear nuevos controladores con el contenido actualizado
       final updatedTab = tab.copyWith(
         noteController: TextEditingController(text: content),
@@ -323,10 +337,6 @@ class TabManager extends ChangeNotifier {
         isDirty: true,
       );
 
-      // Dispose old controllers
-      tab.noteController.dispose();
-      tab.titleController.dispose();
-
       _tabs[index] = updatedTab;
 
       if (_activeTab == tab) {
@@ -335,8 +345,10 @@ class TabManager extends ChangeNotifier {
 
       _saveTabsToStorage();
 
-      // Diferir la notificación para evitar problemas con los controladores
+      // Diferir la notificación y dispose para evitar problemas con los controladores
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        oldNoteController.dispose();
+        oldTitleController.dispose();
         notifyListeners();
       });
     }
