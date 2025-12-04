@@ -813,11 +813,9 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                     const SizedBox(height: 8),
                                     // Tabs for Pending and Completed tasks
                                     Container(
-                                      margin: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
+                                      padding: const EdgeInsets.all(4),
                                       decoration: BoxDecoration(
-                                        color: colorScheme.surfaceContainerHighest.withAlpha(127),
+                                        color: colorScheme.surfaceContainerLow,
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: SizedBox(
