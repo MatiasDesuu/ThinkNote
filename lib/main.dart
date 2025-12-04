@@ -671,7 +671,7 @@ class ThinkNoteHome extends StatefulWidget {
 }
 
 class _ThinkNoteHomeState extends State<ThinkNoteHome>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+    with SingleTickerProviderStateMixin {
   Note? _selectedNote;
   Notebook? _selectedNotebook;
   late TextEditingController _noteController;
@@ -719,7 +719,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _syncController = SyncAnimationController(vsync: this);
     _noteController = TextEditingController();
     _titleController = TextEditingController();
@@ -1706,22 +1705,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   void _onFavoritesUpdated() {
     _databaseSidebarKey.currentState?.reloadSidebar();
   }
-
-  /// Called when the app lifecycle state changes (e.g., app comes to foreground)
-  /// Refreshes all panels when the app is resumed to show any changes from
-  /// background sync operations or external database modifications.
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.resumed) {
-      // App came back to foreground, refresh all panels to show any changes
-      _refreshAllPanels();
-    }
-  }
-
+  
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _noteController.dispose();
     _titleController.dispose();
     _debounceNote?.cancel();
