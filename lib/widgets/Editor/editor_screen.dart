@@ -1187,6 +1187,13 @@ class _NotaEditorState extends State<NotaEditor>
           // If not handled by list continuation, let default behavior proceed
         }
         
+        // Handle Ctrl+S for manual save (workaround for Linux)
+        if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.keyS &&
+            HardwareKeyboard.instance.isControlPressed && !HardwareKeyboard.instance.isShiftPressed) {
+          _handleSave();
+          return KeyEventResult.handled;
+        }
+        
         // Allow global shortcuts to propagate
         if (event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.keyT &&
