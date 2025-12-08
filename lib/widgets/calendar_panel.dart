@@ -82,7 +82,7 @@ class CalendarPanelState extends State<CalendarPanel>
     ) {
       _loadFavoriteNotebooks();
     });
-  _eventsController = StreamController<List<CalendarEvent>>.broadcast();
+    _eventsController = StreamController<List<CalendarEvent>>.broadcast();
     _loadEvents();
     _loadStatuses();
     _loadFavoriteNotebooks();
@@ -93,7 +93,7 @@ class CalendarPanelState extends State<CalendarPanel>
     _animationController.dispose();
     _noteUpdateSubscription.cancel();
     _databaseChangeSubscription.cancel();
-  _eventsController.close();
+    _eventsController.close();
     super.dispose();
   }
 
@@ -160,22 +160,41 @@ class CalendarPanelState extends State<CalendarPanel>
       // Load events for the displayed month, adjacent months, and the month
       // containing the currently selected date so the selected day's events
       // don't disappear when the user navigates multiple months away.
-      final displayedMonthStart = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
-      final prevMonthStart = DateTime(_selectedMonth.year, _selectedMonth.month - 1, 1);
-      final nextMonthStart = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 1);
-      final selectedMonthStart = DateTime(_selectedDate.year, _selectedDate.month, 1);
+      final displayedMonthStart = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month,
+        1,
+      );
+      final prevMonthStart = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month - 1,
+        1,
+      );
+      final nextMonthStart = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month + 1,
+        1,
+      );
+      final selectedMonthStart = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        1,
+      );
 
       // Build a list of unique month-starts to fetch
       final Map<String, DateTime> monthsToFetch = {};
-      void addMonth(DateTime dt) => monthsToFetch['${dt.year}-${dt.month}'] = dt;
+      void addMonth(DateTime dt) =>
+          monthsToFetch['${dt.year}-${dt.month}'] = dt;
       addMonth(displayedMonthStart);
       addMonth(prevMonthStart);
       addMonth(nextMonthStart);
       addMonth(selectedMonthStart);
 
-      final results = await Future.wait(monthsToFetch.values.map((dt) =>
-        _calendarEventRepository.getCalendarEventsByMonth(dt),
-      ));
+      final results = await Future.wait(
+        monthsToFetch.values.map(
+          (dt) => _calendarEventRepository.getCalendarEventsByMonth(dt),
+        ),
+      );
 
       // Merge results avoiding duplicates (by id)
       final Map<int, CalendarEvent> merged = {};
@@ -235,9 +254,9 @@ class CalendarPanelState extends State<CalendarPanel>
     try {
       final repo = NotebookRepository(DatabaseHelper());
       final rootNotebooks = await repo.getNotebooksByParentId(null);
-      
+
       List<Notebook> allNotebooks = [];
-      
+
       Future<void> loadAllNotebooks(Notebook notebook) async {
         allNotebooks.add(notebook);
         if (notebook.id != null) {
@@ -251,11 +270,11 @@ class CalendarPanelState extends State<CalendarPanel>
           }
         }
       }
-      
+
       for (final notebook in rootNotebooks) {
         await loadAllNotebooks(notebook);
       }
-      
+
       final favorites = allNotebooks.where((n) => n.isFavorite).toList();
       if (mounted) {
         setState(() {
@@ -412,7 +431,10 @@ class CalendarPanelState extends State<CalendarPanel>
     }
   }
 
-  Future<void> _handleEventDropWithDate(CalendarEvent event, DateTime newDate) async {
+  Future<void> _handleEventDropWithDate(
+    CalendarEvent event,
+    DateTime newDate,
+  ) async {
     try {
       // Verificar si ya existe un evento para esta nota en el día destino
       final existingEvent = _events.firstWhere(
@@ -451,9 +473,9 @@ class CalendarPanelState extends State<CalendarPanel>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-  // If the panel is hidden, return a zero-size widget so parent width
-  // animations don't cause children to compress and overflow.
-  if (!_isPanelVisible) return const SizedBox.shrink();
+    // If the panel is hidden, return a zero-size widget so parent width
+    // animations don't cause children to compress and overflow.
+    if (!_isPanelVisible) return const SizedBox.shrink();
     return LayoutBuilder(
       builder: (context, constraints) {
         return SizedBox(
@@ -650,23 +672,9 @@ class CalendarPanelState extends State<CalendarPanel>
                         Text(
                           // Use the selected date's month name so selecting days from
                           // previous/next months shows the correct month in the header.
-                          'Notes for ${[
-                            'January',
-                            'February',
-                            'March',
-                            'April',
-                            'May',
-                            'June',
-                            'July',
-                            'August',
-                            'September',
-                            'October',
-                            'November',
-                            'December'
-                          ][_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: colorScheme.onSurface,
-                          ),
+                          'Notes for ${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(color: colorScheme.onSurface),
                         ),
                       ],
                     ),
@@ -715,9 +723,10 @@ class CalendarPanelState extends State<CalendarPanel>
                                     vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .surfaceContainerHighest,
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.surfaceContainerHighest,
                                     borderRadius: BorderRadius.circular(8),
                                     boxShadow: [
                                       BoxShadow(
@@ -732,18 +741,20 @@ class CalendarPanelState extends State<CalendarPanel>
                                     children: [
                                       Icon(
                                         Icons.description_outlined,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
                                         size: 20,
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
                                         event.note?.title ?? 'Unknown Note',
                                         style: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.onSurface,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -751,132 +762,242 @@ class CalendarPanelState extends State<CalendarPanel>
                                   ),
                                 ),
                               ),
-                              child: Tooltip(
-                                message: event.note!.title,
-                                waitDuration: const Duration(milliseconds: 500),
-                                textStyle: TextStyle(color: colorScheme.onSurface),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surfaceContainerHighest,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Card(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  color: colorScheme.surfaceContainerHighest,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(12),
-                                      onTap: () {
-                                        // Inform parent that the note was selected from the calendar
-                                        // so it can suppress tab open/replace animations if desired.
-                                        if (widget.onNoteSelectedFromPanel != null) {
-                                          widget.onNoteSelectedFromPanel!(event.note!);
-                                        }
-                                        widget.onNoteSelected(event.note!);
-                                      },
-                                      onSecondaryTapDown: (details) => _showStatusMenu(event, details),
-                                      child: Listener(
-                                        onPointerDown: (pointerEvent) {
-                                          try {
-                                            if ((pointerEvent.buttons & 4) != 0) {
-                                              if (widget.onNoteOpenInNewTab != null && event.note != null) {
-                                                widget.onNoteOpenInNewTab!(event.note!);
-                                              } else {
-                                              }
+                              child: MouseRegionHoverItem(
+                                builder: (context, isHovering) {
+                                  return Tooltip(
+                                    message: event.note!.title,
+                                    waitDuration: const Duration(
+                                      milliseconds: 500,
+                                    ),
+                                    textStyle: TextStyle(
+                                      color: colorScheme.onSurface,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          colorScheme.surfaceContainerHighest,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Card(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      color:
+                                          colorScheme.surfaceContainerHighest,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          onTap: () {
+                                            // Inform parent that the note was selected from the calendar
+                                            // so it can suppress tab open/replace animations if desired.
+                                            if (widget
+                                                    .onNoteSelectedFromPanel !=
+                                                null) {
+                                              widget.onNoteSelectedFromPanel!(
+                                                event.note!,
+                                              );
                                             }
-                                          } catch (e) {
-                                            print('[calendar] error in onPointerDown: $e');
-                                          }
-                                        },
-                                        child: GestureDetector(
-                                          behavior: HitTestBehavior.opaque,
-                                          onTertiaryTapDown: (details) {
-                                            if (widget.onNoteOpenInNewTab != null && event.note != null) {
-                                              widget.onNoteOpenInNewTab!(event.note!);
-                                            } else {
-                                              print('[calendar] onNoteOpenInNewTab callback is null or note is null');
-                                            }
+                                            widget.onNoteSelected(event.note!);
                                           },
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 6,
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Icon(
-                                                  Icons.description_outlined,
-                                                  color: colorScheme.primary,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Text(
-                                                        event.note!.title,
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .bodyMedium
-                                                            ?.copyWith(
-                                                              color: colorScheme.onSurface,
-                                                              fontWeight: FontWeight.w500,
+                                          onSecondaryTapDown:
+                                              (details) => _showStatusMenu(
+                                                event,
+                                                details,
+                                              ),
+                                          child: Listener(
+                                            onPointerDown: (pointerEvent) {
+                                              try {
+                                                if ((pointerEvent.buttons &
+                                                        4) !=
+                                                    0) {
+                                                  if (widget.onNoteOpenInNewTab !=
+                                                          null &&
+                                                      event.note != null) {
+                                                    widget.onNoteOpenInNewTab!(
+                                                      event.note!,
+                                                    );
+                                                  } else {}
+                                                }
+                                              } catch (e) {
+                                                print(
+                                                  '[calendar] error in onPointerDown: $e',
+                                                );
+                                              }
+                                            },
+                                            child: GestureDetector(
+                                              behavior: HitTestBehavior.opaque,
+                                              onTertiaryTapDown: (details) {
+                                                if (widget.onNoteOpenInNewTab !=
+                                                        null &&
+                                                    event.note != null) {
+                                                  widget.onNoteOpenInNewTab!(
+                                                    event.note!,
+                                                  );
+                                                } else {
+                                                  print(
+                                                    '[calendar] onNoteOpenInNewTab callback is null or note is null',
+                                                  );
+                                                }
+                                              },
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 6,
+                                                    ),
+                                                child: Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons
+                                                          .description_outlined,
+                                                      color:
+                                                          colorScheme.primary,
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Text(
+                                                            event.note!.title,
+                                                            style: Theme.of(
+                                                                  context,
+                                                                )
+                                                                .textTheme
+                                                                .bodyMedium
+                                                                ?.copyWith(
+                                                                  color:
+                                                                      colorScheme
+                                                                          .onSurface,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w500,
+                                                                ),
+                                                            maxLines: 1,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                          if (event.status !=
+                                                              null) ...[
+                                                            const SizedBox(
+                                                              height: 2,
                                                             ),
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow.ellipsis,
-                                                      ),
-                                                      if (event.status != null) ...[
-                                                        const SizedBox(height: 2),
-                                                        Row(
-                                                          children: [
-                                                            Container(
-                                                              width: 8,
-                                                              height: 8,
-                                                              decoration: BoxDecoration(
-                                                                color: _getStatusColor(event.status!),
-                                                                shape: BoxShape.circle,
-                                                              ),
-                                                            ),
-                                                            const SizedBox(width: 4),
-                                                            Baseline(
-                                                              baseline: 8,
-                                                              baselineType: TextBaseline.alphabetic,
-                                                              child: Text(
-                                                                event.status!,
-                                                                style: Theme.of(context)
-                                                                    .textTheme
-                                                                    .bodySmall
-                                                                    ?.copyWith(
-                                                                      color: colorScheme.onSurfaceVariant,
-                                                                      fontSize: 10,
+                                                            Row(
+                                                              children: [
+                                                                Container(
+                                                                  width: 8,
+                                                                  height: 8,
+                                                                  decoration: BoxDecoration(
+                                                                    color: _getStatusColor(
+                                                                      event
+                                                                          .status!,
                                                                     ),
-                                                              ),
+                                                                    shape:
+                                                                        BoxShape
+                                                                            .circle,
+                                                                  ),
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 4,
+                                                                ),
+                                                                Baseline(
+                                                                  baseline: 8,
+                                                                  baselineType:
+                                                                      TextBaseline
+                                                                          .alphabetic,
+                                                                  child: Text(
+                                                                    event
+                                                                        .status!,
+                                                                    style: Theme.of(
+                                                                          context,
+                                                                        )
+                                                                        .textTheme
+                                                                        .bodySmall
+                                                                        ?.copyWith(
+                                                                          color:
+                                                                              colorScheme.onSurfaceVariant,
+                                                                          fontSize:
+                                                                              10,
+                                                                        ),
+                                                                  ),
+                                                                ),
+                                                              ],
                                                             ),
                                                           ],
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    // Delete button (only visible on hover)
+                                                    Opacity(
+                                                      opacity:
+                                                          isHovering
+                                                              ? 1.0
+                                                              : 0.0,
+                                                      child: IgnorePointer(
+                                                        ignoring: !isHovering,
+                                                        child: Padding(
+                                                          padding:
+                                                              const EdgeInsets.only(
+                                                                left: 4,
+                                                              ),
+                                                          child: MouseRegion(
+                                                            cursor:
+                                                                SystemMouseCursors
+                                                                    .click,
+                                                            child: GestureDetector(
+                                                              onTap:
+                                                                  () =>
+                                                                      _deleteEvent(
+                                                                        event,
+                                                                      ),
+                                                              child: Container(
+                                                                padding:
+                                                                    const EdgeInsets.all(
+                                                                      4,
+                                                                    ),
+                                                                decoration: BoxDecoration(
+                                                                  color: colorScheme
+                                                                      .error
+                                                                      .withAlpha(
+                                                                        20,
+                                                                      ),
+                                                                  borderRadius:
+                                                                      BorderRadius.circular(
+                                                                        6,
+                                                                      ),
+                                                                ),
+                                                                child: Icon(
+                                                                  Icons
+                                                                      .close_rounded,
+                                                                  size: 14,
+                                                                  color:
+                                                                      colorScheme
+                                                                          .error,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
                                                         ),
-                                                      ],
-                                                    ],
-                                                  ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                                IconButton(
-                                                  icon: Icon(
-                                                    Icons.delete_outline_rounded,
-                                                    color: colorScheme.error,
-                                                  ),
-                                                  onPressed: () => _deleteEvent(event),
-                                                ),
-                                              ],
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ),
+                                  );
+                                },
                               ),
                             );
                           },
@@ -923,41 +1044,57 @@ class CalendarPanelState extends State<CalendarPanel>
                 child: Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _favoriteNotebooks.map((notebook) {
-              final notebookIcon = notebook.iconId != null
-                  ? NotebookIconsRepository.getIconById(notebook.iconId!)
-                  : null;
-              final iconToShow = notebookIcon ?? NotebookIconsRepository.getDefaultIcon();
-              return Material(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-                child: InkWell(
-                  onTap: () => widget.onNotebookSelectedFromFavorite?.call(notebook) ?? widget.onNotebookSelected?.call(notebook),
-                  borderRadius: BorderRadius.circular(8),
-                  hoverColor: colorScheme.primary.withAlpha(20),
-                  child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        iconToShow.icon,
-                        color: colorScheme.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        notebook.name,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                  ),
-                ),
-              );
-            }).toList(),
+                  children:
+                      _favoriteNotebooks.map((notebook) {
+                        final notebookIcon =
+                            notebook.iconId != null
+                                ? NotebookIconsRepository.getIconById(
+                                  notebook.iconId!,
+                                )
+                                : null;
+                        final iconToShow =
+                            notebookIcon ??
+                            NotebookIconsRepository.getDefaultIcon();
+                        return Material(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                          child: InkWell(
+                            onTap:
+                                () =>
+                                    widget.onNotebookSelectedFromFavorite?.call(
+                                      notebook,
+                                    ) ??
+                                    widget.onNotebookSelected?.call(notebook),
+                            borderRadius: BorderRadius.circular(8),
+                            hoverColor: colorScheme.primary.withAlpha(20),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    iconToShow.icon,
+                                    color: colorScheme.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    notebook.name,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
                 ),
               ),
             ),
@@ -993,49 +1130,50 @@ class CalendarPanelState extends State<CalendarPanel>
         final daysInPrevMonth = prevMonthLastDay.day;
 
         final List<Widget> calendarRows = [];
-        
+
         // Generate all days to display (42 days = 6 weeks)
         final List<DateTime> allDays = [];
-        
+
         // Add days from previous month
         for (int i = firstWeekday - 1; i > 0; i--) {
-          allDays.add(DateTime(
-            _selectedMonth.year,
-            _selectedMonth.month - 1,
-            daysInPrevMonth - i + 1,
-          ));
+          allDays.add(
+            DateTime(
+              _selectedMonth.year,
+              _selectedMonth.month - 1,
+              daysInPrevMonth - i + 1,
+            ),
+          );
         }
-        
+
         // Add days from current month
         for (int i = 1; i <= daysInMonth; i++) {
-          allDays.add(DateTime(
-            _selectedMonth.year,
-            _selectedMonth.month,
-            i,
-          ));
+          allDays.add(DateTime(_selectedMonth.year, _selectedMonth.month, i));
         }
-        
+
         // Add days from next month to complete 42 days
         int nextMonthDay = 1;
         while (allDays.length < 42) {
-          allDays.add(DateTime(
-            _selectedMonth.year,
-            _selectedMonth.month + 1,
-            nextMonthDay,
-          ));
+          allDays.add(
+            DateTime(
+              _selectedMonth.year,
+              _selectedMonth.month + 1,
+              nextMonthDay,
+            ),
+          );
           nextMonthDay++;
         }
 
         // Build calendar rows
         for (int week = 0; week < 6; week++) {
           final List<Widget> rowChildren = [];
-          
+
           for (int day = 0; day < 7; day++) {
             final dayIndex = week * 7 + day;
             final date = allDays[dayIndex];
             final isCurrentMonth = date.month == _selectedMonth.month;
-            
-            final isSelected = _selectedDate.year == date.year &&
+
+            final isSelected =
+                _selectedDate.year == date.year &&
                 _selectedDate.month == date.month &&
                 _selectedDate.day == date.day;
 
@@ -1091,7 +1229,8 @@ class CalendarPanelState extends State<CalendarPanel>
                         decoration: BoxDecoration(
                           color:
                               isSelected
-                                  ? (Theme.of(context).brightness == Brightness.light
+                                  ? (Theme.of(context).brightness ==
+                                          Brightness.light
                                       ? colorScheme.primaryContainer
                                       : colorScheme.primaryFixed.withAlpha(50))
                                   : candidateData.isNotEmpty
@@ -1110,15 +1249,27 @@ class CalendarPanelState extends State<CalendarPanel>
                                 _selectedDate = date;
                               });
 
-                              final tappedMonthStart = DateTime(date.year, date.month, 1);
-                              final currentDisplayedMonthStart =
-                                  DateTime(_selectedMonth.year, _selectedMonth.month, 1);
+                              final tappedMonthStart = DateTime(
+                                date.year,
+                                date.month,
+                                1,
+                              );
+                              final currentDisplayedMonthStart = DateTime(
+                                _selectedMonth.year,
+                                _selectedMonth.month,
+                                1,
+                              );
 
-                              if (tappedMonthStart.year != currentDisplayedMonthStart.year ||
-                                  tappedMonthStart.month != currentDisplayedMonthStart.month) {
+                              if (tappedMonthStart.year !=
+                                      currentDisplayedMonthStart.year ||
+                                  tappedMonthStart.month !=
+                                      currentDisplayedMonthStart.month) {
                                 try {
-                                  final tappedEvents = await _calendarEventRepository
-                                      .getCalendarEventsByMonth(tappedMonthStart);
+                                  final tappedEvents =
+                                      await _calendarEventRepository
+                                          .getCalendarEventsByMonth(
+                                            tappedMonthStart,
+                                          );
 
                                   if (!mounted) return;
 
@@ -1152,13 +1303,15 @@ class CalendarPanelState extends State<CalendarPanel>
                                     style: TextStyle(
                                       color:
                                           isSelected
-                                              ? (Theme.of(context).brightness == Brightness.light
-                                                  ? colorScheme.onPrimaryContainer
+                                              ? (Theme.of(context).brightness ==
+                                                      Brightness.light
+                                                  ? colorScheme
+                                                      .onPrimaryContainer
                                                   : colorScheme.primaryFixed)
                                               : isCurrentMonth
-                                                  ? colorScheme.onSurface
-                                                  : colorScheme.onSurfaceVariant
-                                                      .withAlpha(100),
+                                              ? colorScheme.onSurface
+                                              : colorScheme.onSurfaceVariant
+                                                  .withAlpha(100),
                                       fontWeight:
                                           isSelected
                                               ? FontWeight.bold
@@ -1359,5 +1512,27 @@ class CalendarPanelState extends State<CalendarPanel>
           ),
     );
     return _parseColor(status.color);
+  }
+}
+
+class MouseRegionHoverItem extends StatefulWidget {
+  final Widget Function(BuildContext, bool) builder;
+
+  const MouseRegionHoverItem({super.key, required this.builder});
+
+  @override
+  State<MouseRegionHoverItem> createState() => _MouseRegionHoverItemState();
+}
+
+class _MouseRegionHoverItemState extends State<MouseRegionHoverItem> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: widget.builder(context, _isHovering),
+    );
   }
 }

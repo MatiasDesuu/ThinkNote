@@ -368,15 +368,15 @@ class _IconSidebarState extends State<IconSidebar>
 
     if (!mounted) return;
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        settings: const RouteSettings(name: '/todo'),
-        builder:
-            (context) => TodoScreenDB(
-              rootDir: widget.rootDir!,
-              onDirectorySet: widget.onDirectorySet ?? () {},
-              onThemeUpdated: widget.onThemeUpdated,
-            ),
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: EdgeInsets.zero,
+        child: TodoScreenDB(
+          rootDir: widget.rootDir!,
+          onDirectorySet: widget.onDirectorySet ?? () {},
+          onThemeUpdated: widget.onThemeUpdated,
+        ),
       ),
     );
   }
@@ -421,13 +421,14 @@ class _IconSidebarState extends State<IconSidebar>
 
     if (!mounted) return;
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder:
-            (context) => LinksScreenDesktopDB(
-              onLinkRemoved: () {},
-              onBack: () => Navigator.of(context).pop(),
-            ),
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: EdgeInsets.zero,
+        child: LinksScreenDesktopDB(
+          onLinkRemoved: () {},
+          onBack: () => Navigator.of(context).pop(),
+        ),
       ),
     );
   }
@@ -464,15 +465,15 @@ class _IconSidebarState extends State<IconSidebar>
 
     if (!mounted) return;
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        settings: const RouteSettings(name: '/thinks'),
-        builder:
-            (context) => ThinksScreen(
-              rootDir: widget.rootDir!,
-              onOpenNote: widget.onOpenNote ?? (_) {},
-              onClose: () => Navigator.of(context).pop(),
-            ),
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: EdgeInsets.zero,
+        child: ThinksScreen(
+          rootDir: widget.rootDir!,
+          onOpenNote: widget.onOpenNote ?? (_) {},
+          onClose: () => Navigator.of(context).pop(),
+        ),
       ),
     );
   }
@@ -509,14 +510,15 @@ class _IconSidebarState extends State<IconSidebar>
 
     if (!mounted) return;
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder:
-            (context) => DiaryScreen(
-              rootDir: Directory.current,
-              onOpenNote: (file) {},
-              onClose: () => Navigator.of(context).pop(),
-            ),
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: EdgeInsets.zero,
+        child: DiaryScreen(
+          rootDir: Directory.current,
+          onOpenNote: (file) {},
+          onClose: () => Navigator.of(context).pop(),
+        ),
       ),
     );
   }
