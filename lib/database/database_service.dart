@@ -227,6 +227,35 @@ class DatabaseService {
       }
     }
 
+    // Verificar si hay archivos sueltos en el directorio raíz
+    final files = entities.where((entity) =>
+        entity is File &&
+        (path.extension(entity.path) == '.txt' ||
+            path.extension(entity.path) == '.md')).toList();
+
+    int? effectiveParentId = parentId;
+    if (parentId == null && files.isNotEmpty) {
+      // Crear un notebook por defecto para archivos sueltos
+      db.execute(
+        '''
+        INSERT INTO ${config.DatabaseConfig.tableNotebooks} (
+          ${config.DatabaseConfig.columnName},
+          ${config.DatabaseConfig.columnParentId},
+          ${config.DatabaseConfig.columnCreatedAt}
+        ) VALUES (?, ?, ?)
+      ''',
+        [
+          'Imported Notes',
+          null,
+          DateTime.now().millisecondsSinceEpoch,
+        ],
+      );
+
+      // Obtener el ID del notebook recién creado
+      final result = db.select('SELECT last_insert_rowid() as id');
+      effectiveParentId = result.first['id'] as int;
+    }
+
     // Luego procesar los archivos (.txt y .md)
     for (final entity in entities) {
       if (entity is File &&
@@ -250,7 +279,7 @@ class DatabaseService {
           [
             title,
             content,
-            parentId,
+            effectiveParentId,
             DateTime.now().millisecondsSinceEpoch,
             DateTime.now().millisecondsSinceEpoch,
             0,
