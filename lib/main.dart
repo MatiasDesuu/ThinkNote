@@ -17,7 +17,7 @@ import 'animations/animations_handler.dart';
 import 'widgets/notebooks_panel.dart';
 import 'widgets/resizable_panel.dart';
 import 'widgets/trash_screen.dart';
-import 'widgets/favorites_screen.dart';
+import 'widgets/favorites_panel.dart';
 import 'database/models/note.dart';
 import 'database/models/notebook.dart';
 import 'database/models/editor_tab.dart';
@@ -701,6 +701,10 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       GlobalKey<ResizablePanelLeftState>();
   final GlobalKey<CalendarPanelState> _calendarPanelStateKey =
       GlobalKey<CalendarPanelState>();
+  final GlobalKey<ResizablePanelLeftState> _favoritesPanelKey =
+      GlobalKey<ResizablePanelLeftState>();
+  final GlobalKey<FavoritesPanelState> _favoritesPanelStateKey =
+      GlobalKey<FavoritesPanelState>();
   final GlobalKey<EditorTabsState> _editorTabsKey =
       GlobalKey<EditorTabsState>();
   late SyncAnimationController _syncController;
@@ -771,11 +775,21 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     _initializeImmersiveMode();
     _setupEditorSettingsListeners();
     _setupDatabaseChangeListener();
+    _initializeFavoritesPanelState();
   }
 
   void _initializeImmersiveMode() {
     _immersiveModeService = ImmersiveModeService();
     _immersiveModeService.addListener(_onImmersiveModeChanged);
+  }
+
+  Future<void> _initializeFavoritesPanelState() async {
+    // Ensure favorites panel starts collapsed by default
+    final prefs = await SharedPreferences.getInstance();
+    final hasKey = prefs.containsKey('favorites_panel_expanded');
+    if (!hasKey) {
+      await prefs.setBool('favorites_panel_expanded', false);
+    }
   }
 
   void _setupEditorSettingsListeners() {
@@ -1704,6 +1718,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
   void _onFavoritesUpdated() {
     _databaseSidebarKey.currentState?.reloadSidebar();
+    _favoritesPanelStateKey.currentState?.reloadFavorites();
   }
   
   @override
@@ -1746,13 +1761,16 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       onNewTab: _onNewTab,
       onToggleReadMode: toggleActiveEditorReadMode,
       onToggleCalendarPanel: _toggleCalendarPanel,
+      onToggleFavoritesPanel: _toggleFavoritesPanel,
       child: Focus(
         focusNode: _appFocusNode,
         autofocus: true,
         child: Scaffold(
-          body: Row(
+          body: Stack(
             children: [
-              ResizableIconSidebar(
+              Row(
+                children: [
+                  ResizableIconSidebar(
                 key: _iconSidebarKey,
                 rootDir: Directory.current,
                 onOpenNote: (note) => _onNoteSelected(note as Note),
@@ -1781,26 +1799,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                         ),
                   );
                 },
-                onOpenFavorites: () {
-                  showDialog(
-                    context: context,
-                    builder:
-                        (context) => FavoritesScreen(
-                          onNotebookSelected: _onNotebookSelected,
-                          onNoteSelected: _onNoteSelected,
-                          onFavoritesUpdated: _onFavoritesUpdated,
-                          onNoteSelectedFromPanel: (note) {
-                            // Suppress the next update animations in EditorTabs so
-                            // replacing the active tab from the favorites panel
-                            // doesn't trigger the expand/collapse animation.
-                            try {
-                              _editorTabsKey.currentState?.suppressNextUpdateAnimations();
-                            } catch (_) {}
-                            return null;
-                          },
-                        ),
-                  );
-                },
+                onOpenFavorites: _toggleFavoritesPanel,
                 showBackButton: false,
                 calendarPanelKey: _calendarPanelKey,
                 appFocusNode: _appFocusNode,
@@ -1930,30 +1929,63 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                 ),
               ),
 
+              // Calendar Panel (independent)
               SizedBox(
                 height: MediaQuery.of(context).size.height,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 0),
+                child: ResizablePanelLeft(
+                  key: _calendarPanelKey,
+                  minWidth: 300,
+                  maxWidth: 400,
+                  appFocusNode: _appFocusNode,
+                  title: '',
+                  preferencesKey: 'calendar_panel',
+                  child: CalendarPanel(
+                    key: _calendarPanelStateKey,
+                    onNoteSelected: _onNoteSelected,
+                    onNoteSelectedFromPanel: (note) {
+                      if (mounted && _editorTabsKey.currentState != null) {
+                        _editorTabsKey.currentState!.suppressNextUpdateAnimations();
+                      }
+
+                      _onNoteSelected(note);
+                    },
+                    onNoteOpenInNewTab: _onNoteOpenInNewTab,
+                    onNotebookSelected: _onNotebookSelected,
+                    onNotebookSelectedFromFavorite: _onNotebookSelectedFromFavorite,
+                    appFocusNode: _appFocusNode,
+                  ),
+                ),
+              ),
+
+                ],
+              ),
+
+              // Favorites Panel (independent, positioned absolutely)
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height,
                   child: ResizablePanelLeft(
-                    key: _calendarPanelKey,
+                    key: _favoritesPanelKey,
                     minWidth: 300,
                     maxWidth: 400,
                     appFocusNode: _appFocusNode,
                     title: '',
-                    preferencesKey: 'calendar_panel',
-                    child: CalendarPanel(
-                      key: _calendarPanelStateKey,
+                    preferencesKey: 'favorites_panel',
+                    child: FavoritesPanel(
+                      key: _favoritesPanelStateKey,
+                      onNotebookSelected: _onNotebookSelected,
                       onNoteSelected: _onNoteSelected,
                       onNoteSelectedFromPanel: (note) {
                         if (mounted && _editorTabsKey.currentState != null) {
                           _editorTabsKey.currentState!.suppressNextUpdateAnimations();
                         }
-
-                        _onNoteSelected(note);
+                        return null;
                       },
-                      onNoteOpenInNewTab: _onNoteOpenInNewTab,
-                      onNotebookSelected: _onNotebookSelected,
-                      onNotebookSelectedFromFavorite: _onNotebookSelectedFromFavorite,
+                      onFavoritesUpdated: _onFavoritesUpdated,
+                      onClose: _toggleFavoritesPanel,
                       appFocusNode: _appFocusNode,
                     ),
                   ),
@@ -1981,6 +2013,12 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   void _toggleCalendarPanel() {
     if (_calendarPanelKey.currentState != null) {
       _calendarPanelKey.currentState!.togglePanel();
+    }
+  }
+
+  void _toggleFavoritesPanel() {
+    if (_favoritesPanelKey.currentState != null) {
+      _favoritesPanelKey.currentState!.togglePanel();
     }
   }
 
@@ -2060,8 +2098,8 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   }
 
   /// Refreshes all panels after a sync operation to reflect any database changes.
-  /// This includes notebooks panel, notes panel, calendar panel, and reloads
-  /// the current note content if one is selected.
+  /// This includes notebooks panel, notes panel, calendar panel, favorites panel,
+  /// and reloads the current note content if one is selected.
   Future<void> _refreshAllPanels() async {
     if (!mounted) return;
 
@@ -2076,6 +2114,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
     // Reload calendar panel
     _calendarPanelStateKey.currentState?.reloadCalendar();
+
+    // Reload favorites panel
+    _favoritesPanelStateKey.currentState?.reloadFavorites();
 
     // Reload current note content if a note is selected
     // This ensures any remote changes to the note are reflected

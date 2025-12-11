@@ -13,7 +13,6 @@ import '../database/models/think.dart';
 import '../database/services/think_service.dart';
 import '../database/database_helper.dart';
 import '../database/repositories/think_repository.dart';
-import '../widgets/favorites_screen.dart';
 import '../widgets/trash_screen.dart';
 import '../Settings/settings_screen.dart';
 import '../widgets/Editor/editor_screen.dart';
@@ -639,7 +638,7 @@ class _ThinksScreenState extends State<ThinksScreen>
                       onCreateThink: _createNewThink,
                       onOpenSettings: _openSettings,
                       onOpenTrash: _openTrashScreen,
-                      onOpenFavorites: _openFavoritesScreen,
+                      onOpenFavorites: null,
                       showBackButton: true,
                       isWorkflowsScreen: false,
                       isTasksScreen: false,
@@ -961,31 +960,6 @@ class _ThinksScreenState extends State<ThinksScreen>
           ),
         ),
       ),
-    );
-  }
-
-  void _openFavoritesScreen() {
-          showDialog(
-      context: context,
-      builder:
-          (context) => FavoritesScreen(
-            onFavoritesUpdated: _loadThinks,
-            onNoteSelected: (_) {},
-            onNotebookSelected: (_) {},
-            onThinkSelected: (think) {
-              _openThink(think);
-              _loadThinks();
-            },
-            onNoteSelectedFromPanel: (note) {
-              try {
-                // Notify EditorTabs to skip animations on the next update.
-                // EditorTabs key is not directly available here; parent main
-                // already wires the central instance. If needed, callers
-                // that open this dialog from main will handle it.
-              } catch (_) {}
-              return null;
-            },
-          ),
     );
   }
 }

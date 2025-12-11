@@ -36,6 +36,7 @@ class ShortcutsHandler {
     required VoidCallback onNewTab,
     required VoidCallback onToggleReadMode,
     required VoidCallback onToggleCalendarPanel,
+    required VoidCallback onToggleFavoritesPanel,
   }) {
     return {
       const SingleActivator(LogicalKeyboardKey.escape): onCloseDialog,
@@ -59,6 +60,7 @@ class ShortcutsHandler {
       const SingleActivator(LogicalKeyboardKey.f4): onToggleImmersiveMode,
       const SingleActivator(LogicalKeyboardKey.f5): onForceSync,
       const SingleActivator(LogicalKeyboardKey.f6): onToggleCalendarPanel,
+      const SingleActivator(LogicalKeyboardKey.f7): onToggleFavoritesPanel,
       const SingleActivator(
             LogicalKeyboardKey.keyF,
             control: true,
@@ -90,6 +92,7 @@ class ShortcutsHandler {
     required VoidCallback onNewTab,
     required VoidCallback onToggleReadMode,
     required VoidCallback onToggleCalendarPanel,
+    required VoidCallback onToggleFavoritesPanel,
   }) {
     // Only handle key down events
     if (event is! KeyDownEvent) return false;
@@ -165,6 +168,10 @@ class ShortcutsHandler {
       }
       if (key == LogicalKeyboardKey.f6) {
         onToggleCalendarPanel();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.f7) {
+        onToggleFavoritesPanel();
         return true;
       }
     }
@@ -256,6 +263,7 @@ class GlobalAppShortcuts extends StatefulWidget {
   final VoidCallback onNewTab;
   final VoidCallback onToggleReadMode;
   final VoidCallback onToggleCalendarPanel;
+  final VoidCallback onToggleFavoritesPanel;
   /// Optional callback to check if shortcuts should be enabled.
   /// If null, shortcuts are always enabled when the main route is active.
   final bool Function()? isEnabled;
@@ -279,6 +287,7 @@ class GlobalAppShortcuts extends StatefulWidget {
     required this.onNewTab,
     required this.onToggleReadMode,
     required this.onToggleCalendarPanel,
+    required this.onToggleFavoritesPanel,
     this.isEnabled,
   });
 
@@ -329,6 +338,7 @@ class _GlobalAppShortcutsState extends State<GlobalAppShortcuts> {
       onNewTab: widget.onNewTab,
       onToggleReadMode: widget.onToggleReadMode,
       onToggleCalendarPanel: widget.onToggleCalendarPanel,
+      onToggleFavoritesPanel: widget.onToggleFavoritesPanel,
     );
   }
 

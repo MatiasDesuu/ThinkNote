@@ -13,7 +13,6 @@ import '../database/models/diary_entry.dart';
 import '../database/services/diary_service.dart';
 import '../database/database_helper.dart';
 import '../database/repositories/diary_repository.dart';
-import '../widgets/favorites_screen.dart';
 import '../widgets/trash_screen.dart';
 import '../Settings/settings_screen.dart';
 import '../widgets/Editor/editor_screen.dart';
@@ -322,22 +321,6 @@ class _DiaryScreenState extends State<DiaryScreen>
     );
   }
 
-  void _openFavoritesScreen() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => FavoritesScreen(
-            onNotebookSelected: (notebook) {},
-            onNoteSelected: (note) {},
-            onNoteSelectedFromPanel: (note) {
-              // Parent (main) will wire the actual suppression when needed.
-              return null;
-            },
-            onFavoritesUpdated: () {},
-          ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -400,7 +383,7 @@ class _DiaryScreenState extends State<DiaryScreen>
                       onCreateThink: null,
                       onOpenSettings: _openSettings,
                       onOpenTrash: _openTrashScreen,
-                      onOpenFavorites: _openFavoritesScreen,
+                      onOpenFavorites: null,
                       showBackButton: true,
                       isWorkflowsScreen: false,
                       isTasksScreen: false,
