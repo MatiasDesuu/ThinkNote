@@ -49,3 +49,4 @@ app.*.map.json
 /android/app/release
 
 build_and_release.bat
+release_response.json

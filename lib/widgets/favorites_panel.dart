@@ -307,8 +307,8 @@ class FavoritesPanelState extends State<FavoritesPanel>
                   widget.onNoteSelected(item);
                 } else if (isThink && widget.onThinkSelected != null) {
                   widget.onThinkSelected!(item);
+                  widget.onClose?.call();
                 }
-                widget.onClose?.call();
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(
