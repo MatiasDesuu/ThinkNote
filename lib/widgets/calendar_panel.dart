@@ -715,6 +715,7 @@ class CalendarPanelState extends State<CalendarPanel>
 
                             return Draggable<CalendarEvent>(
                               data: event,
+                              dragAnchorStrategy: pointerDragAnchorStrategy,
                               feedback: Material(
                                 color: Colors.transparent,
                                 child: Container(
