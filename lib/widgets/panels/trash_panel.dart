@@ -234,7 +234,7 @@ class TrashPanelState extends State<TrashPanel> {
           Row(
             children: [
               Icon(
-                Icons.delete_outline_rounded,
+                Icons.delete_rounded,
                 size: 20,
                 color: colorScheme.error,
               ),
