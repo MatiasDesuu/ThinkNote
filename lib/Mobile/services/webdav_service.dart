@@ -38,6 +38,8 @@ class WebDAVService {
 
     _client = newClient(url, user: username, password: password);
 
+    _client.setHeaders({'content-type': 'application/octet-stream'});
+
     _client.setConnectTimeout(8000);
     _client.setSendTimeout(8000);
     _client.setReceiveTimeout(8000);
