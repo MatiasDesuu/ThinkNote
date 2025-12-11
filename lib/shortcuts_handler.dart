@@ -37,6 +37,7 @@ class ShortcutsHandler {
     required VoidCallback onToggleReadMode,
     required VoidCallback onToggleCalendarPanel,
     required VoidCallback onToggleFavoritesPanel,
+    required VoidCallback onToggleTrashPanel,
   }) {
     return {
       const SingleActivator(LogicalKeyboardKey.escape): onCloseDialog,
@@ -61,6 +62,7 @@ class ShortcutsHandler {
       const SingleActivator(LogicalKeyboardKey.f5): onForceSync,
       const SingleActivator(LogicalKeyboardKey.f6): onToggleCalendarPanel,
       const SingleActivator(LogicalKeyboardKey.f7): onToggleFavoritesPanel,
+      const SingleActivator(LogicalKeyboardKey.f8): onToggleTrashPanel,
       const SingleActivator(
             LogicalKeyboardKey.keyF,
             control: true,
@@ -93,6 +95,7 @@ class ShortcutsHandler {
     required VoidCallback onToggleReadMode,
     required VoidCallback onToggleCalendarPanel,
     required VoidCallback onToggleFavoritesPanel,
+    required VoidCallback onToggleTrashPanel,
   }) {
     // Only handle key down events
     if (event is! KeyDownEvent) return false;
@@ -172,6 +175,10 @@ class ShortcutsHandler {
       }
       if (key == LogicalKeyboardKey.f7) {
         onToggleFavoritesPanel();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.f8) {
+        onToggleTrashPanel();
         return true;
       }
     }
@@ -264,6 +271,7 @@ class GlobalAppShortcuts extends StatefulWidget {
   final VoidCallback onToggleReadMode;
   final VoidCallback onToggleCalendarPanel;
   final VoidCallback onToggleFavoritesPanel;
+  final VoidCallback onToggleTrashPanel;
   /// Optional callback to check if shortcuts should be enabled.
   /// If null, shortcuts are always enabled when the main route is active.
   final bool Function()? isEnabled;
@@ -288,6 +296,7 @@ class GlobalAppShortcuts extends StatefulWidget {
     required this.onToggleReadMode,
     required this.onToggleCalendarPanel,
     required this.onToggleFavoritesPanel,
+    required this.onToggleTrashPanel,
     this.isEnabled,
   });
 
@@ -339,6 +348,7 @@ class _GlobalAppShortcutsState extends State<GlobalAppShortcuts> {
       onToggleReadMode: widget.onToggleReadMode,
       onToggleCalendarPanel: widget.onToggleCalendarPanel,
       onToggleFavoritesPanel: widget.onToggleFavoritesPanel,
+      onToggleTrashPanel: widget.onToggleTrashPanel,
     );
   }
 

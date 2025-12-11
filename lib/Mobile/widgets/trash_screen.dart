@@ -202,7 +202,7 @@ class _TrashScreenState extends State<TrashScreen> {
                     leading: Icon(iconData, color: iconColor),
                     title: Text(title),
                     subtitle: Text(
-                      'Deleted on ${deletedAt?.toLocal().toString().split('.')[0] ?? 'Unknown'}',
+                      'Deleted on ${deletedAt != null ? _formatDate(deletedAt) : 'Unknown'}',
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -256,5 +256,13 @@ class _TrashScreenState extends State<TrashScreen> {
                 },
               ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 }

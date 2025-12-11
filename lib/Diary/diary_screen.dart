@@ -13,7 +13,6 @@ import '../database/models/diary_entry.dart';
 import '../database/services/diary_service.dart';
 import '../database/database_helper.dart';
 import '../database/repositories/diary_repository.dart';
-import '../widgets/trash_screen.dart';
 import '../Settings/settings_screen.dart';
 import '../widgets/Editor/editor_screen.dart';
 import '../database/models/note.dart';
@@ -309,18 +308,6 @@ class _DiaryScreenState extends State<DiaryScreen>
     showDialog(context: context, builder: (context) => const SettingsScreen());
   }
 
-  void _openTrashScreen() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => TrashScreen(
-            onNotebookRestored: (notebook) {},
-            onNoteRestored: (note) {},
-            onTrashUpdated: () {},
-          ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -382,7 +369,6 @@ class _DiaryScreenState extends State<DiaryScreen>
                       onShowManageTags: null,
                       onCreateThink: null,
                       onOpenSettings: _openSettings,
-                      onOpenTrash: _openTrashScreen,
                       onOpenFavorites: null,
                       showBackButton: true,
                       isWorkflowsScreen: false,

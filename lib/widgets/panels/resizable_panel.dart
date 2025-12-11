@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
-import 'draggable_header.dart';
+import '../draggable_header.dart';
 
 class ResizablePanel extends StatefulWidget {
   final Widget child;

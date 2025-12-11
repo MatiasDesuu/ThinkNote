@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../database/models/note.dart';
-import '../database/repositories/note_repository.dart';
-import '../database/database_helper.dart';
-import '../database/database_service.dart';
-import '../Settings/editor_settings_panel.dart';
-import 'custom_snackbar.dart';
+import '../../database/models/note.dart';
+import '../../database/repositories/note_repository.dart';
+import '../../database/database_helper.dart';
+import '../../database/database_service.dart';
+import '../../Settings/editor_settings_panel.dart';
+import '../custom_snackbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
-import 'context_menu.dart';
+import '../context_menu.dart';
 
 enum SortMode { order, date, completion }
 

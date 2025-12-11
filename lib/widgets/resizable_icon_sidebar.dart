@@ -26,6 +26,7 @@ class ResizableIconSidebar extends StatefulWidget {
   final VoidCallback? onOpenSettings;
   final VoidCallback? onOpenTrash;
   final VoidCallback? onOpenFavorites;
+  final VoidCallback? onFavoritesReload;
   final bool showBackButton;
   final bool isWorkflowsScreen;
   final bool isTasksScreen;
@@ -67,6 +68,7 @@ class ResizableIconSidebar extends StatefulWidget {
     this.onOpenSettings,
     this.onOpenTrash,
     this.onOpenFavorites,
+    this.onFavoritesReload,
     this.showBackButton = true,
     this.isWorkflowsScreen = false,
     this.isTasksScreen = false,
@@ -274,6 +276,7 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
                           onOpenSettings: widget.onOpenSettings,
                           onOpenTrash: widget.onOpenTrash,
                           onOpenFavorites: widget.onOpenFavorites,
+                          onFavoritesReload: widget.onFavoritesReload,
                           showBackButton: widget.showBackButton,
                           isWorkflowsScreen: widget.isWorkflowsScreen,
                           isTasksScreen: widget.isTasksScreen,

@@ -194,6 +194,7 @@ class IconSidebar extends StatefulWidget {
   final VoidCallback? onOpenSettings;
   final VoidCallback? onOpenTrash;
   final VoidCallback? onOpenFavorites;
+  final VoidCallback? onFavoritesReload;
   final bool showBackButton;
   final bool isWorkflowsScreen;
   final bool isTasksScreen;
@@ -235,6 +236,7 @@ class IconSidebar extends StatefulWidget {
     this.onOpenSettings,
     this.onOpenTrash,
     this.onOpenFavorites,
+    this.onFavoritesReload,
     this.showBackButton = true,
     this.isWorkflowsScreen = false,
     this.isTasksScreen = false,
@@ -555,37 +557,42 @@ class _IconSidebarState extends State<IconSidebar>
   }
 
   void _openFavoritesScreen() async {
-    // Mostrar indicador de sincronización
-    setState(() {
-      _syncController.start();
-    });
+    // Abrir el panel inmediatamente
+    widget.onOpenFavorites?.call();
 
-    // Force synchronization before opening the screen
-    try {
-      final syncService = SyncService();
-      await syncService.forceSync();
-
-      if (!mounted) return;
-    } catch (e) {
-      if (mounted) {
-        CustomSnackbar.show(
-          context: context,
-          message: 'Error synchronizing: ${e.toString()}',
-          type: CustomSnackbarType.error,
-        );
-      }
-    } finally {
+    // Hacer la sincronización en segundo plano
+    Future(() async {
+      // Mostrar indicador de sincronización
       if (mounted) {
         setState(() {
-          _syncController.stop();
+          _syncController.start();
         });
       }
-    }
 
-    if (!mounted) return;
+      try {
+        final syncService = SyncService();
+        await syncService.forceSync();
 
-    // Llamar al callback original
-    widget.onOpenFavorites?.call();
+        if (mounted) {
+          // Recargar el panel después de la sincronización
+          widget.onFavoritesReload?.call();
+        }
+      } catch (e) {
+        if (mounted) {
+          CustomSnackbar.show(
+            context: context,
+            message: 'Error synchronizing: ${e.toString()}',
+            type: CustomSnackbarType.error,
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _syncController.stop();
+          });
+        }
+      }
+    });
   }
 
   void _openTrashScreen() async {

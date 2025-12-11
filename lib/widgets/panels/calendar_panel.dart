@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../database/models/calendar_event.dart';
-import '../database/models/calendar_event_status.dart';
-import '../database/models/note.dart';
-import '../database/models/notebook.dart';
-import '../database/models/notebook_icons.dart';
-import '../database/repositories/calendar_event_repository.dart';
-import '../database/repositories/calendar_event_status_repository.dart';
-import '../database/repositories/notebook_repository.dart';
-import '../database/database_helper.dart';
-import '../database/database_service.dart';
-import '../services/notification_service.dart';
-import 'custom_snackbar.dart';
-import 'calendar_event_status_manager.dart';
-import 'context_menu.dart';
+import '../../database/models/calendar_event.dart';
+import '../../database/models/calendar_event_status.dart';
+import '../../database/models/note.dart';
+import '../../database/models/notebook.dart';
+import '../../database/models/notebook_icons.dart';
+import '../../database/repositories/calendar_event_repository.dart';
+import '../../database/repositories/calendar_event_status_repository.dart';
+import '../../database/repositories/notebook_repository.dart';
+import '../../database/database_helper.dart';
+import '../../database/database_service.dart';
+import '../../services/notification_service.dart';
+import '../custom_snackbar.dart';
+import '../calendar_event_status_manager.dart';
+import '../context_menu.dart';
 
 class CalendarPanel extends StatefulWidget {
   final Function(Note) onNoteSelected;

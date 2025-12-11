@@ -14,10 +14,10 @@ import 'shortcuts_handler.dart';
 import 'theme_handler.dart';
 import 'widgets/Editor/editor_screen.dart';
 import 'animations/animations_handler.dart';
-import 'widgets/notebooks_panel.dart';
-import 'widgets/resizable_panel.dart';
-import 'widgets/trash_screen.dart';
-import 'widgets/favorites_panel.dart';
+import 'widgets/panels/notebooks_panel.dart';
+import 'widgets/panels/resizable_panel.dart';
+import 'widgets/panels/trash_panel.dart';
+import 'widgets/panels/favorites_panel.dart';
 import 'database/models/note.dart';
 import 'database/models/notebook.dart';
 import 'database/models/editor_tab.dart';
@@ -27,9 +27,9 @@ import 'database/repositories/notebook_repository.dart';
 import 'database/database_service.dart';
 import 'database/sync_service.dart';
 import 'Mobile/main_mobile.dart';
-import 'widgets/notes_panel.dart';
+import 'widgets/panels/notes_panel.dart';
 import 'widgets/custom_snackbar.dart';
-import 'widgets/calendar_panel.dart';
+import 'widgets/panels/calendar_panel.dart';
 import 'widgets/search_screen_desktop.dart';
 import 'widgets/Editor/editor_tabs.dart';
 import 'database/models/notebook_icons.dart';
@@ -705,6 +705,10 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       GlobalKey<ResizablePanelLeftState>();
   final GlobalKey<FavoritesPanelState> _favoritesPanelStateKey =
       GlobalKey<FavoritesPanelState>();
+  final GlobalKey<ResizablePanelLeftState> _trashPanelKey =
+      GlobalKey<ResizablePanelLeftState>();
+  final GlobalKey<TrashPanelState> _trashPanelStateKey =
+      GlobalKey<TrashPanelState>();
   final GlobalKey<EditorTabsState> _editorTabsKey =
       GlobalKey<EditorTabsState>();
   late SyncAnimationController _syncController;
@@ -1762,6 +1766,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       onToggleReadMode: toggleActiveEditorReadMode,
       onToggleCalendarPanel: _toggleCalendarPanel,
       onToggleFavoritesPanel: _toggleFavoritesPanel,
+      onToggleTrashPanel: _toggleTrashPanel,
       child: Focus(
         focusNode: _appFocusNode,
         autofocus: true,
@@ -1788,18 +1793,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                 onCreateNewNote: createNewNote,
                 onCreateNewNotebook: createNewNotebook,
                 onCreateNewTodo: createNewTodo,
-                onOpenTrash: () {
-                  showDialog(
-                    context: context,
-                    builder:
-                        (context) => TrashScreen(
-                          onNotebookRestored: _onNotebookRestored,
-                          onNoteRestored: _onNoteRestored,
-                          onTrashUpdated: _onTrashUpdated,
-                        ),
-                  );
-                },
+                onOpenTrash: _toggleTrashPanel,
                 onOpenFavorites: _toggleFavoritesPanel,
+                onFavoritesReload: () => _favoritesPanelStateKey.currentState?.reloadFavorites(),
                 showBackButton: false,
                 calendarPanelKey: _calendarPanelKey,
                 appFocusNode: _appFocusNode,
@@ -1991,6 +1987,35 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                   ),
                 ),
               ),
+
+              // Trash Panel (independent, positioned absolutely)
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height,
+                  child: ResizablePanelLeft(
+                    key: _trashPanelKey,
+                    minWidth: 300,
+                    maxWidth: 400,
+                    appFocusNode: _appFocusNode,
+                    title: '',
+                    preferencesKey: 'trash_panel',
+                    child: TrashPanel(
+                      key: _trashPanelStateKey,
+                      onNotebookRestored: _onNotebookRestored,
+                      onNoteRestored: _onNoteRestored,
+                      onThinkRestored: (think) {
+                        // Handle think restoration if needed
+                      },
+                      onTrashUpdated: _onTrashUpdated,
+                      onClose: _toggleTrashPanel,
+                      appFocusNode: _appFocusNode,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -2019,6 +2044,12 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   void _toggleFavoritesPanel() {
     if (_favoritesPanelKey.currentState != null) {
       _favoritesPanelKey.currentState!.togglePanel();
+    }
+  }
+
+  void _toggleTrashPanel() {
+    if (_trashPanelKey.currentState != null) {
+      _trashPanelKey.currentState!.togglePanel();
     }
   }
 

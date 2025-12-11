@@ -1,6 +1,7 @@
 import '../database_helper.dart';
 import '../models/think.dart';
 import '../database_config.dart' as config;
+import '../database_service.dart';
 
 class ThinkRepository {
   final DatabaseHelper _databaseHelper;
@@ -40,7 +41,7 @@ class ThinkRepository {
         think.orderIndex != 0 ? think.orderIndex : nextOrder,
         think.tags,
       ]);
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
       return db.lastInsertRowId;
     } finally {
       stmt.dispose();
@@ -108,7 +109,7 @@ class ThinkRepository {
         think.orderIndex,
         think.id,
       ]);
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
       stmt.dispose();
@@ -126,7 +127,7 @@ class ThinkRepository {
 
     try {
       stmt.execute([now, id]);
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
       stmt.dispose();
@@ -144,7 +145,7 @@ class ThinkRepository {
 
     try {
       stmt.execute([newOrderIndex, id]);
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
       stmt.dispose();
@@ -169,7 +170,7 @@ class ThinkRepository {
 
       stmt.dispose();
       db.execute('COMMIT');
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
     } catch (e) {
       db.execute('ROLLBACK');
       rethrow;
@@ -201,7 +202,7 @@ class ThinkRepository {
 
     try {
       stmt.execute([isFavorite ? 1 : 0, id]);
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
       stmt.dispose();
@@ -249,7 +250,7 @@ class ThinkRepository {
 
     try {
       stmt.execute([id]);
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
       stmt.dispose();
@@ -265,7 +266,7 @@ class ThinkRepository {
 
     try {
       stmt.execute([id]);
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
       stmt.dispose();
@@ -286,6 +287,7 @@ class ThinkRepository {
           DateTime.fromMillisecondsSinceEpoch(
             row[config.DatabaseConfig.columnUpdatedAt] as int,
           ).toIso8601String(),
+      'deleted_at': row[config.DatabaseConfig.columnDeletedAt],
       'is_favorite': row[config.DatabaseConfig.columnIsFavorite],
       'order_index': row[config.DatabaseConfig.columnOrderIndex],
       'tags': row[config.DatabaseConfig.columnTags] ?? '',

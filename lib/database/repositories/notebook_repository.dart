@@ -151,6 +151,8 @@ class NotebookRepository {
       ''',
       [now, id],
     );
+
+    DatabaseService().notifyDatabaseChanged();
   }
 
   Future<List<Notebook>> _getNestedNotebooks(int parentId) async {

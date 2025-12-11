@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../database/models/notebook.dart';
-import '../database/models/note.dart';
-import '../database/models/think.dart';
-import '../database/models/notebook_icons.dart';
-import '../database/repositories/notebook_repository.dart';
-import '../database/repositories/note_repository.dart';
-import '../database/repositories/think_repository.dart';
-import '../database/database_helper.dart';
-import '../database/database_service.dart';
+import '../../database/models/notebook.dart';
+import '../../database/models/note.dart';
+import '../../database/models/think.dart';
+import '../../database/models/notebook_icons.dart';
+import '../../database/repositories/notebook_repository.dart';
+import '../../database/repositories/note_repository.dart';
+import '../../database/repositories/think_repository.dart';
+import '../../database/database_helper.dart';
+import '../../database/database_service.dart';
 
 class FavoritesPanel extends StatefulWidget {
   final Function(Notebook) onNotebookSelected;
@@ -34,43 +34,31 @@ class FavoritesPanel extends StatefulWidget {
   State<FavoritesPanel> createState() => FavoritesPanelState();
 }
 
-class FavoritesPanelState extends State<FavoritesPanel>
-    with SingleTickerProviderStateMixin {
+class FavoritesPanelState extends State<FavoritesPanel> {
   late final NoteRepository _noteRepository;
   late final NotebookRepository _notebookRepository;
   late final ThinkRepository _thinkRepository;
-  List<Notebook> _favoriteNotebooks = [];
-  List<Note> _favoriteNotes = [];
-  List<Think> _favoriteThinks = [];
-  bool _isLoading = true;
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
+  late StreamController<List<dynamic>> _favoritesController;
+  late Stream<List<dynamic>> _favoritesStream;
   late StreamSubscription<void> _databaseChangeSubscription;
 
   @override
   void initState() {
     super.initState();
+    _favoritesController = StreamController<List<dynamic>>.broadcast();
+    _favoritesStream = _favoritesController.stream;
     _initializeRepositories();
-
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
 
     _databaseChangeSubscription = DatabaseService().onDatabaseChanged.listen(
       (_) {
-        _loadData();
+        reloadFavorites();
       },
     );
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _favoritesController.close();
     _databaseChangeSubscription.cancel();
     super.dispose();
   }
@@ -81,64 +69,44 @@ class FavoritesPanelState extends State<FavoritesPanel>
     _notebookRepository = NotebookRepository(dbHelper);
     _noteRepository = NoteRepository(dbHelper);
     _thinkRepository = ThinkRepository(dbHelper);
-    await _loadData();
+    _loadFavorites();
+  }
+
+  void _loadFavorites() {
+    _getFavorites().then((list) => _favoritesController.add(list));
+  }
+
+  Future<List<dynamic>> _getFavorites() async {
+    final notebooks = await _notebookRepository.getFavoriteNotebooks();
+    final notes = await _noteRepository.getFavoriteNotes();
+    final thinks = await _thinkRepository.getFavoriteThinks();
+    return [...notebooks, ...notes, ...thinks];
   }
 
   /// Reloads all favorites data
   /// Used for refreshing after sync operations
   void reloadFavorites() {
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final notebooks = await _notebookRepository.getFavoriteNotebooks();
-      final notes = await _noteRepository.getFavoriteNotes();
-      final thinks = await _thinkRepository.getFavoriteThinks();
-
-      if (mounted) {
-        setState(() {
-          _favoriteNotebooks = notebooks;
-          _favoriteNotes = notes;
-          _favoriteThinks = thinks;
-          _isLoading = false;
-        });
-        _animationController.forward();
-      }
-    } catch (e) {
-      debugPrint('Error loading favorites: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+    _loadFavorites();
   }
 
   Future<void> _toggleNotebookFavorite(Notebook notebook) async {
     final updatedNotebook = notebook.copyWith(isFavorite: !notebook.isFavorite);
     await _notebookRepository.updateNotebook(updatedNotebook);
     widget.onFavoritesUpdated?.call();
-    await _loadData();
+    reloadFavorites();
   }
 
   Future<void> _toggleNoteFavorite(Note note) async {
     final updatedNote = note.copyWith(isFavorite: !note.isFavorite);
     await _noteRepository.updateNote(updatedNote);
     widget.onFavoritesUpdated?.call();
-    await _loadData();
+    reloadFavorites();
   }
 
   Future<void> _toggleThinkFavorite(Think think) async {
     await _thinkRepository.toggleFavorite(think.id!, !think.isFavorite);
     widget.onFavoritesUpdated?.call();
-    await _loadData();
+    reloadFavorites();
   }
 
   @override
@@ -155,13 +123,14 @@ class FavoritesPanelState extends State<FavoritesPanel>
               children: [
                 _buildHeader(),
                 Expanded(
-                  child: _isLoading
-                      ? Center(
-                          child: CircularProgressIndicator(
-                            color: colorScheme.primary,
-                          ),
-                        )
-                      : _buildContent(),
+                  child: StreamBuilder<List<dynamic>>(
+                    stream: _favoritesStream,
+                    initialData: [],
+                    builder: (context, snapshot) {
+                      final allItems = snapshot.data!;
+                      return _buildContent(allItems);
+                    },
+                  ),
                 ),
               ],
             ),
@@ -211,51 +180,46 @@ class FavoritesPanelState extends State<FavoritesPanel>
     );
   }
 
-  Widget _buildContent() {
-    final colorScheme = Theme.of(context).colorScheme;
-    final allItems = [
-      ..._favoriteNotebooks,
-      ..._favoriteNotes,
-      ..._favoriteThinks,
-    ];
-
+  Widget _buildContent(List<dynamic> allItems) {
     if (allItems.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.favorite_border_rounded,
-              size: 64,
-              color: colorScheme.onSurfaceVariant.withAlpha(127),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No favorites yet',
-              style: TextStyle(
-                color: colorScheme.onSurfaceVariant,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Mark items as favorite to see them here',
-              style: TextStyle(
-                color: colorScheme.onSurfaceVariant.withAlpha(179),
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      );
+      return _buildEmptyState();
     }
 
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: allItems.length,
-        itemBuilder: (context, index) => _buildItem(allItems[index]),
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: allItems.length,
+      itemBuilder: (context, index) => _buildItem(allItems[index]),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.favorite_border_rounded,
+            size: 64,
+            color: colorScheme.onSurfaceVariant.withAlpha(127),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No favorites yet',
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Mark items as favorite to see them here',
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant.withAlpha(179),
+              fontSize: 12,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -286,6 +250,7 @@ class FavoritesPanelState extends State<FavoritesPanel>
     return MouseRegionHoverItem(
       builder: (context, isHovering) {
         return Card(
+          key: Key('${item.runtimeType}_${item.id}'),
           margin: const EdgeInsets.only(bottom: 8),
           color: colorScheme.surfaceContainerHighest,
           shape: RoundedRectangleBorder(

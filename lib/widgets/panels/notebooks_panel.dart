@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
-import '../database/models/notebook.dart';
-import '../database/models/note.dart';
-import '../database/models/notebook_icons.dart';
-import '../database/repositories/notebook_repository.dart';
-import '../database/repositories/note_repository.dart';
-import '../database/database_helper.dart';
-import '../database/database_service.dart';
-import '../Settings/editor_settings_panel.dart';
-import 'custom_snackbar.dart';
-import 'context_menu.dart';
-import 'icon_selector_dialog.dart';
+import '../../database/models/notebook.dart';
+import '../../database/models/note.dart';
+import '../../database/models/notebook_icons.dart';
+import '../../database/repositories/notebook_repository.dart';
+import '../../database/repositories/note_repository.dart';
+import '../../database/database_helper.dart';
+import '../../database/database_service.dart';
+import '../../Settings/editor_settings_panel.dart';
+import '../custom_snackbar.dart';
+import '../context_menu.dart';
+import '../icon_selector_dialog.dart';
 
 const double kChevronWidth = 40.0;
 const double kIndentPerLevel = 4.0;

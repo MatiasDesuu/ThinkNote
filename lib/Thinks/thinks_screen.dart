@@ -13,7 +13,6 @@ import '../database/models/think.dart';
 import '../database/services/think_service.dart';
 import '../database/database_helper.dart';
 import '../database/repositories/think_repository.dart';
-import '../widgets/trash_screen.dart';
 import '../Settings/settings_screen.dart';
 import '../widgets/Editor/editor_screen.dart';
 import '../database/models/note.dart';
@@ -519,25 +518,6 @@ class _ThinksScreenState extends State<ThinksScreen>
     }
   }
 
-  // Method to show the trash screen
-  void _openTrashScreen() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => TrashScreen(
-            onTrashUpdated: _loadThinks,
-            onThinkRestored: (think) {
-              setState(() {
-                _selectedThink = think;
-                _noteController.text = think.content;
-                _titleController.text = think.title;
-              });
-              _loadThinks();
-            },
-          ),
-    );
-  }
-
   // Method to open the settings screen
   void _openSettings() async {
     await Navigator.of(context).push(
@@ -637,7 +617,6 @@ class _ThinksScreenState extends State<ThinksScreen>
                       onShowManageTags: null,
                       onCreateThink: _createNewThink,
                       onOpenSettings: _openSettings,
-                      onOpenTrash: _openTrashScreen,
                       onOpenFavorites: null,
                       showBackButton: true,
                       isWorkflowsScreen: false,
