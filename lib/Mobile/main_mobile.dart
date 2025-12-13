@@ -43,6 +43,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
   late Future<bool> _brightnessFuture;
   late Future<bool> _colorModeFuture;
   late Future<bool> _monochromeFuture;
+  late Future<bool> _einkFuture;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey<TasksScreenState> _tasksKey = GlobalKey<TasksScreenState>();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
@@ -157,6 +158,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
     _brightnessFuture = ThemeManager.getThemeBrightness();
     _colorModeFuture = ThemeManager.getColorModeEnabled();
     _monochromeFuture = ThemeManager.getMonochromeEnabled();
+    _einkFuture = ThemeManager.getEInkEnabled();
   }
 
   void _onItemTapped(int index) {
@@ -226,11 +228,13 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
     bool? isDarkMode,
     bool? isColorMode,
     bool? isMonochrome,
+    bool? isEInk,
   }) async {
     await ThemeManager.saveTheme(
       isDarkMode: isDarkMode ?? false,
       colorModeEnabled: isColorMode,
       monochromeEnabled: isMonochrome,
+      einkEnabled: isEInk,
     );
     setState(() {
       _loadThemePreferences();
@@ -369,6 +373,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                         _brightnessFuture,
                         _colorModeFuture,
                         _monochromeFuture,
+                        _einkFuture,
                       ]),
                       builder: (context, snapshot) {
                         if (!snapshot.hasData) return const SizedBox.shrink();
@@ -376,6 +381,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                         final isDarkMode = snapshot.data![0];
                         final colorMode = snapshot.data![1];
                         final monochromeMode = snapshot.data![2];
+                        final einkMode = snapshot.data![3];
 
                         return Theme(
                           data: ThemeManager.buildTheme(
@@ -384,6 +390,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                             isDarkMode: isDarkMode,
                             colorModeEnabled: colorMode,
                             monochromeEnabled: monochromeMode,
+                            einkEnabled: einkMode,
                           ),
                           child: ThinksScreen(
                             onThinkSelected: (Note note) async {
@@ -443,6 +450,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                           _brightnessFuture,
                           _colorModeFuture,
                           _monochromeFuture,
+                          _einkFuture,
                         ]),
                         builder: (context, snapshot) {
                           if (!snapshot.hasData) return const SizedBox.shrink();
@@ -450,6 +458,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                           final isDarkMode = snapshot.data![0];
                           final colorMode = snapshot.data![1];
                           final monochromeMode = snapshot.data![2];
+                          final einkMode = snapshot.data![3];
 
                           return Theme(
                             data: ThemeManager.buildTheme(
@@ -458,6 +467,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                               isDarkMode: isDarkMode,
                               colorModeEnabled: colorMode,
                               monochromeEnabled: monochromeMode,
+                              einkEnabled: einkMode,
                             ),
                             child: ThinkEditor(
                               selectedThink: createdThink,
@@ -540,6 +550,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
             _brightnessFuture,
             _colorModeFuture,
             _monochromeFuture,
+            _einkFuture,
           ]),
           builder: (context, snapshot) {
             if (!snapshot.hasData) return const SizedBox.shrink();
@@ -547,6 +558,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
             final isDarkMode = snapshot.data![0];
             final colorMode = snapshot.data![1];
             final monochromeMode = snapshot.data![2];
+            final einkMode = snapshot.data![3];
 
             return PopScope(
               canPop: true,
@@ -565,6 +577,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                   isDarkMode: isDarkMode,
                   colorModeEnabled: colorMode,
                   monochromeEnabled: monochromeMode,
+                  einkEnabled: einkMode,
                 ),
                 home: Builder(
                   builder: (context) {
@@ -806,6 +819,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                         isDarkMode: isDarkMode,
                                         isColorModeEnabled: colorMode,
                                         isMonochromeEnabled: monochromeMode,
+                                        isEInkEnabled: einkMode,
                                       ),
                                 ),
                               );
@@ -817,39 +831,25 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                       bottomNavigationBar: NavigationBar(
                         selectedIndex: _selectedIndex,
                         onDestinationSelected: _onItemTapped,
-                        destinations: [
+                        destinations: const [
                           NavigationDestination(
-                            icon: const Icon(Icons.home_outlined),
-                            selectedIcon: Icon(
-                              Icons.home_rounded,
-                              color: colorScheme.primary,
-                            ),
+                            icon: Icon(Icons.home_outlined),
+                            selectedIcon: Icon(Icons.home_rounded),
                             label: 'Home',
                           ),
                           NavigationDestination(
-                            icon: const Icon(Icons.calendar_month_outlined),
-                            selectedIcon: Icon(
-                              Icons.calendar_month_rounded,
-                              color: colorScheme.primary,
-                            ),
+                            icon: Icon(Icons.calendar_month_outlined),
+                            selectedIcon: Icon(Icons.calendar_month_rounded),
                             label: 'Calendar',
                           ),
                           NavigationDestination(
-                            icon: const Icon(
-                              Icons.check_circle_outline_rounded,
-                            ),
-                            selectedIcon: Icon(
-                              Icons.check_circle_rounded,
-                              color: colorScheme.primary,
-                            ),
+                            icon: Icon(Icons.check_circle_outline_rounded),
+                            selectedIcon: Icon(Icons.check_circle_rounded),
                             label: 'Tasks',
                           ),
                           NavigationDestination(
-                            icon: const Icon(Icons.bookmarks_outlined),
-                            selectedIcon: Icon(
-                              Icons.bookmarks_rounded,
-                              color: colorScheme.primary,
-                            ),
+                            icon: Icon(Icons.bookmarks_outlined),
+                            selectedIcon: Icon(Icons.bookmarks_rounded),
                             label: 'Bookmarks',
                           ),
                         ],

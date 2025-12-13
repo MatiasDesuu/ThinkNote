@@ -8,11 +8,12 @@ import '../../widgets/sync_action_dialog.dart';
 import '../../database/sync_service.dart';
 
 class SettingsScreen extends StatefulWidget {
-  final Function({bool? isDarkMode, bool? isColorMode, bool? isMonochrome})
+  final Function({bool? isDarkMode, bool? isColorMode, bool? isMonochrome, bool? isEInk})
   onUpdateTheme;
   final bool isDarkMode;
   final bool isColorModeEnabled;
   final bool isMonochromeEnabled;
+  final bool isEInkEnabled;
 
   const SettingsScreen({
     super.key,
@@ -20,6 +21,7 @@ class SettingsScreen extends StatefulWidget {
     required this.isDarkMode,
     required this.isColorModeEnabled,
     required this.isMonochromeEnabled,
+    required this.isEInkEnabled,
   });
 
   @override
@@ -30,6 +32,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _isDarkMode;
   late bool _isColorModeEnabled;
   late bool _isMonochromeEnabled;
+  late bool _isEInkEnabled;
   bool _isAnimationDisabled = false;
   bool _isWebDAVEnabled = false;
   bool _showNotebookIcons = true;
@@ -47,6 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _isDarkMode = widget.isDarkMode;
     _isColorModeEnabled = widget.isColorModeEnabled;
     _isMonochromeEnabled = widget.isMonochromeEnabled;
+    _isEInkEnabled = widget.isEInkEnabled;
     _loadInitialSettingsSync();
   }
 
@@ -200,6 +204,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       isDarkMode: _isDarkMode,
       isColorMode: _isColorModeEnabled,
       isMonochrome: _isMonochromeEnabled,
+      isEInk: _isEInkEnabled,
     );
   }
 
@@ -307,26 +312,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
 
                       SwitchListTile(
-                        title: const Text('Color Mode'),
+                        title: const Text('E-Ink Mode'),
                         subtitle: const Text(
-                          'Tint all elements with themed colors',
+                          'Pure black and white for e-ink displays',
                         ),
-                        value: _isColorModeEnabled,
+                        value: _isEInkEnabled,
                         onChanged: (value) {
-                          setState(() => _isColorModeEnabled = value);
+                          setState(() {
+                            _isEInkEnabled = value;
+                            if (value) {
+                              _isColorModeEnabled = false;
+                              _isMonochromeEnabled = false;
+                            }
+                          });
                           _updatePreferences();
                         },
                       ),
-                      if (!_isColorModeEnabled) ...[
+
+                      if (!_isEInkEnabled) ...[
                         SwitchListTile(
-                          title: const Text('Monochrome Mode'),
-                          subtitle: const Text('Use a grayscale palette'),
-                          value: _isMonochromeEnabled,
+                          title: const Text('Color Mode'),
+                          subtitle: const Text(
+                            'Tint all elements with themed colors',
+                          ),
+                          value: _isColorModeEnabled,
                           onChanged: (value) {
-                            setState(() => _isMonochromeEnabled = value);
+                            setState(() => _isColorModeEnabled = value);
                             _updatePreferences();
                           },
                         ),
+                        if (!_isColorModeEnabled) ...[
+                          SwitchListTile(
+                            title: const Text('Monochrome Mode'),
+                            subtitle: const Text('Use a grayscale palette'),
+                            value: _isMonochromeEnabled,
+                            onChanged: (value) {
+                              setState(() => _isMonochromeEnabled = value);
+                              _updatePreferences();
+                            },
+                          ),
+                        ],
                       ],
                       SwitchListTile(
                         title: const Text('Disable Animations'),

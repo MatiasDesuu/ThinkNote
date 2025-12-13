@@ -63,6 +63,7 @@ class _PersonalizationSettingsPanelState
   bool _isColorMode = true;
   bool _isMonochromeEnabled = false;
   bool _isCatppuccinEnabled = false;
+  bool _isEInkEnabled = false;
   String _catppuccinFlavor = 'mocha';
   String _catppuccinAccent = 'mauve';
   bool _isLoading = true;
@@ -85,6 +86,8 @@ class _PersonalizationSettingsPanelState
         await theme_handler.ThemeManager.getCatppuccinFlavor();
     final catppuccinAccent =
         await theme_handler.ThemeManager.getCatppuccinAccent();
+    final einkEnabled =
+        await theme_handler.ThemeManager.getEInkEnabled();
 
     setState(() {
       _currentColor = color;
@@ -92,6 +95,7 @@ class _PersonalizationSettingsPanelState
       _isColorMode = colorMode;
       _isMonochromeEnabled = monochromeEnabled;
       _isCatppuccinEnabled = catppuccinEnabled;
+      _isEInkEnabled = einkEnabled;
       _catppuccinFlavor = catppuccinFlavor;
       _catppuccinAccent = catppuccinAccent;
       _isLoading = false;
@@ -111,10 +115,11 @@ class _PersonalizationSettingsPanelState
   void _toggleColorMode(bool value) {
     setState(() {
       _isColorMode = value;
-      // If color mode is enabled, disable monochrome mode and catppuccin
+      // If color mode is enabled, disable monochrome mode, catppuccin and e-ink
       if (value) {
         _isMonochromeEnabled = false;
         _isCatppuccinEnabled = false;
+        _isEInkEnabled = false;
       }
     });
     _saveSettings();
@@ -126,10 +131,11 @@ class _PersonalizationSettingsPanelState
   void _toggleMonochrome(bool value) {
     setState(() {
       _isMonochromeEnabled = value;
-      // If monochrome is enabled, disable color mode and catppuccin
+      // If monochrome is enabled, disable color mode, catppuccin and e-ink
       if (value) {
         _isColorMode = false;
         _isCatppuccinEnabled = false;
+        _isEInkEnabled = false;
       }
     });
     _saveSettings();
@@ -141,10 +147,27 @@ class _PersonalizationSettingsPanelState
   void _toggleCatppuccin(bool value) {
     setState(() {
       _isCatppuccinEnabled = value;
-      // If catppuccin is enabled, disable color mode and monochrome
+      // If catppuccin is enabled, disable color mode, monochrome and e-ink
       if (value) {
         _isColorMode = false;
         _isMonochromeEnabled = false;
+        _isEInkEnabled = false;
+      }
+    });
+    _saveSettings();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onThemeUpdated?.call();
+    });
+  }
+
+  void _toggleEInk(bool value) {
+    setState(() {
+      _isEInkEnabled = value;
+      // If e-ink is enabled, disable color mode, monochrome and catppuccin
+      if (value) {
+        _isColorMode = false;
+        _isMonochromeEnabled = false;
+        _isCatppuccinEnabled = false;
       }
     });
     _saveSettings();
@@ -178,6 +201,7 @@ class _PersonalizationSettingsPanelState
       catppuccinEnabled: _isCatppuccinEnabled,
       catppuccinFlavor: _catppuccinFlavor,
       catppuccinAccent: _catppuccinAccent,
+      einkEnabled: _isEInkEnabled,
     );
     widget.onThemeUpdated?.call();
     await _loadCurrentSettings();
@@ -202,93 +226,95 @@ class _PersonalizationSettingsPanelState
         ),
         const SizedBox(height: 20),
 
-        // Catppuccin Theme Section
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.coffee_rounded, color: colorScheme.primary),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Catppuccin Theme',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+        // Catppuccin Theme Section (only visible when E-Ink is disabled)
+        if (!_isEInkEnabled) ...[
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.coffee_rounded, color: colorScheme.primary),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Catppuccin Theme',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Use Catppuccin color palette for a cohesive and beautiful theme experience',
-                  style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: 14,
+                    ],
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Use Catppuccin color palette for a cohesive and beautiful theme experience',
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
-                // Catppuccin toggle
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Enable Catppuccin Theme', style: textStyle),
-                          const SizedBox(height: 4),
-                          Text(
-                            'When enabled, disables other theme options and uses Catppuccin colors',
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 13,
+                  // Catppuccin toggle
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Enable Catppuccin Theme', style: textStyle),
+                            const SizedBox(height: 4),
+                            Text(
+                              'When enabled, disables other theme options and uses Catppuccin colors',
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 13,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      Switch(
+                        value: _isCatppuccinEnabled,
+                        onChanged: _toggleCatppuccin,
+                      ),
+                    ],
+                  ),
+
+                  // Catppuccin options (only visible when enabled)
+                  if (_isCatppuccinEnabled) ...[
+                    const SizedBox(height: 16),
+
+                    // Flavor selector
+                    Text(
+                      'Flavor',
+                      style: textStyle?.copyWith(fontWeight: FontWeight.bold),
                     ),
-                    Switch(
-                      value: _isCatppuccinEnabled,
-                      onChanged: _toggleCatppuccin,
+                    const SizedBox(height: 8),
+                    _buildFlavorSelector(),
+
+                    const SizedBox(height: 16),
+
+                    // Accent selector
+                    Text(
+                      'Accent Color',
+                      style: textStyle?.copyWith(fontWeight: FontWeight.bold),
                     ),
+                    const SizedBox(height: 8),
+                    _buildAccentSelector(),
                   ],
-                ),
-
-                // Catppuccin options (only visible when enabled)
-                if (_isCatppuccinEnabled) ...[
-                  const SizedBox(height: 16),
-
-                  // Flavor selector
-                  Text(
-                    'Flavor',
-                    style: textStyle?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildFlavorSelector(),
-
-                  const SizedBox(height: 16),
-
-                  // Accent selector
-                  Text(
-                    'Accent Color',
-                    style: textStyle?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildAccentSelector(),
                 ],
-              ],
+              ),
             ),
           ),
-        ),
 
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
+        ],
 
-        // Color Selection Section (only visible when Catppuccin is disabled)
-        if (!_isCatppuccinEnabled) ...[
+        // Color Selection Section (only visible when Catppuccin and E-Ink are disabled)
+        if (!_isCatppuccinEnabled && !_isEInkEnabled) ...[
           Card(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -374,7 +400,7 @@ class _PersonalizationSettingsPanelState
                   ),
                   const SizedBox(height: 16),
 
-                  // Light/dark theme selector
+                  // Light/dark theme selector (always visible)
                   Row(
                     children: [
                       Expanded(child: Text('Light theme', style: textStyle)),
@@ -387,17 +413,17 @@ class _PersonalizationSettingsPanelState
 
                   const SizedBox(height: 16),
 
-                  // Color mode selector
+                  // E-Ink Theme toggle (always visible)
                   Row(
                     children: [
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Color Mode', style: textStyle),
+                            Text('E-Ink Mode', style: textStyle),
                             const SizedBox(height: 4),
                             Text(
-                              'Applies dynamic colors to the entire interface. If disabled, only basic elements are colored.',
+                              'Pure black and white theme for e-ink displays. No colors, gray tones, or transparencies. When Light theme is on: white background with black elements. When Light theme is off: black background with white elements.',
                               style: TextStyle(
                                 color: colorScheme.onSurfaceVariant,
                                 fontSize: 13,
@@ -406,12 +432,15 @@ class _PersonalizationSettingsPanelState
                           ],
                         ),
                       ),
-                      Switch(value: _isColorMode, onChanged: _toggleColorMode),
+                      Switch(
+                        value: _isEInkEnabled,
+                        onChanged: _toggleEInk,
+                      ),
                     ],
                   ),
 
-                  // Monochrome option (only visible when color mode is disabled)
-                  if (!_isColorMode) ...[
+                  // Color mode selector (only visible when E-Ink is disabled)
+                  if (!_isEInkEnabled) ...[
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -419,10 +448,10 @@ class _PersonalizationSettingsPanelState
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Monochrome Mode', style: textStyle),
+                              Text('Color Mode', style: textStyle),
                               const SizedBox(height: 4),
                               Text(
-                                'Uses white (dark theme) or black (light theme) accent colors instead of the selected color, keeping backgrounds the same.',
+                                'Applies dynamic colors to the entire interface. If disabled, only basic elements are colored.',
                                 style: TextStyle(
                                   color: colorScheme.onSurfaceVariant,
                                   fontSize: 13,
@@ -431,12 +460,38 @@ class _PersonalizationSettingsPanelState
                             ],
                           ),
                         ),
-                        Switch(
-                          value: _isMonochromeEnabled,
-                          onChanged: _toggleMonochrome,
-                        ),
+                        Switch(value: _isColorMode, onChanged: _toggleColorMode),
                       ],
                     ),
+
+                    // Monochrome option (only visible when color mode is disabled and E-Ink is disabled)
+                    if (!_isColorMode) ...[
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Monochrome Mode', style: textStyle),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Uses white (dark theme) or black (light theme) accent colors instead of the selected color, keeping backgrounds the same.',
+                                  style: TextStyle(
+                                    color: colorScheme.onSurfaceVariant,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: _isMonochromeEnabled,
+                            onChanged: _toggleMonochrome,
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ],
               ),
@@ -475,31 +530,33 @@ class _PersonalizationSettingsPanelState
                   ),
                 ),
                 const SizedBox(height: 16),
-                _isCatppuccinEnabled
-                    ? _buildCatppuccinPreviewSection()
-                    : Row(
-                      children: [
-                        Expanded(
-                          child: _buildThemeSection(
-                            'Light',
-                            ColorScheme.fromSeed(
-                              seedColor: _currentColor,
-                              brightness: Brightness.light,
+                _isEInkEnabled
+                    ? _buildEInkPreviewSection()
+                    : _isCatppuccinEnabled
+                        ? _buildCatppuccinPreviewSection()
+                        : Row(
+                          children: [
+                            Expanded(
+                              child: _buildThemeSection(
+                                'Light',
+                                ColorScheme.fromSeed(
+                                  seedColor: _currentColor,
+                                  brightness: Brightness.light,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildThemeSection(
-                            'Dark',
-                            ColorScheme.fromSeed(
-                              seedColor: _currentColor,
-                              brightness: Brightness.dark,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _buildThemeSection(
+                                'Dark',
+                                ColorScheme.fromSeed(
+                                  seedColor: _currentColor,
+                                  brightness: Brightness.dark,
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
               ],
             ),
           ),
@@ -859,6 +916,117 @@ class _PersonalizationSettingsPanelState
             '#${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
             style: TextStyle(
               color: scheme.onSurface,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEInkPreviewSection() {
+    // Determine colors based on light theme setting
+    final backgroundColor = !_isDarkTheme ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
+    final foregroundColor = !_isDarkTheme ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
+    final modeText = !_isDarkTheme ? 'Light Mode' : 'Dark Mode';
+
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: foregroundColor, width: 2),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.book_rounded, color: foregroundColor, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'E-Ink Preview - $modeText',
+                    style: TextStyle(
+                      color: foregroundColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Pure black and white theme designed for e-ink displays',
+                style: TextStyle(
+                  color: foregroundColor,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildEInkColorRow(
+                'Background',
+                backgroundColor,
+                foregroundColor,
+              ),
+              _buildEInkColorRow(
+                'Foreground',
+                foregroundColor,
+                foregroundColor,
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: foregroundColor,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'Sample Button',
+                  style: TextStyle(
+                    color: backgroundColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEInkColorRow(String label, Color color, Color textColor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: color,
+              border: Border.all(color: textColor, width: 1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(
+            '#${color.value.toRadixString(16).substring(2).toUpperCase()}',
+            style: TextStyle(
+              color: textColor,
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),

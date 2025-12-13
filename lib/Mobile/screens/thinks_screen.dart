@@ -159,6 +159,7 @@ class _ThinksScreenState extends State<ThinksScreen> {
                           ThemeManager.getThemeBrightness(),
                           ThemeManager.getColorModeEnabled(),
                           ThemeManager.getMonochromeEnabled(),
+                          ThemeManager.getEInkEnabled(),
                         ]),
                         builder: (context, snapshot) {
                           if (!snapshot.hasData) return const SizedBox.shrink();
@@ -166,6 +167,7 @@ class _ThinksScreenState extends State<ThinksScreen> {
                           final isDarkMode = snapshot.data![0];
                           final colorMode = snapshot.data![1];
                           final monochromeMode = snapshot.data![2];
+                          final einkMode = snapshot.data![3];
 
                           return Theme(
                             data: ThemeManager.buildTheme(
@@ -174,6 +176,7 @@ class _ThinksScreenState extends State<ThinksScreen> {
                               isDarkMode: isDarkMode,
                               colorModeEnabled: colorMode,
                               monochromeEnabled: monochromeMode,
+                              einkEnabled: einkMode,
                             ),
                             child: ThinkEditor(
                               selectedThink: think,

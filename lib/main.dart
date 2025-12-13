@@ -331,6 +331,7 @@ void main() async {
   final catppuccinEnabled = await ThemeManager.getCatppuccinEnabled();
   final catppuccinFlavor = await ThemeManager.getCatppuccinFlavor();
   final catppuccinAccent = await ThemeManager.getCatppuccinAccent();
+  final einkEnabled = await ThemeManager.getEInkEnabled();
 
   final initialTheme = ThemeManager.buildTheme(
     color: themeColor,
@@ -343,6 +344,7 @@ void main() async {
     catppuccinEnabled: catppuccinEnabled,
     catppuccinFlavor: catppuccinFlavor,
     catppuccinAccent: catppuccinAccent,
+    einkEnabled: einkEnabled,
   );
 
   try {
@@ -465,6 +467,7 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
         ThemeManager.getCatppuccinEnabled(),
         ThemeManager.getCatppuccinFlavor(),
         ThemeManager.getCatppuccinAccent(),
+        ThemeManager.getEInkEnabled(),
       ]);
 
       if (mounted) {
@@ -480,6 +483,7 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
             catppuccinEnabled: results[4] as bool,
             catppuccinFlavor: results[5] as String,
             catppuccinAccent: results[6] as String,
+            einkEnabled: results[7] as bool,
           );
         });
 
@@ -511,6 +515,7 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
         ThemeManager.getCatppuccinEnabled(),
         ThemeManager.getCatppuccinFlavor(),
         ThemeManager.getCatppuccinAccent(),
+        ThemeManager.getEInkEnabled(),
       ]);
 
       if (mounted) {
@@ -526,6 +531,7 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
             catppuccinEnabled: results[4] as bool,
             catppuccinFlavor: results[5] as String,
             catppuccinAccent: results[6] as String,
+            einkEnabled: results[7] as bool,
           );
         });
       }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../themes/eink_theme.dart';
 
 class ThemeManager {
   static const String _darkModeKey = 'mobile_dark_mode';
   static const String _colorModeKey = 'mobile_color_mode';
   static const String _monochromeKey = 'mobile_monochrome';
+  static const String _einkKey = 'mobile_eink';
 
   static Future<bool> getThemeBrightness() async {
     final prefs = await SharedPreferences.getInstance();
@@ -21,10 +23,16 @@ class ThemeManager {
     return prefs.getBool(_monochromeKey) ?? false;
   }
 
+  static Future<bool> getEInkEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_einkKey) ?? false;
+  }
+
   static Future<void> saveTheme({
     required bool isDarkMode,
     bool? colorModeEnabled,
     bool? monochromeEnabled,
+    bool? einkEnabled,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_darkModeKey, isDarkMode);
@@ -34,6 +42,9 @@ class ThemeManager {
     if (monochromeEnabled != null) {
       await prefs.setBool(_monochromeKey, monochromeEnabled);
     }
+    if (einkEnabled != null) {
+      await prefs.setBool(_einkKey, einkEnabled);
+    }
   }
 
   static ThemeData buildTheme({
@@ -42,7 +53,13 @@ class ThemeManager {
     required bool isDarkMode,
     required bool colorModeEnabled,
     required bool monochromeEnabled,
+    required bool einkEnabled,
   }) {
+    // If e-ink mode is enabled, use the e-ink theme
+    if (einkEnabled) {
+      return EInkTheme.buildEInkTheme(isLightMode: !isDarkMode);
+    }
+
     // Crear esquemas de color predeterminados como respaldo
     final baseLight = ColorScheme.fromSeed(
       seedColor: Colors.deepPurple,

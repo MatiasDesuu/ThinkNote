@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'Settings/editor_settings_panel.dart';
+import 'themes/eink_theme.dart';
 
 class ThemeManager {
   static const String _colorKey = 'theme_color';
@@ -12,6 +13,7 @@ class ThemeManager {
   static const String _catppuccinEnabledKey = 'catppuccin_enabled';
   static const String _catppuccinFlavorKey = 'catppuccin_flavor';
   static const String _catppuccinAccentKey = 'catppuccin_accent';
+  static const String _einkEnabledKey = 'eink_enabled';
 
   // Catppuccin flavors and their colors
   static const Map<String, Map<String, Color>> catppuccinColors = {
@@ -175,6 +177,10 @@ class ThemeManager {
     return await PlatformSettings.get(_catppuccinAccentKey, 'mauve');
   }
 
+  static Future<bool> getEInkEnabled() async {
+    return await PlatformSettings.get(_einkEnabledKey, false);
+  }
+
   static Future<double> getSaturation() async {
     return await PlatformSettings.get(_saturationKey, 1.0);
   }
@@ -192,6 +198,7 @@ class ThemeManager {
     bool? catppuccinEnabled,
     String? catppuccinFlavor,
     String? catppuccinAccent,
+    bool? einkEnabled,
     double? saturation,
     double? brightnessValue,
   }) async {
@@ -219,6 +226,9 @@ class ThemeManager {
     if (catppuccinAccent != null) {
       await PlatformSettings.set(_catppuccinAccentKey, catppuccinAccent);
     }
+    if (einkEnabled != null) {
+      await PlatformSettings.set(_einkEnabledKey, einkEnabled);
+    }
     if (saturation != null) {
       await PlatformSettings.set(_saturationKey, saturation);
     }
@@ -240,7 +250,15 @@ class ThemeManager {
     required bool catppuccinEnabled,
     required String catppuccinFlavor,
     required String catppuccinAccent,
+    required bool einkEnabled,
   }) {
+    // If e-ink mode is enabled, use the e-ink theme
+    if (einkEnabled) {
+      return EInkTheme.buildEInkTheme(
+        isLightMode: brightness == Brightness.light,
+      );
+    }
+
     Color adjustedColor = color;
 
     if (customAdjustmentsEnabled) {

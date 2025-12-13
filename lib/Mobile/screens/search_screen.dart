@@ -28,6 +28,7 @@ class _SearchScreenState extends State<SearchScreen> {
   late Future<bool> _brightnessFuture;
   late Future<bool> _colorModeFuture;
   late Future<bool> _monochromeFuture;
+  late Future<bool> _einkFuture;
   late NoteRepository _noteRepository;
   late NotebookRepository _notebookRepository;
 
@@ -50,6 +51,7 @@ class _SearchScreenState extends State<SearchScreen> {
     _brightnessFuture = ThemeManager.getThemeBrightness();
     _colorModeFuture = ThemeManager.getColorModeEnabled();
     _monochromeFuture = ThemeManager.getMonochromeEnabled();
+    _einkFuture = ThemeManager.getEInkEnabled();
   }
 
   @override
@@ -168,6 +170,7 @@ class _SearchScreenState extends State<SearchScreen> {
             _brightnessFuture,
             _colorModeFuture,
             _monochromeFuture,
+            _einkFuture,
           ]),
           builder: (context, snapshot) {
             if (!snapshot.hasData) return const SizedBox.shrink();
@@ -175,6 +178,7 @@ class _SearchScreenState extends State<SearchScreen> {
             final isDarkMode = snapshot.data![0];
             final colorMode = snapshot.data![1];
             final monochromeMode = snapshot.data![2];
+            final einkMode = snapshot.data![3];
 
             final theme = ThemeManager.buildTheme(
               lightDynamic: lightDynamic,
@@ -182,6 +186,7 @@ class _SearchScreenState extends State<SearchScreen> {
               isDarkMode: isDarkMode,
               colorModeEnabled: colorMode,
               monochromeEnabled: monochromeMode,
+              einkEnabled: einkMode,
             );
 
             final customTheme = theme.copyWith(
