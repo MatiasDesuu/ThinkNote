@@ -906,7 +906,7 @@ class _NotaEditorState extends State<NotaEditor>
               },
               child: Column(
                 children: [
-                  SizedBox(height: _immersiveModeService.isImmersiveMode ? 40.0 : 16.0),
+                  SizedBox(height: _immersiveModeService.isImmersiveMode ? 40.0 : 0),
                   // Title bar - with centered padding when editor is centered
                   Container(
                     padding: EdgeInsets.only(
