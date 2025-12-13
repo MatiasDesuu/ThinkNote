@@ -1800,6 +1800,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                 onCreateNewNotebook: createNewNotebook,
                 onCreateNewTodo: createNewTodo,
                 onOpenTrash: _toggleTrashPanel,
+                onTrashReload: () => _trashPanelStateKey.currentState?.reloadTrash(),
                 onOpenFavorites: _toggleFavoritesPanel,
                 onFavoritesReload: () => _favoritesPanelStateKey.currentState?.reloadFavorites(),
                 showBackButton: false,

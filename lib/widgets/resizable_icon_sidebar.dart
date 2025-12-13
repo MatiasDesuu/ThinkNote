@@ -25,6 +25,7 @@ class ResizableIconSidebar extends StatefulWidget {
   final VoidCallback? onCreateThink;
   final VoidCallback? onOpenSettings;
   final VoidCallback? onOpenTrash;
+  final VoidCallback? onTrashReload;
   final VoidCallback? onOpenFavorites;
   final VoidCallback? onFavoritesReload;
   final bool showBackButton;
@@ -67,6 +68,7 @@ class ResizableIconSidebar extends StatefulWidget {
     this.onCreateThink,
     this.onOpenSettings,
     this.onOpenTrash,
+    this.onTrashReload,
     this.onOpenFavorites,
     this.onFavoritesReload,
     this.showBackButton = true,
@@ -275,6 +277,7 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
                           onCreateThink: widget.onCreateThink,
                           onOpenSettings: widget.onOpenSettings,
                           onOpenTrash: widget.onOpenTrash,
+                          onTrashReload: widget.onTrashReload,
                           onOpenFavorites: widget.onOpenFavorites,
                           onFavoritesReload: widget.onFavoritesReload,
                           showBackButton: widget.showBackButton,
