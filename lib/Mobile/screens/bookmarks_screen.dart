@@ -1172,7 +1172,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.only(left: 20),
         child: Icon(
-          Icons.copy,
+          Icons.copy_rounded,
           color: Theme.of(context).colorScheme.onPrimary,
           size: 28,
         ),
