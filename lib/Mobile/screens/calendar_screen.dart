@@ -716,7 +716,12 @@ class CalendarScreenState extends State<CalendarScreen> {
                                 'Sun',
                               ][index],
                               style: TextStyle(
-                                color: colorScheme.onSurfaceVariant,
+                                color:
+                                    isSelected
+                                        ? (Theme.of(context).brightness == Brightness.light
+                                            ? colorScheme.onPrimaryContainer
+                                            : colorScheme.primaryFixed)
+                                        : colorScheme.onSurfaceVariant,
                                 fontSize: 10,
                               ),
                             ),
@@ -1202,12 +1207,29 @@ class CalendarScreenState extends State<CalendarScreen> {
                                         ],
                                       ),
                                     ),
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.delete_outline_rounded,
-                                        color: colorScheme.error,
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 8),
+                                      child: IconButton(
+                                        icon: Icon(
+                                          Icons.close_rounded,
+                                          color: colorScheme.error,
+                                          size: 18,
+                                        ),
+                                        onPressed: () async {
+                                          await _deleteEvent(event);
+                                        },
+                                        constraints: const BoxConstraints(
+                                          minWidth: 24,
+                                          minHeight: 24,
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        style: IconButton.styleFrom(
+                                          backgroundColor: colorScheme.error.withAlpha(20),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                        ),
                                       ),
-                                      onPressed: () => _deleteEvent(event),
                                     ),
                                   ],
                                 ),

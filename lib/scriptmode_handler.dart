@@ -130,7 +130,7 @@ class DurationEstimatorDesktop extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -139,13 +139,13 @@ class DurationEstimatorDesktop extends StatelessWidget {
           Icon(
             Icons.timer_outlined,
             size: 16,
-            color: Theme.of(context).colorScheme.onSurface,
+            color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(width: 4),
           Text(
             duration,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
