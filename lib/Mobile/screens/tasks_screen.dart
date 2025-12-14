@@ -299,48 +299,27 @@ class TasksScreenState extends State<TasksScreen>
     required ColorScheme colorScheme,
   }) {
     return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(20),
+      color: isSelected ? colorScheme.primary.withAlpha(25) : colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(8),
+        hoverColor: colorScheme.primary.withAlpha(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color:
-                isSelected
-                    ? colorScheme.primary.withAlpha(25)
-                    : colorScheme.surfaceContainerHighest.withAlpha(127),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color:
-                  isSelected
-                      ? colorScheme.primary.withAlpha(100)
-                      : Colors.transparent,
-              width: 1,
-            ),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.label_outline_rounded,
-                size: 14,
-                color:
-                    isSelected
-                        ? colorScheme.primary
-                        : colorScheme.onSurfaceVariant,
+                isSelected ? Icons.label_rounded : Icons.label_outline_rounded,
+                size: 20,
+                color: colorScheme.primary,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 8),
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
-                  color:
-                      isSelected
-                          ? colorScheme.primary
-                          : colorScheme.onSurfaceVariant,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: isSelected ? colorScheme.primary : colorScheme.onSurface,
                 ),
               ),
             ],

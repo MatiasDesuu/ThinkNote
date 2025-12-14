@@ -459,39 +459,27 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     final chipColor = activeColor ?? colorScheme.primary;
 
     return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(20),
+      color: isActive ? chipColor.withAlpha(25) : colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(8),
+        hoverColor: colorScheme.primary.withAlpha(20),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color:
-                isActive
-                    ? chipColor.withAlpha(25)
-                    : colorScheme.surfaceContainerHighest.withAlpha(127),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isActive ? chipColor.withAlpha(100) : Colors.transparent,
-              width: 1,
-            ),
-          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
-                size: 18,
-                color: isActive ? chipColor : colorScheme.onSurfaceVariant,
+                size: 20,
+                color: colorScheme.primary,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isActive ? FontWeight.w500 : FontWeight.normal,
-                  color: isActive ? chipColor : colorScheme.onSurfaceVariant,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: isActive ? chipColor : colorScheme.onSurface,
                 ),
               ),
               if (onClear != null) ...[
