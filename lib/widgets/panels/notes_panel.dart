@@ -1223,21 +1223,18 @@ class NotesPanelState extends State<NotesPanel> {
     );
   }
 
-  /// Builds the drag feedback widget showing stacked notes for multi-selection
+  /// Builds the drag feedback widget showing the note being dragged
   Widget _buildDragFeedback(Note primaryNote, List<Note> allNotes) {
+    final colorScheme = Theme.of(context).colorScheme;
     final noteCount = allNotes.length;
-    final isMultiDrag = noteCount > 1;
-    
-    // Note row height: padding vertical 2 * 2 + icon height 24 = 28
-    const noteRowHeight = 28.0;
-    const noteWidth = 200.0;
-    
-    if (!isMultiDrag) {
-      // Single note drag - simple feedback
-      return Container(
-        width: noteWidth,
+    final title = noteCount == 1 ? primaryNote.title : '${primaryNote.title} (+${noteCount - 1})';
+
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
@@ -1247,172 +1244,24 @@ class NotesPanelState extends State<NotesPanel> {
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Opacity(opacity: 0.9, child: _buildDragNoteRow(primaryNote)),
-        ),
-      );
-    }
-    
-    // Maximum notes to show in the stack (including the primary one)
-    const maxStackedNotes = 3;
-    final stackedCount = noteCount.clamp(1, maxStackedNotes);
-    
-    // Offsets for stacked effect - smaller for tighter stack
-    const stackOffsetX = 3.0;
-    const stackOffsetY = 3.0;
-    
-    // Calculate total size needed for the stack
-    final totalWidth = noteWidth + (stackedCount - 1) * stackOffsetX;
-    final totalHeight = noteRowHeight + (stackedCount - 1) * stackOffsetY;
-    
-    // Multi-note drag - stacked cards effect
-    return SizedBox(
-      width: totalWidth + 24, // Extra space for badge
-      height: totalHeight + 8,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Background stacked cards (showing there are more notes)
-          for (int i = stackedCount - 1; i > 0; i--)
-            Positioned(
-              left: i * stackOffsetX,
-              top: i * stackOffsetY,
-              child: Container(
-                width: noteWidth,
-                height: noteRowHeight,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withAlpha(40),
-                    width: 0.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(51),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-              ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.description_outlined,
+              color: colorScheme.primary,
+              size: 20,
             ),
-          // Primary note on top
-          Positioned(
-            left: 0,
-            top: 0,
-            child: Container(
-              width: noteWidth,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(51),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Opacity(opacity: 0.95, child: _buildDragNoteRow(primaryNote)),
-              ),
-            ),
-          ),
-          // Badge showing total count
-          Positioned(
-            right: 0,
-            top: 0,
-            child: Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withAlpha(80),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(51),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  '$noteCount',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Builds a note row specifically for drag feedback (without selection highlight)
-  Widget _buildDragNoteRow(Note note) {
-    return Container(
-      color: Colors.transparent,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            height: 24,
-            width: 24,
-            child:
-                _showNoteIcons
-                    ? (note.isTask
-                        ? Icon(
-                          note.isCompleted ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                          size: 20,
-                          color: note.isCompleted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
-                        )
-                        : Container(
-                          padding: const EdgeInsets.all(2),
-                          child: Icon(
-                            Icons.description_outlined,
-                            size: 20,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ))
-                    : null,
-          ),
-          if (_showNoteIcons) const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              note.title,
+            const SizedBox(width: 8),
+            Text(
+              title,
               style: TextStyle(
-                fontWeight: FontWeight.normal,
-                color: note.isTask && note.isCompleted
-                    ? Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(153)
-                    : null,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (_showNoteIcons && note.isFavorite)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Icon(
-                Icons.favorite_rounded,
-                size: 16,
-                color: Theme.of(context).colorScheme.primary,
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -906,7 +906,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                     ),
                                     // Tag filters (filtered by current tab)
                                     if (_filteredTagsForCurrentTab.isNotEmpty) ...[
-                                      const SizedBox(height: 8),
+                                      const SizedBox(height: 4),
                                       SizedBox(
                                         height: 36,
                                         child: Listener(

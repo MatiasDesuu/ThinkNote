@@ -1234,7 +1234,7 @@ class CalendarPanelState extends State<CalendarPanel>
                                       ? colorScheme.primaryContainer
                                       : colorScheme.primaryFixed.withAlpha(50))
                                   : candidateData.isNotEmpty
-                                  ? colorScheme.primaryContainer.withAlpha(50)
+                                  ? colorScheme.onSurfaceVariant.withAlpha(20)
                                   : null,
                           borderRadius: BorderRadius.circular(8),
                         ),
