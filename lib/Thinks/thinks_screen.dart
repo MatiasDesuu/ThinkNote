@@ -450,19 +450,27 @@ class _ThinksScreenState extends State<ThinksScreen>
                         ),
                       const SizedBox(width: 4),
                       // Botón eliminar
-                      IconButton(
-                        icon: Icon(
-                          Icons.delete_forever_rounded,
-                          color: colorScheme.error,
-                          size: 18,
+                      Opacity(
+                        opacity: isHovering ? 1.0 : 0.0,
+                        child: IgnorePointer(
+                          ignoring: !isHovering,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.delete_forever_rounded,
+                                color: colorScheme.error,
+                                size: 18,
+                              ),
+                              onPressed: () => _deleteThink(think),
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
                         ),
-                        onPressed: () => _deleteThink(think),
-                        tooltip: 'Delete',
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
-                        padding: EdgeInsets.zero,
                       ),
                     ],
                   ),
