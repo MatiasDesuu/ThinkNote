@@ -1166,8 +1166,18 @@ class BookmarksScreenState extends State<BookmarksScreen> {
 
     return Dismissible(
       key: ValueKey(bookmark.id),
-      direction: DismissDirection.endToStart,
+      direction: DismissDirection.horizontal,
       background: Container(
+        color: Theme.of(context).colorScheme.primary,
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 20),
+        child: Icon(
+          Icons.copy,
+          color: Theme.of(context).colorScheme.onPrimary,
+          size: 28,
+        ),
+      ),
+      secondaryBackground: Container(
         color: Theme.of(context).colorScheme.error,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
@@ -1178,15 +1188,25 @@ class BookmarksScreenState extends State<BookmarksScreen> {
         ),
       ),
       confirmDismiss: (direction) async {
-        final result = await showDeleteConfirmationDialog(
-          context: context,
-          title: 'Delete Bookmark',
-          message:
-              'Are you sure you want to delete this bookmark?\n${bookmark.title}',
-          confirmText: 'Delete',
-          confirmColor: Theme.of(context).colorScheme.error,
-        );
-        return result ?? false;
+        if (direction == DismissDirection.startToEnd) {
+          Clipboard.setData(ClipboardData(text: bookmark.url));
+          CustomSnackbar.show(
+            context: context,
+            message: 'Link copied to clipboard',
+            type: CustomSnackbarType.success,
+          );
+          return false;
+        } else {
+          final result = await showDeleteConfirmationDialog(
+            context: context,
+            title: 'Delete Bookmark',
+            message:
+                'Are you sure you want to delete this bookmark?\n${bookmark.title}',
+            confirmText: 'Delete',
+            confirmColor: Theme.of(context).colorScheme.error,
+          );
+          return result ?? false;
+        }
       },
       onDismissed: (direction) {
         _deleteBookmark(bookmark);
