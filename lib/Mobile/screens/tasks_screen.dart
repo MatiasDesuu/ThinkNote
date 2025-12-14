@@ -628,28 +628,10 @@ class TasksScreenState extends State<TasksScreen>
                           ? TaskState.pending
                           : TaskState.completed,
                     ),
-                    child: Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        color: task.state == TaskState.completed
-                            ? colorScheme.primary
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(7),
-                        border: Border.all(
-                          color: task.state == TaskState.completed
-                              ? colorScheme.primary
-                              : colorScheme.outline.withAlpha(150),
-                          width: 2,
-                        ),
-                      ),
-                      child: task.state == TaskState.completed
-                          ? Icon(
-                              Icons.check_rounded,
-                              size: 16,
-                              color: colorScheme.onPrimary,
-                            )
-                          : null,
+                    child: Icon(
+                      task.state == TaskState.completed ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                      size: 22,
+                      color: task.state == TaskState.completed ? colorScheme.primary : colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(width: 14),

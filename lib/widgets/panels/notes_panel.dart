@@ -1164,43 +1164,14 @@ class NotesPanelState extends State<NotesPanel> {
                   child:
                       _showNoteIcons
                           ? (note.isTask
-                              ? Align(
-                                alignment: Alignment.center,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    _toggleNoteCompletion(note.id!);
-                                  },
-                                  behavior: HitTestBehavior.opaque,
-                                  child: MouseRegion(
-                                    cursor: SystemMouseCursors.click,
-                                    child: Container(
-                                      constraints: BoxConstraints.tight(Size(18, 18)),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            note.isCompleted
-                                                ? Theme.of(context).colorScheme.primary
-                                                : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(5),
-                                        border: Border.all(
-                                          color:
-                                              note.isCompleted
-                                                  ? Theme.of(context).colorScheme.primary
-                                                  : Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(
-                                                    150,
-                                                  ),
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                      child:
-                                          note.isCompleted
-                                              ? Icon(
-                                                Icons.check_rounded,
-                                                size: 14,
-                                                color: Theme.of(context).colorScheme.onPrimary,
-                                              )
-                                              : null,
-                                    ),
-                                  ),
+                              ? GestureDetector(
+                                onTap: () {
+                                  _toggleNoteCompletion(note.id!);
+                                },
+                                child: Icon(
+                                  note.isCompleted ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                                  size: 20,
+                                  color: note.isCompleted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               )
                               : Container(
@@ -1403,35 +1374,10 @@ class NotesPanelState extends State<NotesPanel> {
             child:
                 _showNoteIcons
                     ? (note.isTask
-                        ? Align(
-                          alignment: Alignment.center,
-                          child: Container(
-                            constraints: BoxConstraints.tight(Size(18, 18)),
-                            decoration: BoxDecoration(
-                              color:
-                                  note.isCompleted
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Colors.transparent,
-                              borderRadius: BorderRadius.circular(5),
-                              border: Border.all(
-                                color:
-                                    note.isCompleted
-                                        ? Theme.of(context).colorScheme.primary
-                                        : Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(
-                                          150,
-                                        ),
-                                width: 1.5,
-                              ),
-                            ),
-                            child:
-                                note.isCompleted
-                                    ? Icon(
-                                      Icons.check_rounded,
-                                      size: 14,
-                                      color: Theme.of(context).colorScheme.onPrimary,
-                                    )
-                                    : null,
-                          ),
+                        ? Icon(
+                          note.isCompleted ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                          size: 20,
+                          color: note.isCompleted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
                         )
                         : Container(
                           padding: const EdgeInsets.all(2),

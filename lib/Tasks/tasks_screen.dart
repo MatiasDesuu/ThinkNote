@@ -1329,28 +1329,10 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                 ? TaskState.pending
                                 : TaskState.completed,
                           ),
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: task.state == TaskState.completed
-                                  ? colorScheme.primary
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: task.state == TaskState.completed
-                                    ? colorScheme.primary
-                                    : colorScheme.outline.withAlpha(150),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: task.state == TaskState.completed
-                                ? Icon(
-                                    Icons.check_rounded,
-                                    size: 14,
-                                    color: colorScheme.onPrimary,
-                                  )
-                                : null,
+                          child: Icon(
+                            task.state == TaskState.completed ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                            size: 20,
+                            color: task.state == TaskState.completed ? colorScheme.primary : colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),

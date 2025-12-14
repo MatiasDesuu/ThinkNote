@@ -752,29 +752,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
               // Custom checkbox
               GestureDetector(
                 onTap: () => _toggleSubtask(subtask),
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color:
-                        isCompleted ? colorScheme.primary : Colors.transparent,
-                    borderRadius: BorderRadius.circular(5),
-                    border: Border.all(
-                      color:
-                          isCompleted
-                              ? colorScheme.primary
-                              : colorScheme.onSurfaceVariant.withAlpha(150),
-                      width: 1.5,
-                    ),
-                  ),
-                  child:
-                      isCompleted
-                          ? Icon(
-                            Icons.check_rounded,
-                            size: 14,
-                            color: colorScheme.onPrimary,
-                          )
-                          : null,
+                child: Icon(
+                  isCompleted ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                  size: 20,
+                  color: isCompleted ? colorScheme.primary : colorScheme.onSurfaceVariant,
                 ),
               ),
 

@@ -925,9 +925,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                   child: Icon(
                                                     note.isCompleted
                                                         ? Icons
-                                                            .check_circle_rounded
+                                                            .check_box_rounded
                                                         : Icons
-                                                            .radio_button_unchecked_rounded,
+                                                            .check_box_outline_blank_rounded,
                                                     size: 20,
                                                     color:
                                                         note.isCompleted

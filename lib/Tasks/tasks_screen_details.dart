@@ -662,33 +662,10 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                     cursor: SystemMouseCursors.click,
                     child: GestureDetector(
                       onTap: () => widget.onToggleSubtask(subtask),
-                      child: Container(
-                        width: 18,
-                        height: 18,
-                        decoration: BoxDecoration(
-                          color:
-                              isCompleted
-                                  ? colorScheme.primary
-                                  : Colors.transparent,
-                          borderRadius: BorderRadius.circular(5),
-                          border: Border.all(
-                            color:
-                                isCompleted
-                                    ? colorScheme.primary
-                                    : colorScheme.onSurfaceVariant.withAlpha(
-                                      150,
-                                    ),
-                            width: 1.5,
-                          ),
-                        ),
-                        child:
-                            isCompleted
-                                ? Icon(
-                                  Icons.check_rounded,
-                                  size: 14,
-                                  color: colorScheme.onPrimary,
-                                )
-                                : null,
+                      child: Icon(
+                        isCompleted ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                        size: 18,
+                        color: isCompleted ? colorScheme.primary : colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
