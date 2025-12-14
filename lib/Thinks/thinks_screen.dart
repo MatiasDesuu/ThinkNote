@@ -334,34 +334,27 @@ class _ThinksScreenState extends State<ThinksScreen>
       index: _thinks.indexOf(think),
       child: MouseRegionHoverItem(
         builder: (context, isHovering) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8, left: 8, right: 8),
-            color:
-                isSelected
-                    ? colorScheme.surfaceContainerHighest
-                    : colorScheme.surfaceContainer,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color:
-                    isSelected
-                        ? colorScheme.primary.withAlpha(80)
-                        : colorScheme.outlineVariant.withAlpha(60),
-                width: isSelected ? 1.5 : 1,
-              ),
+          return Container(
+            margin: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? colorScheme.primary.withAlpha(25)
+                  : isHovering
+                      ? colorScheme.surfaceContainerHighest
+                      : colorScheme.surface,
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
                 onTap: () => _openThink(think),
                 onSecondaryTapDown:
                     (details) => _showContextMenu(context, think, details),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                    horizontal: 10,
+                    vertical: 10,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -413,7 +406,7 @@ class _ThinksScreenState extends State<ThinksScreen>
                                         ? FontWeight.bold
                                         : FontWeight.w500,
                                 color: colorScheme.onSurface,
-                                fontSize: 16,
+                                fontSize: 14,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -437,17 +430,6 @@ class _ThinksScreenState extends State<ThinksScreen>
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      // Indicador de selección
-                      if (isSelected)
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: colorScheme.primary,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
                       const SizedBox(width: 4),
                       // Botón eliminar
                       Opacity(
