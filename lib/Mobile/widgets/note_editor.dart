@@ -626,7 +626,7 @@ class _DurationEstimatorState extends State<DurationEstimator> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -635,13 +635,13 @@ class _DurationEstimatorState extends State<DurationEstimator> {
           Icon(
             Icons.timer_outlined,
             size: 16,
-            color: Theme.of(context).colorScheme.primary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
           const SizedBox(width: 4),
           Text(
             _duration,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurface,
               fontFeatures: [const FontFeature.tabularFigures()],
             ),
           ),
