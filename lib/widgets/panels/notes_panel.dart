@@ -1160,29 +1160,46 @@ class NotesPanelState extends State<NotesPanel> {
               children: [
                 SizedBox(
                   height: 24,
+                  width: 24,
                   child:
                       _showNoteIcons
                           ? (note.isTask
-                              ? GestureDetector(
-                                onTap: () {
-                                  _toggleNoteCompletion(note.id!);
-                                },
-                                behavior: HitTestBehavior.opaque,
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  child: Icon(
-                                    note.isCompleted
-                                        ? Icons.check_circle_rounded
-                                        : Icons.radio_button_unchecked_rounded,
-                                    size: 20,
-                                    color:
-                                        note.isCompleted
-                                            ? Theme.of(
-                                              context,
-                                            ).colorScheme.primary
-                                            : Theme.of(
-                                              context,
-                                            ).colorScheme.onSurfaceVariant,
+                              ? Align(
+                                alignment: Alignment.center,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    _toggleNoteCompletion(note.id!);
+                                  },
+                                  behavior: HitTestBehavior.opaque,
+                                  child: MouseRegion(
+                                    cursor: SystemMouseCursors.click,
+                                    child: Container(
+                                      constraints: BoxConstraints.tight(Size(18, 18)),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            note.isCompleted
+                                                ? Theme.of(context).colorScheme.primary
+                                                : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(5),
+                                        border: Border.all(
+                                          color:
+                                              note.isCompleted
+                                                  ? Theme.of(context).colorScheme.primary
+                                                  : Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(
+                                                    150,
+                                                  ),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child:
+                                          note.isCompleted
+                                              ? Icon(
+                                                Icons.check_rounded,
+                                                size: 14,
+                                                color: Theme.of(context).colorScheme.onPrimary,
+                                              )
+                                              : null,
+                                    ),
                                   ),
                                 ),
                               )
@@ -1382,20 +1399,38 @@ class NotesPanelState extends State<NotesPanel> {
         children: [
           SizedBox(
             height: 24,
+            width: 24,
             child:
                 _showNoteIcons
                     ? (note.isTask
-                        ? Container(
-                          padding: const EdgeInsets.all(2),
-                          child: Icon(
-                            note.isCompleted
-                                ? Icons.check_circle_rounded
-                                : Icons.radio_button_unchecked_rounded,
-                            size: 20,
-                            color:
+                        ? Align(
+                          alignment: Alignment.center,
+                          child: Container(
+                            constraints: BoxConstraints.tight(Size(18, 18)),
+                            decoration: BoxDecoration(
+                              color:
+                                  note.isCompleted
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Colors.transparent,
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(
+                                color:
+                                    note.isCompleted
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(
+                                          150,
+                                        ),
+                                width: 1.5,
+                              ),
+                            ),
+                            child:
                                 note.isCompleted
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ? Icon(
+                                      Icons.check_rounded,
+                                      size: 14,
+                                      color: Theme.of(context).colorScheme.onPrimary,
+                                    )
+                                    : null,
                           ),
                         )
                         : Container(

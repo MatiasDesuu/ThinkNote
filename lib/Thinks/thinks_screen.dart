@@ -816,7 +816,7 @@ class _ThinksScreenState extends State<ThinksScreen>
                       child: Container(
                         color: colorScheme.surface,
                         child: Padding(
-                          padding: const EdgeInsets.only(top: 24.0),
+                          padding: const EdgeInsets.only(top: 40.0),
                           child:
                               _selectedThink == null
                                   ? Center(
