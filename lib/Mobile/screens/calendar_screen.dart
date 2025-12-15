@@ -1106,11 +1106,22 @@ class CalendarScreenState extends State<CalendarScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Text(
-              'Notes for ${_selectedDate.day}-${_formattedMonth.split(' ')[0]}-${_selectedDate.year}',
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(color: colorScheme.onSurface),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.event_note_rounded,
+                  size: 20,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Notes for ${_formattedMonth.split(' ')[0]} ${_selectedDate.day}, ${_selectedDate.year}',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(
