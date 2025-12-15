@@ -1329,7 +1329,7 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                         child: Container(
                           color:
                               showRootDropIndicator
-                                  ? Theme.of(context).colorScheme.primary.withAlpha(60)
+                                  ? Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(60)
                                   : Colors.transparent,
                         ),
                       ),
