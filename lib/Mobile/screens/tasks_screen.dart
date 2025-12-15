@@ -306,7 +306,7 @@ class TasksScreenState extends State<TasksScreen>
         borderRadius: BorderRadius.circular(8),
         hoverColor: colorScheme.primary.withAlpha(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -319,6 +319,7 @@ class TasksScreenState extends State<TasksScreen>
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  height: 1.0,
                   color: isSelected ? colorScheme.primary : colorScheme.onSurface,
                 ),
               ),

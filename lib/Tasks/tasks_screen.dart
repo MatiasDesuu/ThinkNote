@@ -1240,7 +1240,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
         borderRadius: BorderRadius.circular(8),
         hoverColor: colorScheme.primary.withAlpha(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1253,6 +1253,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  height: 1.0,
                   color: isSelected ? colorScheme.primary : colorScheme.onSurface,
                 ),
               ),

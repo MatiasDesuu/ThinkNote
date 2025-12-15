@@ -13,8 +13,8 @@ import '../Settings/settings_screen.dart';
 import '../database/database_service.dart';
 import '../database/models/bookmark.dart';
 import '../database/models/bookmark_tag.dart';
-import 'bookmarks_handler_db.dart';
-import 'bookmarks_tags_handler_db.dart';
+import 'bookmarks_handler.dart';
+import 'bookmarks_tags_handler.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html;
 import '../widgets/custom_snackbar.dart';
@@ -78,7 +78,7 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
         borderRadius: BorderRadius.circular(8),
         hoverColor: colorScheme.primary.withAlpha(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -91,6 +91,7 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  height: 1.0,
                   color: isSelected ? colorScheme.primary : colorScheme.onSurface,
                 ),
               ),
@@ -315,7 +316,7 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                             if (_linksHandler.allTags.isNotEmpty)
                               Expanded(
                                 child: SizedBox(
-                                  height: 40,
+                                  height: 36,
                                   child: ListView(
                                     scrollDirection: Axis.horizontal,
                                     children: [
@@ -562,225 +563,23 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
 
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.only(top: 8),
+      padding: EdgeInsets.zero,
       itemCount: bookmarks.length,
       itemBuilder: (context, index) {
         final bookmark = bookmarks[index];
         final uri = Uri.tryParse(bookmark.url);
-        final date = DateTime.parse(bookmark.timestamp);
-        final formattedDate = DateFormat("dd/MMM/yyyy - HH:mm").format(date);
 
-        return Material(
-          color: Colors.transparent,
-          child: GestureDetector(
-            onSecondaryTapDown: (details) {
-              ContextMenuOverlay.show(
-                context: context,
-                tapPosition: details.globalPosition,
-                items: [
-                  ContextMenuItem(
-                    icon: Icons.copy,
-                    label: 'Copy Link',
-                    onTap: () => _copyLinkToClipboard(bookmark.url),
-                  ),
-                  ContextMenuItem(
-                    icon: Icons.edit,
-                    label: 'Edit',
-                    onTap: () => _showEditLinkDialog(bookmark),
-                  ),
-                  ContextMenuItem(
-                    icon: Icons.delete_forever_rounded,
-                    label: 'Delete',
-                    iconColor: Theme.of(context).colorScheme.error,
-                    onTap: () => _showDeleteConfirmation(bookmark),
-                  ),
-                ],
-              );
-            },
-            child: InkWell(
-              onTap: () async {
-                if (uri != null && await canLaunchUrl(uri)) {
-                  await _launchUrl(bookmark.url);
-                }
-              },
-              splashColor: colorScheme.primary.withAlpha(30),
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: colorScheme.outline.withAlpha(26),
-                      width: 1,
-                    ),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainer,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Material(
-                            shape: const CircleBorder(),
-                            color: Colors.transparent,
-                            child: Center(
-                              child:
-                                  uri != null
-                                      ? Image.network(
-                                        'https://www.google.com/s2/favicons?domain=${uri.host}&sz=64',
-                                        width: 32,
-                                        height: 32,
-                                        errorBuilder:
-                                            (_, __, ___) => Icon(
-                                              Icons.link_rounded,
-                                              size: 32,
-                                              color: colorScheme.primary,
-                                            ),
-                                      )
-                                      : Icon(
-                                        Icons.link_rounded,
-                                        size: 28,
-                                        color: colorScheme.primary,
-                                      ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              bookmark.title,
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w500),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              bookmark.url,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurface.withAlpha(150),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  formattedDate,
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.onSurface.withAlpha(150),
-                                  ),
-                                ),
-                                FutureBuilder<List<String>>(
-                                  future: DatabaseService().bookmarkService
-                                      .getTagsByBookmarkId(bookmark.id!),
-                                  builder: (context, snapshot) {
-                                    if (!snapshot.hasData ||
-                                        snapshot.data!.isEmpty) {
-                                      return const SizedBox.shrink();
-                                    }
-
-                                    final tags = snapshot.data!;
-                                    // Mostrar todos los tags, incluyendo hidden
-                                    final visibleTags = tags.toList();
-
-                                    return Row(
-                                      children: [
-                                        if (visibleTags.isNotEmpty) ...[
-                                          const Padding(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 4,
-                                            ),
-                                            child: Text(
-                                              '|',
-                                              style: TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 10,
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            height: 18,
-                                            child: SingleChildScrollView(
-                                              scrollDirection: Axis.horizontal,
-                                              child: Row(
-                                                children:
-                                                    visibleTags
-                                                        .map(
-                                                          (tag) => Padding(
-                                                            padding:
-                                                                const EdgeInsets.only(
-                                                                  right: 4,
-                                                                ),
-                                                            child: Text(
-                                                              '#$tag',
-                                                              style: TextStyle(
-                                                                fontSize: 11,
-                                                                color:
-                                                                    colorScheme
-                                                                        .primary,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        )
-                                                        .toList(),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(
-                        width: 40,
-                        height: 40,
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.delete_forever_rounded,
-                            size: 20,
-                            color: colorScheme.error,
-                          ),
-                          onPressed: () async {
-                            await _showDeleteConfirmation(bookmark);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
+        return _BookmarkListItem(
+          bookmark: bookmark,
+          colorScheme: colorScheme,
+          onDelete: () => _showDeleteConfirmation(bookmark),
+          onEdit: () => _showEditLinkDialog(bookmark),
+          onCopy: () => _copyLinkToClipboard(bookmark.url),
+          onTap: () async {
+            if (uri != null && await canLaunchUrl(uri)) {
+              await _launchUrl(bookmark.url);
+            }
+          },
         );
       },
     );
@@ -1953,179 +1752,414 @@ class _BookmarkCardState extends State<_BookmarkCard> {
                         : widget.colorScheme.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Stack(
                 children: [
-                  // Link Preview
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(8),
-                    ),
-                    child: AnyLinkPreview(
-                      link: widget.bookmark.url,
-                      displayDirection: UIDirection.uiDirectionVertical,
-                      showMultimedia: true,
-                      bodyMaxLines: 2,
-                      bodyTextOverflow: TextOverflow.ellipsis,
-                      titleStyle: TextStyle(
-                        color: widget.colorScheme.onSurface,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                      bodyStyle: TextStyle(
-                        color: widget.colorScheme.onSurface.withAlpha(150),
-                        fontSize: 12,
-                      ),
-                      errorBody: 'No preview available',
-                      errorTitle: 'Error loading preview',
-                      errorWidget: Container(
-                        height: 100,
-                        color: widget.colorScheme.surfaceContainerLow,
-                        child: Center(
-                          child: Icon(
-                            Icons.link_rounded,
-                            color: widget.colorScheme.primary,
-                          ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Link Preview
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(8),
                         ),
-                      ),
-                      cache: const Duration(days: 7),
-                      backgroundColor:
-                          _isHovered
-                              ? widget.colorScheme.primary.withAlpha(50)
-                              : widget.colorScheme.surfaceContainerHigh,
-                      borderRadius: 0,
-                      removeElevation: true,
-                      onTap: widget.onTap,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // URL and date
-                        Row(
-                          children: [
-                            if (uri != null)
-                              Container(
-                                width: 16,
-                                height: 16,
-                                margin: const EdgeInsets.only(right: 4),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(3),
-                                  child: Image.network(
-                                    'https://www.google.com/s2/favicons?domain=${uri.host}&sz=64',
-                                    width: 16,
-                                    height: 16,
-                                    errorBuilder:
-                                        (_, __, ___) => Icon(
-                                          Icons.link_rounded,
-                                          size: 12,
-                                          color: widget.colorScheme.primary,
-                                        ),
-                                  ),
-                                ),
-                              ),
-                            Expanded(
-                              child: Text(
-                                widget.bookmark.url,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.bodySmall?.copyWith(
-                                  color: widget.colorScheme.onSurface.withAlpha(
-                                    150,
-                                  ),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                        child: AnyLinkPreview(
+                          link: widget.bookmark.url,
+                          displayDirection: UIDirection.uiDirectionVertical,
+                          showMultimedia: true,
+                          bodyMaxLines: 2,
+                          bodyTextOverflow: TextOverflow.ellipsis,
+                          titleStyle: TextStyle(
+                            color: widget.colorScheme.onSurface,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          bodyStyle: TextStyle(
+                            color: widget.colorScheme.onSurface.withAlpha(150),
+                            fontSize: 12,
+                          ),
+                          errorBody: 'No preview available',
+                          errorTitle: 'Error loading preview',
+                          errorWidget: Container(
+                            height: 100,
+                            color: widget.colorScheme.surfaceContainerLow,
+                            child: Center(
+                              child: Icon(
+                                Icons.link_rounded,
+                                color: widget.colorScheme.primary,
                               ),
                             ),
-                          ],
+                          ),
+                          cache: const Duration(days: 7),
+                          backgroundColor:
+                              _isHovered
+                                  ? widget.colorScheme.primary.withAlpha(50)
+                                  : widget.colorScheme.surfaceContainerHigh,
+                          borderRadius: 0,
+                          removeElevation: true,
+                          onTap: widget.onTap,
                         ),
-                        // Date and tags
-                        Row(
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              formattedDate,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodySmall?.copyWith(
-                                color: widget.colorScheme.onSurface.withAlpha(
-                                  150,
+                            // URL and date
+                            Row(
+                              children: [
+                                if (uri != null)
+                                  Container(
+                                    width: 16,
+                                    height: 16,
+                                    margin: const EdgeInsets.only(right: 4),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(3),
+                                      child: Image.network(
+                                        'https://www.google.com/s2/favicons?domain=${uri.host}&sz=64',
+                                        width: 16,
+                                        height: 16,
+                                        errorBuilder:
+                                            (_, __, ___) => Icon(
+                                              Icons.link_rounded,
+                                              size: 12,
+                                              color: widget.colorScheme.primary,
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                Expanded(
+                                  child: Text(
+                                    widget.bookmark.url,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall?.copyWith(
+                                      color: widget.colorScheme.onSurface.withAlpha(
+                                        150,
+                                      ),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
-                            FutureBuilder<List<String>>(
-                              future: DatabaseService().bookmarkService
-                                  .getTagsByBookmarkId(widget.bookmark.id!),
-                              builder: (context, snapshot) {
-                                if (!snapshot.hasData ||
-                                    snapshot.data!.isEmpty) {
-                                  return const SizedBox.shrink();
-                                }
+                            // Date and tags
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  formattedDate,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall?.copyWith(
+                                    color: widget.colorScheme.onSurface.withAlpha(
+                                      150,
+                                    ),
+                                  ),
+                                ),
+                                FutureBuilder<List<String>>(
+                                  future: DatabaseService().bookmarkService
+                                      .getTagsByBookmarkId(widget.bookmark.id!),
+                                  builder: (context, snapshot) {
+                                    if (!snapshot.hasData ||
+                                        snapshot.data!.isEmpty) {
+                                      return const SizedBox.shrink();
+                                    }
 
-                                final tags = snapshot.data!;
-                                // Mostrar todos los tags, incluyendo hidden
-                                final visibleTags = tags.toList();
+                                    final tags = snapshot.data!;
+                                    // Mostrar todos los tags, incluyendo hidden
+                                    final visibleTags = tags.toList();
 
-                                return Row(
-                                  children: [
-                                    if (visibleTags.isNotEmpty) ...[
-                                      const Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 4,
-                                        ),
-                                        child: Text(
-                                          '|',
-                                          style: TextStyle(
-                                            color: Colors.grey,
-                                            fontSize: 10,
+                                    return Row(
+                                      children: [
+                                        if (visibleTags.isNotEmpty) ...[
+                                          const Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 4,
+                                            ),
+                                            child: Text(
+                                              '|',
+                                              style: TextStyle(
+                                                color: Colors.grey,
+                                                fontSize: 10,
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        height: 18,
-                                        child: SingleChildScrollView(
-                                          scrollDirection: Axis.horizontal,
-                                          child: Row(
-                                            children:
-                                                visibleTags
-                                                    .map(
-                                                      (tag) => Padding(
-                                                        padding:
-                                                            const EdgeInsets.only(
-                                                              right: 4,
+                                          SizedBox(
+                                            height: 18,
+                                            child: SingleChildScrollView(
+                                              scrollDirection: Axis.horizontal,
+                                              child: Row(
+                                                children:
+                                                    visibleTags
+                                                        .map(
+                                                          (tag) => Padding(
+                                                            padding:
+                                                                const EdgeInsets.only(
+                                                                  right: 4,
+                                                                ),
+                                                            child: Text(
+                                                              '#$tag',
+                                                              style: TextStyle(
+                                                                fontSize: 11,
+                                                                color:
+                                                                    widget
+                                                                        .colorScheme
+                                                                        .primary,
+                                                                fontWeight:
+                                                                    FontWeight.w500,
+                                                              ),
                                                             ),
-                                                        child: Text(
-                                                          '#$tag',
-                                                          style: TextStyle(
-                                                            fontSize: 11,
-                                                            color:
-                                                                widget
-                                                                    .colorScheme
-                                                                    .primary,
-                                                            fontWeight:
-                                                                FontWeight.w500,
                                                           ),
-                                                        ),
-                                                      ),
-                                                    )
-                                                    .toList(),
+                                                        )
+                                                        .toList(),
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                );
-                              },
+                                        ],
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Visibility(
+                      visible: _isHovered,
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.delete_forever_rounded,
+                          size: 20,
+                          color: widget.colorScheme.error,
+                        ),
+                        onPressed: widget.onDelete,
+                      ),
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BookmarkListItem extends StatefulWidget {
+  final Bookmark bookmark;
+  final ColorScheme colorScheme;
+  final VoidCallback onDelete;
+  final VoidCallback onEdit;
+  final VoidCallback onCopy;
+  final VoidCallback onTap;
+
+  const _BookmarkListItem({
+    required this.bookmark,
+    required this.colorScheme,
+    required this.onDelete,
+    required this.onEdit,
+    required this.onCopy,
+    required this.onTap,
+  });
+
+  @override
+  State<_BookmarkListItem> createState() => _BookmarkListItemState();
+}
+
+class _BookmarkListItemState extends State<_BookmarkListItem> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final uri = Uri.tryParse(widget.bookmark.url);
+    final date = DateTime.parse(widget.bookmark.timestamp);
+    final formattedDate = DateFormat("dd/MMM/yyyy - HH:mm").format(date);
+
+    return Material(
+      color: Colors.transparent,
+      child: GestureDetector(
+        onSecondaryTapDown: (details) {
+          ContextMenuOverlay.show(
+            context: context,
+            tapPosition: details.globalPosition,
+            items: [
+              ContextMenuItem(
+                icon: Icons.copy,
+                label: 'Copy Link',
+                onTap: widget.onCopy,
+              ),
+              ContextMenuItem(
+                icon: Icons.edit,
+                label: 'Edit',
+                onTap: widget.onEdit,
+              ),
+              ContextMenuItem(
+                icon: Icons.delete_forever_rounded,
+                label: 'Delete',
+                iconColor: Theme.of(context).colorScheme.error,
+                onTap: widget.onDelete,
+              ),
+            ],
+          );
+        },
+        child: MouseRegion(
+          onEnter: (_) => setState(() => _isHovering = true),
+          onExit: (_) => setState(() => _isHovering = false),
+          child: InkWell(
+            onTap: widget.onTap,
+            splashColor: widget.colorScheme.primary.withAlpha(30),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: widget.colorScheme.outline.withAlpha(26),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: widget.colorScheme.surfaceContainer,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Material(
+                          shape: const CircleBorder(),
+                          color: Colors.transparent,
+                          child: Center(
+                            child: uri != null
+                                ? Image.network(
+                                  'https://www.google.com/s2/favicons?domain=${uri.host}&sz=64',
+                                  width: 32,
+                                  height: 32,
+                                  errorBuilder: (_, __, ___) => Icon(
+                                    Icons.link_rounded,
+                                    size: 32,
+                                    color: widget.colorScheme.primary,
+                                  ),
+                                )
+                                : Icon(
+                                  Icons.link_rounded,
+                                  size: 28,
+                                  color: widget.colorScheme.primary,
+                                ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.bookmark.title,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            widget.bookmark.url,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: widget.colorScheme.onSurface.withAlpha(150),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                formattedDate,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: widget.colorScheme.onSurface.withAlpha(150),
+                                ),
+                              ),
+                              FutureBuilder<List<String>>(
+                                future: DatabaseService().bookmarkService.getTagsByBookmarkId(widget.bookmark.id!),
+                                builder: (context, snapshot) {
+                                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                                    return const SizedBox.shrink();
+                                  }
+
+                                  final tags = snapshot.data!;
+                                  final visibleTags = tags.toList();
+
+                                  return Row(
+                                    children: [
+                                      if (visibleTags.isNotEmpty) ...[
+                                        const Padding(
+                                          padding: EdgeInsets.symmetric(horizontal: 4),
+                                          child: Text(
+                                            '|',
+                                            style: TextStyle(color: Colors.grey, fontSize: 10),
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          height: 18,
+                                          child: SingleChildScrollView(
+                                            scrollDirection: Axis.horizontal,
+                                            child: Row(
+                                              children: visibleTags.map(
+                                                (tag) => Padding(
+                                                  padding: const EdgeInsets.only(right: 4),
+                                                  child: Text(
+                                                    '#$tag',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: widget.colorScheme.primary,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ).toList(),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_isHovering)
+                      SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.delete_forever_rounded,
+                            size: 20,
+                            color: widget.colorScheme.error,
+                          ),
+                          onPressed: widget.onDelete,
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

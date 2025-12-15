@@ -1024,7 +1024,7 @@ class _PersonalizationSettingsPanelState
             ),
           ),
           Text(
-            '#${color.value.toRadixString(16).substring(2).toUpperCase()}',
+            '#${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
             style: TextStyle(
               color: textColor,
               fontSize: 14,

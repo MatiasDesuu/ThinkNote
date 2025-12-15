@@ -4,7 +4,7 @@ import 'dart:io';
 import '../animations/animations_handler.dart';
 import '../Settings/settings_screen.dart';
 import '../Tasks/tasks_screen.dart';
-import '../Bookmarks/bookmarks_screen_db.dart';
+import '../Bookmarks/bookmarks_screen.dart';
 import '../Thinks/thinks_screen.dart';
 import '../Diary/diary_screen.dart';
 import '../database/sync_service.dart';

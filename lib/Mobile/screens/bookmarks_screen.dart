@@ -7,8 +7,8 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import '../../database/database_service.dart';
 import '../../database/models/bookmark.dart';
-import '../../Bookmarks/bookmarks_handler_db.dart';
-import '../../Bookmarks/bookmarks_tags_handler_db.dart';
+import '../../Bookmarks/bookmarks_handler.dart';
+import '../../Bookmarks/bookmarks_tags_handler.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/confirmation_dialogue.dart';
 
@@ -327,7 +327,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
         borderRadius: BorderRadius.circular(8),
         hoverColor: colorScheme.primary.withAlpha(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -340,6 +340,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  height: 1.0,
                   color: isSelected ? colorScheme.primary : colorScheme.onSurface,
                 ),
               ),
@@ -1039,7 +1040,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                 if (tags.isNotEmpty)
                   Expanded(
                     child: SizedBox(
-                      height: 40,
+                      height: 36,
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         children: [
