@@ -111,7 +111,7 @@ class _TagsPanelState extends State<TagsPanel> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  Icon(Icons.label_rounded, size: 20, color: colorScheme.primary),
+                  Icon(Symbols.tag_rounded, size: 20, color: colorScheme.primary),
                   const SizedBox(width: 8),
                   Text(
                     'Tags',

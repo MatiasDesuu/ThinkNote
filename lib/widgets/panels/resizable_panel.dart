@@ -232,7 +232,7 @@ class ResizablePanelState extends State<ResizablePanel>
                               children: [
                                 Container(
                                   height: 48,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.only(left:16, right: 8),
                             child: Center(
                               child: Row(
                                 children: [
