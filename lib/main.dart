@@ -1817,6 +1817,24 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                 title: 'Notebooks',
                 preferencesKey: 'notebooks_panel',
                 showLeftSeparator: !_immersiveModeService.isImmersiveMode,
+                onTitleTap: () {
+                  final rootNotebook = Notebook(
+                    id: null,
+                    name: '',
+                    parentId: null,
+                    createdAt: DateTime.now(),
+                    orderIndex: 0,
+                  );
+                  setState(() {
+                    _selectedNotebook = rootNotebook;
+                    _selectedTag = null;
+                    _titleController.clear();
+                    _noteController.clear();
+                  });
+                  _databaseSidebarKey.currentState?.clearSelectedTag();
+                  _selectNote(null);
+                  _saveLastSelectedNotebook(null);
+                },
                 trailing: Builder(
                   builder: (context) {
                     final databaseSidebarState =

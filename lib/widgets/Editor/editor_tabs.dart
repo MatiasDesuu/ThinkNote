@@ -647,21 +647,11 @@ class EditorTabsState extends State<EditorTabs> {
                   decoration: BoxDecoration(
                     color:
                         isTarget && _dragTargetIsLeft
-                            ? colorScheme.primary
+                            ? colorScheme.primary.withAlpha(60)
                             : Colors.transparent,
                     borderRadius:
                         isTarget && _dragTargetIsLeft
                             ? BorderRadius.circular(2)
-                            : null,
-                    boxShadow:
-                        isTarget && _dragTargetIsLeft
-                            ? [
-                              BoxShadow(
-                                color: colorScheme.primary.withAlpha(76),
-                                blurRadius: 4,
-                                offset: const Offset(2, 0),
-                              ),
-                            ]
                             : null,
                   ),
                 ),
@@ -678,21 +668,11 @@ class EditorTabsState extends State<EditorTabs> {
                   decoration: BoxDecoration(
                     color:
                         isTarget && !_dragTargetIsLeft
-                            ? colorScheme.primary
+                            ? colorScheme.primary.withAlpha(80)
                             : Colors.transparent,
                     borderRadius:
                         isTarget && !_dragTargetIsLeft
                             ? BorderRadius.circular(2)
-                            : null,
-                    boxShadow:
-                        isTarget && !_dragTargetIsLeft
-                            ? [
-                              BoxShadow(
-                                color: colorScheme.primary.withAlpha(76),
-                                blurRadius: 4,
-                                offset: const Offset(2, 0),
-                              ),
-                            ]
                             : null,
                   ),
                 ),

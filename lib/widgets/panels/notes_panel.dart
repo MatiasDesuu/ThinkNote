@@ -1535,23 +1535,11 @@ class NotesPanelState extends State<NotesPanel> {
                   decoration: BoxDecoration(
                     color:
                         isTarget && _dragTargetIsAbove
-                            ? Theme.of(context).colorScheme.primary
+                            ? Theme.of(context).colorScheme.primary.withAlpha(60)
                             : Colors.transparent,
                     borderRadius:
                         isTarget && _dragTargetIsAbove
                             ? BorderRadius.circular(2)
-                            : null,
-                    boxShadow:
-                        isTarget && _dragTargetIsAbove
-                            ? [
-                              BoxShadow(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.primary.withAlpha(76),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
                             : null,
                   ),
                 ),
@@ -1566,23 +1554,11 @@ class NotesPanelState extends State<NotesPanel> {
                   decoration: BoxDecoration(
                     color:
                         isTarget && !_dragTargetIsAbove
-                            ? Theme.of(context).colorScheme.primary
+                            ? Theme.of(context).colorScheme.onPrimary.withAlpha(60)
                             : Colors.transparent,
                     borderRadius:
                         isTarget && !_dragTargetIsAbove
                             ? BorderRadius.circular(2)
-                            : null,
-                    boxShadow:
-                        isTarget && !_dragTargetIsAbove
-                            ? [
-                              BoxShadow(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.primary.withAlpha(76),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
                             : null,
                   ),
                 ),

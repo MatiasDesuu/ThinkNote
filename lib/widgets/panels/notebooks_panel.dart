@@ -872,22 +872,10 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
               decoration: BoxDecoration(
                 color:
                     candidateData.isNotEmpty
-                        ? Theme.of(context).colorScheme.primary
+                        ? Theme.of(context).colorScheme.primary.withAlpha(60)
                         : Colors.transparent,
                 borderRadius:
                     candidateData.isNotEmpty ? BorderRadius.circular(4) : null,
-                boxShadow:
-                    candidateData.isNotEmpty
-                        ? [
-                          BoxShadow(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.primary.withAlpha(76),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                        : null,
               ),
             );
           },
@@ -1037,24 +1025,10 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                       decoration: BoxDecoration(
                         color:
                             candidateData.isNotEmpty
-                                ? Theme.of(context).colorScheme.primary
+                                ? Theme.of(context).colorScheme.primary.withAlpha(60)
                                 : Colors.transparent,
                         borderRadius:
-                            candidateData.isNotEmpty
-                                ? BorderRadius.circular(4)
-                                : null,
-                        boxShadow:
-                            candidateData.isNotEmpty
-                                ? [
-                                  BoxShadow(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary.withAlpha(76),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                                : null,
+                            candidateData.isNotEmpty ? BorderRadius.circular(4) : null,
                       ),
                     );
                   },
@@ -1168,9 +1142,7 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                       isSelected
                           ? Theme.of(context).colorScheme.surfaceContainerHigh
                           : candidateData.isNotEmpty
-                          ? Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer.withAlpha(76)
+                          ? Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(60)
                           : Colors.transparent,
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -1354,23 +1326,10 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                   children: [
                     Positioned.fill(
                       child: GestureDetector(
-                        onTap: () {
-                          widget.onNotebookSelected(
-                            Notebook(
-                              id: null,
-                              name: '',
-                              parentId: null,
-                              createdAt: DateTime.now(),
-                              orderIndex: 0,
-                            ),
-                          );
-                        },
                         child: Container(
                           color:
                               showRootDropIndicator
-                                  ? Theme.of(
-                                    context,
-                                  ).colorScheme.primaryContainer.withAlpha(76)
+                                  ? Theme.of(context).colorScheme.primary.withAlpha(60)
                                   : Colors.transparent,
                         ),
                       ),
@@ -1445,26 +1404,11 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                                 decoration: BoxDecoration(
                                   color:
                                       candidateData.isNotEmpty
-                                          ? Theme.of(
-                                            context,
-                                          ).colorScheme.primary
+                                          ? Theme.of(context).colorScheme.primary.withAlpha(60)
                                           : Colors.transparent,
                                   borderRadius:
                                       candidateData.isNotEmpty
                                           ? BorderRadius.circular(4)
-                                          : null,
-                                  boxShadow:
-                                      candidateData.isNotEmpty
-                                          ? [
-                                            BoxShadow(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary
-                                                  .withAlpha(76),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ]
                                           : null,
                                 ),
                               );

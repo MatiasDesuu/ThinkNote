@@ -12,6 +12,7 @@ class ResizablePanel extends StatefulWidget {
   final String preferencesKey;
   final Widget? trailing;
   final bool showLeftSeparator;
+  final VoidCallback? onTitleTap;
 
   const ResizablePanel({
     super.key,
@@ -23,6 +24,7 @@ class ResizablePanel extends StatefulWidget {
     required this.preferencesKey,
     this.trailing,
     this.showLeftSeparator = false,
+    this.onTitleTap,
   });
 
   @override
@@ -61,6 +63,8 @@ class ResizablePanelState extends State<ResizablePanel>
   late Animation<double> _widthAnimation;
 
   final FocusNode _panelFocusNode = FocusNode();
+
+  bool _isHovered = false;
 
   bool get isExpanded => _isExpanded;
 
@@ -230,8 +234,11 @@ class ResizablePanelState extends State<ResizablePanel>
                           if (widget.title.isNotEmpty)
                             Stack(
                               children: [
-                                Container(
-                                  height: 48,
+                                MouseRegion(
+                                  onEnter: (_) => setState(() => _isHovered = true),
+                                  onExit: (_) => setState(() => _isHovered = false),
+                                  child: Container(
+                                    height: 48,
                             padding: const EdgeInsets.only(left:16, right: 8),
                             child: Center(
                               child: Row(
@@ -265,11 +272,20 @@ class ResizablePanelState extends State<ResizablePanel>
                                     ),
                                   ),
                                   const Spacer(),
+                                  if (_isHovered && widget.onTitleTap != null)
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.home_rounded,
+                                        size: 16,
+                                      ),
+                                      onPressed: widget.onTitleTap,
+                                    ),
                                   if (widget.trailing != null) widget.trailing!,
                                 ],
                               ),
                             ),
                           ),
+                                ),
                           // MoveWindow en el área del título, excluyendo el botón trailing
                           Positioned(
                             top: 0,
