@@ -1983,183 +1983,206 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
     final date = DateTime.parse(widget.bookmark.timestamp);
     final formattedDate = DateFormat("dd/MMM/yyyy - HH:mm").format(date);
 
-    return Material(
-      color: Colors.transparent,
-      child: GestureDetector(
-        onSecondaryTapDown: (details) {
-          ContextMenuOverlay.show(
-            context: context,
-            tapPosition: details.globalPosition,
-            items: [
-              ContextMenuItem(
-                icon: Icons.copy,
-                label: 'Copy Link',
-                onTap: widget.onCopy,
-              ),
-              ContextMenuItem(
-                icon: Icons.edit,
-                label: 'Edit',
-                onTap: widget.onEdit,
-              ),
-              ContextMenuItem(
-                icon: Icons.delete_forever_rounded,
-                label: 'Delete',
-                iconColor: Theme.of(context).colorScheme.error,
-                onTap: widget.onDelete,
-              ),
-            ],
-          );
-        },
-        child: MouseRegion(
-          onEnter: (_) => setState(() => _isHovering = true),
-          onExit: (_) => setState(() => _isHovering = false),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
+        decoration: BoxDecoration(
+          color: _isHovering
+              ? widget.colorScheme.surfaceContainerHighest
+              : widget.colorScheme.surface,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Material(
+          color: Colors.transparent,
           child: InkWell(
+            borderRadius: BorderRadius.circular(10),
             onTap: widget.onTap,
-            splashColor: widget.colorScheme.primary.withAlpha(30),
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: widget.colorScheme.outline.withAlpha(26),
-                    width: 1,
+            onSecondaryTapDown: (details) {
+              ContextMenuOverlay.show(
+                context: context,
+                tapPosition: details.globalPosition,
+                items: [
+                  ContextMenuItem(
+                    icon: Icons.copy,
+                    label: 'Copy Link',
+                    onTap: widget.onCopy,
                   ),
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: widget.colorScheme.surfaceContainer,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Material(
-                          shape: const CircleBorder(),
-                          color: Colors.transparent,
-                          child: Center(
-                            child: uri != null
-                                ? Image.network(
-                                  'https://www.google.com/s2/favicons?domain=${uri.host}&sz=64',
-                                  width: 32,
-                                  height: 32,
-                                  errorBuilder: (_, __, ___) => Icon(
-                                    Icons.link_rounded,
-                                    size: 32,
-                                    color: widget.colorScheme.primary,
-                                  ),
-                                )
-                                : Icon(
+                  ContextMenuItem(
+                    icon: Icons.edit,
+                    label: 'Edit',
+                    onTap: widget.onEdit,
+                  ),
+                  ContextMenuItem(
+                    icon: Icons.delete_forever_rounded,
+                    label: 'Delete',
+                    iconColor: Theme.of(context).colorScheme.error,
+                    onTap: widget.onDelete,
+                  ),
+                ],
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Ícono de bookmark (favicon)
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: widget.colorScheme.surfaceContainer,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Material(
+                        shape: const CircleBorder(),
+                        color: Colors.transparent,
+                        child: Center(
+                          child: uri != null
+                              ? Image.network(
+                                'https://www.google.com/s2/favicons?domain=${uri.host}&sz=64',
+                                width: 32,
+                                height: 32,
+                                errorBuilder: (_, __, ___) => Icon(
                                   Icons.link_rounded,
-                                  size: 28,
+                                  size: 32,
                                   color: widget.colorScheme.primary,
                                 ),
-                          ),
+                              )
+                              : Icon(
+                                Icons.link_rounded,
+                                size: 28,
+                                color: widget.colorScheme.primary,
+                              ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.bookmark.title,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(width: 12),
+                  // Título y detalles
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.bookmark.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: widget.colorScheme.onSurface,
+                            fontSize: 14,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.bookmark.url,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: widget.colorScheme.onSurface.withAlpha(150),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.bookmark.url,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: widget.colorScheme.onSurface.withAlpha(150),
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.schedule_rounded,
+                              size: 14,
+                              color: widget.colorScheme.primary,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                formattedDate,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: widget.colorScheme.onSurface.withAlpha(150),
-                                ),
+                            const SizedBox(width: 2),
+                            Text(
+                              formattedDate,
+                              style: TextStyle(
+                                color: widget.colorScheme.onSurface.withAlpha(150),
+                                fontSize: 12,
                               ),
-                              FutureBuilder<List<String>>(
-                                future: DatabaseService().bookmarkService.getTagsByBookmarkId(widget.bookmark.id!),
-                                builder: (context, snapshot) {
-                                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                                    return const SizedBox.shrink();
-                                  }
+                            ),
+                            FutureBuilder<List<String>>(
+                              future: DatabaseService().bookmarkService.getTagsByBookmarkId(widget.bookmark.id!),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                                  return const SizedBox.shrink();
+                                }
 
-                                  final tags = snapshot.data!;
-                                  final visibleTags = tags.toList();
+                                final tags = snapshot.data!;
+                                final visibleTags = tags.toList();
 
-                                  return Row(
-                                    children: [
-                                      if (visibleTags.isNotEmpty) ...[
-                                        const Padding(
-                                          padding: EdgeInsets.symmetric(horizontal: 4),
-                                          child: Text(
-                                            '|',
-                                            style: TextStyle(color: Colors.grey, fontSize: 10),
+                                return Row(
+                                  children: [
+                                    if (visibleTags.isNotEmpty) ...[
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                                        child: Text(
+                                          '|',
+                                          style: TextStyle(
+                                            color: widget.colorScheme.onSurface.withAlpha(150),
+                                            fontSize: 12,
                                           ),
                                         ),
-                                        SizedBox(
-                                          height: 18,
-                                          child: SingleChildScrollView(
-                                            scrollDirection: Axis.horizontal,
-                                            child: Row(
-                                              children: visibleTags.map(
-                                                (tag) => Padding(
-                                                  padding: const EdgeInsets.only(right: 4),
-                                                  child: Text(
-                                                    '#$tag',
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      color: widget.colorScheme.primary,
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
+                                      ),
+                                      SizedBox(
+                                        height: 18,
+                                        child: SingleChildScrollView(
+                                          scrollDirection: Axis.horizontal,
+                                          child: Row(
+                                            children: visibleTags.map(
+                                              (tag) => Padding(
+                                                padding: const EdgeInsets.only(right: 4),
+                                                child: Text(
+                                                  '#$tag',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: widget.colorScheme.primary,
+                                                    fontWeight: FontWeight.w500,
                                                   ),
                                                 ),
-                                              ).toList(),
-                                            ),
+                                              ),
+                                            ).toList(),
                                           ),
                                         ),
-                                      ],
+                                      ),
                                     ],
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    if (_isHovering)
-                      SizedBox(
-                        width: 40,
-                        height: 40,
+                  ),
+                  const SizedBox(width: 4),
+                  // Botón eliminar
+                  Opacity(
+                    opacity: _isHovering ? 1.0 : 0.0,
+                    child: IgnorePointer(
+                      ignoring: !_isHovering,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 8),
                         child: IconButton(
                           icon: Icon(
                             Icons.delete_forever_rounded,
-                            size: 20,
                             color: widget.colorScheme.error,
+                            size: 18,
                           ),
                           onPressed: widget.onDelete,
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                          padding: EdgeInsets.zero,
                         ),
                       ),
-                  ],
-                ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

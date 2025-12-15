@@ -1142,7 +1142,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
   Widget _buildBookmarkCard(Bookmark bookmark) {
     final uri = Uri.tryParse(bookmark.url);
     final date = DateTime.parse(bookmark.timestamp);
-    final formattedDate = DateFormat("dd/MM/yyyy - HH:mm").format(date);
+    final formattedDate = DateFormat("dd/MMM/yyyy - HH:mm").format(date);
 
     return Dismissible(
       key: ValueKey(bookmark.id),
@@ -1219,11 +1219,9 @@ class BookmarksScreenState extends State<BookmarksScreen> {
         title: Text(
           bookmark.title,
           style: TextStyle(
-            fontSize: 16,
-            color:
-                bookmark.hidden
-                    ? Theme.of(context).colorScheme.onSurface.withAlpha(127)
-                    : Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w500,
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 14,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -1236,32 +1234,29 @@ class BookmarksScreenState extends State<BookmarksScreen> {
               bookmark.url,
               style: TextStyle(
                 fontSize: 12,
-                color:
-                    bookmark.hidden
-                        ? Theme.of(context).colorScheme.onSurface.withAlpha(76)
-                        : Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withAlpha(150),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withAlpha(150),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 2),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                Icon(
+                  Icons.schedule_rounded,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 2),
                 Text(
                   formattedDate,
                   style: TextStyle(
-                    fontSize: 11,
-                    color:
-                        bookmark.hidden
-                            ? Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withAlpha(76)
-                            : Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withAlpha(150),
+                    fontSize: 12,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withAlpha(150),
                   ),
                 ),
                 FutureBuilder<List<String>>(
@@ -1274,18 +1269,16 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                     }
 
                     final tags = snapshot.data!;
-                    if (tags.isEmpty) {
-                      return const SizedBox.shrink();
-                    }
-
                     return Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           child: Text(
                             '|',
-                            style: TextStyle(color: Colors.grey, fontSize: 10),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                         SizedBox(
@@ -1293,24 +1286,17 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: Row(
-                              mainAxisSize: MainAxisSize.min,
                               children:
                                   tags.map((tag) {
-                                    final isHiddenTag = tag == 'hidden';
                                     return Padding(
                                       padding: const EdgeInsets.only(right: 4),
                                       child: Text(
                                         '#$tag',
                                         style: TextStyle(
-                                          fontSize: 11,
-                                          color:
-                                              isHiddenTag
-                                                  ? Theme.of(
-                                                    context,
-                                                  ).colorScheme.error
-                                                  : Theme.of(
-                                                    context,
-                                                  ).colorScheme.primary,
+                                          fontSize: 12,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
