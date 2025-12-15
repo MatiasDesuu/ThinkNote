@@ -12,6 +12,7 @@ import '../../Settings/editor_settings_panel.dart';
 import '../custom_snackbar.dart';
 import '../context_menu.dart';
 import '../icon_selector_dialog.dart';
+import '../tags_panel.dart';
 
 const double kChevronWidth = 40.0;
 const double kIndentPerLevel = 4.0;
@@ -24,6 +25,7 @@ class DatabaseSidebar extends StatefulWidget {
   final VoidCallback? onTrashUpdated;
   final VoidCallback? onExpansionChanged;
   final Function(Notebook)? onNotebookDeleted;
+  final Function(String tag)? onTagSelected;
 
   const DatabaseSidebar({
     super.key,
@@ -32,6 +34,7 @@ class DatabaseSidebar extends StatefulWidget {
     this.onTrashUpdated,
     this.onExpansionChanged,
     this.onNotebookDeleted,
+    this.onTagSelected,
   });
 
   @override
@@ -52,6 +55,7 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
   StreamSubscription<bool>? _showNotebookIconsSubscription;
   final Map<int?, int> _lastClickTimes = {};
   bool _isDraggingOverNotebook = false;
+  String? _selectedTag;
 
   bool get areAllNotebooksExpanded {
     bool checkNotebookRecursively(Notebook notebook) {
@@ -161,7 +165,10 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
     }
   }
 
-  Future<void> handleNotebookSelection(Notebook? notebook, {bool expand = true}) async {
+  Future<void> handleNotebookSelection(
+    Notebook? notebook, {
+    bool expand = true,
+  }) async {
     if (notebook?.id == null) return;
 
     if (!expand) return;
@@ -1296,174 +1303,207 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
       return const Center(child: Text('No notebooks available'));
     }
 
-    return SizedBox.expand(
-      child: DragTarget<Map<String, dynamic>>(
-        onWillAcceptWithDetails: (details) {
-          final data = details.data;
-          if (data['type'] == 'notebook') {
-            final dragged = data['notebook'] as Notebook;
-            return dragged.parentId != null;
-          }
-          return false;
-        },
-        onAcceptWithDetails: (details) async {
-          final data = details.data;
-          if (data['type'] == 'notebook') {
-            final draggedNotebook = data['notebook'] as Notebook;
-            final repo = NotebookRepository(DatabaseHelper());
+    return Column(
+      children: [
+        Expanded(
+          child: SizedBox.expand(
+            child: DragTarget<Map<String, dynamic>>(
+              onWillAcceptWithDetails: (details) {
+                final data = details.data;
+                if (data['type'] == 'notebook') {
+                  final dragged = data['notebook'] as Notebook;
+                  return dragged.parentId != null;
+                }
+                return false;
+              },
+              onAcceptWithDetails: (details) async {
+                final data = details.data;
+                if (data['type'] == 'notebook') {
+                  final draggedNotebook = data['notebook'] as Notebook;
+                  final repo = NotebookRepository(DatabaseHelper());
 
-            try {
-              // Mover a la raíz
-              final updatedNotebook = Notebook(
-                id: draggedNotebook.id,
-                name: draggedNotebook.name,
-                parentId: null,
-                createdAt: draggedNotebook.createdAt,
-                orderIndex: _notebooks.length,
-                isFavorite: draggedNotebook.isFavorite,
-                deletedAt: draggedNotebook.deletedAt,
-                iconId: draggedNotebook.iconId,
-              );
-
-              await repo.updateNotebook(updatedNotebook);
-              await _reorderNotebooks(null);
-
-              if (mounted) {
-                await _loadData();
-              }
-            } catch (e) {
-              print('Error updating notebook: $e');
-            }
-          }
-        },
-        builder: (context, candidateData, rejectedData) {
-          // Solo mostrar el indicador de "mover al root" si no estamos sobre un notebook
-          final showRootDropIndicator = candidateData.isNotEmpty && !_isDraggingOverNotebook;
-          return Stack(
-            children: [
-              Positioned.fill(
-                child: GestureDetector(
-                  onTap: () {
-                    widget.onNotebookSelected(
-                      Notebook(
-                        id: null,
-                        name: '',
-                        parentId: null,
-                        createdAt: DateTime.now(),
-                        orderIndex: 0,
-                      ),
+                  try {
+                    // Mover a la raíz
+                    final updatedNotebook = Notebook(
+                      id: draggedNotebook.id,
+                      name: draggedNotebook.name,
+                      parentId: null,
+                      createdAt: draggedNotebook.createdAt,
+                      orderIndex: _notebooks.length,
+                      isFavorite: draggedNotebook.isFavorite,
+                      deletedAt: draggedNotebook.deletedAt,
+                      iconId: draggedNotebook.iconId,
                     );
-                  },
-                  child: Container(
-                    color:
-                        showRootDropIndicator
-                            ? Theme.of(
-                              context,
-                            ).colorScheme.primaryContainer.withAlpha(76)
-                            : Colors.transparent,
-                  ),
-                ),
-              ),
-              SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                    await repo.updateNotebook(updatedNotebook);
+                    await _reorderNotebooks(null);
+
+                    if (mounted) {
+                      await _loadData();
+                    }
+                  } catch (e) {
+                    print('Error updating notebook: $e');
+                  }
+                }
+              },
+              builder: (context, candidateData, rejectedData) {
+                // Solo mostrar el indicador de "mover al root" si no estamos sobre un notebook
+                final showRootDropIndicator =
+                    candidateData.isNotEmpty && !_isDraggingOverNotebook;
+                return Stack(
                   children: [
-                    ..._notebooks.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final notebook = entry.value;
-                      return _buildNotebookNode(
-                        notebook,
-                        isLast: index == _notebooks.length - 1,
-                      );
-                    }),
-                    // Indicador de inserción al final de la lista raíz
-                    DragTarget<Map<String, dynamic>>(
-                      onWillAcceptWithDetails: (details) {
-                        final data = details.data;
-                        if (data['type'] == 'notebook') {
-                          final dragged = data['notebook'] as Notebook;
-                          return dragged.parentId == null;
-                        }
-                        return false;
-                      },
-                      onMove: (details) {
-                        if (!_isDraggingOverNotebook) {
-                          setState(() => _isDraggingOverNotebook = true);
-                        }
-                      },
-                      onLeave: (data) {
-                        setState(() => _isDraggingOverNotebook = false);
-                      },
-                      onAcceptWithDetails: (details) async {
-                        setState(() => _isDraggingOverNotebook = false);
-                        final data = details.data;
-                        if (data['type'] == 'notebook') {
-                          final draggedNotebook = data['notebook'] as Notebook;
-                          final repo = NotebookRepository(DatabaseHelper());
-
-                          // Mover a la raíz al final
-                          final updatedNotebook = Notebook(
-                            id: draggedNotebook.id,
-                            name: draggedNotebook.name,
-                            parentId: null,
-                            createdAt: draggedNotebook.createdAt,
-                            orderIndex: _notebooks.length,
-                            isFavorite: draggedNotebook.isFavorite,
-                            deletedAt: draggedNotebook.deletedAt,
-                            iconId: draggedNotebook.iconId,
+                    Positioned.fill(
+                      child: GestureDetector(
+                        onTap: () {
+                          widget.onNotebookSelected(
+                            Notebook(
+                              id: null,
+                              name: '',
+                              parentId: null,
+                              createdAt: DateTime.now(),
+                              orderIndex: 0,
+                            ),
                           );
+                        },
+                        child: Container(
+                          color:
+                              showRootDropIndicator
+                                  ? Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer.withAlpha(76)
+                                  : Colors.transparent,
+                        ),
+                      ),
+                    ),
+                    SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ..._notebooks.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final notebook = entry.value;
+                            return _buildNotebookNode(
+                              notebook,
+                              isLast: index == _notebooks.length - 1,
+                            );
+                          }),
+                          // Indicador de inserción al final de la lista raíz
+                          DragTarget<Map<String, dynamic>>(
+                            onWillAcceptWithDetails: (details) {
+                              final data = details.data;
+                              if (data['type'] == 'notebook') {
+                                final dragged = data['notebook'] as Notebook;
+                                return dragged.parentId == null;
+                              }
+                              return false;
+                            },
+                            onMove: (details) {
+                              if (!_isDraggingOverNotebook) {
+                                setState(() => _isDraggingOverNotebook = true);
+                              }
+                            },
+                            onLeave: (data) {
+                              setState(() => _isDraggingOverNotebook = false);
+                            },
+                            onAcceptWithDetails: (details) async {
+                              setState(() => _isDraggingOverNotebook = false);
+                              final data = details.data;
+                              if (data['type'] == 'notebook') {
+                                final draggedNotebook =
+                                    data['notebook'] as Notebook;
+                                final repo = NotebookRepository(
+                                  DatabaseHelper(),
+                                );
 
-                          await repo.updateNotebook(updatedNotebook);
-                          await _reorderNotebooks(null);
+                                // Mover a la raíz al final
+                                final updatedNotebook = Notebook(
+                                  id: draggedNotebook.id,
+                                  name: draggedNotebook.name,
+                                  parentId: null,
+                                  createdAt: draggedNotebook.createdAt,
+                                  orderIndex: _notebooks.length,
+                                  isFavorite: draggedNotebook.isFavorite,
+                                  deletedAt: draggedNotebook.deletedAt,
+                                  iconId: draggedNotebook.iconId,
+                                );
 
-                          if (mounted) {
-                            await _loadData();
-                          }
-                        }
-                      },
-                      builder: (context, candidateData, rejectedData) {
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          height: candidateData.isNotEmpty ? 8 : 2,
-                          margin: EdgeInsets.symmetric(
-                            horizontal: candidateData.isNotEmpty ? 8 : 0,
+                                await repo.updateNotebook(updatedNotebook);
+                                await _reorderNotebooks(null);
+
+                                if (mounted) {
+                                  await _loadData();
+                                }
+                              }
+                            },
+                            builder: (context, candidateData, rejectedData) {
+                              return AnimatedContainer(
+                                duration: const Duration(milliseconds: 150),
+                                height: candidateData.isNotEmpty ? 8 : 2,
+                                margin: EdgeInsets.symmetric(
+                                  horizontal: candidateData.isNotEmpty ? 8 : 0,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      candidateData.isNotEmpty
+                                          ? Theme.of(
+                                            context,
+                                          ).colorScheme.primary
+                                          : Colors.transparent,
+                                  borderRadius:
+                                      candidateData.isNotEmpty
+                                          ? BorderRadius.circular(4)
+                                          : null,
+                                  boxShadow:
+                                      candidateData.isNotEmpty
+                                          ? [
+                                            BoxShadow(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                                  .withAlpha(76),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                          : null,
+                                ),
+                              );
+                            },
                           ),
-                          decoration: BoxDecoration(
-                            color:
-                                candidateData.isNotEmpty
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Colors.transparent,
-                            borderRadius:
-                                candidateData.isNotEmpty
-                                    ? BorderRadius.circular(4)
-                                    : null,
-                            boxShadow:
-                                candidateData.isNotEmpty
-                                    ? [
-                                      BoxShadow(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary.withAlpha(76),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ]
-                                    : null,
-                          ),
-                        );
-                      },
+                        ],
+                      ),
                     ),
                   ],
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+                );
+              },
+            ),
+          ),
+        ),
+        TagsPanel(
+          selectedTag: _selectedTag,
+          onTagSelected: (tag) {
+            setState(() {
+              // Toggle selection - if same tag clicked, deselect it
+              _selectedTag = _selectedTag == tag ? null : tag;
+            });
+            if (_selectedTag != null) {
+              widget.onTagSelected?.call(_selectedTag!);
+            }
+          },
+        ),
+      ],
     );
   }
 
   void reloadSidebar() {
     _loadData();
+  }
+
+  void clearSelectedTag() {
+    if (mounted) {
+      setState(() {
+        _selectedTag = null;
+      });
+    }
   }
 }

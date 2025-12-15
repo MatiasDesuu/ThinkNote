@@ -680,6 +680,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     with SingleTickerProviderStateMixin {
   Note? _selectedNote;
   Notebook? _selectedNotebook;
+  String? _selectedTag;
   late TextEditingController _noteController;
   late TextEditingController _titleController;
   bool isEditing = false;
@@ -1832,11 +1833,24 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                   onNotebookSelected: (notebook) {
                     setState(() {
                       _selectedNotebook = notebook;
+                      _selectedTag = null; // Clear tag when notebook is selected
+                      _titleController.clear();
+                      _noteController.clear();
+                    });
+                    // Clear tag selection in notebooks panel
+                    _databaseSidebarKey.currentState?.clearSelectedTag();
+                    _selectNote(null);
+                    _saveLastSelectedNotebook(notebook.id);
+                  },
+                  onTagSelected: (tag) {
+                    setState(() {
+                      _selectedTag = tag;
+                      _selectedNotebook = null; // Clear notebook when tag is selected
                       _titleController.clear();
                       _noteController.clear();
                     });
                     _selectNote(null);
-                    _saveLastSelectedNotebook(notebook.id);
+                    _saveLastSelectedNotebook(null);
                   },
                   onTrashUpdated: () {
                     setState(() {
@@ -1872,6 +1886,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                 child: NotesPanel(
                   key: _notesPanelStateKey,
                   selectedNotebookId: _selectedNotebook?.id,
+                  filterByTag: _selectedTag,
                     selectedNote: _selectedNote,
                     onNoteSelected: _onNoteSelected,
                     onNoteSelectedFromPanel: (note) {

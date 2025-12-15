@@ -9,6 +9,7 @@ import '../custom_snackbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import '../context_menu.dart';
+import '../../services/tags_service.dart';
 
 enum SortMode { order, date, completion }
 
@@ -22,18 +23,20 @@ class NotesPanel extends StatefulWidget {
   final VoidCallback? onTogglePanel;
   final VoidCallback? onSortChanged;
   final Function(Note)? onNoteDeleted;
+  final String? filterByTag;
 
   const NotesPanel({
     super.key,
     this.selectedNotebookId,
     this.selectedNote,
-  required this.onNoteSelected,
+    required this.onNoteSelected,
     this.onNoteOpenInNewTab,
-  this.onNoteSelectedFromPanel,
+    this.onNoteSelectedFromPanel,
     this.onTrashUpdated,
     this.onTogglePanel,
     this.onSortChanged,
     this.onNoteDeleted,
+    this.filterByTag,
   });
 
   @override
@@ -49,8 +52,10 @@ class NotesPanelState extends State<NotesPanel> {
   SortMode _sortMode = SortMode.order;
   bool _completionSubSortByDate = false;
   late StreamSubscription<void> _databaseChangeSubscription;
-  String get _sortPreferenceKey => 'notes_sort_mode_${widget.selectedNotebookId ?? 0}';
-  String get _completionSubSortPreferenceKey => 'notes_completion_sub_sort_by_date_${widget.selectedNotebookId ?? 0}';
+  String get _sortPreferenceKey =>
+      'notes_sort_mode_${widget.selectedNotebookId ?? 0}';
+  String get _completionSubSortPreferenceKey =>
+      'notes_completion_sub_sort_by_date_${widget.selectedNotebookId ?? 0}';
   bool _showNoteIcons = true;
   StreamSubscription<bool>? _showNoteIconsSubscription;
 
@@ -78,7 +83,7 @@ class NotesPanelState extends State<NotesPanel> {
   int? _dragTargetIndex;
   bool _dragTargetIsAbove = false;
   bool _isDragging = false;
-  
+
   // Deferred selection state - for handling click vs drag on selected notes
   // When clicking a note that's already selected (without modifiers), we defer
   // the single-selection until we know it wasn't a drag operation
@@ -120,7 +125,9 @@ class NotesPanelState extends State<NotesPanel> {
                 );
               },
               child: Icon(
-                _completionSubSortByDate ? Icons.access_time : Icons.sort_by_alpha,
+                _completionSubSortByDate
+                    ? Icons.access_time
+                    : Icons.sort_by_alpha,
                 size: 16,
                 key: ValueKey<bool>(_completionSubSortByDate),
               ),
@@ -178,7 +185,7 @@ class NotesPanelState extends State<NotesPanel> {
     bool isShiftPressed,
   ) {
     if (note.id == null) return;
-    
+
     setState(() {
       if (isShiftPressed) {
         // Shift+Click: Range selection from anchor to current note
@@ -191,7 +198,7 @@ class NotesPanelState extends State<NotesPanel> {
         _handleSingleSelection(note);
       }
     });
-    
+
     widget.onNoteSelected(note);
   }
 
@@ -228,7 +235,7 @@ class NotesPanelState extends State<NotesPanel> {
 
     // Clear current selection and select the range
     _selectedNoteIds.clear();
-    
+
     final start = anchorIndex <= targetIndex ? anchorIndex : targetIndex;
     final end = anchorIndex <= targetIndex ? targetIndex : anchorIndex;
 
@@ -260,7 +267,8 @@ class NotesPanelState extends State<NotesPanel> {
       _selectedNoteIds.remove(noteId);
       // If we removed the anchor, update it to another selected note
       if (_selectionAnchorId == noteId) {
-        _selectionAnchorId = _selectedNoteIds.isNotEmpty ? _selectedNoteIds.first : null;
+        _selectionAnchorId =
+            _selectedNoteIds.isNotEmpty ? _selectedNoteIds.first : null;
       }
     } else {
       _selectedNoteIds.add(noteId);
@@ -302,7 +310,7 @@ class NotesPanelState extends State<NotesPanel> {
 
     // Capture selection state BEFORE any async operations
     final noteIdsToConvert = _getSelectedNoteIdsCopy();
-    
+
     if (noteIdsToConvert.isEmpty) {
       _isProcessingAction = false;
       _isContextMenuOpen = false;
@@ -415,7 +423,7 @@ class NotesPanelState extends State<NotesPanel> {
 
     // Capture selection state BEFORE any async operations
     final noteIdsToDelete = _getSelectedNoteIdsCopy();
-    
+
     if (noteIdsToDelete.isEmpty) {
       _isProcessingAction = false;
       _isContextMenuOpen = false;
@@ -646,13 +654,17 @@ class NotesPanelState extends State<NotesPanel> {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _completionSubSortByDate = prefs.getBool(_completionSubSortPreferenceKey) ?? false;
+      _completionSubSortByDate =
+          prefs.getBool(_completionSubSortPreferenceKey) ?? false;
     });
   }
 
   Future<void> _saveCompletionSubSortPreference() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_completionSubSortPreferenceKey, _completionSubSortByDate);
+    await prefs.setBool(
+      _completionSubSortPreferenceKey,
+      _completionSubSortByDate,
+    );
   }
 
   Future<void> toggleSortOrder() async {
@@ -730,9 +742,17 @@ class NotesPanelState extends State<NotesPanel> {
     });
 
     try {
-      final notes = await _noteRepository.getNotesByNotebookId(
-        widget.selectedNotebookId ?? 0,
-      );
+      List<Note> notes;
+
+      // If filtering by tag, get all notes with that tag
+      if (widget.filterByTag != null && widget.filterByTag!.isNotEmpty) {
+        notes = await TagsService().getNotesByTag(widget.filterByTag!);
+      } else {
+        // Otherwise, get notes by notebook
+        notes = await _noteRepository.getNotesByNotebookId(
+          widget.selectedNotebookId ?? 0,
+        );
+      }
 
       if (!mounted) return;
 
@@ -747,7 +767,9 @@ class NotesPanelState extends State<NotesPanel> {
           notes.sort((a, b) {
             if (a.isCompleted == b.isCompleted) {
               if (_completionSubSortByDate) {
-                return b.createdAt.compareTo(a.createdAt); // Más reciente primero
+                return b.createdAt.compareTo(
+                  a.createdAt,
+                ); // Más reciente primero
               } else {
                 return a.title.compareTo(b.title);
               }
@@ -761,7 +783,7 @@ class NotesPanelState extends State<NotesPanel> {
       setState(() {
         _notes = notes;
         _isLoading = false;
-        
+
         // Preserve selection state - only keep IDs that still exist
         _selectedNoteIds.clear();
         for (final noteId in currentSelection) {
@@ -769,13 +791,14 @@ class NotesPanelState extends State<NotesPanel> {
             _selectedNoteIds.add(noteId);
           }
         }
-        
+
         // Preserve anchor if it still exists
         if (_selectionAnchorId != null &&
             !notes.any((note) => note.id == _selectionAnchorId)) {
-          _selectionAnchorId = _selectedNoteIds.isNotEmpty ? _selectedNoteIds.first : null;
+          _selectionAnchorId =
+              _selectedNoteIds.isNotEmpty ? _selectedNoteIds.first : null;
         }
-        
+
         // Preserve last clicked if it still exists
         if (_lastClickedNoteId != null &&
             !notes.any((note) => note.id == _lastClickedNoteId)) {
@@ -1169,9 +1192,18 @@ class NotesPanelState extends State<NotesPanel> {
                                   _toggleNoteCompletion(note.id!);
                                 },
                                 child: Icon(
-                                  note.isCompleted ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                                  note.isCompleted
+                                      ? Icons.check_box_rounded
+                                      : Icons.check_box_outline_blank_rounded,
                                   size: 20,
-                                  color: note.isCompleted ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
+                                  color:
+                                      note.isCompleted
+                                          ? Theme.of(
+                                            context,
+                                          ).colorScheme.primary
+                                          : Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
                                 ),
                               )
                               : Container(
@@ -1194,7 +1226,8 @@ class NotesPanelState extends State<NotesPanel> {
                               ? FontWeight.bold
                               : FontWeight.normal,
                       color:
-                          showSelectionHighlight || widget.selectedNote?.id == note.id
+                          showSelectionHighlight ||
+                                  widget.selectedNote?.id == note.id
                               ? Theme.of(context).colorScheme.onSurface
                               : note.isTask && note.isCompleted
                               ? Theme.of(
@@ -1227,7 +1260,10 @@ class NotesPanelState extends State<NotesPanel> {
   Widget _buildDragFeedback(Note primaryNote, List<Note> allNotes) {
     final colorScheme = Theme.of(context).colorScheme;
     final noteCount = allNotes.length;
-    final title = noteCount == 1 ? primaryNote.title : '${primaryNote.title} (+${noteCount - 1})';
+    final title =
+        noteCount == 1
+            ? primaryNote.title
+            : '${primaryNote.title} (+${noteCount - 1})';
 
     return Material(
       color: Colors.transparent,
@@ -1271,10 +1307,11 @@ class NotesPanelState extends State<NotesPanel> {
     final isNoteInSelection = _selectedNoteIds.contains(note.id);
     // If dragging a selected note, include all selected notes
     // If dragging an unselected note, just drag that one note
-    final notesToDrag = isNoteInSelection && hasSelection
-        ? _notes.where((n) => _selectedNoteIds.contains(n.id)).toList()
-        : [note];
-    
+    final notesToDrag =
+        isNoteInSelection && hasSelection
+            ? _notes.where((n) => _selectedNoteIds.contains(n.id)).toList()
+            : [note];
+
     return Draggable<Map<String, dynamic>>(
       data: {
         'type': 'note',
@@ -1288,7 +1325,7 @@ class NotesPanelState extends State<NotesPanel> {
           _isDragging = true;
           // Cancel any pending deselection - user is dragging, not clicking
           _pendingDeselectionNoteId = null;
-          
+
           // If dragging an unselected note, clear selection and select just this note
           if (!isNoteInSelection) {
             _selectedNoteIds.clear();
@@ -1342,10 +1379,13 @@ class NotesPanelState extends State<NotesPanel> {
               final isCtrlPressed = HardwareKeyboard.instance.isControlPressed;
               final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
               final isNoteAlreadySelected = _selectedNoteIds.contains(note.id);
-              
+
               // If clicking on an already-selected note without modifiers,
               // defer the single-selection until we know it's not a drag
-              if (isNoteAlreadySelected && !isCtrlPressed && !isShiftPressed && hasSelection) {
+              if (isNoteAlreadySelected &&
+                  !isCtrlPressed &&
+                  !isShiftPressed &&
+                  hasSelection) {
                 // Mark this note for potential deselection on click completion
                 _pendingDeselectionNoteId = note.id;
                 // Still notify the panel about selection for visual feedback
@@ -1786,7 +1826,8 @@ class NotesPanelState extends State<NotesPanel> {
   @override
   void didUpdateWidget(NotesPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.selectedNotebookId != oldWidget.selectedNotebookId) {
+    if (widget.selectedNotebookId != oldWidget.selectedNotebookId ||
+        widget.filterByTag != oldWidget.filterByTag) {
       _loadPreferencesAndNotes();
     } else if (widget.selectedNote?.id != oldWidget.selectedNote?.id ||
         widget.selectedNote?.title != oldWidget.selectedNote?.title) {
