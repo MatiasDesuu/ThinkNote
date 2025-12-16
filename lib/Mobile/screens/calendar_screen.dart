@@ -782,7 +782,7 @@ class CalendarScreenState extends State<CalendarScreen> {
       children: [
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          height: _isExpanded ? 400 : max(100.0, MediaQuery.of(context).size.height * 0.12),
+          height: _isExpanded ? 400 : max(100.0, MediaQuery.of(context).size.height * 0.13),
           child: _isExpanded ? _buildExpandedCalendar() : _buildWeekView(),
         ),
         Expanded(
@@ -1134,7 +1134,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                       ),
                     )
                     : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                       itemCount: eventsForSelectedDay.length,
                       itemBuilder: (context, index) {
                         final event = eventsForSelectedDay[index];
@@ -1159,8 +1159,9 @@ class CalendarScreenState extends State<CalendarScreen> {
                                 _showStatusMenu(event);
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
+                                padding: const EdgeInsets.only(
+                                  left: 16,
+                                  right: 8,
                                 ),
                                 child: Row(
                                   children: [

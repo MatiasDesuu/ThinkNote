@@ -393,10 +393,10 @@ class TasksScreenState extends State<TasksScreen>
                   ),
                 // Modern tabs
                 Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerLow,
+                    color: colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: SizedBox(
@@ -409,7 +409,7 @@ class TasksScreenState extends State<TasksScreen>
                       splashFactory: NoSplash.splashFactory,
                       overlayColor: WidgetStateProperty.all(Colors.transparent),
                       indicator: BoxDecoration(
-                        color: colorScheme.surface,
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       tabs: [
@@ -587,7 +587,7 @@ class TasksScreenState extends State<TasksScreen>
       child: Container(
         margin: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLow,
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Material(

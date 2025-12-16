@@ -364,191 +364,227 @@ class _ThinksScreenState extends State<ThinksScreen> {
                             }
                             return result ?? false;
                           },
-                          child: Card(
-                            margin: const EdgeInsets.symmetric(
-                              vertical: 4,
-                              horizontal: 8,
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                              bottom: 4,
+                              left: 8,
+                              right: 8,
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color: colorScheme.outlineVariant.withAlpha(
-                                  127,
-                                ),
-                                width: 0.5,
-                              ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 0,
-                              ),
-                              minLeadingWidth: 28,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              leading: Stack(
-                                children: [
-                                  Icon(
-                                    Symbols.lightbulb_2,
-                                    color: colorScheme.primary,
-                                    size: 28,
-                                  ),
-                                  if (think.isFavorite)
-                                    Positioned(
-                                      right: 0,
-                                      bottom: 0,
-                                      child: Icon(
-                                        Icons.favorite_rounded,
-                                        color: colorScheme.primary,
-                                        size: 12,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              title: Text(
-                                think.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: colorScheme.onSurface),
-                              ),
-                              subtitle: Text(
-                                _formatDate(think.updatedAt),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: colorScheme.onSurfaceVariant,
-                                  height: 1.2,
-                                ),
-                              ),
-                              onTap: () => _handleThinkSelected(think),
-                              onLongPress: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  backgroundColor: colorScheme.surface,
-                                  isScrollControlled: true,
-                                  builder:
-                                      (context) => Padding(
-                                        padding: EdgeInsets.only(
-                                          bottom:
-                                              MediaQuery.of(
-                                                context,
-                                              ).padding.bottom,
-                                        ),
-                                        child: Container(
-                                          decoration: const BoxDecoration(
-                                            borderRadius: BorderRadius.vertical(
-                                              top: Radius.circular(16),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: () => _handleThinkSelected(think),
+                                onLongPress: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    backgroundColor: colorScheme.surface,
+                                    isScrollControlled: true,
+                                    builder:
+                                        (context) => Padding(
+                                          padding: EdgeInsets.only(
+                                            bottom:
+                                                MediaQuery.of(
+                                                  context,
+                                                ).padding.bottom,
+                                          ),
+                                          child: Container(
+                                            decoration: const BoxDecoration(
+                                              borderRadius: BorderRadius.vertical(
+                                                top: Radius.circular(16),
+                                              ),
+                                            ),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Container(
+                                                  width: 40,
+                                                  height: 4,
+                                                  margin:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 8,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: colorScheme.onSurface
+                                                        .withAlpha(50),
+                                                    borderRadius:
+                                                        BorderRadius.circular(2),
+                                                  ),
+                                                ),
+                                                Material(
+                                                  color: Colors.transparent,
+                                                  child: InkWell(
+                                                    onTap: () {
+                                                      Navigator.pop(context);
+                                                      _toggleFavorite(think);
+                                                    },
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 16,
+                                                            vertical: 12,
+                                                          ),
+                                                      child: Row(
+                                                        children: [
+                                                          Icon(
+                                                            think.isFavorite
+                                                                ? Icons
+                                                                    .favorite_rounded
+                                                                : Icons
+                                                                    .favorite_border_rounded,
+                                                            size: 20,
+                                                            color:
+                                                                colorScheme
+                                                                    .primary,
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 8,
+                                                          ),
+                                                          Text(
+                                                            think.isFavorite
+                                                                ? 'Remove from Favorites'
+                                                                : 'Add to Favorites',
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Material(
+                                                  color: Colors.transparent,
+                                                  child: InkWell(
+                                                    onTap: () async {
+                                                      Navigator.pop(context);
+                                                      final confirmed =
+                                                          await showDeleteConfirmationDialog(
+                                                            context: context,
+                                                            title:
+                                                                'Move to Trash',
+                                                            message:
+                                                                'Are you sure you want to move this Think to trash?\n${think.title}',
+                                                            confirmText:
+                                                                'Move to Trash',
+                                                            confirmColor:
+                                                                colorScheme.error,
+                                                          );
+
+                                                      if (confirmed == true) {
+                                                        await _deleteThink(think);
+                                                      }
+                                                    },
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 16,
+                                                            vertical: 12,
+                                                          ),
+                                                      child: Row(
+                                                        children: [
+                                                          Icon(
+                                                            Icons.delete_rounded,
+                                                            size: 20,
+                                                            color:
+                                                                colorScheme.error,
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 8,
+                                                          ),
+                                                          const Text(
+                                                            'Move to Trash',
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Container(
-                                                width: 40,
-                                                height: 4,
-                                                margin:
-                                                    const EdgeInsets.symmetric(
-                                                      vertical: 8,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  color: colorScheme.onSurface
-                                                      .withAlpha(50),
-                                                  borderRadius:
-                                                      BorderRadius.circular(2),
-                                                ),
-                                              ),
-                                              Material(
-                                                color: Colors.transparent,
-                                                child: InkWell(
-                                                  onTap: () {
-                                                    Navigator.pop(context);
-                                                    _toggleFavorite(think);
-                                                  },
-                                                  child: Padding(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 16,
-                                                          vertical: 12,
-                                                        ),
-                                                    child: Row(
-                                                      children: [
-                                                        Icon(
-                                                          think.isFavorite
-                                                              ? Icons
-                                                                  .favorite_rounded
-                                                              : Icons
-                                                                  .favorite_border_rounded,
-                                                          size: 20,
-                                                          color:
-                                                              colorScheme
-                                                                  .primary,
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 8,
-                                                        ),
-                                                        Text(
-                                                          think.isFavorite
-                                                              ? 'Remove from Favorites'
-                                                              : 'Add to Favorites',
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              Material(
-                                                color: Colors.transparent,
-                                                child: InkWell(
-                                                  onTap: () async {
-                                                    Navigator.pop(context);
-                                                    final confirmed =
-                                                        await showDeleteConfirmationDialog(
-                                                          context: context,
-                                                          title:
-                                                              'Move to Trash',
-                                                          message:
-                                                              'Are you sure you want to move this Think to trash?\n${think.title}',
-                                                          confirmText:
-                                                              'Move to Trash',
-                                                          confirmColor:
-                                                              colorScheme.error,
-                                                        );
-
-                                                    if (confirmed == true) {
-                                                      await _deleteThink(think);
-                                                    }
-                                                  },
-                                                  child: Padding(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 16,
-                                                          vertical: 12,
-                                                        ),
-                                                    child: Row(
-                                                      children: [
-                                                        Icon(
-                                                          Icons.delete_rounded,
-                                                          size: 20,
-                                                          color:
-                                                              colorScheme.error,
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 8,
-                                                        ),
-                                                        const Text(
-                                                          'Move to Trash',
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
+                                        ),
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 10,
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      // Ícono de think y favorito
+                                      Stack(
+                                        alignment: Alignment.center,
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          Icon(
+                                            Icons.lightbulb_outline_rounded,
+                                            color: colorScheme.primary,
+                                            size: 24,
                                           ),
+                                          if (think.isFavorite)
+                                            Positioned(
+                                              right: -4,
+                                              bottom: -4,
+                                              child: Container(
+                                                padding: const EdgeInsets.all(1),
+                                                decoration: BoxDecoration(
+                                                  color: colorScheme.surfaceContainerHighest,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Icon(
+                                                  Icons.favorite_rounded,
+                                                  size: 12,
+                                                  color: colorScheme.primary,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(width: 12),
+                                      // Título y detalles
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              think.title,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                                color: colorScheme.onSurface,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.today_rounded,
+                                                  size: 14,
+                                                  color: colorScheme.primary,
+                                                ),
+                                                const SizedBox(width: 2),
+                                                Text(
+                                                  _formatDate(think.updatedAt),
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: colorScheme.onSurfaceVariant,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                );
-                              },
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         );

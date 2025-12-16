@@ -7,6 +7,7 @@ import 'package:html/parser.dart' as html;
 import 'dart:convert';
 import '../../database/database_service.dart';
 import '../../database/models/bookmark.dart';
+import '../../database/sync_service.dart';
 import '../screens/bookmarks_screen.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/confirmation_dialogue.dart';
@@ -92,6 +93,7 @@ class BookmarkSharingHandler {
     final descController = TextEditingController();
     final tagsController = TextEditingController();
     bool isFetchingTitle = true;
+    bool isSaving = false;
 
     // Obtener tags predefinidos para la URL
     final autoTags = await DatabaseService().bookmarkService.getTagsForUrl(url);
@@ -239,9 +241,13 @@ class BookmarkSharingHandler {
                         width: double.infinity,
                         padding: EdgeInsets.only(bottom: bottomPadding),
                         child: ElevatedButton(
-                          onPressed: () async {
+                          onPressed: isSaving ? null : () async {
+                            setState(() {
+                              isSaving = true;
+                            });
                             await _saveBookmark(
                               context,
+                              setState,
                               titleController.text,
                               url,
                               descController.text,
@@ -262,13 +268,22 @@ class BookmarkSharingHandler {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
-                            'Save',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child: isSaving
+                              ? SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: colorScheme.onPrimary,
+                                  ),
+                                )
+                              : const Text(
+                                  'Save',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                         ),
                       ),
                     ],
@@ -358,6 +373,7 @@ class BookmarkSharingHandler {
 
   static Future<void> _saveBookmark(
     BuildContext context,
+    StateSetter setState,
     String title,
     String url,
     String description,
@@ -444,10 +460,27 @@ class BookmarkSharingHandler {
         await BookmarksScreenState.currentState!.loadData();
       }
 
-      // Cerrar el diálogo y volver a la app anterior
+      // Sincronizar con WebDAV si está activo (el loading sigue visible)
+      try {
+        final syncService = SyncService();
+        // Verificar si WebDAV está habilitado
+        final settings = await syncService.getSettings();
+        if (settings['enabled'] == true) {
+          // Esperar a que se complete la sincronización
+          await syncService.forceSync();
+        }
+      } catch (e) {
+        print('Error during sync: $e');
+        // Continuar con el cierre incluso si hay error de sincronización
+      }
+
+      // Pequeña pausa para que el usuario vea que se completó
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      // Ahora sí, cerrar el diálogo y la app
       if (context.mounted) {
         Navigator.of(context, rootNavigator: true).pop();
-        // Esperar un momento para asegurar que el diálogo se cierre
+        // Mínima espera para que se cierre el diálogo suavemente
         await Future.delayed(const Duration(milliseconds: 100));
         // Volver a la app anterior
         SystemNavigator.pop();
@@ -455,11 +488,14 @@ class BookmarkSharingHandler {
     } catch (e) {
       print('Error: Error saving bookmark: $e');
       if (context.mounted) {
+        // Mostrar el error pero mantener el estado de loading
         CustomSnackbar.show(
           context: context,
           message: 'Error saving bookmark: ${e.toString()}',
           type: CustomSnackbarType.error,
         );
+        // Esperar un poco para que el usuario vea el error
+        await Future.delayed(const Duration(milliseconds: 1500));
         // En caso de error, también intentamos cerrar el diálogo y volver
         Navigator.of(context, rootNavigator: true).pop();
         await Future.delayed(const Duration(milliseconds: 100));
