@@ -180,7 +180,7 @@ class _TagsPanelState extends State<TagsPanel> {
                                           ),
                                           Flexible(
                                             child: Text(
-                                              tag,
+                                              '$tag ($count)',
                                               style: Theme.of(
                                                 context,
                                               ).textTheme.bodyMedium?.copyWith(
@@ -192,36 +192,6 @@ class _TagsPanelState extends State<TagsPanel> {
                                               ),
                                               overflow: TextOverflow.ellipsis,
                                               maxLines: 1,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  isSelected
-                                                      ? colorScheme.onPrimaryContainer
-                                                          .withAlpha(51)
-                                                      : colorScheme.primary.withAlpha(
-                                                        26,
-                                                      ),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              count.toString(),
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall?.copyWith(
-                                                color:
-                                                    isSelected
-                                                        ? colorScheme
-                                                            .onPrimaryContainer
-                                                        : colorScheme.primary,
-                                                fontSize: 11,
-                                              ),
                                             ),
                                           ),
                                         ],
