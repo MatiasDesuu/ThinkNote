@@ -20,6 +20,7 @@ class EditorTabs extends StatefulWidget {
   final Function(EditorTab)? onTabTogglePin;
   final VoidCallback? onNewTab;
   final Function(int, int)? onTabReorder;
+  final Function(EditorTab)? onOpenNotebook;
 
   const EditorTabs({
     super.key,
@@ -28,8 +29,9 @@ class EditorTabs extends StatefulWidget {
     required this.onTabSelected,
     required this.onTabClosed,
     this.onNewTab,
-  this.onTabReorder,
-  this.onTabTogglePin,
+    this.onTabReorder,
+    this.onTabTogglePin,
+    this.onOpenNotebook,
   });
 
   @override
@@ -55,11 +57,14 @@ class EditorTabsState extends State<EditorTabs> {
 
   // Animation state for entry/exit of tabs
   final Map<String, bool> _isExpanded = {}; // true = expanded (full width)
-  final Map<String, bool> _isClosing = {}; // true = currently animating close (shrinking)
-  final Set<String> _suppressNextOpen = {}; // keys for which next open animation should be skipped
+  final Map<String, bool> _isClosing =
+      {}; // true = currently animating close (shrinking)
+  final Set<String> _suppressNextOpen =
+      {}; // keys for which next open animation should be skipped
   bool _suppressNextUpdateAnimations = false;
   bool _skipAnimationsThisBuild = false;
-  bool _initialPopulation = true; // true until we handle the first non-empty tabs population
+  bool _initialPopulation =
+      true; // true until we handle the first non-empty tabs population
   final Set<String> _noAnimateKeys = {};
   static const Duration _kTabAnimDuration = Duration(milliseconds: 100);
 
@@ -115,7 +120,9 @@ class EditorTabsState extends State<EditorTabs> {
     // If this is the first time tabs populated (transition empty -> non-empty),
     // skip animations for this upcoming build so tabs don't briefly show collapsed
     // then expand.
-    if (_initialPopulation && oldWidget.tabs.isEmpty && widget.tabs.isNotEmpty) {
+    if (_initialPopulation &&
+        oldWidget.tabs.isEmpty &&
+        widget.tabs.isNotEmpty) {
       _skipAnimationsThisBuild = true;
       _initialPopulation = false;
       // Also mark initial expanded state for these keys to avoid scheduling expand callbacks
@@ -143,9 +150,9 @@ class EditorTabsState extends State<EditorTabs> {
     }
 
     // Detect newly added tabs and play expand animation
-  final oldKeys = oldWidget.tabs.map((t) => _tabKey(t)).toSet();
+    final oldKeys = oldWidget.tabs.map((t) => _tabKey(t)).toSet();
 
-  for (final tab in widget.tabs) {
+    for (final tab in widget.tabs) {
       final key = _tabKey(tab);
       if (!oldKeys.contains(key)) {
         // New tab: start collapsed then expand
@@ -170,7 +177,10 @@ class EditorTabsState extends State<EditorTabs> {
     }
 
     // Animate when an existing tab transitions from empty -> has a note
-    final minLen = widget.tabs.length < oldWidget.tabs.length ? widget.tabs.length : oldWidget.tabs.length;
+    final minLen =
+        widget.tabs.length < oldWidget.tabs.length
+            ? widget.tabs.length
+            : oldWidget.tabs.length;
     for (int i = 0; i < minLen; i++) {
       final oldTab = oldWidget.tabs[i];
       final newTab = widget.tabs[i];
@@ -293,22 +303,23 @@ class EditorTabsState extends State<EditorTabs> {
     final windowControlsWidth = isImmersiveMode ? 138.0 : 0.0;
     final effectiveAvailableWidth = availableWidth - windowControlsWidth;
 
-  // Calculate the actual width each tab should have.
-  // Pinned tabs get a smaller relative width.
-  final availableForTabs = effectiveAvailableWidth - newTabButtonWidth;
-  final double pinnedRatio = 0.7;
-  final double unpinnedRatio = 1.0;
-  final int pinnedCount = widget.tabs.where((t) => t.isPinned).length;
-  final int unpinnedCount = tabsCount - pinnedCount;
-  final double totalWeight = pinnedCount * pinnedRatio + unpinnedCount * unpinnedRatio;
-  final unit = totalWeight > 0 ? (availableForTabs / totalWeight) : 0.0;
-  final rawPinnedWidth = unit * pinnedRatio;
-  final rawUnpinnedWidth = unit * unpinnedRatio;
+    // Calculate the actual width each tab should have.
+    // Pinned tabs get a smaller relative width.
+    final availableForTabs = effectiveAvailableWidth - newTabButtonWidth;
+    final double pinnedRatio = 0.7;
+    final double unpinnedRatio = 1.0;
+    final int pinnedCount = widget.tabs.where((t) => t.isPinned).length;
+    final int unpinnedCount = tabsCount - pinnedCount;
+    final double totalWeight =
+        pinnedCount * pinnedRatio + unpinnedCount * unpinnedRatio;
+    final unit = totalWeight > 0 ? (availableForTabs / totalWeight) : 0.0;
+    final rawPinnedWidth = unit * pinnedRatio;
+    final rawUnpinnedWidth = unit * unpinnedRatio;
 
-  final minPinnedWidth = 80.0;
-  final maxPinnedWidth = 140.0;
-  final minUnpinnedWidth = minTabWidth;
-  final maxUnpinnedWidth = maxTabWidth;
+    final minPinnedWidth = 80.0;
+    final maxPinnedWidth = 140.0;
+    final minUnpinnedWidth = minTabWidth;
+    final maxUnpinnedWidth = maxTabWidth;
 
     // Determine display mode based on average tab width (keeps previous behavior)
     final actualTabWidth = (availableForTabs / tabsCount).clamp(
@@ -395,21 +406,37 @@ class EditorTabsState extends State<EditorTabs> {
                               final tab = entry.value;
                               final isActive = widget.activeTab == tab;
 
-                              final computedWidth = tab.isPinned
-                                  ? rawPinnedWidth.clamp(minPinnedWidth, maxPinnedWidth)
-                                  : rawUnpinnedWidth.clamp(minUnpinnedWidth, maxUnpinnedWidth);
+                              final computedWidth =
+                                  tab.isPinned
+                                      ? rawPinnedWidth.clamp(
+                                        minPinnedWidth,
+                                        maxPinnedWidth,
+                                      )
+                                      : rawUnpinnedWidth.clamp(
+                                        minUnpinnedWidth,
+                                        maxUnpinnedWidth,
+                                      );
 
-                                final tabKey = _tabKey(tab);
-                                final isClosing = _isClosing[tabKey] ?? false;
-                                final isExpanded = _isExpanded[tabKey] ?? true;
-                              final targetWidth = isClosing ? 0.0 : (isExpanded ? computedWidth : 0.0);
+                              final tabKey = _tabKey(tab);
+                              final isClosing = _isClosing[tabKey] ?? false;
+                              final isExpanded = _isExpanded[tabKey] ?? true;
+                              final targetWidth =
+                                  isClosing
+                                      ? 0.0
+                                      : (isExpanded ? computedWidth : 0.0);
 
                               // If parent requested to skip animations for this build, use zero duration
-                              final animDuration = (_skipAnimationsThisBuild || _noAnimateKeys.contains(tabKey)) ? Duration.zero : _kTabAnimDuration;
+                              final animDuration =
+                                  (_skipAnimationsThisBuild ||
+                                          _noAnimateKeys.contains(tabKey))
+                                      ? Duration.zero
+                                      : _kTabAnimDuration;
 
                               // Clear the skip flag after this frame so future updates animate normally
                               if (_skipAnimationsThisBuild) {
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
                                   if (mounted) {
                                     setState(() {
                                       _skipAnimationsThisBuild = false;
@@ -429,19 +456,20 @@ class EditorTabsState extends State<EditorTabs> {
                                   width: targetWidth,
                                   duration: animDuration,
                                   curve: Curves.easeInOut,
-                                  child: isClosing
-                                      ? Opacity(
-                                          opacity: 0.0,
-                                          child: SizedBox.shrink(),
-                                        )
-                                      : _buildDraggableTab(
-                                          context,
-                                          tab,
-                                          isActive,
-                                          index,
-                                          displayMode,
-                                          computedWidth,
-                                        ),
+                                  child:
+                                      isClosing
+                                          ? Opacity(
+                                            opacity: 0.0,
+                                            child: SizedBox.shrink(),
+                                          )
+                                          : _buildDraggableTab(
+                                            context,
+                                            tab,
+                                            isActive,
+                                            index,
+                                            displayMode,
+                                            computedWidth,
+                                          ),
                                 ),
                               );
                             }),
@@ -657,7 +685,13 @@ class EditorTabsState extends State<EditorTabs> {
                 ),
                 // Tab item
                 Expanded(
-                  child: _buildTabItem(tab, isActive, index, displayMode, tabWidth),
+                  child: _buildTabItem(
+                    tab,
+                    isActive,
+                    index,
+                    displayMode,
+                    tabWidth,
+                  ),
                 ),
                 // Right indicator
                 Container(
@@ -731,7 +765,7 @@ class EditorTabsState extends State<EditorTabs> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                    if (displayMode != TabDisplayMode.icon)
+                if (displayMode != TabDisplayMode.icon)
                   Flexible(
                     child: Text(
                       tab.displayTitle,
@@ -830,11 +864,14 @@ class EditorTabsState extends State<EditorTabs> {
           ),
         ),
       ),
-  child: Container(
-  margin: const EdgeInsets.symmetric(horizontal: 2),
-  constraints: BoxConstraints(minWidth: tabWidth, maxWidth: tabWidth),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        constraints: BoxConstraints(minWidth: tabWidth, maxWidth: tabWidth),
         decoration: BoxDecoration(
-          color: isActive ? colorScheme.surfaceContainerHighest : Colors.transparent,
+          color:
+              isActive
+                  ? colorScheme.surfaceContainerHighest
+                  : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: colorScheme.outlineVariant.withAlpha(50),
@@ -908,18 +945,19 @@ class EditorTabsState extends State<EditorTabs> {
                         ),
                       ),
 
-                            // Pin indicator on the tab itself
-                            if (tab.isPinned && displayMode != TabDisplayMode.icon)
-                              Container(
-                                margin: const EdgeInsets.only(left: 6),
-                                child: Icon(
-                                  Icons.push_pin_rounded,
-                                  size: 14,
-                                  color: isActive
-                                      ? colorScheme.onSurface.withAlpha(200)
-                                      : colorScheme.onSurfaceVariant,
-                                ),
-                              ),
+                    // Pin indicator on the tab itself
+                    if (tab.isPinned && displayMode != TabDisplayMode.icon)
+                      Container(
+                        margin: const EdgeInsets.only(left: 6),
+                        child: Icon(
+                          Icons.push_pin_rounded,
+                          size: 14,
+                          color:
+                              isActive
+                                  ? colorScheme.onSurface.withAlpha(200)
+                                  : colorScheme.onSurfaceVariant,
+                        ),
+                      ),
 
                     // Dirty indicator (only show in full and compact modes)
                     if (tab.isDirty &&
@@ -938,13 +976,13 @@ class EditorTabsState extends State<EditorTabs> {
                         ),
                       ),
 
-          // Close button (only show in full and compact modes, or when hovered in minimal mode)
-          // Do not show close button for pinned tabs
-          if (((displayMode == TabDisplayMode.full ||
-              displayMode == TabDisplayMode.compact) ||
-            (displayMode == TabDisplayMode.minimal &&
-              (isActive || _hoveredTabIndex == index))) &&
-            !tab.isPinned) ...[
+                    // Close button (only show in full and compact modes, or when hovered in minimal mode)
+                    // Do not show close button for pinned tabs
+                    if (((displayMode == TabDisplayMode.full ||
+                                displayMode == TabDisplayMode.compact) ||
+                            (displayMode == TabDisplayMode.minimal &&
+                                (isActive || _hoveredTabIndex == index))) &&
+                        !tab.isPinned) ...[
                       const SizedBox(width: 8),
                       Material(
                         color: Colors.transparent,
@@ -965,8 +1003,9 @@ class EditorTabsState extends State<EditorTabs> {
                               size: 16,
                               color:
                                   isActive
-                                      ? colorScheme.onSurfaceVariant
-                                          .withAlpha(150)
+                                      ? colorScheme.onSurfaceVariant.withAlpha(
+                                        150,
+                                      )
                                       : colorScheme.onSurfaceVariant,
                             ),
                           ),
@@ -998,6 +1037,14 @@ class EditorTabsState extends State<EditorTabs> {
           }
         },
       ),
+      if (tab.note != null && widget.onOpenNotebook != null)
+        ContextMenuItem(
+          icon: Icons.folder_open_rounded,
+          label: 'Open Notebook',
+          onTap: () {
+            widget.onOpenNotebook!(tab);
+          },
+        ),
       ContextMenuItem(
         icon: Icons.close_rounded,
         label: 'Close Tab',
