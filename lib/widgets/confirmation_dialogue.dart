@@ -7,6 +7,7 @@ Future<bool?> showDeleteConfirmationDialog({
   String cancelText = 'Cancel',
   String confirmText = 'Yes, delete',
   Color? confirmColor,
+  bool barrierDismissible = true,
 }) {
   final colorScheme = Theme.of(context).colorScheme;
   final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -16,7 +17,7 @@ Future<bool?> showDeleteConfirmationDialog({
   );
   return showDialog<bool>(
     context: context,
-    barrierDismissible: false,
+    barrierDismissible: barrierDismissible,
     useRootNavigator: false,
     builder:
         (context) => PopScope(
@@ -32,7 +33,7 @@ Future<bool?> showDeleteConfirmationDialog({
               child: Container(
                 width: 400,
                 decoration: BoxDecoration(
-                  color: colorScheme.surface,
+                  color: colorScheme.surfaceContainer,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Padding(
