@@ -264,17 +264,7 @@ class _ThinksScreenState extends State<ThinksScreen> {
         appBar: AppBar(
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
-          title: Row(
-            children: [
-              Icon(
-                Symbols.neurology_rounded,
-                color: colorScheme.primary,
-                size: 28,
-              ),
-              const SizedBox(width: 4),
-              const Text('Thinks'),
-            ],
-          ),
+          title: const Text('Thinks'),
           backgroundColor: colorScheme.surface,
           foregroundColor: colorScheme.onSurface,
           elevation: 0,

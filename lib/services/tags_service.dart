@@ -58,16 +58,19 @@ class TagsService {
     final isScriptNote = _isScriptNote(text);
 
     // Regular expression to match hashtags
-    // Matches # followed by one or more alphanumeric characters or underscores
-    final RegExp tagRegex = RegExp(r'#([a-zA-Z0-9_]+)');
+    // Matches # followed by one or more alphanumeric characters, underscores, or Spanish accented characters
+    final RegExp tagRegex = RegExp(r'#([a-zA-Z0-9_áéíóúÁÉÍÓÚñÑüÜ]+)');
     final matches = tagRegex.allMatches(text);
 
     // Extract unique tags (case-insensitive)
     final Set<String> uniqueTags = {};
     for (final match in matches) {
       if (match.groupCount > 0) {
-        final tag = match.group(1)?.toLowerCase();
+        var tag = match.group(1)?.toLowerCase();
         if (tag != null && tag.isNotEmpty) {
+          // Normalize tag by removing diacritics
+          tag = _removeDiacritics(tag);
+
           // If it's a script note, exclude special tags
           if (isScriptNote && _isScriptSpecialTag(tag)) {
             continue;
@@ -117,7 +120,7 @@ class TagsService {
     }
 
     final allNotes = await _noteRepository.getAllNotes();
-    final normalizedTag = tag.toLowerCase();
+    final normalizedTag = _removeDiacritics(tag.toLowerCase());
 
     return allNotes.where((note) {
       // Search in both title and content
@@ -163,7 +166,7 @@ class TagsService {
 
   /// Check if a note contains a specific tag
   static bool noteHasTag(Note note, String tag) {
-    final normalizedTag = tag.toLowerCase();
+    final normalizedTag = _removeDiacritics(tag.toLowerCase());
     final contentTags = extractTags(note.content);
     final titleTags = extractTags(note.title);
     final allNoteTags = [...contentTags, ...titleTags];
@@ -178,5 +181,16 @@ class TagsService {
     final allTags = {...contentTags, ...titleTags};
 
     return allTags.toList()..sort();
+  }
+
+  /// Remove diacritics from a string (e.g., "rápido" -> "rapido")
+  static String _removeDiacritics(String str) {
+    const withDia = 'áéíóúü';
+    const withoutDia = 'aeiouu';
+
+    for (int i = 0; i < withDia.length; i++) {
+      str = str.replaceAll(withDia[i], withoutDia[i]);
+    }
+    return str;
   }
 }

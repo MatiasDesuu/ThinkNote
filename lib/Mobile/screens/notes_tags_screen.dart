@@ -62,7 +62,7 @@ class _NotesTagsScreenState extends State<NotesTagsScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         backgroundColor: Theme.of(context).colorScheme.surface,
-        title: const Text('Tags'),
+        title: const Text('Note Tags'),
       ),
       body:
           _isLoading

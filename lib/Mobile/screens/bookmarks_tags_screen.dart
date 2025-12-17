@@ -253,7 +253,7 @@ class TagsScreenState extends State<TagsScreen> {
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           backgroundColor: Theme.of(context).colorScheme.surface,
-          title: const Text('Tags management'),
+          title: const Text('Bookmark tags'),
           actions: [
             IconButton(
               icon: const Icon(Icons.add_rounded),

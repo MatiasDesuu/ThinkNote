@@ -186,34 +186,11 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                 });
                 _initializeScreens();
               },
-              onNotebookSelected: (Notebook notebook) async {
+              onNotebookSelected: (Notebook notebook) {
                 if (mounted) {
+                  _handleNotebookSelected(notebook);
                   setState(() {
-                    _selectedNotebook = notebook;
                     _selectedIndex = 0;
-                  });
-                  _initializeScreens();
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => ThinkNoteMobile()),
-                  ).then((_) {
-                    if (mounted) {
-                      _scaffoldKey.currentState?.openDrawer();
-                      Future.delayed(const Duration(milliseconds: 300), () {
-                        if (mounted) {
-                          setState(() {
-                            _selectedNotebook = null;
-                          });
-                          Future.delayed(const Duration(milliseconds: 50), () {
-                            if (mounted) {
-                              setState(() {
-                                _selectedNotebook = notebook;
-                              });
-                            }
-                          });
-                        }
-                      });
-                    }
                   });
                 }
               },
@@ -759,74 +736,16 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                       (context) => FavoritesScreen(
                                         onNotebookSelected: (
                                           Notebook notebook,
-                                        ) async {
+                                        ) {
                                           if (mounted) {
+                                            _handleNotebookSelected(notebook);
                                             setState(() {
-                                              _selectedNotebook = notebook;
                                               _selectedIndex = 0;
-                                            });
-                                            _initializeScreens();
-                                            Navigator.pushReplacement(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder:
-                                                    (context) =>
-                                                        ThinkNoteMobile(),
-                                              ),
-                                            ).then((_) {
-                                              if (mounted) {
-                                                _scaffoldKey.currentState
-                                                    ?.openDrawer();
-                                                Future.delayed(
-                                                  const Duration(
-                                                    milliseconds: 300,
-                                                  ),
-                                                  () {
-                                                    if (mounted) {
-                                                      setState(() {
-                                                        _selectedNotebook =
-                                                            null;
-                                                      });
-                                                      Future.delayed(
-                                                        const Duration(
-                                                          milliseconds: 50,
-                                                        ),
-                                                        () {
-                                                          if (mounted) {
-                                                            setState(() {
-                                                              _selectedNotebook =
-                                                                  notebook;
-                                                            });
-                                                          }
-                                                        },
-                                                      );
-                                                    }
-                                                  },
-                                                );
-                                              }
                                             });
                                           }
                                         },
                                         onNoteSelected: _handleNoteSelected,
-                                        onThinkSelected: (Think think) async {
-                                          setState(() {
-                                            _selectedNote = Note(
-                                              id: think.id,
-                                              title: think.title,
-                                              content: think.content,
-                                              notebookId: 0,
-                                              createdAt: think.createdAt,
-                                              updatedAt: think.updatedAt,
-                                              isFavorite: think.isFavorite,
-                                            );
-                                            _titleController.text = think.title;
-                                            _noteController.text =
-                                                think.content;
-                                            _selectedIndex = 0;
-                                            _isEditing = true;
-                                          });
-                                          _initializeScreens();
-                                        },
+
                                         onFavoritesUpdated: () {
                                           setState(() {});
                                         },

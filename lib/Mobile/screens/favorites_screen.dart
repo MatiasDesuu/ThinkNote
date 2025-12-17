@@ -24,7 +24,7 @@ class FavoritesScreen extends StatefulWidget {
     this.onNoteSelected,
     this.onThinkSelected,
     this.onFavoritesUpdated,
-  this.onNoteSelectedFromPanel,
+    this.onNoteSelectedFromPanel,
   });
 
   @override
@@ -65,6 +65,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       final notes = await _noteRepository.getFavoriteNotes();
       final thinks = await _thinkRepository.getFavoriteThinks();
 
+      if (!mounted) return;
       setState(() {
         _favoriteNotebooks = notebooks;
         _favoriteNotes = notes;
@@ -80,9 +81,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           type: CustomSnackbarType.error,
         );
       }
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -304,11 +307,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ),
               ).then((_) {
                 _loadData();
-                Navigator.pop(context);
               });
             }
-          } else if (isThink && widget.onThinkSelected != null) {
-            widget.onThinkSelected!(item);
+          } else if (isThink) {
+            widget.onThinkSelected?.call(item);
             if (isThink) {
               final editorTitleController = TextEditingController(
                 text: item.title,
@@ -363,7 +365,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ),
               ).then((_) {
                 _loadData();
-                Navigator.pop(context);
               });
             }
           }

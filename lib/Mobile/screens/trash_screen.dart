@@ -339,10 +339,7 @@ class _TrashScreenState extends State<TrashScreen> {
             Padding(
               padding: const EdgeInsets.only(right: 4.0),
               child: IconButton(
-                icon: Icon(
-                  Symbols.mop,
-                  size: 32,
-                ),
+                icon: Icon(Symbols.mop),
                 onPressed:
                     allItems.isNotEmpty && !_isClearing
                         ? _deleteAllItems
