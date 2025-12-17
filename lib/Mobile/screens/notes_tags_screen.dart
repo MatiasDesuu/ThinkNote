@@ -72,12 +72,6 @@ class _NotesTagsScreenState extends State<NotesTagsScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.label_off_rounded,
-                      size: 48,
-                      color: colorScheme.onSurfaceVariant.withAlpha(128),
-                    ),
-                    const SizedBox(height: 16),
                     Text(
                       'No tags found',
                       style: TextStyle(

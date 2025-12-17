@@ -839,13 +839,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.label_off_rounded,
-                          size: 64,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withAlpha(127),
-                        ),
                         const SizedBox(height: 16),
                         Text(
                           'No notes found with tag "${widget.selectedTag}"',
