@@ -813,7 +813,9 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                   _selectedIndex != 1
                               ? GestureDetector(
                                 onTapDown: (_) {
-                                  _scaleController.forward();
+                                  if (_selectedIndex != 2) {
+                                    _scaleController.forward();
+                                  }
                                 },
                                 onTapUp: (_) {
                                   HapticFeedback.lightImpact();
@@ -824,10 +826,14 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                   } else if (_selectedIndex == 3) {
                                     _bookmarksKey.currentState?.showAddDialog();
                                   }
-                                  _scaleController.reverse();
+                                  if (_selectedIndex != 2) {
+                                    _scaleController.reverse();
+                                  }
                                 },
                                 onTapCancel: () {
-                                  _scaleController.reverse();
+                                  if (_selectedIndex != 2) {
+                                    _scaleController.reverse();
+                                  }
                                 },
                                 onLongPressStart: (_) {
                                   if (_selectedIndex == 0) {

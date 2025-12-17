@@ -459,7 +459,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     final chipColor = activeColor ?? colorScheme.primary;
 
     return Material(
-      color: isActive ? chipColor.withAlpha(25) : colorScheme.surfaceContainerHighest,
+      color:
+          isActive
+              ? chipColor.withAlpha(25)
+              : colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
@@ -470,11 +473,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 20,
-                color: colorScheme.primary,
-              ),
+              Icon(icon, size: 20, color: colorScheme.primary),
               const SizedBox(width: 8),
               Text(
                 label,
@@ -586,34 +585,401 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
   }
 
   Future<void> _selectDate() async {
-    final date = await showDatePicker(
+    final colorScheme = Theme.of(context).colorScheme;
+    DateTime? selectedDate = _task.date ?? DateTime.now();
+    DateTime currentMonth = _task.date ?? DateTime.now();
+
+    await showDialog(
       context: context,
-      initialDate: _task.date ?? DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setState) => Dialog(
+                  backgroundColor: Colors.transparent,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 400,
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            height: 56,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_month_rounded,
+                                  color: colorScheme.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.chevron_left_rounded,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            currentMonth = DateTime(
+                                              currentMonth.year,
+                                              currentMonth.month - 1,
+                                              1,
+                                            );
+                                          });
+                                        },
+                                        constraints: const BoxConstraints(
+                                          minWidth: 32,
+                                          minHeight: 32,
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          '${_getMonthName(currentMonth.month)} ${currentMonth.year}',
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.titleMedium?.copyWith(
+                                            color: colorScheme.onSurface,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.chevron_right_rounded,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            currentMonth = DateTime(
+                                              currentMonth.year,
+                                              currentMonth.month + 1,
+                                              1,
+                                            );
+                                          });
+                                        },
+                                        constraints: const BoxConstraints(
+                                          minWidth: 32,
+                                          minHeight: 32,
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      currentMonth = DateTime.now();
+                                      selectedDate = DateTime.now();
+                                    });
+                                  },
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                    minimumSize: const Size(40, 32),
+                                  ),
+                                  child: const Text('Today'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                _buildCalendarGrid(currentMonth, selectedDate, (
+                                  date,
+                                ) {
+                                  setState(() {
+                                    selectedDate = date;
+                                  });
+                                }),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        style: ButtonStyle(
+                                          backgroundColor:
+                                              WidgetStateProperty.all<Color>(
+                                                colorScheme
+                                                    .surfaceContainerHigh,
+                                              ),
+                                          foregroundColor:
+                                              WidgetStateProperty.all<Color>(
+                                                colorScheme.onSurface,
+                                              ),
+                                          minimumSize:
+                                              WidgetStateProperty.all<Size>(
+                                                const Size(0, 44),
+                                              ),
+                                          shape: WidgetStateProperty.all<
+                                            RoundedRectangleBorder
+                                          >(
+                                            RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                        ),
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            'Cancel',
+                                            style: TextStyle(
+                                              color: colorScheme.onSurface,
+                                              fontWeight: FontWeight.normal,
+                                              fontSize: 15,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: ElevatedButton(
+                                        style: ButtonStyle(
+                                          backgroundColor:
+                                              WidgetStateProperty.all<Color>(
+                                                colorScheme.primary,
+                                              ),
+                                          foregroundColor:
+                                              WidgetStateProperty.all<Color>(
+                                                colorScheme.onPrimary,
+                                              ),
+                                          minimumSize:
+                                              WidgetStateProperty.all<Size>(
+                                                const Size(0, 44),
+                                              ),
+                                          elevation:
+                                              WidgetStateProperty.all<double>(
+                                                0,
+                                              ),
+                                          shape: WidgetStateProperty.all<
+                                            RoundedRectangleBorder
+                                          >(
+                                            RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                        ),
+                                        onPressed:
+                                            selectedDate == null
+                                                ? null
+                                                : () async {
+                                                  try {
+                                                    final updatedTask = _task
+                                                        .copyWith(
+                                                          date: selectedDate,
+                                                          updatedAt:
+                                                              DateTime.now(),
+                                                        );
+                                                    await widget
+                                                        .databaseService
+                                                        .taskService
+                                                        .updateTask(
+                                                          updatedTask,
+                                                        );
+
+                                                    if (!mounted) return;
+                                                    // Close dialog
+                                                    Navigator.pop(context);
+
+                                                    // Update main screen state
+                                                    this.setState(() {
+                                                      _task = updatedTask;
+                                                      _selectedDate =
+                                                          selectedDate;
+                                                      _taskChanged = false;
+                                                    });
+                                                  } catch (e) {
+                                                    if (!mounted) return;
+                                                    CustomSnackbar.show(
+                                                      context: context,
+                                                      message:
+                                                          'Error updating date: ${e.toString()}',
+                                                      type:
+                                                          CustomSnackbarType
+                                                              .error,
+                                                    );
+                                                  }
+                                                },
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            'Save',
+                                            style: TextStyle(
+                                              color: colorScheme.onPrimary,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+          ),
     );
-    if (date != null) {
-      try {
-        final updatedTask = _task.copyWith(
-          date: date,
-          updatedAt: DateTime.now(),
-        );
-        await widget.databaseService.taskService.updateTask(updatedTask);
-        if (!mounted) return;
-        setState(() {
-          _task = updatedTask;
-          _selectedDate = date;
-          _taskChanged = false;
-        });
-      } catch (e) {
-        if (!mounted) return;
-        CustomSnackbar.show(
-          context: context,
-          message: 'Error updating date: ${e.toString()}',
-          type: CustomSnackbarType.error,
-        );
+  }
+
+  String _getMonthName(int month) {
+    final months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return months[month - 1];
+  }
+
+  Widget _buildCalendarGrid(
+    DateTime currentMonth,
+    DateTime? selectedDate,
+    Function(DateTime) onDateSelected,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final firstDayOfMonth = DateTime(currentMonth.year, currentMonth.month, 1);
+    final lastDayOfMonth = DateTime(
+      currentMonth.year,
+      currentMonth.month + 1,
+      0,
+    );
+    final firstWeekday = firstDayOfMonth.weekday;
+    final daysInMonth = lastDayOfMonth.day;
+
+    final List<Widget> calendarRows = [];
+    int currentDay = 1;
+
+    while (currentDay <= daysInMonth) {
+      final List<Widget> rowChildren = [];
+
+      for (int i = 1; i <= 7; i++) {
+        if (currentDay == 1 && i < firstWeekday) {
+          rowChildren.add(const SizedBox(width: 40, height: 40));
+        } else if (currentDay <= daysInMonth) {
+          final day = currentDay;
+          final date = DateTime(currentMonth.year, currentMonth.month, day);
+          final isSelected =
+              selectedDate != null &&
+              selectedDate.year == date.year &&
+              selectedDate.month == date.month &&
+              selectedDate.day == date.day;
+
+          rowChildren.add(
+            SizedBox(
+              width: 40,
+              height: 40,
+              child: Container(
+                margin: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color:
+                      isSelected
+                          ? colorScheme.primaryFixed.withAlpha(50)
+                          : null,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => onDateSelected(date),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: Text(
+                            day.toString(),
+                            style: TextStyle(
+                              color:
+                                  isSelected
+                                      ? colorScheme.primaryFixed
+                                      : colorScheme.onSurface,
+                              fontWeight:
+                                  isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                              fontSize: isSelected ? 16 : 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          currentDay++;
+        } else {
+          rowChildren.add(const SizedBox(width: 40, height: 40));
+        }
       }
+
+      calendarRows.add(
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: rowChildren),
+      );
     }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: 24,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children:
+                ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                    .map(
+                      (day) => SizedBox(
+                        width: 40,
+                        child: Center(
+                          child: Text(
+                            day,
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+          ),
+        ),
+        ...calendarRows,
+      ],
+    );
   }
 
   Future<void> _clearDate() async {
@@ -741,9 +1107,14 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
               GestureDetector(
                 onTap: () => _toggleSubtask(subtask),
                 child: Icon(
-                  isCompleted ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                  isCompleted
+                      ? Icons.check_box_rounded
+                      : Icons.check_box_outline_blank_rounded,
                   size: 20,
-                  color: isCompleted ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                  color:
+                      isCompleted
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
                 ),
               ),
 
@@ -1052,7 +1423,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                     const SizedBox(height: 8),
                     _buildNewSubtaskInput(colorScheme: colorScheme),
                   ] else ...[
-
                     // Tags chip for habits
                     FutureBuilder<List<String>>(
                       future: widget.databaseService.taskService

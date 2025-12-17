@@ -1311,7 +1311,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _showCalendarDatePicker(Note note) {
     final colorScheme = Theme.of(context).colorScheme;
-    DateTime? selectedDate;
+    DateTime? selectedDate = DateTime.now();
     DateTime currentMonth = DateTime.now();
 
     showDialog(
