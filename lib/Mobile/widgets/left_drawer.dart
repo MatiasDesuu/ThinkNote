@@ -455,7 +455,7 @@ class _MobileDrawerState extends State<MobileDrawer>
 
   Future<void> createNewNotebook() async {
     try {
-      final name = await _promptForName('Name of new Notebook', 'Name');
+      final name = await _promptForName('Notebook Name', 'Name');
       if (name == null || name.trim().isEmpty) return;
 
       // Obtener el último orderIndex
