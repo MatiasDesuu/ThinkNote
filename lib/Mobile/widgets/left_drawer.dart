@@ -999,23 +999,17 @@ class _MobileDrawerState extends State<MobileDrawer>
   }
 
   void _handleOpenTags() {
-    bool tagSelected = false;
-    Navigator.push(
-      context,
+    final navigator = Navigator.of(context);
+
+    // Close drawer first to avoid "drawer open" flash on return
+    navigator.pop();
+
+    navigator.push(
       MaterialPageRoute(
         builder:
-            (context) => NotesTagsScreen(
-              onTagSelected: (tag) {
-                tagSelected = true;
-                widget.onTagSelected?.call(tag);
-              },
-            ),
+            (context) => NotesTagsScreen(onTagSelected: widget.onTagSelected),
       ),
-    ).then((_) {
-      if (mounted && !tagSelected) {
-        widget.scaffoldKey.currentState?.openDrawer();
-      }
-    });
+    );
   }
 
   @override

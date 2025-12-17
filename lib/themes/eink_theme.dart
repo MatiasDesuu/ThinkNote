@@ -10,11 +10,11 @@ class EInkTheme {
   static const Color pureWhite = Color(0xFFFFFFFF);
 
   /// Builds a pure black and white ColorScheme for e-ink displays
-  /// 
+  ///
   /// When [isLightMode] is true:
   ///   - Backgrounds are white
   ///   - Text and prominent elements are black
-  /// 
+  ///
   /// When [isLightMode] is false:
   ///   - Backgrounds are black
   ///   - Text and prominent elements are white
@@ -25,7 +25,7 @@ class EInkTheme {
 
     return ColorScheme(
       brightness: isLightMode ? Brightness.light : Brightness.dark,
-      
+
       // Primary colors - Use foreground for prominent elements
       primary: foregroundColor,
       onPrimary: backgroundColor,
@@ -87,7 +87,7 @@ class EInkTheme {
       brightness: isLightMode ? Brightness.light : Brightness.dark,
       useMaterial3: true,
       colorScheme: colorScheme,
-      
+
       // AppBar with pure colors
       appBarTheme: AppBarTheme(
         scrolledUnderElevation: 0,
@@ -99,7 +99,7 @@ class EInkTheme {
       ),
 
       // Card theme with pure colors
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: backgroundColor,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -110,10 +110,7 @@ class EInkTheme {
       ),
 
       // Divider with pure colors
-      dividerTheme: DividerThemeData(
-        color: foregroundColor,
-        thickness: 1,
-      ),
+      dividerTheme: DividerThemeData(color: foregroundColor, thickness: 1),
 
       // Text theme with pure colors
       textTheme: TextTheme(
@@ -146,11 +143,9 @@ class EInkTheme {
           elevation: 0,
         ),
       ),
-      
+
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: foregroundColor,
-        ),
+        style: TextButton.styleFrom(foregroundColor: foregroundColor),
       ),
 
       outlinedButtonTheme: OutlinedButtonThemeData(
