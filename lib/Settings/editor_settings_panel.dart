@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import '../widgets/custom_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -54,9 +55,11 @@ class EditorSettingsCache {
   bool get hideTabsInImmersive =>
       _hideTabsInImmersive ?? EditorSettings.defaultHideTabsInImmersive;
   bool get expandNotebooksOnSelection =>
-      _expandNotebooksOnSelection ?? EditorSettings.defaultExpandNotebooksOnSelection;
+      _expandNotebooksOnSelection ??
+      EditorSettings.defaultExpandNotebooksOnSelection;
   bool get expandNotebooksOnNoteOpen =>
-      _expandNotebooksOnNoteOpen ?? EditorSettings.defaultExpandNotebooksOnNoteOpen;
+      _expandNotebooksOnNoteOpen ??
+      EditorSettings.defaultExpandNotebooksOnNoteOpen;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -106,8 +109,10 @@ class EditorSettingsCache {
       _showNotebookIcons = EditorSettings.defaultShowNotebookIcons;
       _showNoteIcons = EditorSettings.defaultShowNoteIcons;
       _hideTabsInImmersive = EditorSettings.defaultHideTabsInImmersive;
-      _expandNotebooksOnSelection = EditorSettings.defaultExpandNotebooksOnSelection;
-      _expandNotebooksOnNoteOpen = EditorSettings.defaultExpandNotebooksOnNoteOpen;
+      _expandNotebooksOnSelection =
+          EditorSettings.defaultExpandNotebooksOnSelection;
+      _expandNotebooksOnNoteOpen =
+          EditorSettings.defaultExpandNotebooksOnNoteOpen;
       _isInitialized = true;
     }
   }
@@ -285,8 +290,10 @@ class EditorSettings {
   static const String _showNotebookIconsKey = 'show_notebook_icons';
   static const String _showNoteIconsKey = 'show_note_icons';
   static const String _hideTabsInImmersiveKey = 'hide_tabs_in_immersive';
-  static const String _expandNotebooksOnSelectionKey = 'expand_notebooks_on_selection';
-  static const String _expandNotebooksOnNoteOpenKey = 'expand_notebooks_on_note_open';
+  static const String _expandNotebooksOnSelectionKey =
+      'expand_notebooks_on_selection';
+  static const String _expandNotebooksOnNoteOpenKey =
+      'expand_notebooks_on_note_open';
   static const double defaultLineSpacing = 1.0;
 
   // Default values
@@ -567,8 +574,10 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
     final showNotebookIcons = await EditorSettings.getShowNotebookIcons();
     final showNoteIcons = await EditorSettings.getShowNoteIcons();
     final hideTabsInImmersive = await EditorSettings.getHideTabsInImmersive();
-    final expandNotebooksOnSelection = await EditorSettings.getExpandNotebooksOnSelection();
-    final expandNotebooksOnNoteOpen = await EditorSettings.getExpandNotebooksOnNoteOpen();
+    final expandNotebooksOnSelection =
+        await EditorSettings.getExpandNotebooksOnSelection();
+    final expandNotebooksOnNoteOpen =
+        await EditorSettings.getExpandNotebooksOnNoteOpen();
     setState(() {
       _fontSize = fontSize;
       _lineSpacing = lineSpacing;
@@ -906,7 +915,10 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Auto-expand notebooks when selecting favorites', style: textStyle),
+                          Text(
+                            'Auto-expand notebooks when selecting favorites',
+                            style: textStyle,
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             'Automatically expand parent folders when selecting notebooks from calendar favorites',
@@ -934,7 +946,10 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Auto-expand notebooks when opening notes', style: textStyle),
+                          Text(
+                            'Auto-expand notebooks when opening notes',
+                            style: textStyle,
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             'Automatically expand parent folders when opening notes',
@@ -1351,106 +1366,72 @@ class _FontSelectorDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 500,
-          height: 400,
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: [
-              Container(
-                height: 56,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Icon(Icons.text_fields_rounded, color: colorScheme.primary),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Select Font',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: colorScheme.onSurface,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
+    return CustomDialog(
+      title: 'Select Font',
+      icon: Icons.text_fields_rounded,
+      width: 500,
+      height: 400,
+      child: Expanded(
+        child: ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: EditorSettings.availableFonts.length,
+          itemBuilder: (context, index) {
+            final font = EditorSettings.availableFonts[index];
+            final isSelected = font == selectedFont;
+            return Card(
+              elevation: 0,
+              margin: const EdgeInsets.only(bottom: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(
+                  color: colorScheme.outlineVariant.withAlpha(127),
+                  width: 0.5,
                 ),
               ),
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: EditorSettings.availableFonts.length,
-                  itemBuilder: (context, index) {
-                    final font = EditorSettings.availableFonts[index];
-                    final isSelected = font == selectedFont;
-                    return Card(
-                      elevation: 0,
-                      margin: const EdgeInsets.only(bottom: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(
-                          color: colorScheme.outlineVariant.withAlpha(127),
-                          width: 0.5,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => onFontSelected(font),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    height: 56,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isSelected
+                              ? Icons.check_circle_rounded
+                              : Icons.circle_outlined,
+                          color:
+                              isSelected
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurfaceVariant,
+                          size: 20,
                         ),
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () => onFontSelected(font),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            height: 56,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  isSelected
-                                      ? Icons.check_circle_rounded
-                                      : Icons.circle_outlined,
-                                  color:
-                                      isSelected
-                                          ? colorScheme.primary
-                                          : colorScheme.onSurfaceVariant,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Text(
-                                    font,
-                                    style: TextStyle(
-                                      fontFamily: font,
-                                      fontSize: 16,
-                                      color: colorScheme.onSurface,
-                                    ),
-                                  ),
-                                ),
-                                if (isSelected)
-                                  Icon(
-                                    Icons.check_rounded,
-                                    color: colorScheme.primary,
-                                    size: 20,
-                                  ),
-                              ],
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            font,
+                            style: TextStyle(
+                              fontFamily: font,
+                              fontSize: 16,
+                              color: colorScheme.onSurface,
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                        if (isSelected)
+                          Icon(
+                            Icons.check_rounded,
+                            color: colorScheme.primary,
+                            size: 20,
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

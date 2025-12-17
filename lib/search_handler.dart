@@ -2,6 +2,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
+import 'widgets/custom_dialog.dart';
 
 class SearchHandler {
   final Directory rootDir;
@@ -76,78 +77,78 @@ class SearchHandler {
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            content: SizedBox(
-              width: 500,
-              height: 400,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: searchController,
-                    focusNode: focusNode,
-                    autofocus: true,
-                    decoration: const InputDecoration(
-                      hintText: 'Type to search...',
-                      prefixIcon: Icon(Icons.search_rounded),
-                    ),
-                    onSubmitted: (value) {
-                      if (results.value.isNotEmpty) {
-                        Navigator.pop(context);
-                        final item = results.value.first;
-                        if (item is File) {
-                          onFileSelected(item);
-                        } else if (item is Directory) {
-                          onDirectorySelected(item);
-                        }
+          (context) => CustomDialog(
+            title: 'Search Files',
+            icon: Icons.search_rounded,
+            width: 500,
+            height: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: searchController,
+                  focusNode: focusNode,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    hintText: 'Type to search...',
+                    prefixIcon: Icon(Icons.search_rounded),
+                  ),
+                  onSubmitted: (value) {
+                    if (results.value.isNotEmpty) {
+                      Navigator.pop(context);
+                      final item = results.value.first;
+                      if (item is File) {
+                        onFileSelected(item);
+                      } else if (item is Directory) {
+                        onDirectorySelected(item);
                       }
-                    },
-                    onChanged: (value) async {
-                      // If storageDir exists and is a valid directory, use it as search root
-                      // to prioritize results from the Storage folder
-                      final searchRoot =
-                          (storageDir != null && storageDir.existsSync())
-                              ? storageDir
-                              : rootDir;
+                    }
+                  },
+                  onChanged: (value) async {
+                    // If storageDir exists and is a valid directory, use it as search root
+                    // to prioritize results from the Storage folder
+                    final searchRoot =
+                        (storageDir != null && storageDir.existsSync())
+                            ? storageDir
+                            : rootDir;
 
-                      results.value = await SearchHandler(
-                        rootDir: searchRoot,
-                        context: context,
-                      ).search(value);
-                    },
+                    results.value = await SearchHandler(
+                      rootDir: searchRoot,
+                      context: context,
+                    ).search(value);
+                  },
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: ValueListenableBuilder<List<FileSystemEntity>>(
+                    valueListenable: results,
+                    builder:
+                        (context, items, _) => ListView.builder(
+                          itemCount: items.length,
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            return ListTile(
+                              leading: Icon(
+                                item is Directory
+                                    ? Icons.folder_rounded
+                                    : Icons.description_outlined,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              title: Text(_displayName(item)),
+                              onTap: () {
+                                Navigator.pop(context);
+                                if (item is File) {
+                                  onFileSelected(item);
+                                } else if (item is Directory) {
+                                  onDirectorySelected(item);
+                                }
+                              },
+                            );
+                          },
+                        ),
                   ),
-                  const SizedBox(height: 20),
-                  Expanded(
-                    child: ValueListenableBuilder<List<FileSystemEntity>>(
-                      valueListenable: results,
-                      builder:
-                          (context, items, _) => ListView.builder(
-                            itemCount: items.length,
-                            itemBuilder: (context, index) {
-                              final item = items[index];
-                              return ListTile(
-                                leading: Icon(
-                                  item is Directory
-                                      ? Icons.folder_rounded
-                                      : Icons.description_outlined,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                title: Text(_displayName(item)),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  if (item is File) {
-                                    onFileSelected(item);
-                                  } else if (item is Directory) {
-                                    onDirectorySelected(item);
-                                  }
-                                },
-                              );
-                            },
-                          ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
     );

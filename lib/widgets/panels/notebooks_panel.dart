@@ -13,6 +13,7 @@ import '../custom_snackbar.dart';
 import '../context_menu.dart';
 import '../icon_selector_dialog.dart';
 import '../tags_panel.dart';
+import '../custom_dialog.dart';
 
 const double kChevronWidth = 40.0;
 const double kIndentPerLevel = 4.0;
@@ -410,128 +411,81 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
     showDialog(
       context: context,
       builder:
-          (context) => Dialog(
-            backgroundColor: Colors.transparent,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: 400,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      height: 56,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.edit_rounded,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Rename Notebook',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const Spacer(),
-                          IconButton(
-                            icon: Icon(
-                              Icons.close_rounded,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 4,
-                      ),
-                      child: TextFormField(
-                        controller: controller,
-                        autofocus: true,
-                        decoration: InputDecoration(
-                          labelText: 'Notebook name',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          filled: true,
-                          fillColor: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest.withAlpha(76),
-                          prefixIcon: const Icon(Icons.title_rounded),
+          (context) => CustomDialog(
+            title: 'Rename Notebook',
+            icon: Icons.edit_rounded,
+            width: 400,
+            bottomBar: Container(
+              height: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surfaceContainerHigh,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onSurface,
+                        minimumSize: const Size(0, 44),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        onFieldSubmitted:
-                            (_) => _handleRename(notebook, controller.text),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.normal,
+                        ),
                       ),
                     ),
-                    // Botones
-                    Container(
-                      height: 56,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              style: TextButton.styleFrom(
-                                backgroundColor:
-                                    Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerHigh,
-                                foregroundColor:
-                                    Theme.of(context).colorScheme.onSurface,
-                                minimumSize: const Size(0, 44),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text(
-                                'Cancel',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    Theme.of(context).colorScheme.primary,
-                                foregroundColor:
-                                    Theme.of(context).colorScheme.onPrimary,
-                                minimumSize: const Size(0, 44),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              onPressed:
-                                  () =>
-                                      _handleRename(notebook, controller.text),
-                              child: const Text(
-                                'Rename',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
+                        minimumSize: const Size(0, 44),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () => _handleRename(notebook, controller.text),
+                      child: const Text(
+                        'Rename',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: TextFormField(
+                controller: controller,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Notebook name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withAlpha(76),
+                  prefixIcon: const Icon(Icons.title_rounded),
                 ),
+                onFieldSubmitted:
+                    (_) => _handleRename(notebook, controller.text),
               ),
             ),
           ),
@@ -1025,10 +979,14 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                       decoration: BoxDecoration(
                         color:
                             candidateData.isNotEmpty
-                                ? Theme.of(context).colorScheme.primary.withAlpha(60)
+                                ? Theme.of(
+                                  context,
+                                ).colorScheme.primary.withAlpha(60)
                                 : Colors.transparent,
                         borderRadius:
-                            candidateData.isNotEmpty ? BorderRadius.circular(4) : null,
+                            candidateData.isNotEmpty
+                                ? BorderRadius.circular(4)
+                                : null,
                       ),
                     );
                   },
@@ -1142,7 +1100,9 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                       isSelected
                           ? Theme.of(context).colorScheme.surfaceContainerHigh
                           : candidateData.isNotEmpty
-                          ? Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(60)
+                          ? Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant.withAlpha(60)
                           : Colors.transparent,
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -1329,7 +1289,9 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                         child: Container(
                           color:
                               showRootDropIndicator
-                                  ? Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(60)
+                                  ? Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant.withAlpha(60)
                                   : Colors.transparent,
                         ),
                       ),
@@ -1404,7 +1366,9 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                                 decoration: BoxDecoration(
                                   color:
                                       candidateData.isNotEmpty
-                                          ? Theme.of(context).colorScheme.primary.withAlpha(60)
+                                          ? Theme.of(
+                                            context,
+                                          ).colorScheme.primary.withAlpha(60)
                                           : Colors.transparent,
                                   borderRadius:
                                       candidateData.isNotEmpty

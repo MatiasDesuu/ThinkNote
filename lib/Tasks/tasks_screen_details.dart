@@ -6,6 +6,7 @@ import '../database/models/subtask.dart';
 import 'habits_widget.dart';
 import '../widgets/custom_snackbar.dart';
 import '../widgets/confirmation_dialogue.dart';
+import '../widgets/custom_dialog.dart';
 
 /// Panel de detalles de una tarea seleccionada
 class TaskDetailsPanel extends StatefulWidget {
@@ -285,7 +286,10 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
     final chipColor = activeColor ?? colorScheme.primary;
 
     return Material(
-      color: isActive ? chipColor.withAlpha(25) : colorScheme.surfaceContainerHighest,
+      color:
+          isActive
+              ? chipColor.withAlpha(25)
+              : colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
@@ -296,11 +300,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 20,
-                color: colorScheme.primary,
-              ),
+              Icon(icon, size: 20, color: colorScheme.primary),
               const SizedBox(width: 8),
               Text(
                 label,
@@ -651,9 +651,14 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                     child: GestureDetector(
                       onTap: () => widget.onToggleSubtask(subtask),
                       child: Icon(
-                        isCompleted ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                        isCompleted
+                            ? Icons.check_box_rounded
+                            : Icons.check_box_outline_blank_rounded,
                         size: 18,
-                        color: isCompleted ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                        color:
+                            isCompleted
+                                ? colorScheme.primary
+                                : colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -1073,136 +1078,101 @@ class _TagsManagerDialogState extends State<TagsManagerDialog> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 500,
-          height: 400,
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: [
-              Container(
-                height: 56,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Icon(Icons.label_rounded, color: colorScheme.primary),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Tags',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: colorScheme.onSurface,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Form(
-                  key: _formKey,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _newTagController,
-                          decoration: InputDecoration(
-                            labelText: 'New tag',
-                            hintText: 'Enter tag name',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            filled: true,
-                            fillColor: colorScheme.surfaceContainerHighest
-                                .withAlpha(127),
-                            prefixIcon: Icon(
-                              Icons.title_rounded,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                          validator:
-                              (value) =>
-                                  value?.isEmpty ?? true ? 'Required' : null,
-                          onFieldSubmitted: (_) => _addNewTag(),
+    return CustomDialog(
+      title: 'Tags',
+      icon: Icons.label_rounded,
+      width: 500,
+      height: 400,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _newTagController,
+                      decoration: InputDecoration(
+                        labelText: 'New tag',
+                        hintText: 'Enter tag name',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        filled: true,
+                        fillColor: colorScheme.surfaceContainerHighest
+                            .withAlpha(127),
+                        prefixIcon: Icon(
+                          Icons.title_rounded,
+                          color: colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      IconButton(
-                        onPressed: _addNewTag,
-                        icon: const Icon(Icons.add_rounded),
-                        style: IconButton.styleFrom(
-                          backgroundColor: colorScheme.primary,
-                          foregroundColor: colorScheme.onPrimary,
-                        ),
-                      ),
-                    ],
+                      validator:
+                          (value) => value?.isEmpty ?? true ? 'Required' : null,
+                      onFieldSubmitted: (_) => _addNewTag(),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 16),
+                  IconButton(
+                    onPressed: _addNewTag,
+                    icon: const Icon(Icons.add_rounded),
+                    style: IconButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                    ),
+                  ),
+                ],
               ),
-              Expanded(
-                child:
-                    _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _tags.isEmpty
-                        ? Center(
-                          child: Text(
-                            'No tags available',
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Expanded(
+            child:
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _tags.isEmpty
+                    ? Center(
+                      child: Text(
+                        'No tags available',
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
+                      ),
+                    )
+                    : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _tags.length,
+                      itemBuilder: (context, index) {
+                        final tag = _tags[index];
+                        return Card(
+                          elevation: 0,
+                          margin: const EdgeInsets.only(bottom: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(
+                              color: colorScheme.outlineVariant.withAlpha(127),
+                              width: 0.5,
                             ),
                           ),
-                        )
-                        : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: _tags.length,
-                          itemBuilder: (context, index) {
-                            final tag = _tags[index];
-                            return Card(
-                              elevation: 0,
-                              margin: const EdgeInsets.only(bottom: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                side: BorderSide(
-                                  color: colorScheme.outlineVariant.withAlpha(
-                                    127,
-                                  ),
-                                  width: 0.5,
-                                ),
+                          child: ListTile(
+                            leading: Icon(
+                              Icons.label_rounded,
+                              color: colorScheme.primary,
+                              size: 20,
+                            ),
+                            title: Text(tag),
+                            trailing: IconButton(
+                              icon: Icon(
+                                Icons.delete_forever_rounded,
+                                color: colorScheme.error,
+                                size: 20,
                               ),
-                              child: ListTile(
-                                leading: Icon(
-                                  Icons.label_rounded,
-                                  color: colorScheme.primary,
-                                  size: 20,
-                                ),
-                                title: Text(tag),
-                                trailing: IconButton(
-                                  icon: Icon(
-                                    Icons.delete_forever_rounded,
-                                    color: colorScheme.error,
-                                    size: 20,
-                                  ),
-                                  onPressed: () => _deleteTag(tag),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-              ),
-            ],
+                              onPressed: () => _deleteTag(tag),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -1336,157 +1306,125 @@ class _TagSelectorDialogState extends State<TagSelectorDialog> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 500,
-          height: 400,
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: [
-              Container(
-                height: 56,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Icon(Icons.label_rounded, color: colorScheme.primary),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Select Tags',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: colorScheme.onSurface,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Form(
-                  key: _formKey,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _newTagController,
-                          decoration: InputDecoration(
-                            labelText: 'New tag',
-                            hintText: 'Enter tag name',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            filled: true,
-                            fillColor: colorScheme.surfaceContainerHighest
-                                .withAlpha(127),
-                            prefixIcon: Icon(
-                              Icons.title_rounded,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                          validator:
-                              (value) =>
-                                  value?.isEmpty ?? true ? 'Required' : null,
-                          onFieldSubmitted: (_) => _addNewTag(),
+    return CustomDialog(
+      title: 'Select Tags',
+      icon: Icons.label_rounded,
+      width: 500,
+      height: 400,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _newTagController,
+                      decoration: InputDecoration(
+                        labelText: 'New tag',
+                        hintText: 'Enter tag name',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        filled: true,
+                        fillColor: colorScheme.surfaceContainerHighest
+                            .withAlpha(127),
+                        prefixIcon: Icon(
+                          Icons.title_rounded,
+                          color: colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      IconButton(
-                        onPressed: _addNewTag,
-                        icon: const Icon(Icons.add_rounded),
-                        style: IconButton.styleFrom(
-                          backgroundColor: colorScheme.primary,
-                          foregroundColor: colorScheme.onPrimary,
-                        ),
-                      ),
-                    ],
+                      validator:
+                          (value) => value?.isEmpty ?? true ? 'Required' : null,
+                      onFieldSubmitted: (_) => _addNewTag(),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 16),
+                  IconButton(
+                    onPressed: _addNewTag,
+                    icon: const Icon(Icons.add_rounded),
+                    style: IconButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                    ),
+                  ),
+                ],
               ),
-              Expanded(
-                child:
-                    _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _allTags.isEmpty
-                        ? Center(
-                          child: Text(
-                            'No tags available',
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Expanded(
+            child:
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _allTags.isEmpty
+                    ? Center(
+                      child: Text(
+                        'No tags available',
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
+                      ),
+                    )
+                    : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _allTags.length,
+                      itemBuilder: (context, index) {
+                        final tag = _allTags[index];
+                        final isSelected = _selectedTags.contains(tag);
+                        return Card(
+                          elevation: 0,
+                          margin: const EdgeInsets.only(bottom: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(
+                              color:
+                                  isSelected
+                                      ? colorScheme.primary.withAlpha(127)
+                                      : colorScheme.outlineVariant.withAlpha(
+                                        127,
+                                      ),
+                              width: isSelected ? 1.5 : 0.5,
                             ),
                           ),
-                        )
-                        : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: _allTags.length,
-                          itemBuilder: (context, index) {
-                            final tag = _allTags[index];
-                            final isSelected = _selectedTags.contains(tag);
-                            return Card(
-                              elevation: 0,
-                              margin: const EdgeInsets.only(bottom: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                side: BorderSide(
-                                  color: colorScheme.outlineVariant.withAlpha(
-                                    127,
-                                  ),
-                                  width: 0.5,
-                                ),
+                          color:
+                              isSelected
+                                  ? colorScheme.primaryContainer.withAlpha(76)
+                                  : null,
+                          child: InkWell(
+                            onTap: () => _toggleTag(tag),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
                               ),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () => _toggleTag(tag),
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Container(
-                                    height: 48,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          isSelected
-                                              ? Icons.check_circle_rounded
-                                              : Icons.circle_outlined,
-                                          color:
-                                              isSelected
-                                                  ? colorScheme.primary
-                                                  : colorScheme
-                                                      .onSurfaceVariant,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Text(
-                                          tag,
-                                          style:
-                                              Theme.of(
-                                                context,
-                                              ).textTheme.bodyLarge,
-                                        ),
-                                      ],
-                                    ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    isSelected
+                                        ? Icons.check_circle_rounded
+                                        : Icons.circle_outlined,
+                                    color:
+                                        isSelected
+                                            ? colorScheme.primary
+                                            : colorScheme.onSurfaceVariant,
+                                    size: 20,
                                   ),
-                                ),
+                                  const SizedBox(width: 16),
+                                  Text(
+                                    tag,
+                                    style:
+                                        Theme.of(context).textTheme.bodyLarge,
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                        ),
-              ),
-            ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -1507,85 +1445,47 @@ class StatusSelectorDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 300,
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                height: 56,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.pending_actions_rounded,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Select Status',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: colorScheme.onSurface,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildStatusOption(
-                      context,
-                      TaskState.none,
-                      Icons.remove_circle_outline,
-                      colorScheme.onSurfaceVariant,
-                      'No status',
-                    ),
-                    const SizedBox(height: 8),
-                    _buildStatusOption(
-                      context,
-                      TaskState.pending,
-                      Icons.circle_outlined,
-                      colorScheme.onSurfaceVariant,
-                      'Pending',
-                    ),
-                    const SizedBox(height: 8),
-                    _buildStatusOption(
-                      context,
-                      TaskState.inProgress,
-                      Icons.pending_rounded,
-                      const Color(0xFFB75D0A),
-                      'In progress',
-                    ),
-                    const SizedBox(height: 8),
-                    _buildStatusOption(
-                      context,
-                      TaskState.completed,
-                      Icons.check_circle_rounded,
-                      colorScheme.primary,
-                      'Completed',
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+    return CustomDialog(
+      title: 'Select Status',
+      icon: Icons.pending_actions_rounded,
+      width: 300,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildStatusOption(
+              context,
+              TaskState.none,
+              Icons.remove_circle_outline,
+              colorScheme.onSurfaceVariant,
+              'No status',
+            ),
+            const SizedBox(height: 8),
+            _buildStatusOption(
+              context,
+              TaskState.pending,
+              Icons.circle_outlined,
+              colorScheme.onSurfaceVariant,
+              'Pending',
+            ),
+            const SizedBox(height: 8),
+            _buildStatusOption(
+              context,
+              TaskState.inProgress,
+              Icons.pending_rounded,
+              const Color(0xFFB75D0A),
+              'In progress',
+            ),
+            const SizedBox(height: 8),
+            _buildStatusOption(
+              context,
+              TaskState.completed,
+              Icons.check_circle_rounded,
+              colorScheme.primary,
+              'Completed',
+            ),
+          ],
         ),
       ),
     );
@@ -1644,79 +1544,39 @@ class PrioritySelectorDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 300,
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                height: 56,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.priority_high_rounded,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Select Priority',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: colorScheme.onSurface,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildPriorityOption(
-                      context,
-                      SubtaskPriority.high,
-                      Icons.arrow_upward_rounded,
-                      colorScheme.error,
-                      'High',
-                    ),
-                    const SizedBox(height: 8),
-                    _buildPriorityOption(
-                      context,
-                      SubtaskPriority.medium,
-                      Icons.remove_rounded,
-                      colorScheme.primary,
-                      'Medium',
-                    ),
-                    const SizedBox(height: 8),
-                    _buildPriorityOption(
-                      context,
-                      SubtaskPriority.low,
-                      Icons.arrow_downward_rounded,
-                      colorScheme.tertiary,
-                      'Low',
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+    return CustomDialog(
+      title: 'Select Priority',
+      icon: Icons.flag_rounded,
+      width: 300,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildPriorityOption(
+              context,
+              SubtaskPriority.low,
+              Icons.arrow_downward_rounded,
+              Theme.of(context).colorScheme.tertiary,
+              'Low Priority',
+            ),
+            const SizedBox(height: 8),
+            _buildPriorityOption(
+              context,
+              SubtaskPriority.medium,
+              Icons.remove_rounded,
+              Theme.of(context).colorScheme.primary,
+              'Medium Priority',
+            ),
+            const SizedBox(height: 8),
+            _buildPriorityOption(
+              context,
+              SubtaskPriority.high,
+              Icons.arrow_upward_rounded,
+              Theme.of(context).colorScheme.error,
+              'High Priority',
+            ),
+          ],
         ),
       ),
     );
