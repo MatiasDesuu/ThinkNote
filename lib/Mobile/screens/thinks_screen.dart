@@ -17,8 +17,13 @@ import '../theme_handler.dart';
 
 class ThinksScreen extends StatefulWidget {
   final Function(Note) onThinkSelected;
+  final List<Think>? initialThinks;
 
-  const ThinksScreen({super.key, required this.onThinkSelected});
+  const ThinksScreen({
+    super.key,
+    required this.onThinkSelected,
+    this.initialThinks,
+  });
 
   @override
   State<ThinksScreen> createState() => _ThinksScreenState();
@@ -33,6 +38,10 @@ class _ThinksScreenState extends State<ThinksScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialThinks != null) {
+      _thinks = widget.initialThinks!;
+      _isLoading = false;
+    }
     _initializeData();
   }
 
@@ -244,24 +253,6 @@ class _ThinksScreenState extends State<ThinksScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (_isLoading) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(color: colorScheme.primary),
-              const SizedBox(height: 16),
-              Text(
-                'Loading Thinks...',
-                style: TextStyle(color: colorScheme.onSurface),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (bool didPop, bool? shouldPop) {
@@ -275,7 +266,11 @@ class _ThinksScreenState extends State<ThinksScreen> {
           surfaceTintColor: Colors.transparent,
           title: Row(
             children: [
-              Icon(Symbols.neurology_rounded, color: colorScheme.primary, size: 28),
+              Icon(
+                Symbols.neurology_rounded,
+                color: colorScheme.primary,
+                size: 28,
+              ),
               const SizedBox(width: 4),
               const Text('Thinks'),
             ],
@@ -289,7 +284,9 @@ class _ThinksScreenState extends State<ThinksScreen> {
           ),
         ),
         body:
-            _thinks.isEmpty
+            _isLoading
+                ? const SizedBox.shrink()
+                : _thinks.isEmpty
                 ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -394,9 +391,10 @@ class _ThinksScreenState extends State<ThinksScreen> {
                                           ),
                                           child: Container(
                                             decoration: const BoxDecoration(
-                                              borderRadius: BorderRadius.vertical(
-                                                top: Radius.circular(16),
-                                              ),
+                                              borderRadius:
+                                                  BorderRadius.vertical(
+                                                    top: Radius.circular(16),
+                                                  ),
                                             ),
                                             child: Column(
                                               mainAxisSize: MainAxisSize.min,
@@ -412,7 +410,9 @@ class _ThinksScreenState extends State<ThinksScreen> {
                                                     color: colorScheme.onSurface
                                                         .withAlpha(50),
                                                     borderRadius:
-                                                        BorderRadius.circular(2),
+                                                        BorderRadius.circular(
+                                                          2,
+                                                        ),
                                                   ),
                                                 ),
                                                 Material(
@@ -469,11 +469,14 @@ class _ThinksScreenState extends State<ThinksScreen> {
                                                             confirmText:
                                                                 'Move to Trash',
                                                             confirmColor:
-                                                                colorScheme.error,
+                                                                colorScheme
+                                                                    .error,
                                                           );
 
                                                       if (confirmed == true) {
-                                                        await _deleteThink(think);
+                                                        await _deleteThink(
+                                                          think,
+                                                        );
                                                       }
                                                     },
                                                     child: Padding(
@@ -485,10 +488,12 @@ class _ThinksScreenState extends State<ThinksScreen> {
                                                       child: Row(
                                                         children: [
                                                           Icon(
-                                                            Icons.delete_rounded,
+                                                            Icons
+                                                                .delete_rounded,
                                                             size: 20,
                                                             color:
-                                                                colorScheme.error,
+                                                                colorScheme
+                                                                    .error,
                                                           ),
                                                           const SizedBox(
                                                             width: 8,
@@ -513,7 +518,8 @@ class _ThinksScreenState extends State<ThinksScreen> {
                                     vertical: 10,
                                   ),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
                                       // Ícono de think y favorito
                                       Stack(
@@ -530,9 +536,13 @@ class _ThinksScreenState extends State<ThinksScreen> {
                                               right: -4,
                                               bottom: -4,
                                               child: Container(
-                                                padding: const EdgeInsets.all(1),
+                                                padding: const EdgeInsets.all(
+                                                  1,
+                                                ),
                                                 decoration: BoxDecoration(
-                                                  color: colorScheme.surfaceContainerHighest,
+                                                  color:
+                                                      colorScheme
+                                                          .surfaceContainerHighest,
                                                   shape: BoxShape.circle,
                                                 ),
                                                 child: Icon(
@@ -548,7 +558,8 @@ class _ThinksScreenState extends State<ThinksScreen> {
                                       // Título y detalles
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               think.title,
@@ -573,7 +584,9 @@ class _ThinksScreenState extends State<ThinksScreen> {
                                                   _formatDate(think.updatedAt),
                                                   style: TextStyle(
                                                     fontSize: 12,
-                                                    color: colorScheme.onSurfaceVariant,
+                                                    color:
+                                                        colorScheme
+                                                            .onSurfaceVariant,
                                                   ),
                                                 ),
                                               ],

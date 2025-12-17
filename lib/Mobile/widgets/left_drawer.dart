@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'dart:async';
 import '../../database/models/notebook.dart';
 import '../../database/models/notebook_icons.dart';
@@ -8,6 +9,7 @@ import '../../database/database_helper.dart';
 import '../../Settings/editor_settings_panel.dart';
 import '../screens/trash_screen.dart';
 import '../screens/icon_selector_screen.dart';
+import '../screens/notes_tags_screen.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/confirmation_dialogue.dart';
 
@@ -20,6 +22,7 @@ class MobileDrawer extends StatefulWidget {
   final VoidCallback onNavigateBack;
   final VoidCallback onCreateNewNotebook;
   final Function(Notebook)? onNotebookSelected;
+  final Function(String tag)? onTagSelected;
   final Notebook? selectedNotebook;
   final GlobalKey<ScaffoldState> scaffoldKey;
 
@@ -28,6 +31,7 @@ class MobileDrawer extends StatefulWidget {
     required this.onNavigateBack,
     required this.onCreateNewNotebook,
     this.onNotebookSelected,
+    this.onTagSelected,
     this.selectedNotebook,
     required this.scaffoldKey,
   });
@@ -994,6 +998,26 @@ class _MobileDrawerState extends State<MobileDrawer>
     });
   }
 
+  void _handleOpenTags() {
+    bool tagSelected = false;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => NotesTagsScreen(
+              onTagSelected: (tag) {
+                tagSelected = true;
+                widget.onTagSelected?.call(tag);
+              },
+            ),
+      ),
+    ).then((_) {
+      if (mounted && !tagSelected) {
+        widget.scaffoldKey.currentState?.openDrawer();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -1131,6 +1155,21 @@ class _MobileDrawerState extends State<MobileDrawer>
                             padding: const EdgeInsets.all(8),
                           ),
                           onPressed: _handleOpenTrash,
+                        ),
+                        const SizedBox(width: 2),
+                        IconButton(
+                          icon: Icon(
+                            Symbols.tag_rounded,
+                            color: colorScheme.primary,
+                            size: 28,
+                          ),
+                          style: IconButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.all(8),
+                          ),
+                          onPressed: _handleOpenTags,
                         ),
                         const SizedBox(width: 2),
                         IconButton(

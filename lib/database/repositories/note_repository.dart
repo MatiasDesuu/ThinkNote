@@ -142,13 +142,11 @@ class NoteRepository {
 
   Future<List<Note>> getAllNotes() async {
     final db = await _dbHelper.database;
-    final result = db.select(
-      '''
+    final result = db.select('''
       SELECT * FROM ${config.DatabaseConfig.tableNotes}
       WHERE ${config.DatabaseConfig.columnDeletedAt} IS NULL
       ORDER BY ${config.DatabaseConfig.columnTitle} ASC
-    ''',
-    );
+    ''');
 
     return result
         .map(
@@ -381,5 +379,25 @@ class NoteRepository {
     } finally {
       stmt.dispose();
     }
+  }
+
+  Future<List<Note>> getNotesByTag(String tag) async {
+    final db = await _dbHelper.database;
+    final result = db.select(
+      '''
+      SELECT * FROM ${config.DatabaseConfig.tableNotes}
+      WHERE ${config.DatabaseConfig.columnTags} LIKE ?
+      AND ${config.DatabaseConfig.columnDeletedAt} IS NULL
+      ORDER BY ${config.DatabaseConfig.columnUpdatedAt} DESC
+    ''',
+      ['%$tag%'],
+    );
+    // Filter results in Dart to ensure exact tag matching if tags are comma-separated string
+    // Assuming tags are stored as "tag1, tag2, tag3"
+    // The LIKE query is a loose filter, strict filtering happens here
+    return result.map((row) => Note.fromMap(row)).where((note) {
+      final tags = (note.tags ?? '').split(',').map((t) => t.trim()).toList();
+      return tags.contains(tag);
+    }).toList();
   }
 }

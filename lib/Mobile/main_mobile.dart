@@ -47,9 +47,11 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey<TasksScreenState> _tasksKey = GlobalKey<TasksScreenState>();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
-  final GlobalKey<CalendarScreenState> _calendarKey = GlobalKey<CalendarScreenState>();
+  final GlobalKey<CalendarScreenState> _calendarKey =
+      GlobalKey<CalendarScreenState>();
   Note? _selectedNote;
   Notebook? _selectedNotebook;
+  String? _selectedTag;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _noteController = TextEditingController();
   final FocusNode _contentFocusNode = FocusNode();
@@ -89,7 +91,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
       // Database and SyncService are already initialized in main()
       final webdavService = WebDAVService();
       await webdavService.initialize();
-      
+
       // Run sync in background without blocking
       webdavService.sync().catchError((e) {
         print('WebDAV sync error: $e');
@@ -104,6 +106,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
       HomeScreen(
         selectedNote: _selectedNote,
         selectedNotebook: _selectedNotebook,
+        selectedTag: _selectedTag,
         titleController: _titleController,
         contentController: _noteController,
         contentFocusNode: _contentFocusNode,
@@ -192,9 +195,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                   _initializeScreens();
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => ThinkNoteMobile(),
-                    ),
+                    MaterialPageRoute(builder: (context) => ThinkNoteMobile()),
                   ).then((_) {
                     if (mounted) {
                       _scaffoldKey.currentState?.openDrawer();
@@ -203,16 +204,13 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                           setState(() {
                             _selectedNotebook = null;
                           });
-                          Future.delayed(
-                            const Duration(milliseconds: 50),
-                            () {
-                              if (mounted) {
-                                setState(() {
-                                  _selectedNotebook = notebook;
-                                });
-                              }
-                            },
-                          );
+                          Future.delayed(const Duration(milliseconds: 50), () {
+                            if (mounted) {
+                              setState(() {
+                                _selectedNotebook = notebook;
+                              });
+                            }
+                          });
                         }
                       });
                     }
@@ -324,9 +322,23 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
   void _handleNotebookSelected(Notebook notebook) {
     setState(() {
       _selectedNotebook = notebook;
+      _selectedTag = null;
       _selectedNote = null;
       _titleController.clear();
       _noteController.clear();
+    });
+    _initializeScreens();
+  }
+
+  void _handleTagSelected(String tag) {
+    setState(() {
+      _selectedTag = tag;
+      _selectedNotebook = null;
+      _selectedNote = null;
+      _titleController.clear();
+      _noteController.clear();
+      _selectedIndex = 0;
+      _scaffoldKey.currentState?.closeDrawer();
     });
     _initializeScreens();
   }
@@ -355,10 +367,24 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
     });
   }
 
-  void _showThinksScreen() {
+  Future<void> _showThinksScreen() async {
     if (_scaleController.status == AnimationStatus.forward) {
       _scaleController.reverse();
     }
+
+    // Pre-fetch thinks for instant display
+    List<Think> preloadedThinks = [];
+    try {
+      final dbHelper = DatabaseHelper();
+      final thinkRepository = ThinkRepository(dbHelper);
+      final thinkService = ThinkService(thinkRepository);
+      preloadedThinks = await thinkService.getAllThinks();
+    } catch (e) {
+      debugPrint('Error pre-fetching thinks: $e');
+    }
+
+    if (!mounted) return;
+
     Navigator.of(context)
         .push(
           MaterialPageRoute(
@@ -393,6 +419,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                             einkEnabled: einkMode,
                           ),
                           child: ThinksScreen(
+                            initialThinks: preloadedThinks,
                             onThinkSelected: (Note note) async {
                               setState(() {
                                 _selectedNote = note;
@@ -594,6 +621,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                 onNavigateBack: () {},
                                 onCreateNewNotebook: () {},
                                 onNotebookSelected: _handleNotebookSelected,
+                                onTagSelected: _handleTagSelected,
                                 selectedNotebook: _selectedNotebook,
                                 scaffoldKey: _scaffoldKey,
                               ),
@@ -858,7 +886,9 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                             NavigationDestinationLabelBehavior.onlyShowSelected,
                       ),
                       floatingActionButton:
-                          !isKeyboardVisible && !_isImmersiveMode && _selectedIndex != 1
+                          !isKeyboardVisible &&
+                                  !_isImmersiveMode &&
+                                  _selectedIndex != 1
                               ? GestureDetector(
                                 onTapDown: (_) {
                                   _scaleController.forward();

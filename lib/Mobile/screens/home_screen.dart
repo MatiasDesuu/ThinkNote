@@ -17,12 +17,14 @@ import '../../widgets/custom_snackbar.dart';
 import '../../widgets/confirmation_dialogue.dart';
 import '../../database/sync_service.dart';
 import '../../animations/animations_handler.dart';
+import '../../services/tags_service.dart';
 
 enum SortMode { order, date, completion }
 
 class HomeScreen extends StatefulWidget {
   final Note? selectedNote;
   final Notebook? selectedNotebook;
+  final String? selectedTag;
   final TextEditingController titleController;
   final TextEditingController contentController;
   final FocusNode contentFocusNode;
@@ -41,6 +43,7 @@ class HomeScreen extends StatefulWidget {
     super.key,
     this.selectedNote,
     this.selectedNotebook,
+    this.selectedTag,
     required this.titleController,
     required this.contentController,
     required this.contentFocusNode,
@@ -70,7 +73,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   SortMode _sortMode = SortMode.order;
   bool _completionSubSortByDate = false;
   static const String _sortPreferenceKey = 'mobile_notes_sort_mode';
-  static const String _completionSubSortPreferenceKey = 'mobile_notes_completion_sub_sort_by_date';
+  static const String _completionSubSortPreferenceKey =
+      'mobile_notes_completion_sub_sort_by_date';
   static const String _lastSelectedNotebookIdKey =
       'mobile_last_selected_notebook_id';
 
@@ -100,8 +104,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void didUpdateWidget(HomeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.selectedNotebook?.id != oldWidget.selectedNotebook?.id) {
-      _saveLastSelectedNotebook(widget.selectedNotebook?.id);
+    if (widget.selectedNotebook?.id != oldWidget.selectedNotebook?.id ||
+        widget.selectedTag != oldWidget.selectedTag) {
+      if (widget.selectedNotebook?.id != oldWidget.selectedNotebook?.id) {
+        _saveLastSelectedNotebook(widget.selectedNotebook?.id);
+      }
       _pendingCompletionChanges.clear();
       _completionDebounceTimer?.cancel();
       setState(() {
@@ -210,8 +217,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return _notes;
       }
 
-      final notebookId = widget.selectedNotebook?.id ?? 0;
-      final notes = await _noteRepository.getNotesByNotebookId(notebookId);
+      List<Note> notes;
+      if (widget.selectedTag != null) {
+        notes = await TagsService().getNotesByTag(widget.selectedTag!);
+      } else {
+        final notebookId = widget.selectedNotebook?.id ?? 0;
+        notes = await _noteRepository.getNotesByNotebookId(notebookId);
+      }
 
       _sortNotes(notes);
 
@@ -498,13 +510,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _loadCompletionSubSortPreference() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _completionSubSortByDate = prefs.getBool(_completionSubSortPreferenceKey) ?? false;
+      _completionSubSortByDate =
+          prefs.getBool(_completionSubSortPreferenceKey) ?? false;
     });
   }
 
   Future<void> _saveCompletionSubSortPreference() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_completionSubSortPreferenceKey, _completionSubSortByDate);
+    await prefs.setBool(
+      _completionSubSortPreferenceKey,
+      _completionSubSortByDate,
+    );
   }
 
   IconData _getSortIcon() {
@@ -728,21 +744,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return [
           IconButton(
             icon: Icon(
-              _completionSubSortByDate ? Icons.access_time : Icons.sort_by_alpha,
+              _completionSubSortByDate
+                  ? Icons.access_time
+                  : Icons.sort_by_alpha,
             ),
             onPressed: _toggleCompletionSubSort,
           ),
-          IconButton(
-            icon: Icon(_getSortIcon()),
-            onPressed: _toggleSortMode,
-          ),
+          IconButton(icon: Icon(_getSortIcon()), onPressed: _toggleSortMode),
         ];
       } else {
         return [
-          IconButton(
-            icon: Icon(_getSortIcon()),
-            onPressed: _toggleSortMode,
-          ),
+          IconButton(icon: Icon(_getSortIcon()), onPressed: _toggleSortMode),
         ];
       }
     }
@@ -767,7 +779,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 color: Theme.of(context).colorScheme.primary,
               ),
             ),
-            Text(widget.selectedNotebook?.name ?? 'Notes'),
+            Expanded(
+              child: Text(
+                widget.selectedTag != null
+                    ? 'Tag: ${widget.selectedTag}'
+                    : (widget.selectedNotebook?.name ?? 'Notes'),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         actions: buildAppBarActions(),
@@ -815,6 +834,32 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               final notes = notesSnapshot.data ?? [];
 
               if (notes.isEmpty) {
+                if (widget.selectedTag != null) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.label_off_rounded,
+                          size: 64,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withAlpha(127),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No notes found with tag "${widget.selectedTag}"',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withAlpha(127),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
                 if (widget.selectedNotebook?.id == null) {
                   return Center(
                     child: Column(
