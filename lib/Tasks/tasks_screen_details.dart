@@ -7,6 +7,7 @@ import 'habits_widget.dart';
 import '../widgets/custom_snackbar.dart';
 import '../widgets/confirmation_dialogue.dart';
 import '../widgets/custom_dialog.dart';
+import '../widgets/custom_date_picker_dialog.dart';
 
 /// Panel de detalles de una tarea seleccionada
 class TaskDetailsPanel extends StatefulWidget {
@@ -549,14 +550,14 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
   }
 
   Future<void> _selectDate(ColorScheme colorScheme) async {
-    final fecha = await showDatePicker(
+    final selectedDate = await showDialog<DateTime>(
       context: context,
-      initialDate: widget.selectedDate ?? DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder:
+          (context) => CustomDatePickerDialog(initialDate: widget.selectedDate),
     );
-    if (fecha != null) {
-      await widget.onDateChanged(fecha);
+
+    if (selectedDate != null) {
+      await widget.onDateChanged(selectedDate);
     }
   }
 
