@@ -42,13 +42,26 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Calculate responsive dimensions
+    final isMobile = screenWidth < 600;
+    final dialogWidth =
+        isMobile ? (screenWidth - 32).clamp(280.0, 320.0) : 320.0;
+    final horizontalPadding = isMobile ? 12.0 : 16.0;
+    final cellSize =
+        isMobile
+            ? ((dialogWidth - (horizontalPadding * 2)) / 7).clamp(32.0, 40.0)
+            : 40.0;
 
     return Dialog(
       backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 40),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          width: 320,
+          width: dialogWidth,
+          constraints: const BoxConstraints(maxWidth: 320, minWidth: 280),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(12),
@@ -56,27 +69,33 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
+              SizedBox(
                 height: 56,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.calendar_month_rounded,
-                      color: colorScheme.primary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      '${_getMonthName(_currentMonth.month)} ${_currentMonth.year}',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: colorScheme.onSurface,
-                        fontWeight: FontWeight.bold,
+                    Padding(
+                      padding: EdgeInsets.only(left: horizontalPadding),
+                      child: Icon(
+                        Icons.calendar_month_rounded,
+                        color: colorScheme.primary,
+                        size: 20,
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        '${_getMonthName(_currentMonth.month)} ${_currentMonth.year}',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                     IconButton(
-                      icon: const Icon(Icons.chevron_left_rounded),
+                      icon: Icon(Icons.chevron_left_rounded),
                       onPressed: () {
                         setState(() {
                           _currentMonth = DateTime(
@@ -92,44 +111,53 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
                       ),
                       padding: EdgeInsets.zero,
                     ),
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _currentMonth = DateTime.now();
-                          _selectedDate = DateTime.now();
-                        });
-                      },
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        minimumSize: const Size(40, 32),
+                    if (!isMobile || screenWidth > 350)
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _currentMonth = DateTime.now();
+                            _selectedDate = DateTime.now();
+                          });
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 0),
+                          minimumSize: const Size(40, 32),
+                        ),
+                        child: const Text('Today'),
                       ),
-                      child: const Text('Today'),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.chevron_right_rounded),
-                      onPressed: () {
-                        setState(() {
-                          _currentMonth = DateTime(
-                            _currentMonth.year,
-                            _currentMonth.month + 1,
-                            1,
-                          );
-                        });
-                      },
-                      constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
+                    Padding(
+                      padding: EdgeInsets.only(right: 0),
+                      child: IconButton(
+                        icon: const Icon(Icons.chevron_right_rounded),
+                        onPressed: () {
+                          setState(() {
+                            _currentMonth = DateTime(
+                              _currentMonth.year,
+                              _currentMonth.month + 1,
+                              1,
+                            );
+                          });
+                        },
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        padding: EdgeInsets.zero,
                       ),
-                      padding: EdgeInsets.zero,
                     ),
                   ],
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  0,
+                  horizontalPadding,
+                  horizontalPadding,
+                ),
                 child: Column(
                   children: [
-                    _buildCalendarGrid(colorScheme),
+                    _buildCalendarGrid(colorScheme, cellSize),
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -223,7 +251,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
     );
   }
 
-  Widget _buildCalendarGrid(ColorScheme colorScheme) {
+  Widget _buildCalendarGrid(ColorScheme colorScheme, double cellSize) {
     final firstDayOfMonth = DateTime(
       _currentMonth.year,
       _currentMonth.month,
@@ -245,7 +273,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
 
       for (int i = 1; i <= 7; i++) {
         if (currentDay == 1 && i < firstWeekday) {
-          rowChildren.add(const SizedBox(width: 40, height: 40));
+          rowChildren.add(SizedBox(width: cellSize, height: cellSize));
         } else if (currentDay <= daysInMonth) {
           final day = currentDay;
           final date = DateTime(_currentMonth.year, _currentMonth.month, day);
@@ -266,14 +294,14 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
 
           rowChildren.add(
             SizedBox(
-              width: 40,
-              height: 40,
+              width: cellSize,
+              height: cellSize,
               child: Container(
                 margin: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
                   color:
                       isSelected
-                          ? colorScheme.primaryFixed.withAlpha(50)
+                          ? colorScheme.primaryContainer
                           : null,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -294,13 +322,16 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
                             style: TextStyle(
                               color:
                                   isSelected
-                                      ? colorScheme.primaryFixed
+                                      ? colorScheme.onPrimaryContainer
                                       : colorScheme.onSurface,
                               fontWeight:
                                   isSelected
                                       ? FontWeight.bold
                                       : FontWeight.normal,
-                              fontSize: isSelected ? 16 : 14,
+                              fontSize:
+                                  isSelected
+                                      ? (cellSize * 0.4)
+                                      : (cellSize * 0.35),
                             ),
                           ),
                         ),
@@ -332,7 +363,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
           );
           currentDay++;
         } else {
-          rowChildren.add(const SizedBox(width: 40, height: 40));
+          rowChildren.add(SizedBox(width: cellSize, height: cellSize));
         }
       }
 
@@ -352,13 +383,13 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
                 ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
                     .map(
                       (day) => SizedBox(
-                        width: 40,
+                        width: cellSize,
                         child: Center(
                           child: Text(
                             day,
                             style: TextStyle(
                               color: colorScheme.onSurfaceVariant,
-                              fontSize: 12,
+                              fontSize: (cellSize * 0.3).clamp(10.0, 12.0),
                             ),
                           ),
                         ),

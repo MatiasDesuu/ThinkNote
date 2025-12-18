@@ -451,7 +451,7 @@ class DiaryCalendarPanelState extends State<DiaryCalendarPanel>
                             decoration: BoxDecoration(
                               color:
                                   isSelected
-                                      ? colorScheme.primaryFixed.withAlpha(50)
+                                      ? colorScheme.primaryContainer
                                       : Colors.transparent,
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -468,7 +468,7 @@ class DiaryCalendarPanelState extends State<DiaryCalendarPanel>
                                         style: TextStyle(
                                           color:
                                               isSelected
-                                                  ? colorScheme.primaryFixed
+                                                  ? colorScheme.onPrimaryContainer
                                                   : colorScheme.onSurface,
                                           fontWeight:
                                               isSelected

@@ -682,9 +682,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                   decoration: BoxDecoration(
                     color:
                         isSelected
-                            ? (Theme.of(context).brightness == Brightness.light
-                                ? colorScheme.primaryContainer
-                                : colorScheme.primaryFixed.withAlpha(50))
+                            ? colorScheme.primaryContainer
                             : candidateData.isNotEmpty
                             ? colorScheme.primaryContainer.withAlpha(50)
                             : null,
@@ -718,9 +716,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                               style: TextStyle(
                                 color:
                                     isSelected
-                                        ? (Theme.of(context).brightness == Brightness.light
-                                            ? colorScheme.onPrimaryContainer
-                                            : colorScheme.primaryFixed)
+                                        ? colorScheme.onPrimaryContainer
                                         : colorScheme.onSurfaceVariant,
                                 fontSize: 10,
                               ),
@@ -731,9 +727,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                               style: TextStyle(
                                 color:
                                     isSelected
-                                        ? (Theme.of(context).brightness == Brightness.light
-                                            ? colorScheme.onPrimaryContainer
-                                            : colorScheme.primaryFixed)
+                                        ? colorScheme.onPrimaryContainer
                                         : colorScheme.onSurface,
                                 fontWeight:
                                     isSelected
@@ -932,9 +926,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                       decoration: BoxDecoration(
                         color:
                             isSelected
-                                ? (Theme.of(context).brightness == Brightness.light
-                                    ? colorScheme.primaryContainer
-                                    : colorScheme.primaryFixed.withAlpha(50))
+                                ? colorScheme.primaryContainer
                                 : candidateData.isNotEmpty
                                 ? colorScheme.primaryContainer.withAlpha(50)
                                 : null,
@@ -961,9 +953,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                                   style: TextStyle(
                                     color:
                                         isSelected
-                                            ? (Theme.of(context).brightness == Brightness.light
-                                                ? colorScheme.onPrimaryContainer
-                                                : colorScheme.primaryFixed)
+                                            ? colorScheme.onPrimaryContainer
                                             : colorScheme.onSurface,
                                     fontWeight:
                                         isSelected

@@ -615,12 +615,16 @@ class ThemeManager {
       onTertiary: const Color(0xFFFFFFFF),
 
       // Containers and backgrounds
-      primaryContainer: const Color(0xFFF6F6F6), // Button sidebar
+      primaryContainer: const Color(0xFFE0E0E0), // Button sidebar
       onPrimaryContainer: const Color(0xFF222222),
       secondaryContainer: const Color(0xFFF6F6F6), // Elements sidebar
       onSecondaryContainer: const Color(0xFF858585),
       tertiaryContainer: const Color(0xFFF6F6F6),
       onTertiaryContainer: const Color(0xFF222222),
+
+      // Fixed colors
+      primaryFixed: const Color(0xFF666666),
+      primaryFixedDim: const Color(0xFF444444),
 
       // Surface colors
       surface: const Color(0xFFFFFFFF), // Editor background
@@ -671,6 +675,10 @@ class ThemeManager {
       onSecondaryContainer: const Color(0xFF949494),
       tertiaryContainer: const Color(0xFF363636),
       onTertiaryContainer: const Color(0xFFDADADA),
+
+      // Fixed colors
+      primaryFixed: const Color(0xFFAAAAAA),
+      primaryFixedDim: const Color(0xFF888888),
 
       // Surface colors
       surface: const Color(0xFF2D2D2D),
