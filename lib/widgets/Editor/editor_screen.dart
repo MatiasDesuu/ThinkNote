@@ -206,7 +206,7 @@ class _NotaEditorState extends State<NotaEditor>
     final noteChanged = oldWidget.selectedNote.id != widget.selectedNote.id;
 
     if (noteChanged) {
-      _reconfigureListeners();
+      _reconfigureListeners(oldWidget);
       _detectScriptMode();
 
       // Siempre actualizar el SearchManager con los nuevos controladores
@@ -314,10 +314,14 @@ class _NotaEditorState extends State<NotaEditor>
     });
   }
 
-  void _reconfigureListeners() {
-    // Remover listeners antiguos si existen
-    widget.noteController.removeListener(_onContentChanged);
-    widget.titleController.removeListener(_onTitleChanged);
+  void _reconfigureListeners(NotaEditor oldWidget) {
+    // Remover listeners antiguos de los controladores del componente anterior
+    try {
+      oldWidget.noteController.removeListener(_onContentChanged);
+      oldWidget.titleController.removeListener(_onTitleChanged);
+    } catch (e) {
+      // Si ya están dispuestos, ignorar
+    }
 
     // Agregar listeners a los nuevos controladores
     widget.noteController.addListener(_onContentChanged);

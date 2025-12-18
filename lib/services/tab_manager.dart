@@ -95,6 +95,9 @@ class TabManager extends ChangeNotifier {
     final activeTabIndex = _tabs.indexOf(_activeTab!);
     if (activeTabIndex == -1) return;
 
+    final oldNoteController = _activeTab!.noteController;
+    final oldTitleController = _activeTab!.titleController;
+
     final updatedTab = _activeTab!.copyWith(
       note: note,
       noteController: TextEditingController(text: note.content),
@@ -102,15 +105,22 @@ class TabManager extends ChangeNotifier {
       lastAccessed: DateTime.now(),
     );
 
-    // Dispose old controllers
-    _activeTab!.noteController.dispose();
-    _activeTab!.titleController.dispose();
-
     _tabs[activeTabIndex] = updatedTab;
     _activeTab = updatedTab;
 
     // Diferir la notificación para evitar problemas con los controladores
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Dispose old controllers after the frame
+      try {
+        oldNoteController.dispose();
+      } catch (e) {
+        // Already disposed
+      }
+      try {
+        oldTitleController.dispose();
+      } catch (e) {
+        // Already disposed
+      }
       notifyListeners();
     });
   }
@@ -390,15 +400,14 @@ class TabManager extends ChangeNotifier {
     );
     if (index != -1) {
       final tab = _tabs[index];
+      final oldNoteController = tab.noteController;
+      final oldTitleController = tab.titleController;
+
       final updatedTab = tab.copyWith(
         note: updatedNote,
         noteController: TextEditingController(text: updatedNote.content),
         titleController: TextEditingController(text: updatedNote.title),
       );
-
-      // Dispose old controllers
-      tab.noteController.dispose();
-      tab.titleController.dispose();
 
       _tabs[index] = updatedTab;
 
@@ -408,6 +417,17 @@ class TabManager extends ChangeNotifier {
 
       // Diferir la notificación para evitar problemas con los controladores
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Dispose old controllers after the frame
+        try {
+          oldNoteController.dispose();
+        } catch (e) {
+          // Already disposed
+        }
+        try {
+          oldTitleController.dispose();
+        } catch (e) {
+          // Already disposed
+        }
         notifyListeners();
       });
     }

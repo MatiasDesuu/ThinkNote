@@ -727,9 +727,12 @@ class NotesPanelState extends State<NotesPanel> {
 
     final currentSelection = Set<int>.from(_selectedNoteIds);
 
+    final isFirstLoad = _notes.isEmpty;
     _isReloading = true;
     setState(() {
-      _isLoading = true;
+      if (isFirstLoad) {
+        _isLoading = true;
+      }
       _errorMessage = null;
     });
 

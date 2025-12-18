@@ -152,8 +152,11 @@ class CalendarPanelState extends State<CalendarPanel>
 
     final int callId = ++_eventsLoadCounter;
 
+    final isFirstLoad = _events.isEmpty;
     setState(() {
-      _isLoading = true;
+      if (isFirstLoad) {
+        _isLoading = true;
+      }
     });
 
     try {

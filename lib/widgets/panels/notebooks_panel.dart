@@ -279,8 +279,11 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
   Future<void> _loadData() async {
     if (!mounted) return;
 
+    final isFirstLoad = _notebooks.isEmpty;
     setState(() {
-      _isLoading = true;
+      if (isFirstLoad) {
+        _isLoading = true;
+      }
       _errorMessage = null;
     });
 

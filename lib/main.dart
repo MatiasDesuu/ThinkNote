@@ -2264,10 +2264,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
           // Update the tab's note reference
           _tabManager.updateNoteInTab(refreshedNote);
 
-          // Update the controllers with the refreshed content
-          activeTab.titleController.text = refreshedNote.title;
-          activeTab.noteController.text = refreshedNote.content;
-
           setState(() {
             _selectedNote = refreshedNote;
           });
