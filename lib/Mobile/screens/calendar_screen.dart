@@ -658,107 +658,113 @@ class CalendarScreenState extends State<CalendarScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               children: List.generate(7, (index) {
-          final date = firstDayOfWeek.add(Duration(days: index));
-          final isSelected =
-              date.year == _selectedDate.year &&
-              date.month == _selectedDate.month &&
-              date.day == _selectedDate.day;
+                final date = firstDayOfWeek.add(Duration(days: index));
+                final isSelected =
+                    date.year == _selectedDate.year &&
+                    date.month == _selectedDate.month &&
+                    date.day == _selectedDate.day;
 
-          final hasEvents = _events.any(
-            (event) =>
-                event.date.year == date.year &&
-                event.date.month == date.month &&
-                event.date.day == date.day,
-          );
+                final hasEvents = _events.any(
+                  (event) =>
+                      event.date.year == date.year &&
+                      event.date.month == date.month &&
+                      event.date.day == date.day,
+                );
 
-          return Expanded(
-            child: DragTarget<Note>(
-              onWillAcceptWithDetails: (details) => details.data.id != null,
-              onAcceptWithDetails:
-                  (details) => _handleNoteDrop(details.data, date.day),
-              builder: (context, candidateData, rejectedData) {
-                return Container(
-                  margin: const EdgeInsets.only(left: 2, right: 2, top: 2, bottom: 4),
-                  decoration: BoxDecoration(
-                    color:
-                        isSelected
-                            ? colorScheme.primaryContainer
-                            : candidateData.isNotEmpty
-                            ? colorScheme.primaryContainer.withAlpha(50)
-                            : null,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          _selectedDate = date;
-                        });
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              [
-                                'Mon',
-                                'Tue',
-                                'Wed',
-                                'Thu',
-                                'Fri',
-                                'Sat',
-                                'Sun',
-                              ][index],
-                              style: TextStyle(
-                                color:
-                                    isSelected
-                                        ? colorScheme.onPrimaryContainer
-                                        : colorScheme.onSurfaceVariant,
-                                fontSize: 10,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              date.day.toString(),
-                              style: TextStyle(
-                                color:
-                                    isSelected
-                                        ? colorScheme.onPrimaryContainer
-                                        : colorScheme.onSurface,
-                                fontWeight:
-                                    isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                fontSize: isSelected ? 14 : 12,
-                              ),
-                            ),
-                            if (hasEvents)
-                              Container(
-                                width: 3,
-                                height: 3,
-                                margin: const EdgeInsets.only(top: 1),
-                                decoration: BoxDecoration(
-                                  color:
-                                      isSelected
-                                          ? colorScheme.primary
-                                          : colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                          ],
+                return Expanded(
+                  child: DragTarget<Note>(
+                    onWillAcceptWithDetails:
+                        (details) => details.data.id != null,
+                    onAcceptWithDetails:
+                        (details) => _handleNoteDrop(details.data, date.day),
+                    builder: (context, candidateData, rejectedData) {
+                      return Container(
+                        margin: const EdgeInsets.only(
+                          left: 2,
+                          right: 2,
+                          top: 2,
+                          bottom: 4,
                         ),
-                      ),
-                    ),
+                        decoration: BoxDecoration(
+                          color:
+                              isSelected
+                                  ? colorScheme.primaryContainer
+                                  : candidateData.isNotEmpty
+                                  ? colorScheme.primaryContainer.withAlpha(50)
+                                  : null,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedDate = date;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    [
+                                      'Mon',
+                                      'Tue',
+                                      'Wed',
+                                      'Thu',
+                                      'Fri',
+                                      'Sat',
+                                      'Sun',
+                                    ][index],
+                                    style: TextStyle(
+                                      color:
+                                          isSelected
+                                              ? colorScheme.onPrimaryContainer
+                                              : colorScheme.onSurfaceVariant,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    date.day.toString(),
+                                    style: TextStyle(
+                                      color:
+                                          isSelected
+                                              ? colorScheme.onPrimaryContainer
+                                              : colorScheme.onSurface,
+                                      fontWeight:
+                                          isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                      fontSize: isSelected ? 14 : 12,
+                                    ),
+                                  ),
+                                  if (hasEvents)
+                                    Container(
+                                      width: 3,
+                                      height: 3,
+                                      margin: const EdgeInsets.only(top: 1),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            isSelected
+                                                ? colorScheme.primary
+                                                : colorScheme.primary,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 );
-              },
-            ),
-          );
-        }),
+              }),
             ),
           ),
         ),
@@ -776,7 +782,10 @@ class CalendarScreenState extends State<CalendarScreen> {
       children: [
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          height: _isExpanded ? 400 : max(100.0, MediaQuery.of(context).size.height * 0.13),
+          height:
+              _isExpanded
+                  ? 400
+                  : max(100.0, MediaQuery.of(context).size.height * 0.13),
           child: _isExpanded ? _buildExpandedCalendar() : _buildWeekView(),
         ),
         Expanded(
@@ -1081,169 +1090,161 @@ class CalendarScreenState extends State<CalendarScreen> {
       return 0;
     });
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainer,
-        border: Border(
-          top: BorderSide(
-            color: colorScheme.outlineVariant.withAlpha(127),
-            width: 0.5,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(
+                Icons.event_note_rounded,
+                size: 20,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Notes for ${_formattedMonth.split(' ')[0]} ${_selectedDate.day}, ${_selectedDate.year}',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.event_note_rounded,
-                  size: 20,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Notes for ${_formattedMonth.split(' ')[0]} ${_selectedDate.day}, ${_selectedDate.year}',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child:
-                eventsForSelectedDay.isEmpty
-                    ? Center(
-                      child: Text(
-                        'No notes for this day',
-                        style: TextStyle(color: colorScheme.onSurfaceVariant),
-                      ),
-                    )
-                    : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      itemCount: eventsForSelectedDay.length,
-                      itemBuilder: (context, index) {
-                        final event = eventsForSelectedDay[index];
-                        if (event.note == null) {
-                          return const SizedBox.shrink();
-                        }
+        Expanded(
+          child:
+              eventsForSelectedDay.isEmpty
+                  ? Center(
+                    child: Text(
+                      'No notes for this day',
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
+                    ),
+                  )
+                  : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    itemCount: eventsForSelectedDay.length,
+                    itemBuilder: (context, index) {
+                      final event = eventsForSelectedDay[index];
+                      if (event.note == null) {
+                        return const SizedBox.shrink();
+                      }
 
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          color: colorScheme.surfaceContainerHighest,
-                          shape: RoundedRectangleBorder(
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        color: colorScheme.surfaceContainerHighest,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
                             borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () {
-                                _openNoteEditor(event.note!);
-                              },
-                              onLongPress: () {
-                                _showStatusMenu(event);
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 16,
-                                  right: 8,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.description_outlined,
-                                      color: colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            event.note!.title,
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodyMedium?.copyWith(
-                                              color: colorScheme.onSurface,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                            onTap: () {
+                              _openNoteEditor(event.note!);
+                            },
+                            onLongPress: () {
+                              _showStatusMenu(event);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                left: 16,
+                                right: 8,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.description_outlined,
+                                    color: colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          event.note!.title,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodyMedium?.copyWith(
+                                            color: colorScheme.onSurface,
+                                            fontWeight: FontWeight.w500,
                                           ),
-                                          if (event.status != null) ...[
-                                            const SizedBox(height: 2),
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  width: 8,
-                                                  height: 8,
-                                                  decoration: BoxDecoration(
-                                                    color: _getStatusColor(
-                                                      event.status!,
-                                                    ),
-                                                    shape: BoxShape.circle,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        if (event.status != null) ...[
+                                          const SizedBox(height: 2),
+                                          Row(
+                                            children: [
+                                              Container(
+                                                width: 8,
+                                                height: 8,
+                                                decoration: BoxDecoration(
+                                                  color: _getStatusColor(
+                                                    event.status!,
                                                   ),
+                                                  shape: BoxShape.circle,
                                                 ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  event.status!,
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall?.copyWith(
-                                                    color:
-                                                        colorScheme
-                                                            .onSurfaceVariant,
-                                                    fontSize: 10,
-                                                  ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                event.status!,
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall?.copyWith(
+                                                  color:
+                                                      colorScheme
+                                                          .onSurfaceVariant,
+                                                  fontSize: 10,
                                                 ),
-                                              ],
-                                            ),
-                                          ],
+                                              ),
+                                            ],
+                                          ),
                                         ],
-                                      ),
+                                      ],
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 8),
-                                      child: IconButton(
-                                        icon: Icon(
-                                          Icons.close_rounded,
-                                          color: colorScheme.error,
-                                          size: 18,
-                                        ),
-                                        onPressed: () async {
-                                          await _deleteEvent(event);
-                                        },
-                                        constraints: const BoxConstraints(
-                                          minWidth: 24,
-                                          minHeight: 24,
-                                        ),
-                                        padding: EdgeInsets.zero,
-                                        style: IconButton.styleFrom(
-                                          backgroundColor: colorScheme.error.withAlpha(20),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 8),
+                                    child: IconButton(
+                                      icon: Icon(
+                                        Icons.close_rounded,
+                                        color: colorScheme.error,
+                                        size: 18,
+                                      ),
+                                      onPressed: () async {
+                                        await _deleteEvent(event);
+                                      },
+                                      constraints: const BoxConstraints(
+                                        minWidth: 24,
+                                        minHeight: 24,
+                                      ),
+                                      padding: EdgeInsets.zero,
+                                      style: IconButton.styleFrom(
+                                        backgroundColor: colorScheme.error
+                                            .withAlpha(20),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            6,
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        );
-                      },
-                    ),
-          ),
-        ],
-      ),
+                        ),
+                      );
+                    },
+                  ),
+        ),
+      ],
     );
   }
 }
