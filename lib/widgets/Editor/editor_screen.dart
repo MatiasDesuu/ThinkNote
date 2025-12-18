@@ -19,6 +19,7 @@ import 'unified_text_handler.dart';
 import 'list_continuation_handler.dart';
 import 'search_handler.dart';
 import '../../services/tab_manager.dart';
+import 'note_statistics_dialog.dart';
 
 // Global reference to the current active editor's toggle read mode function
 VoidCallback? _currentActiveEditorToggleReadMode;
@@ -203,17 +204,17 @@ class _NotaEditorState extends State<NotaEditor>
     // Si cambió la nota (por ID), reconfigurar los listeners para los nuevos controladores
     // Usamos el ID en lugar de comparar objetos porque Note no tiene operator ==
     final noteChanged = oldWidget.selectedNote.id != widget.selectedNote.id;
-    
+
     if (noteChanged) {
       _reconfigureListeners();
       _detectScriptMode();
-      
+
       // Siempre actualizar el SearchManager con los nuevos controladores
       _searchManager.updateControllers(
         newNoteController: widget.noteController,
         newScrollController: _scrollController,
       );
-      
+
       // Cerrar el find bar y limpiar el texto de búsqueda cuando cambia la nota
       if (_showFindBar) {
         _findController.clear();
@@ -259,12 +260,12 @@ class _NotaEditorState extends State<NotaEditor>
     _autoSaveEnabledSubscription?.cancel();
     _immersiveModeService.removeListener(_onImmersiveModeChanged);
     _scrollController.dispose();
-    
+
     // Clear global reference if this is the active editor
     if (_currentActiveEditorToggleReadMode == _toggleReadMode) {
       _currentActiveEditorToggleReadMode = null;
     }
-    
+
     super.dispose();
   }
 
@@ -354,16 +355,16 @@ class _NotaEditorState extends State<NotaEditor>
     // Para guardado manual, ejecutar en background sin afectar el UI
     try {
       if (!mounted) return;
-      
+
       // Iniciar animación de guardado sin bloquear
       _saveController.start();
-      
+
       // Ejecutar guardado en background
       await _performBackgroundSave();
-      
+
       // Completar animación sin reconstruir el widget principal
       await _saveController.complete();
-      
+
       // Restaurar foco y posición del cursor si se perdieron
       if (hadFocus && !_editorFocusNode.hasFocus) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -373,7 +374,6 @@ class _NotaEditorState extends State<NotaEditor>
           }
         });
       }
-      
     } catch (e) {
       print('Error in _handleSave: $e');
       if (mounted) {
@@ -788,6 +788,22 @@ class _NotaEditorState extends State<NotaEditor>
               content: content,
             ),
       ),
+      ContextMenuItem(
+        icon: Icons.analytics_outlined,
+        label: 'Note Statistics',
+        onTap: () {
+          showDialog(
+            context: context,
+            builder:
+                (context) => NoteStatisticsDialog(
+                  note: widget.selectedNote.copyWith(
+                    title: widget.titleController.text,
+                    content: widget.noteController.text,
+                  ),
+                ),
+          );
+        },
+      ),
     ];
 
     // Get the position of the specific button using GlobalKey
@@ -833,7 +849,7 @@ class _NotaEditorState extends State<NotaEditor>
               // Preservar foco antes del guardado para shortcuts
               final hadFocus = _editorFocusNode.hasFocus;
               final currentSelection = widget.noteController.selection;
-              
+
               _handleSave().then((_) {
                 // Restaurar foco después del guardado si se perdió
                 if (hadFocus && !_editorFocusNode.hasFocus) {
@@ -845,7 +861,7 @@ class _NotaEditorState extends State<NotaEditor>
                   });
                 }
               });
-              
+
               return null;
             },
           ),
@@ -860,7 +876,7 @@ class _NotaEditorState extends State<NotaEditor>
           builder: (context, constraints) {
             // Update SearchManager's textStyle when building
             _searchManager.updateTextStyle(_textStyle);
-            
+
             return Focus(
               onKeyEvent: (node, event) {
                 if (_showFindBar) {
@@ -906,7 +922,9 @@ class _NotaEditorState extends State<NotaEditor>
               },
               child: Column(
                 children: [
-                  SizedBox(height: _immersiveModeService.isImmersiveMode ? 40.0 : 0),
+                  SizedBox(
+                    height: _immersiveModeService.isImmersiveMode ? 40.0 : 0,
+                  ),
                   // Title bar - with centered padding when editor is centered
                   Container(
                     padding: EdgeInsets.only(
@@ -1009,17 +1027,20 @@ class _NotaEditorState extends State<NotaEditor>
                               onPressed: () {
                                 // Preservar foco antes del guardado
                                 final hadFocus = _editorFocusNode.hasFocus;
-                                final currentSelection = widget.noteController.selection;
-                                
+                                final currentSelection =
+                                    widget.noteController.selection;
+
                                 _handleSave().then((_) {
                                   // Restaurar foco después del guardado si se perdió
                                   if (hadFocus && !_editorFocusNode.hasFocus) {
-                                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                                      if (mounted) {
-                                        _editorFocusNode.requestFocus();
-                                        widget.noteController.selection = currentSelection;
-                                      }
-                                    });
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                          if (mounted) {
+                                            _editorFocusNode.requestFocus();
+                                            widget.noteController.selection =
+                                                currentSelection;
+                                          }
+                                        });
                                   }
                                 });
                               },
@@ -1127,7 +1148,8 @@ class _NotaEditorState extends State<NotaEditor>
                                   onNext: _nextMatch,
                                   onPrevious: _previousMatch,
                                   currentIndex: _searchManager.currentFindIndex,
-                                  totalMatches: _searchManager.findMatches.length,
+                                  totalMatches:
+                                      _searchManager.findMatches.length,
                                   hasMatches: _searchManager.hasMatches,
                                 ),
                               ),
@@ -1175,25 +1197,31 @@ class _NotaEditorState extends State<NotaEditor>
     return Focus(
       onKeyEvent: (node, event) {
         // Handle Enter key for list continuation
-        if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.enter) {
           final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
-          
+
           // Try to handle list continuation
-          if (ListContinuationHandler.handleEnterKey(widget.noteController, isShiftPressed)) {
+          if (ListContinuationHandler.handleEnterKey(
+            widget.noteController,
+            isShiftPressed,
+          )) {
             widget.onContentChanged();
             return KeyEventResult.handled;
           }
-          
+
           // If not handled by list continuation, let default behavior proceed
         }
-        
+
         // Handle Ctrl+S for manual save (workaround for Linux)
-        if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.keyS &&
-            HardwareKeyboard.instance.isControlPressed && !HardwareKeyboard.instance.isShiftPressed) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.keyS &&
+            HardwareKeyboard.instance.isControlPressed &&
+            !HardwareKeyboard.instance.isShiftPressed) {
           _handleSave();
           return KeyEventResult.handled;
         }
-        
+
         // Allow global shortcuts to propagate
         if (event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.keyT &&
@@ -1231,7 +1259,7 @@ class _NotaEditorState extends State<NotaEditor>
     final text = widget.noteController.text;
     // Use the same color as the first script mode block
     final backgroundColor = colorScheme.surfaceContainerLow;
-    
+
     return SingleChildScrollView(
       child: Container(
         width: double.infinity,
@@ -1241,13 +1269,14 @@ class _NotaEditorState extends State<NotaEditor>
         ),
         padding: const EdgeInsets.all(16),
         margin: const EdgeInsets.only(top: 8),
-        child: text.isEmpty 
-            ? Text(
-                'No content to display',
-                style: _textStyle,
-                textAlign: TextAlign.start,
-              )
-            : _buildEnhancedTextView(text),
+        child:
+            text.isEmpty
+                ? Text(
+                  'No content to display',
+                  style: _textStyle,
+                  textAlign: TextAlign.start,
+                )
+                : _buildEnhancedTextView(text),
       ),
     );
   }
@@ -1274,7 +1303,7 @@ class _NotaEditorState extends State<NotaEditor>
 
   /// Handles note link taps - opens note in current tab or new tab
   void _handleNoteLinkTap(Note targetNote, bool openInNewTab) {
-    if (widget.tabManager == null) return;    
+    if (widget.tabManager == null) return;
     if (openInNewTab) {
       // Open in new tab (middle click or Ctrl+click) and change notebook
       widget.tabManager!.openTabWithNotebookChange(targetNote);
