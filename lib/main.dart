@@ -56,14 +56,14 @@ class WindowStateManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       final isMaximized = await windowManager.isMaximized();
-      
+
       await prefs.setBool(_isMaximizedKey, isMaximized);
-      
+
       if (!isMaximized) {
         // Solo guardar tamaño y posición si no está maximizada
         final size = await windowManager.getSize();
         final position = await windowManager.getPosition();
-        
+
         await prefs.setDouble(_windowWidthKey, size.width);
         await prefs.setDouble(_windowHeightKey, size.height);
         await prefs.setDouble(_windowXKey, position.dx);
@@ -78,12 +78,12 @@ class WindowStateManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       final isMaximized = await windowManager.isMaximized();
-      
+
       if (!isMaximized) {
         // Guardar estado actual antes de maximizar
         final size = await windowManager.getSize();
         final position = await windowManager.getPosition();
-        
+
         await prefs.setDouble(_preMaxWidthKey, size.width);
         await prefs.setDouble(_preMaxHeightKey, size.height);
         await prefs.setDouble(_preMaxXKey, position.dx);
@@ -98,12 +98,11 @@ class WindowStateManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_isMaximizedKey, true);
-      
+
       // Guardar la posición del monitor donde se maximizó
       final position = await windowManager.getPosition();
       await prefs.setDouble(_maxMonitorXKey, position.dx);
       await prefs.setDouble(_maxMonitorYKey, position.dy);
-      
     } catch (e) {
       print('Error saving maximized state: $e');
     }
@@ -112,22 +111,22 @@ class WindowStateManager {
   static Future<void> onUnmaximized() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_isMaximizedKey, false);
-    
+
     // Restaurar al tamaño y posición previa, pero ajustar la posición al monitor actual
     final preMaxWidth = prefs.getDouble(_preMaxWidthKey);
     final preMaxHeight = prefs.getDouble(_preMaxHeightKey);
-    
+
     if (preMaxWidth != null && preMaxHeight != null) {
       // Usar el tamaño previo
       await windowManager.setSize(Size(preMaxWidth, preMaxHeight));
-      
+
       // Usar una posición centrada en la pantalla actual
       // En lugar de tratar de calcular el monitor exacto, simplemente centrar
       await windowManager.center();
-      
+
       // Obtener la nueva posición centrada
       final newPosition = await windowManager.getPosition();
-      
+
       // Guardar esta nueva posición como estado normal
       await prefs.setDouble(_windowWidthKey, preMaxWidth);
       await prefs.setDouble(_windowHeightKey, preMaxHeight);
@@ -140,18 +139,18 @@ class WindowStateManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       final isMaximized = prefs.getBool(_isMaximizedKey) ?? false;
-      
+
       if (isMaximized) {
         // Obtener la posición del monitor donde se maximizó
         final maxMonitorX = prefs.getDouble(_maxMonitorXKey);
         final maxMonitorY = prefs.getDouble(_maxMonitorYKey);
-        
+
         if (maxMonitorX != null && maxMonitorY != null) {
           // Primero posicionar la ventana en el monitor correcto
           // Usar una posición temporal en el monitor donde se maximizó
           await windowManager.setPosition(Offset(maxMonitorX, maxMonitorY));
         }
-        
+
         // Luego maximizar en ese monitor
         await windowManager.maximize();
       } else {
@@ -160,11 +159,11 @@ class WindowStateManager {
         final savedHeight = prefs.getDouble(_windowHeightKey);
         final savedX = prefs.getDouble(_windowXKey);
         final savedY = prefs.getDouble(_windowYKey);
-        
+
         if (savedWidth != null && savedHeight != null) {
           await windowManager.setSize(Size(savedWidth, savedHeight));
         }
-        
+
         if (savedX != null && savedY != null) {
           await windowManager.setPosition(Offset(savedX, savedY));
         }
@@ -179,9 +178,9 @@ class WindowStateManager {
       final prefs = await SharedPreferences.getInstance();
       final maxMonitorX = prefs.getDouble(_maxMonitorXKey);
       final maxMonitorY = prefs.getDouble(_maxMonitorYKey);
-      
-      return maxMonitorX != null && maxMonitorY != null 
-          ? Offset(maxMonitorX, maxMonitorY) 
+
+      return maxMonitorX != null && maxMonitorY != null
+          ? Offset(maxMonitorX, maxMonitorY)
           : null;
     } catch (e) {
       print('Error getting maximized monitor position: $e');
@@ -193,7 +192,7 @@ class WindowStateManager {
     final prefs = await SharedPreferences.getInstance();
     final savedWidth = prefs.getDouble(_windowWidthKey);
     final savedHeight = prefs.getDouble(_windowHeightKey);
-    
+
     return savedWidth != null && savedHeight != null
         ? Size(savedWidth, savedHeight)
         : const Size(800, 600);
@@ -203,7 +202,7 @@ class WindowStateManager {
     final prefs = await SharedPreferences.getInstance();
     final savedX = prefs.getDouble(_windowXKey);
     final savedY = prefs.getDouble(_windowYKey);
-    
+
     return savedX != null && savedY != null ? Offset(savedX, savedY) : null;
   }
 
@@ -356,10 +355,12 @@ void main() async {
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await windowManager.ensureInitialized();
 
-    final shouldStartMaximized = await WindowStateManager.shouldStartMaximized();
+    final shouldStartMaximized =
+        await WindowStateManager.shouldStartMaximized();
     final defaultSize = await WindowStateManager.getDefaultSize();
     final defaultPosition = await WindowStateManager.getDefaultPosition();
-    final maximizedMonitorPosition = await WindowStateManager.getMaximizedMonitorPosition();
+    final maximizedMonitorPosition =
+        await WindowStateManager.getMaximizedMonitorPosition();
 
     WindowOptions windowOptions = WindowOptions(
       size: defaultSize,
@@ -390,7 +391,7 @@ void main() async {
 
         // Agregar listener antes de mostrar
         windowManager.addListener(WindowEventHandler());
-        
+
         // Mostrar la ventana
         await windowManager.show();
       });
@@ -434,18 +435,20 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
       // Esperar a que la UI esté completamente renderizada
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await Future.delayed(const Duration(milliseconds: 50));
-        
+
         if (mounted) {
-          final shouldStartMaximized = await WindowStateManager.shouldStartMaximized();
+          final shouldStartMaximized =
+              await WindowStateManager.shouldStartMaximized();
           if (shouldStartMaximized) {
-            final maximizedMonitorPosition = await WindowStateManager.getMaximizedMonitorPosition();
-            
+            final maximizedMonitorPosition =
+                await WindowStateManager.getMaximizedMonitorPosition();
+
             // Si tenemos información del monitor, posicionar primero
             if (maximizedMonitorPosition != null) {
               await windowManager.setPosition(maximizedMonitorPosition);
               await Future.delayed(const Duration(milliseconds: 10));
             }
-            
+
             await windowManager.maximize();
           }
         }
@@ -605,18 +608,21 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
                                     ),
                                     onPressed: () async {
                                       try {
-                                        final isMaximized = await windowManager.isMaximized();
-                                        
+                                        final isMaximized =
+                                            await windowManager.isMaximized();
+
                                         if (!isMaximized) {
                                           // Guardar estado antes de maximizar
                                           await WindowStateManager.savePreMaximizeState();
                                         }
-                                        
+
                                         appWindow.maximizeOrRestore();
-                                        
+
                                         // Pequeño delay para asegurar que el estado se actualice
-                                        await Future.delayed(const Duration(milliseconds: 50));
-                                        
+                                        await Future.delayed(
+                                          const Duration(milliseconds: 50),
+                                        );
+
                                         // Guardar el nuevo estado
                                         await WindowStateManager.saveWindowState();
                                       } catch (e) {
@@ -644,8 +650,11 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
                                         await WindowStateManager.saveWindowState();
                                         appWindow.close();
                                       } catch (e) {
-                                        print('Error saving state before close: $e');
-                                        appWindow.close(); // Cerrar de todas formas
+                                        print(
+                                          'Error saving state before close: $e',
+                                        );
+                                        appWindow
+                                            .close(); // Cerrar de todas formas
                                       }
                                     },
                                   ),
@@ -742,29 +751,31 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     _tabManager.addListener(() {
       if (mounted) setState(() {});
     });
-    
+
     // Configure notebook change callback for note links
     _tabManager.onNotebookChangeRequested = (Note note) async {
       final notebookId = note.notebookId;
-      
+
       if (mounted && _selectedNotebook?.id != notebookId) {
         try {
           // Create notebook repository instance
           final dbHelper = DatabaseHelper();
           final notebookRepository = NotebookRepository(dbHelper);
-          
+
           // Load the target notebook
           final notebook = await notebookRepository.getNotebook(notebookId);
-          
+
           if (notebook != null && mounted) {
             setState(() {
               _selectedNotebook = notebook;
             });
-            
+
             await _saveLastSelectedNotebook(notebookId);
-            
+
             // Reload notes panel and select the specific note
-            _notesPanelStateKey.currentState?.selectNoteAfterNotebookChange(note);
+            _notesPanelStateKey.currentState?.selectNoteAfterNotebookChange(
+              note,
+            );
           }
         } catch (e) {
           debugPrint('Error changing notebook from note link: $e');
@@ -922,7 +933,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
       // Refresh all panels after successful auto-sync
       await _refreshAllPanels();
-
     } catch (e) {
       debugPrint('Auto-sync error: $e');
     }
@@ -956,34 +966,29 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       final dbHelper = DatabaseHelper();
       final noteRepository = NoteRepository(dbHelper);
 
-      final updatedNote = Note(
-        id: activeTab!.note!.id,
-        title: activeTab.titleController.text.trim(),
-        content: activeTab.noteController.text,
-        notebookId: activeTab.note!.notebookId,
-        createdAt: activeTab.note!.createdAt,
-        updatedAt: DateTime.now(),
-        isFavorite: activeTab.note!.isFavorite,
-        tags: activeTab.note!.tags,
-        orderIndex: activeTab.note!.orderIndex,
-        isTask: activeTab.note!.isTask,
-        isCompleted: activeTab.note!.isCompleted,
+      await noteRepository.updateNoteTitleAndContent(
+        activeTab!.note!.id!,
+        activeTab.titleController.text.trim(),
+        activeTab.noteController.text,
       );
 
-      final result = await noteRepository.updateNote(updatedNote);
+      // Create a Note object with updated title and content for UI state maintenance
+      final updatedNote = activeTab.note!.copyWith(
+        title: activeTab.titleController.text.trim(),
+        content: activeTab.noteController.text,
+        updatedAt: DateTime.now(),
+      );
 
-      if (result > 0) {
-        setState(() {
-          _selectedNote = updatedNote;
-          showSavedIndicator = true;
-        });
+      setState(() {
+        _selectedNote = updatedNote;
+        showSavedIndicator = true;
+      });
 
-        // Update tab manager
-        _tabManager.markTabAsSaved(activeTab);
-        _tabManager.updateNoteInTab(updatedNote);
+      // Update tab manager
+      _tabManager.markTabAsSaved(activeTab);
+      _tabManager.updateNoteInTab(updatedNote);
 
-        DatabaseHelper.notifyDatabaseChanged();
-      }
+      DatabaseHelper.notifyDatabaseChanged();
     } catch (e) {
       debugPrint('Error saving note: $e');
       if (mounted) {
@@ -1137,9 +1142,11 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       if (createdNotebook != null) {
         // If the new notebook has a parent, expand it so the new notebook is visible
         if (_selectedNotebook != null && _selectedNotebook!.id != null) {
-          await _databaseSidebarKey.currentState?.forceExpandNotebook(_selectedNotebook!);
+          await _databaseSidebarKey.currentState?.forceExpandNotebook(
+            _selectedNotebook!,
+          );
         }
-        
+
         setState(() {
           _selectedNotebook = createdNotebook;
         });
@@ -1556,7 +1563,10 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       _selectedNotebook = notebook;
     });
     final expand = await EditorSettings.getExpandNotebooksOnNoteOpen();
-    _databaseSidebarKey.currentState?.handleNotebookSelection(notebook, expand: expand);
+    _databaseSidebarKey.currentState?.handleNotebookSelection(
+      notebook,
+      expand: expand,
+    );
   }
 
   void _onNotebookSelectedFromFavorite(Notebook notebook) async {
@@ -1564,7 +1574,10 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       _selectedNotebook = notebook;
     });
     final expand = await EditorSettings.getExpandNotebooksOnSelection();
-    _databaseSidebarKey.currentState?.handleNotebookSelection(notebook, expand: expand);
+    _databaseSidebarKey.currentState?.handleNotebookSelection(
+      notebook,
+      expand: expand,
+    );
   }
 
   void _onTrashUpdated() {
@@ -1598,6 +1611,10 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
           // If the note is null (deleted) or marked as deleted, close the tab
           if (currentNote == null || currentNote.deletedAt != null) {
             tabsWithDeletedNotes.add(tab);
+          } else {
+            // Note still exists, update its metadata in the tab
+            // This is crucial to keep sync between sidebars and editor
+            _tabManager.updateNoteObjectInTab(currentNote);
           }
         } catch (e) {
           debugPrint('Error checking note status: $e');
@@ -1731,7 +1748,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     _databaseSidebarKey.currentState?.reloadSidebar();
     _favoritesPanelStateKey.currentState?.reloadFavorites();
   }
-  
+
   @override
   void dispose() {
     _noteController.dispose();
@@ -1765,8 +1782,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       onToggleNotesPanel: _toggleNotesPanel,
       onForceSync: _forceSync,
       onSearch: _openSearchScreen,
-      onToggleImmersiveMode:
-          () => _immersiveModeService.toggleImmersiveMode(),
+      onToggleImmersiveMode: () => _immersiveModeService.toggleImmersiveMode(),
       onGlobalSearch: _openGlobalSearchScreen,
       onCloseTab: _closeCurrentTab,
       onNewTab: _onNewTab,
@@ -1783,216 +1799,227 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
               Row(
                 children: [
                   ResizableIconSidebar(
-                key: _iconSidebarKey,
-                rootDir: Directory.current,
-                onOpenNote: (note) => _onNoteSelected(note as Note),
-                onOpenFolder:
-                    (folder) => _onNotebookSelected(folder as Notebook),
-                onNotebookSelected: _onNotebookSelected,
-                onNoteSelected: _onNoteSelected,
-                onNoteSelectedWithSearch: _onNoteSelectedWithSearch,
-                onThemeUpdated: widget.onThemeUpdated,
-                onFavoriteRemoved: () {
-                  if (mounted) {
-                    setState(() {});
-                  }
-                },
-                onCreateNewNote: createNewNote,
-                onCreateNewNotebook: createNewNotebook,
-                onCreateNewTodo: createNewTodo,
-                onOpenTrash: _toggleTrashPanel,
-                onTrashReload: () => _trashPanelStateKey.currentState?.reloadTrash(),
-                onOpenFavorites: _toggleFavoritesPanel,
-                onFavoritesReload: () => _favoritesPanelStateKey.currentState?.reloadFavorites(),
-                showBackButton: false,
-                calendarPanelKey: _calendarPanelKey,
-                appFocusNode: _appFocusNode,
-                onForceSync: _refreshAllPanels,
-              ),
-              ResizablePanel(
-                key: _sidebarKey,
-                minWidth: 200,
-                maxWidth: 400,
-                appFocusNode: _appFocusNode,
-                title: 'Notebooks',
-                preferencesKey: 'notebooks_panel',
-                showLeftSeparator: !_immersiveModeService.isImmersiveMode,
-                onTitleTap: () {
-                  final rootNotebook = Notebook(
-                    id: null,
-                    name: '',
-                    parentId: null,
-                    createdAt: DateTime.now(),
-                    orderIndex: 0,
-                  );
-                  setState(() {
-                    _selectedNotebook = rootNotebook;
-                    _selectedTag = null;
-                    _titleController.clear();
-                    _noteController.clear();
-                  });
-                  _databaseSidebarKey.currentState?.clearSelectedTag();
-                  _selectNote(null);
-                  _saveLastSelectedNotebook(null);
-                },
-                trailing: Builder(
-                  builder: (context) {
-                    final databaseSidebarState =
-                        _databaseSidebarKey.currentState;
-                    if (databaseSidebarState == null) {
-                      return const SizedBox.shrink();
-                    }
-                    return databaseSidebarState.buildTrailingButton();
-                  },
-                ),
-                child: DatabaseSidebar(
-                  key: _databaseSidebarKey,
-                  selectedNotebook: _selectedNotebook,
-                  onNotebookSelected: (notebook) {
-                    setState(() {
-                      _selectedNotebook = notebook;
-                      _selectedTag = null; // Clear tag when notebook is selected
-                      _titleController.clear();
-                      _noteController.clear();
-                    });
-                    // Clear tag selection in notebooks panel
-                    _databaseSidebarKey.currentState?.clearSelectedTag();
-                    _selectNote(null);
-                    _saveLastSelectedNotebook(notebook.id);
-                  },
-                  onTagSelected: (tag) {
-                    setState(() {
-                      _selectedTag = tag;
-                      _selectedNotebook = null; // Clear notebook when tag is selected
-                      _titleController.clear();
-                      _noteController.clear();
-                    });
-                    _selectNote(null);
-                    _saveLastSelectedNotebook(null);
-                  },
-                  onTrashUpdated: () {
-                    setState(() {
-                      _titleController.clear();
-                      _noteController.clear();
-                    });
-                    _selectNote(null);
-                    _saveLastSelectedNotebook(null);
-                  },
-                  onExpansionChanged: () {
-                    setState(() {});
-                  },
-                  onNotebookDeleted: _onNotebookDeleted,
-                ),
-              ),
-              ResizablePanel(
-                key: _notesPanelKey,
-                minWidth: 200,
-                maxWidth: 400,
-                appFocusNode: _appFocusNode,
-                title: 'Notes',
-                preferencesKey: 'notes_panel',
-                showLeftSeparator: !_immersiveModeService.isImmersiveMode,
-                trailing: Builder(
-                  builder: (context) {
-                    final notesPanel = _notesPanelStateKey.currentState;
-                    if (notesPanel == null) {
-                      return const SizedBox.shrink();
-                    }
-                    return notesPanel.buildTrailingButton();
-                  },
-                ),
-                child: NotesPanel(
-                  key: _notesPanelStateKey,
-                  selectedNotebookId: _selectedNotebook?.id,
-                  filterByTag: _selectedTag,
-                    selectedNote: _selectedNote,
+                    key: _iconSidebarKey,
+                    rootDir: Directory.current,
+                    onOpenNote: (note) => _onNoteSelected(note as Note),
+                    onOpenFolder:
+                        (folder) => _onNotebookSelected(folder as Notebook),
+                    onNotebookSelected: _onNotebookSelected,
                     onNoteSelected: _onNoteSelected,
-                    onNoteSelectedFromPanel: (note) {
-                      // If this note already has an open tab, suppress the next open animation
-                      if (mounted && _editorTabsKey.currentState != null) {
-                        // Request EditorTabs to skip visual animations for the immediate update
-                        _editorTabsKey.currentState!.suppressNextUpdateAnimations();
-                      }
-
-                      _onNoteSelected(note);
-                    },
-                  onNoteOpenInNewTab: (note) {
-                    _onNoteOpenInNewTab(note);
-                  },
-                  onTrashUpdated: () {
-                    _isLoadingNoteContent = true;
-
-                    _titleController.clear();
-                    _noteController.clear();
-
-                    Future.delayed(const Duration(milliseconds: 500), () {
+                    onNoteSelectedWithSearch: _onNoteSelectedWithSearch,
+                    onThemeUpdated: widget.onThemeUpdated,
+                    onFavoriteRemoved: () {
                       if (mounted) {
-                        _isLoadingNoteContent = false;
+                        setState(() {});
                       }
-                    });
+                    },
+                    onCreateNewNote: createNewNote,
+                    onCreateNewNotebook: createNewNotebook,
+                    onCreateNewTodo: createNewTodo,
+                    onOpenTrash: _toggleTrashPanel,
+                    onTrashReload:
+                        () => _trashPanelStateKey.currentState?.reloadTrash(),
+                    onOpenFavorites: _toggleFavoritesPanel,
+                    onFavoritesReload:
+                        () =>
+                            _favoritesPanelStateKey.currentState
+                                ?.reloadFavorites(),
+                    showBackButton: false,
+                    calendarPanelKey: _calendarPanelKey,
+                    appFocusNode: _appFocusNode,
+                    onForceSync: _refreshAllPanels,
+                  ),
+                  ResizablePanel(
+                    key: _sidebarKey,
+                    minWidth: 200,
+                    maxWidth: 400,
+                    appFocusNode: _appFocusNode,
+                    title: 'Notebooks',
+                    preferencesKey: 'notebooks_panel',
+                    showLeftSeparator: !_immersiveModeService.isImmersiveMode,
+                    onTitleTap: () {
+                      final rootNotebook = Notebook(
+                        id: null,
+                        name: '',
+                        parentId: null,
+                        createdAt: DateTime.now(),
+                        orderIndex: 0,
+                      );
+                      setState(() {
+                        _selectedNotebook = rootNotebook;
+                        _selectedTag = null;
+                        _titleController.clear();
+                        _noteController.clear();
+                      });
+                      _databaseSidebarKey.currentState?.clearSelectedTag();
+                      _selectNote(null);
+                      _saveLastSelectedNotebook(null);
+                    },
+                    trailing: Builder(
+                      builder: (context) {
+                        final databaseSidebarState =
+                            _databaseSidebarKey.currentState;
+                        if (databaseSidebarState == null) {
+                          return const SizedBox.shrink();
+                        }
+                        return databaseSidebarState.buildTrailingButton();
+                      },
+                    ),
+                    child: DatabaseSidebar(
+                      key: _databaseSidebarKey,
+                      selectedNotebook: _selectedNotebook,
+                      onNotebookSelected: (notebook) {
+                        setState(() {
+                          _selectedNotebook = notebook;
+                          _selectedTag =
+                              null; // Clear tag when notebook is selected
+                          _titleController.clear();
+                          _noteController.clear();
+                        });
+                        // Clear tag selection in notebooks panel
+                        _databaseSidebarKey.currentState?.clearSelectedTag();
+                        _selectNote(null);
+                        _saveLastSelectedNotebook(notebook.id);
+                      },
+                      onTagSelected: (tag) {
+                        setState(() {
+                          _selectedTag = tag;
+                          _selectedNotebook =
+                              null; // Clear notebook when tag is selected
+                          _titleController.clear();
+                          _noteController.clear();
+                        });
+                        _selectNote(null);
+                        _saveLastSelectedNotebook(null);
+                      },
+                      onTrashUpdated: () {
+                        setState(() {
+                          _titleController.clear();
+                          _noteController.clear();
+                        });
+                        _selectNote(null);
+                        _saveLastSelectedNotebook(null);
+                      },
+                      onExpansionChanged: () {
+                        setState(() {});
+                      },
+                      onNotebookDeleted: _onNotebookDeleted,
+                    ),
+                  ),
+                  ResizablePanel(
+                    key: _notesPanelKey,
+                    minWidth: 200,
+                    maxWidth: 400,
+                    appFocusNode: _appFocusNode,
+                    title: 'Notes',
+                    preferencesKey: 'notes_panel',
+                    showLeftSeparator: !_immersiveModeService.isImmersiveMode,
+                    trailing: Builder(
+                      builder: (context) {
+                        final notesPanel = _notesPanelStateKey.currentState;
+                        if (notesPanel == null) {
+                          return const SizedBox.shrink();
+                        }
+                        return notesPanel.buildTrailingButton();
+                      },
+                    ),
+                    child: NotesPanel(
+                      key: _notesPanelStateKey,
+                      selectedNotebookId: _selectedNotebook?.id,
+                      filterByTag: _selectedTag,
+                      selectedNote: _selectedNote,
+                      onNoteSelected: _onNoteSelected,
+                      onNoteSelectedFromPanel: (note) {
+                        // If this note already has an open tab, suppress the next open animation
+                        if (mounted && _editorTabsKey.currentState != null) {
+                          // Request EditorTabs to skip visual animations for the immediate update
+                          _editorTabsKey.currentState!
+                              .suppressNextUpdateAnimations();
+                        }
 
-                    _selectNote(null);
-                  },
-                  onSortChanged: () {
-                    setState(() {});
-                  },
-                  onNoteDeleted: _onNoteDeleted,
-                ),
-              ),
-              Expanded(
-                child: Stack(
-                  children: [
-                    Column(
+                        _onNoteSelected(note);
+                      },
+                      onNoteOpenInNewTab: (note) {
+                        _onNoteOpenInNewTab(note);
+                      },
+                      onTrashUpdated: () {
+                        _isLoadingNoteContent = true;
+
+                        _titleController.clear();
+                        _noteController.clear();
+
+                        Future.delayed(const Duration(milliseconds: 500), () {
+                          if (mounted) {
+                            _isLoadingNoteContent = false;
+                          }
+                        });
+
+                        _selectNote(null);
+                      },
+                      onSortChanged: () {
+                        setState(() {});
+                      },
+                      onNoteDeleted: _onNoteDeleted,
+                    ),
+                  ),
+                  Expanded(
+                    child: Stack(
                       children: [
-                        // Tabs bar (hidden in immersive mode if configured)
-                        if (!_immersiveModeService.isImmersiveMode ||
-                            !EditorSettingsCache.instance.hideTabsInImmersive)
-                          EditorTabs(
-                            key: _editorTabsKey,
-                            tabs: _tabManager.tabs,
-                            activeTab: _tabManager.activeTab,
-                            onTabSelected: _onTabSelected,
-                            onTabClosed: _onTabClosed,
-                            onTabTogglePin: (tab) => _tabManager.togglePin(tab),
-                            onNewTab: _onNewTab,
-                            onTabReorder: _onTabReorder,
-                          ),
-                        // Editor content
-                        Expanded(child: _buildEditorContent()),
+                        Column(
+                          children: [
+                            // Tabs bar (hidden in immersive mode if configured)
+                            if (!_immersiveModeService.isImmersiveMode ||
+                                !EditorSettingsCache
+                                    .instance
+                                    .hideTabsInImmersive)
+                              EditorTabs(
+                                key: _editorTabsKey,
+                                tabs: _tabManager.tabs,
+                                activeTab: _tabManager.activeTab,
+                                onTabSelected: _onTabSelected,
+                                onTabClosed: _onTabClosed,
+                                onTabTogglePin:
+                                    (tab) => _tabManager.togglePin(tab),
+                                onNewTab: _onNewTab,
+                                onTabReorder: _onTabReorder,
+                              ),
+                            // Editor content
+                            Expanded(child: _buildEditorContent()),
+                          ],
+                        ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-
-              // Calendar Panel (independent)
-              SizedBox(
-                height: MediaQuery.of(context).size.height,
-                child: ResizablePanelLeft(
-                  key: _calendarPanelKey,
-                  minWidth: 300,
-                  maxWidth: 400,
-                  appFocusNode: _appFocusNode,
-                  title: '',
-                  preferencesKey: 'calendar_panel',
-                  child: CalendarPanel(
-                    key: _calendarPanelStateKey,
-                    onNoteSelected: _onNoteSelected,
-                    onNoteSelectedFromPanel: (note) {
-                      if (mounted && _editorTabsKey.currentState != null) {
-                        _editorTabsKey.currentState!.suppressNextUpdateAnimations();
-                      }
-
-                      _onNoteSelected(note);
-                    },
-                    onNoteOpenInNewTab: _onNoteOpenInNewTab,
-                    onNotebookSelected: _onNotebookSelected,
-                    onNotebookSelectedFromFavorite: _onNotebookSelectedFromFavorite,
-                    appFocusNode: _appFocusNode,
                   ),
-                ),
-              ),
 
+                  // Calendar Panel (independent)
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height,
+                    child: ResizablePanelLeft(
+                      key: _calendarPanelKey,
+                      minWidth: 300,
+                      maxWidth: 400,
+                      appFocusNode: _appFocusNode,
+                      title: '',
+                      preferencesKey: 'calendar_panel',
+                      child: CalendarPanel(
+                        key: _calendarPanelStateKey,
+                        onNoteSelected: _onNoteSelected,
+                        onNoteSelectedFromPanel: (note) {
+                          if (mounted && _editorTabsKey.currentState != null) {
+                            _editorTabsKey.currentState!
+                                .suppressNextUpdateAnimations();
+                          }
+
+                          _onNoteSelected(note);
+                        },
+                        onNoteOpenInNewTab: _onNoteOpenInNewTab,
+                        onNotebookSelected: _onNotebookSelected,
+                        onNotebookSelectedFromFavorite:
+                            _onNotebookSelectedFromFavorite,
+                        appFocusNode: _appFocusNode,
+                      ),
+                    ),
+                  ),
                 ],
               ),
 
@@ -2016,7 +2043,8 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                       onNoteSelected: _onNoteSelected,
                       onNoteSelectedFromPanel: (note) {
                         if (mounted && _editorTabsKey.currentState != null) {
-                          _editorTabsKey.currentState!.suppressNextUpdateAnimations();
+                          _editorTabsKey.currentState!
+                              .suppressNextUpdateAnimations();
                         }
                         return null;
                       },
@@ -2197,15 +2225,15 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
         final dbHelper = DatabaseHelper();
         final noteRepository = NoteRepository(dbHelper);
         final refreshedNote = await noteRepository.getNote(activeTab.note!.id!);
-        
+
         if (refreshedNote != null && mounted) {
           // Update the tab's note reference
           _tabManager.updateNoteInTab(refreshedNote);
-          
+
           // Update the controllers with the refreshed content
           activeTab.titleController.text = refreshedNote.title;
           activeTab.noteController.text = refreshedNote.content;
-          
+
           setState(() {
             _selectedNote = refreshedNote;
           });

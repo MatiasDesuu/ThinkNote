@@ -396,29 +396,25 @@ class _NotaEditorState extends State<NotaEditor>
       final dbHelper = DatabaseHelper();
       final noteRepository = NoteRepository(dbHelper);
 
-      final updatedNote = Note(
-        id: widget.selectedNote.id,
-        title: widget.titleController.text.trim(),
-        content: widget.noteController.text,
-        notebookId: widget.selectedNote.notebookId,
-        createdAt: widget.selectedNote.createdAt,
-        updatedAt: DateTime.now(),
-        isFavorite: widget.selectedNote.isFavorite,
-        tags: widget.selectedNote.tags,
-        orderIndex: widget.selectedNote.orderIndex,
-        isTask: widget.selectedNote.isTask,
-        isCompleted: widget.selectedNote.isCompleted,
+      await noteRepository.updateNoteTitleAndContent(
+        widget.selectedNote.id!,
+        widget.titleController.text.trim(),
+        widget.noteController.text,
       );
 
-      final result = await noteRepository.updateNote(updatedNote);
+      // En SQLite con drift/sqlite3, updateNoteTitleAndContent no devuelve un valor,
+      // pero podemos asumir que fue exitoso si no lanzó excepción.
+      // Notificar cambios sin reconstruir el widget
+      DatabaseHelper.notifyDatabaseChanged();
 
-      if (result > 0) {
-        // Notificar cambios sin reconstruir el widget
-        DatabaseHelper.notifyDatabaseChanged();
-
-        // Actualizar el estado del tab para quitar el indicador dirty
-        _updateTabStateAfterAutoSave(updatedNote);
-      }
+      // Actualizar el estado del tab para quitar el indicador dirty
+      // Creamos un objeto Note actualizado para el tab, pero manteniendo la metadata actual
+      final updatedNote = widget.selectedNote.copyWith(
+        title: widget.titleController.text.trim(),
+        content: widget.noteController.text,
+        updatedAt: DateTime.now(),
+      );
+      _updateTabStateAfterAutoSave(updatedNote);
     } catch (e) {
       print('Error in auto-save: $e');
       rethrow;

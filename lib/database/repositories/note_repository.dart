@@ -345,4 +345,42 @@ class NoteRepository {
       stmt.dispose();
     }
   }
+
+  Future<void> updateNoteTitleAndContent(
+    int noteId,
+    String title,
+    String content,
+  ) async {
+    final db = await _dbHelper.database;
+    final stmt = db.prepare('''
+      UPDATE ${config.DatabaseConfig.tableNotes}
+      SET ${config.DatabaseConfig.columnTitle} = ?,
+          ${config.DatabaseConfig.columnContent} = ?,
+          ${config.DatabaseConfig.columnUpdatedAt} = ?
+      WHERE id = ?
+    ''');
+
+    try {
+      stmt.execute([
+        title,
+        content,
+        DateTime.now().millisecondsSinceEpoch,
+        noteId,
+      ]);
+
+      // Update last_modified
+      db.execute(
+        '''
+        UPDATE sync_info
+        SET last_modified = ?
+        WHERE id = 1
+      ''',
+        [DateTime.now().millisecondsSinceEpoch],
+      );
+
+      DatabaseService().notifyDatabaseChanged();
+    } finally {
+      stmt.dispose();
+    }
+  }
 }
