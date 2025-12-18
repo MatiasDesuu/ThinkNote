@@ -909,14 +909,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
                         onPressed: createNewNote,
-                        icon: const Icon(Icons.add_rounded),
+                        icon: const Icon(Icons.note_add_rounded),
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
                               Theme.of(context).colorScheme.primary,
                           foregroundColor:
                               Theme.of(context).colorScheme.onPrimary,
+                          minimumSize: const Size(200, 45),
                         ),
                         label: const Text('Create New Note'),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: createNewTodo,
+                        icon: const Icon(Icons.add_task_rounded),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
+                          minimumSize: const Size(200, 45),
+                        ),
+                        label: const Text('Create New Todo'),
                       ),
                     ],
                   ),
