@@ -108,6 +108,18 @@ class NoteRepository {
     );
   }
 
+  Future<List<Note>> getNotesByIds(List<int> ids) async {
+    if (ids.isEmpty) return [];
+    final db = await _dbHelper.database;
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final result = db.select('''
+      SELECT * FROM ${config.DatabaseConfig.tableNotes}
+      WHERE id IN ($placeholders) AND ${config.DatabaseConfig.columnDeletedAt} IS NULL
+    ''', ids);
+
+    return result.map((row) => Note.fromMap(row)).toList();
+  }
+
   Future<List<Note>> getNotesByNotebookId(int notebookId) async {
     final db = await _dbHelper.database;
     final result = db.select(

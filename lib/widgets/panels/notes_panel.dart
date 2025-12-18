@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import '../../database/models/note.dart';
 import '../../database/repositories/note_repository.dart';
 import '../../database/database_helper.dart';
-import '../../database/database_service.dart';
 import '../../Settings/editor_settings_panel.dart';
 import '../custom_snackbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -51,7 +50,6 @@ class NotesPanelState extends State<NotesPanel> {
   bool _isExpanded = true;
   SortMode _sortMode = SortMode.order;
   bool _completionSubSortByDate = false;
-  late StreamSubscription<void> _databaseChangeSubscription;
   String get _sortPreferenceKey =>
       'notes_sort_mode_${widget.selectedNotebookId ?? 0}';
   String get _completionSubSortPreferenceKey =>
@@ -535,16 +533,10 @@ class NotesPanelState extends State<NotesPanel> {
     _loadExpandedState();
     _loadIconSettings();
     _setupIconSettingsListener();
-    _databaseChangeSubscription = DatabaseService().onDatabaseChanged.listen((
-      _,
-    ) {
-      _loadNotes();
-    });
   }
 
   @override
   void dispose() {
-    _databaseChangeSubscription.cancel();
     _showNoteIconsSubscription?.cancel();
     _completionDebounceTimer?.cancel();
     _isContextMenuOpen = false;

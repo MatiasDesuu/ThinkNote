@@ -774,7 +774,8 @@ class CalendarPanelState extends State<CalendarPanel>
                                       color: colorScheme.onSurface,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: colorScheme.surfaceContainerHigh.withAlpha(255),
+                                      color: colorScheme.surfaceContainerHigh
+                                          .withAlpha(255),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Card(

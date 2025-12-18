@@ -10,7 +10,7 @@ class TabManager extends ChangeNotifier {
   final List<EditorTab> _tabs = [];
   EditorTab? _activeTab;
   int _emptyTabCounter = 0;
-  
+
   // Callback to change notebook when opening notes from different notebooks
   Function(Note)? onNotebookChangeRequested;
 
@@ -150,30 +150,22 @@ class TabManager extends ChangeNotifier {
     String? searchQuery,
     bool isAdvancedSearch = false,
   }) {
-    
     // Request notebook change if needed
     if (onNotebookChangeRequested != null) {
       onNotebookChangeRequested!.call(note);
-    } else {
-    }
-    
+    } else {}
+
     // Then open the tab normally
-    openTab(
-      note,
-      searchQuery: searchQuery,
-      isAdvancedSearch: isAdvancedSearch,
-    );
+    openTab(note, searchQuery: searchQuery, isAdvancedSearch: isAdvancedSearch);
   }
 
   /// Replaces note in current tab and changes notebook if necessary
   void replaceNoteInActiveTabWithNotebookChange(Note note) {
-    
     // Request notebook change if needed
     if (onNotebookChangeRequested != null) {
       onNotebookChangeRequested!.call(note);
-    } else {
-    }
-    
+    } else {}
+
     // Then replace the note in the active tab
     replaceNoteInActiveTab(note);
   }
@@ -261,7 +253,8 @@ class TabManager extends ChangeNotifier {
   }
 
   void closeAllTabs() {
-    final controllersToDispose = _tabs.map((tab) => (tab.noteController, tab.titleController)).toList();
+    final controllersToDispose =
+        _tabs.map((tab) => (tab.noteController, tab.titleController)).toList();
     _tabs.clear();
     _activeTab = null;
 
@@ -285,7 +278,10 @@ class TabManager extends ChangeNotifier {
 
   void closeOtherTabs(EditorTab keepTab) {
     final tabsToClose = _tabs.where((tab) => tab != keepTab).toList();
-    final controllersToDispose = tabsToClose.map((tab) => (tab.noteController, tab.titleController)).toList();
+    final controllersToDispose =
+        tabsToClose
+            .map((tab) => (tab.noteController, tab.titleController))
+            .toList();
 
     // Remove tabs
     _tabs.removeWhere((tab) => tab != keepTab);
@@ -435,6 +431,34 @@ class TabManager extends ChangeNotifier {
       }
 
       // Diferir la notificación para evitar problemas con los controladores
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    }
+  }
+
+  void updateNoteObjectsInTabs(List<Note> updatedNotes) {
+    if (updatedNotes.isEmpty) return;
+
+    bool changed = false;
+    for (final updatedNote in updatedNotes) {
+      final index = _tabs.indexWhere(
+        (tab) => tab.note != null && tab.note!.id == updatedNote.id,
+      );
+      if (index != -1) {
+        final tab = _tabs[index];
+        final updatedTab = tab.copyWith(note: updatedNote);
+
+        _tabs[index] = updatedTab;
+
+        if (_activeTab?.note?.id == updatedNote.id) {
+          _activeTab = updatedTab;
+        }
+        changed = true;
+      }
+    }
+
+    if (changed) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });

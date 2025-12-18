@@ -49,11 +49,11 @@ class FavoritesPanelState extends State<FavoritesPanel> {
     _favoritesStream = _favoritesController.stream;
     _initializeRepositories();
 
-    _databaseChangeSubscription = DatabaseService().onDatabaseChanged.listen(
-      (_) {
-        reloadFavorites();
-      },
-    );
+    _databaseChangeSubscription = DatabaseService().onDatabaseChanged.listen((
+      _,
+    ) {
+      reloadFavorites();
+    });
   }
 
   @override
@@ -157,22 +157,16 @@ class FavoritesPanelState extends State<FavoritesPanel> {
               const SizedBox(width: 8),
               Text(
                 'Favorites',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: colorScheme.onSurface,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(color: colorScheme.onSurface),
               ),
             ],
           ),
           IconButton(
-            icon: Icon(
-              Icons.close_rounded,
-              color: colorScheme.primary,
-            ),
+            icon: Icon(Icons.close_rounded, color: colorScheme.primary),
             onPressed: widget.onClose,
-            constraints: const BoxConstraints(
-              minWidth: 32,
-              minHeight: 32,
-            ),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             padding: EdgeInsets.zero,
           ),
         ],
@@ -206,10 +200,7 @@ class FavoritesPanelState extends State<FavoritesPanel> {
           const SizedBox(height: 16),
           Text(
             'No favorites yet',
-            style: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 16,
-            ),
+            style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 16),
           ),
           const SizedBox(height: 8),
           Text(
@@ -234,8 +225,12 @@ class FavoritesPanelState extends State<FavoritesPanel> {
     String title;
 
     if (isNotebook) {
-      final notebookIcon = item.iconId != null ? NotebookIconsRepository.getIconById(item.iconId!) : null;
-      final iconToShow = notebookIcon ?? NotebookIconsRepository.getDefaultIcon();
+      final notebookIcon =
+          item.iconId != null
+              ? NotebookIconsRepository.getIconById(item.iconId!)
+              : null;
+      final iconToShow =
+          notebookIcon ?? NotebookIconsRepository.getDefaultIcon();
       iconData = iconToShow.icon;
       title = item.name;
     } else if (isNote) {
@@ -282,10 +277,7 @@ class FavoritesPanelState extends State<FavoritesPanel> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      iconData,
-                      color: colorScheme.primary,
-                    ),
+                    Icon(iconData, color: colorScheme.primary),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
@@ -294,31 +286,30 @@ class FavoritesPanelState extends State<FavoritesPanel> {
                         children: [
                           Text(
                             title,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: colorScheme.onSurface,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurface,
+                              fontWeight: FontWeight.w500,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           FutureBuilder<String>(
                             future: _getItemPath(item),
                             builder: (context, snapshot) {
-                              if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                              if (snapshot.hasData &&
+                                  snapshot.data!.isNotEmpty) {
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 2),
                                   child: Text(
                                     snapshot.data!,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
-                                          color: colorScheme.onSurfaceVariant,
-                                          fontSize: 10,
-                                        ),
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                      fontSize: 10,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),

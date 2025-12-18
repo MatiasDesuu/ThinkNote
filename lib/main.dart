@@ -737,8 +737,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   StreamSubscription? _editorCenteredSubscription;
   StreamSubscription? _hideTabsInImmersiveSubscription;
   late TabManager _tabManager;
-
+  Timer? _dbChangeDebounceTimer;
   bool _isLoadingNoteContent = false;
+  bool _isSyncing = false;
 
   @override
   void initState() {
@@ -842,7 +843,13 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     // Listen for database changes and check for deleted notes in tabs
     DatabaseService().onDatabaseChanged.listen((_) {
       if (mounted) {
-        _checkAndCloseDeletedNoteTabs();
+        // Debounce database change handling to avoid performance issues during rapid updates (like auto-saves)
+        _dbChangeDebounceTimer?.cancel();
+        _dbChangeDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+          if (mounted && !_isSyncing) {
+            _checkAndCloseDeletedNoteTabs();
+          }
+        });
       }
     });
   }
@@ -1600,32 +1607,58 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   }
 
   Future<void> _checkAndCloseDeletedNoteTabs() async {
-    final tabsWithDeletedNotes = <EditorTab>[];
-    for (final tab in _tabManager.tabs) {
-      if (tab.note != null) {
-        try {
-          final dbHelper = DatabaseHelper();
-          final noteRepository = NoteRepository(dbHelper);
-          final currentNote = await noteRepository.getNote(tab.note!.id!);
+    if (_isSyncing) return;
 
-          // If the note is null (deleted) or marked as deleted, close the tab
+    final tabs = _tabManager.tabs;
+    final noteIds =
+        tabs.where((t) => t.note?.id != null).map((t) => t.note!.id!).toList();
+
+    if (noteIds.isEmpty) return;
+
+    try {
+      _isSyncing = true;
+      final dbHelper = DatabaseHelper();
+      final noteRepository = NoteRepository(dbHelper);
+
+      // Batch fetch all notes currently in tabs
+      final currentNotes = await noteRepository.getNotesByIds(noteIds);
+      final currentNotesMap = {for (var n in currentNotes) n.id: n};
+
+      final tabsWithDeletedNotes = <EditorTab>[];
+      final notesToUpdateInTabs = <Note>[];
+
+      for (final tab in tabs) {
+        if (tab.note != null) {
+          final currentNote = currentNotesMap[tab.note!.id];
+
+          // If the note is not in the result (deleted) or marked as deleted, close the tab
           if (currentNote == null || currentNote.deletedAt != null) {
             tabsWithDeletedNotes.add(tab);
           } else {
-            // Note still exists, update its metadata in the tab
-            // This is crucial to keep sync between sidebars and editor
-            _tabManager.updateNoteObjectInTab(currentNote);
+            // Note still exists, check if metadata changed before adding to update list
+            // This prevents unnecessary UI rebuilds if nothing relevant changed
+            if (currentNote.isCompleted != tab.note!.isCompleted ||
+                currentNote.isFavorite != tab.note!.isFavorite ||
+                currentNote.isPinned != tab.note!.isPinned ||
+                currentNote.title != tab.note!.title) {
+              notesToUpdateInTabs.add(currentNote);
+            }
           }
-        } catch (e) {
-          debugPrint('Error checking note status: $e');
-          // If there's an error, assume the note is deleted and close the tab
-          tabsWithDeletedNotes.add(tab);
         }
       }
-    }
 
-    for (final tab in tabsWithDeletedNotes) {
-      _tabManager.closeTab(tab);
+      // Perform updates batch-wise
+      if (notesToUpdateInTabs.isNotEmpty) {
+        _tabManager.updateNoteObjectsInTabs(notesToUpdateInTabs);
+      }
+
+      for (final tab in tabsWithDeletedNotes) {
+        _tabManager.closeTab(tab);
+      }
+    } catch (e) {
+      debugPrint('Error checking note status: $e');
+    } finally {
+      _isSyncing = false;
     }
 
     // Reload the notes panel to ensure it reflects any changes
@@ -1762,6 +1795,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     }
     _syncService.dispose();
     _autoSyncTimer?.cancel();
+    _dbChangeDebounceTimer?.cancel();
     _immersiveModeService.removeListener(_onImmersiveModeChanged);
     _editorCenteredSubscription?.cancel();
     _hideTabsInImmersiveSubscription?.cancel();

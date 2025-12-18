@@ -48,11 +48,11 @@ class TrashPanelState extends State<TrashPanel> {
     _trashStream = _trashController.stream;
     _initializeRepositories();
 
-    _databaseChangeSubscription = DatabaseService().onDatabaseChanged.listen(
-      (_) {
-        reloadTrash();
-      },
-    );
+    _databaseChangeSubscription = DatabaseService().onDatabaseChanged.listen((
+      _,
+    ) {
+      reloadTrash();
+    });
   }
 
   @override
@@ -210,9 +210,7 @@ class TrashPanelState extends State<TrashPanel> {
                 return Column(
                   children: [
                     _buildHeader(allItems),
-                    Expanded(
-                      child: _buildContent(allItems),
-                    ),
+                    Expanded(child: _buildContent(allItems)),
                   ],
                 );
               },
@@ -233,17 +231,13 @@ class TrashPanelState extends State<TrashPanel> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.delete_rounded,
-                size: 20,
-                color: colorScheme.error,
-              ),
+              Icon(Icons.delete_rounded, size: 20, color: colorScheme.error),
               const SizedBox(width: 8),
               Text(
                 'Trash',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: colorScheme.onSurface,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(color: colorScheme.onSurface),
               ),
             ],
           ),
@@ -265,15 +259,9 @@ class TrashPanelState extends State<TrashPanel> {
                   padding: EdgeInsets.zero,
                 ),
               IconButton(
-                icon: Icon(
-                  Icons.close_rounded,
-                  color: colorScheme.primary,
-                ),
+                icon: Icon(Icons.close_rounded, color: colorScheme.primary),
                 onPressed: widget.onClose,
-                constraints: const BoxConstraints(
-                  minWidth: 32,
-                  minHeight: 32,
-                ),
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 padding: EdgeInsets.zero,
               ),
             ],
@@ -285,31 +273,32 @@ class TrashPanelState extends State<TrashPanel> {
 
   Widget _buildContent(List<dynamic> allItems) {
     final colorScheme = Theme.of(context).colorScheme;
-    final sortedItems = allItems..sort((a, b) {
-        DateTime? aDate;
-        DateTime? bDate;
+    final sortedItems =
+        allItems..sort((a, b) {
+          DateTime? aDate;
+          DateTime? bDate;
 
-        if (a is Notebook) {
-          aDate = a.deletedAt;
-        } else if (a is Note) {
-          aDate = a.deletedAt;
-        } else if (a is Think) {
-          aDate = a.deletedAt;
-        }
+          if (a is Notebook) {
+            aDate = a.deletedAt;
+          } else if (a is Note) {
+            aDate = a.deletedAt;
+          } else if (a is Think) {
+            aDate = a.deletedAt;
+          }
 
-        if (b is Notebook) {
-          bDate = b.deletedAt;
-        } else if (b is Note) {
-          bDate = b.deletedAt;
-        } else if (b is Think) {
-          bDate = b.deletedAt;
-        }
+          if (b is Notebook) {
+            bDate = b.deletedAt;
+          } else if (b is Note) {
+            bDate = b.deletedAt;
+          } else if (b is Think) {
+            bDate = b.deletedAt;
+          }
 
-        if (aDate == null && bDate == null) return 0;
-        if (aDate == null) return 1;
-        if (bDate == null) return -1;
-        return bDate.compareTo(aDate);
-      });
+          if (aDate == null && bDate == null) return 0;
+          if (aDate == null) return 1;
+          if (bDate == null) return -1;
+          return bDate.compareTo(aDate);
+        });
 
     if (sortedItems.isEmpty) {
       return Center(
@@ -360,10 +349,12 @@ class TrashPanelState extends State<TrashPanel> {
     DateTime? deletedAt;
 
     if (isNotebook) {
-      final notebookIcon = item.iconId != null
-          ? NotebookIconsRepository.getIconById(item.iconId!)
-          : null;
-      final iconToShow = notebookIcon ?? NotebookIconsRepository.getDefaultIcon();
+      final notebookIcon =
+          item.iconId != null
+              ? NotebookIconsRepository.getIconById(item.iconId!)
+              : null;
+      final iconToShow =
+          notebookIcon ?? NotebookIconsRepository.getDefaultIcon();
       iconData = iconToShow.icon;
       title = item.name;
       deletedAt = item.deletedAt;
@@ -388,16 +379,10 @@ class TrashPanelState extends State<TrashPanel> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 6,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Row(
               children: [
-                Icon(
-                  iconData,
-                  color: colorScheme.primary,
-                ),
+                Icon(iconData, color: colorScheme.primary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -407,9 +392,9 @@ class TrashPanelState extends State<TrashPanel> {
                       Text(
                         title,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurface,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -418,10 +403,12 @@ class TrashPanelState extends State<TrashPanel> {
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
                             'Deleted on ${_formatDate(deletedAt)}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  fontSize: 10,
-                                ),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 10,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -511,8 +498,18 @@ class TrashPanelState extends State<TrashPanel> {
 
   String _formatDate(DateTime date) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${date.day} ${months[date.month - 1]}, ${date.year}';
   }
