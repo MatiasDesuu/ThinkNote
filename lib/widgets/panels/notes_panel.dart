@@ -10,7 +10,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import '../context_menu.dart';
 import '../../services/tags_service.dart';
-import '../custom_dialog.dart';
 
 enum SortMode { order, date, completion }
 
@@ -999,84 +998,131 @@ class NotesPanelState extends State<NotesPanel> {
     final TextEditingController controller = TextEditingController(
       text: note.title,
     );
+    final colorScheme = Theme.of(context).colorScheme;
 
     showDialog(
       context: context,
       builder:
-          (context) => CustomDialog(
-            title: 'Rename Note',
-            icon: Icons.edit_rounded,
-            width: 400,
-            bottomBar: Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(context).colorScheme.surfaceContainerHigh,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onSurface,
-                        minimumSize: const Size(0, 44),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => _handleRename(note, controller.text),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onPrimary,
-                        minimumSize: const Size(0, 44),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Rename',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: TextFormField(
-                controller: controller,
-                autofocus: true,
-                decoration: InputDecoration(
-                  labelText: 'Note title',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  filled: true,
-                  fillColor: Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainerHighest.withAlpha(76),
-                  prefixIcon: const Icon(Icons.title_rounded),
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 400,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                onFieldSubmitted: (_) => _handleRename(note, controller.text),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      height: 56,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.edit_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Rename Note',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: controller,
+                            autofocus: true,
+                            decoration: InputDecoration(
+                              labelText: 'Note title',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              filled: true,
+                              fillColor: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest
+                                  .withAlpha(76),
+                              prefixIcon: const Icon(Icons.title_rounded),
+                            ),
+                            onFieldSubmitted:
+                                (_) => _handleRename(note, controller.text),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      height: 56,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: TextButton.styleFrom(
+                                backgroundColor:
+                                    colorScheme.surfaceContainerHigh,
+                                foregroundColor: colorScheme.onSurface,
+                                minimumSize: const Size(0, 44),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed:
+                                  () => _handleRename(note, controller.text),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: colorScheme.primary,
+                                foregroundColor: colorScheme.onPrimary,
+                                minimumSize: const Size(0, 44),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text(
+                                'Rename',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1489,9 +1535,7 @@ class NotesPanelState extends State<NotesPanel> {
                   decoration: BoxDecoration(
                     color:
                         isTarget && _dragTargetIsAbove
-                            ? Theme.of(
-                              context,
-                            ).colorScheme.primary.withAlpha(60)
+                            ? Theme.of(context).colorScheme.primary.withAlpha(60)
                             : Colors.transparent,
                     borderRadius:
                         isTarget && _dragTargetIsAbove
@@ -1510,9 +1554,7 @@ class NotesPanelState extends State<NotesPanel> {
                   decoration: BoxDecoration(
                     color:
                         isTarget && !_dragTargetIsAbove
-                            ? Theme.of(
-                              context,
-                            ).colorScheme.onPrimary.withAlpha(60)
+                            ? Theme.of(context).colorScheme.onPrimary.withAlpha(60)
                             : Colors.transparent,
                     borderRadius:
                         isTarget && !_dragTargetIsAbove

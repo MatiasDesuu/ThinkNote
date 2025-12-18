@@ -1014,7 +1014,7 @@ class CalendarPanelState extends State<CalendarPanel>
   Widget _buildFavoriteNotebooksPanel() {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(right: 16, left: 16, bottom: 16, top: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -28,7 +28,6 @@ import 'database/database_service.dart';
 import 'database/sync_service.dart';
 import 'Mobile/main_mobile.dart';
 import 'widgets/panels/notes_panel.dart';
-import 'widgets/custom_dialog.dart';
 import 'widgets/custom_snackbar.dart';
 import 'widgets/panels/calendar_panel.dart';
 import 'widgets/search_screen_desktop.dart';
@@ -57,14 +56,14 @@ class WindowStateManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       final isMaximized = await windowManager.isMaximized();
-
+      
       await prefs.setBool(_isMaximizedKey, isMaximized);
-
+      
       if (!isMaximized) {
         // Solo guardar tamaño y posición si no está maximizada
         final size = await windowManager.getSize();
         final position = await windowManager.getPosition();
-
+        
         await prefs.setDouble(_windowWidthKey, size.width);
         await prefs.setDouble(_windowHeightKey, size.height);
         await prefs.setDouble(_windowXKey, position.dx);
@@ -79,12 +78,12 @@ class WindowStateManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       final isMaximized = await windowManager.isMaximized();
-
+      
       if (!isMaximized) {
         // Guardar estado actual antes de maximizar
         final size = await windowManager.getSize();
         final position = await windowManager.getPosition();
-
+        
         await prefs.setDouble(_preMaxWidthKey, size.width);
         await prefs.setDouble(_preMaxHeightKey, size.height);
         await prefs.setDouble(_preMaxXKey, position.dx);
@@ -99,11 +98,12 @@ class WindowStateManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_isMaximizedKey, true);
-
+      
       // Guardar la posición del monitor donde se maximizó
       final position = await windowManager.getPosition();
       await prefs.setDouble(_maxMonitorXKey, position.dx);
       await prefs.setDouble(_maxMonitorYKey, position.dy);
+      
     } catch (e) {
       print('Error saving maximized state: $e');
     }
@@ -112,22 +112,22 @@ class WindowStateManager {
   static Future<void> onUnmaximized() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_isMaximizedKey, false);
-
+    
     // Restaurar al tamaño y posición previa, pero ajustar la posición al monitor actual
     final preMaxWidth = prefs.getDouble(_preMaxWidthKey);
     final preMaxHeight = prefs.getDouble(_preMaxHeightKey);
-
+    
     if (preMaxWidth != null && preMaxHeight != null) {
       // Usar el tamaño previo
       await windowManager.setSize(Size(preMaxWidth, preMaxHeight));
-
+      
       // Usar una posición centrada en la pantalla actual
       // En lugar de tratar de calcular el monitor exacto, simplemente centrar
       await windowManager.center();
-
+      
       // Obtener la nueva posición centrada
       final newPosition = await windowManager.getPosition();
-
+      
       // Guardar esta nueva posición como estado normal
       await prefs.setDouble(_windowWidthKey, preMaxWidth);
       await prefs.setDouble(_windowHeightKey, preMaxHeight);
@@ -140,18 +140,18 @@ class WindowStateManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       final isMaximized = prefs.getBool(_isMaximizedKey) ?? false;
-
+      
       if (isMaximized) {
         // Obtener la posición del monitor donde se maximizó
         final maxMonitorX = prefs.getDouble(_maxMonitorXKey);
         final maxMonitorY = prefs.getDouble(_maxMonitorYKey);
-
+        
         if (maxMonitorX != null && maxMonitorY != null) {
           // Primero posicionar la ventana en el monitor correcto
           // Usar una posición temporal en el monitor donde se maximizó
           await windowManager.setPosition(Offset(maxMonitorX, maxMonitorY));
         }
-
+        
         // Luego maximizar en ese monitor
         await windowManager.maximize();
       } else {
@@ -160,11 +160,11 @@ class WindowStateManager {
         final savedHeight = prefs.getDouble(_windowHeightKey);
         final savedX = prefs.getDouble(_windowXKey);
         final savedY = prefs.getDouble(_windowYKey);
-
+        
         if (savedWidth != null && savedHeight != null) {
           await windowManager.setSize(Size(savedWidth, savedHeight));
         }
-
+        
         if (savedX != null && savedY != null) {
           await windowManager.setPosition(Offset(savedX, savedY));
         }
@@ -179,9 +179,9 @@ class WindowStateManager {
       final prefs = await SharedPreferences.getInstance();
       final maxMonitorX = prefs.getDouble(_maxMonitorXKey);
       final maxMonitorY = prefs.getDouble(_maxMonitorYKey);
-
-      return maxMonitorX != null && maxMonitorY != null
-          ? Offset(maxMonitorX, maxMonitorY)
+      
+      return maxMonitorX != null && maxMonitorY != null 
+          ? Offset(maxMonitorX, maxMonitorY) 
           : null;
     } catch (e) {
       print('Error getting maximized monitor position: $e');
@@ -193,7 +193,7 @@ class WindowStateManager {
     final prefs = await SharedPreferences.getInstance();
     final savedWidth = prefs.getDouble(_windowWidthKey);
     final savedHeight = prefs.getDouble(_windowHeightKey);
-
+    
     return savedWidth != null && savedHeight != null
         ? Size(savedWidth, savedHeight)
         : const Size(800, 600);
@@ -203,7 +203,7 @@ class WindowStateManager {
     final prefs = await SharedPreferences.getInstance();
     final savedX = prefs.getDouble(_windowXKey);
     final savedY = prefs.getDouble(_windowYKey);
-
+    
     return savedX != null && savedY != null ? Offset(savedX, savedY) : null;
   }
 
@@ -356,12 +356,10 @@ void main() async {
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await windowManager.ensureInitialized();
 
-    final shouldStartMaximized =
-        await WindowStateManager.shouldStartMaximized();
+    final shouldStartMaximized = await WindowStateManager.shouldStartMaximized();
     final defaultSize = await WindowStateManager.getDefaultSize();
     final defaultPosition = await WindowStateManager.getDefaultPosition();
-    final maximizedMonitorPosition =
-        await WindowStateManager.getMaximizedMonitorPosition();
+    final maximizedMonitorPosition = await WindowStateManager.getMaximizedMonitorPosition();
 
     WindowOptions windowOptions = WindowOptions(
       size: defaultSize,
@@ -392,7 +390,7 @@ void main() async {
 
         // Agregar listener antes de mostrar
         windowManager.addListener(WindowEventHandler());
-
+        
         // Mostrar la ventana
         await windowManager.show();
       });
@@ -436,20 +434,18 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
       // Esperar a que la UI esté completamente renderizada
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await Future.delayed(const Duration(milliseconds: 50));
-
+        
         if (mounted) {
-          final shouldStartMaximized =
-              await WindowStateManager.shouldStartMaximized();
+          final shouldStartMaximized = await WindowStateManager.shouldStartMaximized();
           if (shouldStartMaximized) {
-            final maximizedMonitorPosition =
-                await WindowStateManager.getMaximizedMonitorPosition();
-
+            final maximizedMonitorPosition = await WindowStateManager.getMaximizedMonitorPosition();
+            
             // Si tenemos información del monitor, posicionar primero
             if (maximizedMonitorPosition != null) {
               await windowManager.setPosition(maximizedMonitorPosition);
               await Future.delayed(const Duration(milliseconds: 10));
             }
-
+            
             await windowManager.maximize();
           }
         }
@@ -609,21 +605,18 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
                                     ),
                                     onPressed: () async {
                                       try {
-                                        final isMaximized =
-                                            await windowManager.isMaximized();
-
+                                        final isMaximized = await windowManager.isMaximized();
+                                        
                                         if (!isMaximized) {
                                           // Guardar estado antes de maximizar
                                           await WindowStateManager.savePreMaximizeState();
                                         }
-
+                                        
                                         appWindow.maximizeOrRestore();
-
+                                        
                                         // Pequeño delay para asegurar que el estado se actualice
-                                        await Future.delayed(
-                                          const Duration(milliseconds: 50),
-                                        );
-
+                                        await Future.delayed(const Duration(milliseconds: 50));
+                                        
                                         // Guardar el nuevo estado
                                         await WindowStateManager.saveWindowState();
                                       } catch (e) {
@@ -651,11 +644,8 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
                                         await WindowStateManager.saveWindowState();
                                         appWindow.close();
                                       } catch (e) {
-                                        print(
-                                          'Error saving state before close: $e',
-                                        );
-                                        appWindow
-                                            .close(); // Cerrar de todas formas
+                                        print('Error saving state before close: $e');
+                                        appWindow.close(); // Cerrar de todas formas
                                       }
                                     },
                                   ),
@@ -752,31 +742,29 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     _tabManager.addListener(() {
       if (mounted) setState(() {});
     });
-
+    
     // Configure notebook change callback for note links
     _tabManager.onNotebookChangeRequested = (Note note) async {
       final notebookId = note.notebookId;
-
+      
       if (mounted && _selectedNotebook?.id != notebookId) {
         try {
           // Create notebook repository instance
           final dbHelper = DatabaseHelper();
           final notebookRepository = NotebookRepository(dbHelper);
-
+          
           // Load the target notebook
           final notebook = await notebookRepository.getNotebook(notebookId);
-
+          
           if (notebook != null && mounted) {
             setState(() {
               _selectedNotebook = notebook;
             });
-
+            
             await _saveLastSelectedNotebook(notebookId);
-
+            
             // Reload notes panel and select the specific note
-            _notesPanelStateKey.currentState?.selectNoteAfterNotebookChange(
-              note,
-            );
+            _notesPanelStateKey.currentState?.selectNoteAfterNotebookChange(note);
           }
         } catch (e) {
           debugPrint('Error changing notebook from note link: $e');
@@ -934,6 +922,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
       // Refresh all panels after successful auto-sync
       await _refreshAllPanels();
+
     } catch (e) {
       debugPrint('Auto-sync error: $e');
     }
@@ -1132,7 +1121,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     final notebookRepository = NotebookRepository(dbHelper);
 
     try {
-      final name = await _promptForName('Notebook Name', 'Name');
+      final name = await _promptForName('Name of new Notebook', 'Name');
       if (name == null || name.trim().isEmpty) return;
 
       final newNotebook = Notebook(
@@ -1148,11 +1137,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       if (createdNotebook != null) {
         // If the new notebook has a parent, expand it so the new notebook is visible
         if (_selectedNotebook != null && _selectedNotebook!.id != null) {
-          await _databaseSidebarKey.currentState?.forceExpandNotebook(
-            _selectedNotebook!,
-          );
+          await _databaseSidebarKey.currentState?.forceExpandNotebook(_selectedNotebook!);
         }
-
+        
         setState(() {
           _selectedNotebook = createdNotebook;
         });
@@ -1210,103 +1197,149 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
           ),
           child: Focus(
             autofocus: true,
-            child: CustomDialog(
-              title: title,
-              icon: Icons.edit_rounded,
-              width: 400,
-              bottomBar: Container(
-                height: 56,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHigh,
-                          foregroundColor:
-                              Theme.of(context).colorScheme.onSurface,
-                          minimumSize: const Size(0, 44),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (formKey.currentState!.validate()) {
-                            Navigator.of(context).pop(nameController.text);
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
-                          foregroundColor:
-                              Theme.of(context).colorScheme.onPrimary,
-                          minimumSize: const Size(0, 44),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text(
-                          'Accept',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              child: Form(
-                key: formKey,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
+            child: Dialog(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 400,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainer,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: TextFormField(
-                    controller: nameController,
-                    focusNode: focusNode,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      labelText: label,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest.withAlpha(76),
-                      prefixIcon: const Icon(Icons.title_rounded),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          height: 56,
+                          decoration: BoxDecoration(),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.edit_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                title,
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const Spacer(),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.close_rounded,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
+                          ),
+                          child: Column(
+                            children: [
+                              TextFormField(
+                                controller: nameController,
+                                focusNode: focusNode,
+                                autofocus: true,
+                                decoration: InputDecoration(
+                                  labelText: label,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  filled: true,
+                                  fillColor: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest
+                                      .withAlpha(76),
+                                  prefixIcon: const Icon(Icons.title_rounded),
+                                ),
+                                onFieldSubmitted: (value) {
+                                  if (formKey.currentState!.validate()) {
+                                    Navigator.of(context).pop(value);
+                                  }
+                                },
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter a name';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          height: 56,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  style: TextButton.styleFrom(
+                                    backgroundColor:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.surfaceContainerHigh,
+                                    foregroundColor:
+                                        Theme.of(context).colorScheme.onSurface,
+                                    minimumSize: const Size(0, 44),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Cancel',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.normal,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    if (formKey.currentState!.validate()) {
+                                      Navigator.of(
+                                        context,
+                                      ).pop(nameController.text);
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        Theme.of(context).colorScheme.primary,
+                                    foregroundColor:
+                                        Theme.of(context).colorScheme.onPrimary,
+                                    minimumSize: const Size(0, 44),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Accept',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    onFieldSubmitted: (value) {
-                      if (formKey.currentState!.validate()) {
-                        Navigator.of(context).pop(value);
-                      }
-                    },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a name';
-                      }
-                      return null;
-                    },
                   ),
                 ),
               ),
@@ -1523,10 +1556,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       _selectedNotebook = notebook;
     });
     final expand = await EditorSettings.getExpandNotebooksOnNoteOpen();
-    _databaseSidebarKey.currentState?.handleNotebookSelection(
-      notebook,
-      expand: expand,
-    );
+    _databaseSidebarKey.currentState?.handleNotebookSelection(notebook, expand: expand);
   }
 
   void _onNotebookSelectedFromFavorite(Notebook notebook) async {
@@ -1534,10 +1564,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       _selectedNotebook = notebook;
     });
     final expand = await EditorSettings.getExpandNotebooksOnSelection();
-    _databaseSidebarKey.currentState?.handleNotebookSelection(
-      notebook,
-      expand: expand,
-    );
+    _databaseSidebarKey.currentState?.handleNotebookSelection(notebook, expand: expand);
   }
 
   void _onTrashUpdated() {
@@ -1704,7 +1731,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     _databaseSidebarKey.currentState?.reloadSidebar();
     _favoritesPanelStateKey.currentState?.reloadFavorites();
   }
-
+  
   @override
   void dispose() {
     _noteController.dispose();
@@ -1738,7 +1765,8 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       onToggleNotesPanel: _toggleNotesPanel,
       onForceSync: _forceSync,
       onSearch: _openSearchScreen,
-      onToggleImmersiveMode: () => _immersiveModeService.toggleImmersiveMode(),
+      onToggleImmersiveMode:
+          () => _immersiveModeService.toggleImmersiveMode(),
       onGlobalSearch: _openGlobalSearchScreen,
       onCloseTab: _closeCurrentTab,
       onNewTab: _onNewTab,
@@ -1755,228 +1783,216 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
               Row(
                 children: [
                   ResizableIconSidebar(
-                    key: _iconSidebarKey,
-                    rootDir: Directory.current,
-                    onOpenNote: (note) => _onNoteSelected(note as Note),
-                    onOpenFolder:
-                        (folder) => _onNotebookSelected(folder as Notebook),
-                    onNotebookSelected: _onNotebookSelected,
+                key: _iconSidebarKey,
+                rootDir: Directory.current,
+                onOpenNote: (note) => _onNoteSelected(note as Note),
+                onOpenFolder:
+                    (folder) => _onNotebookSelected(folder as Notebook),
+                onNotebookSelected: _onNotebookSelected,
+                onNoteSelected: _onNoteSelected,
+                onNoteSelectedWithSearch: _onNoteSelectedWithSearch,
+                onThemeUpdated: widget.onThemeUpdated,
+                onFavoriteRemoved: () {
+                  if (mounted) {
+                    setState(() {});
+                  }
+                },
+                onCreateNewNote: createNewNote,
+                onCreateNewNotebook: createNewNotebook,
+                onCreateNewTodo: createNewTodo,
+                onOpenTrash: _toggleTrashPanel,
+                onTrashReload: () => _trashPanelStateKey.currentState?.reloadTrash(),
+                onOpenFavorites: _toggleFavoritesPanel,
+                onFavoritesReload: () => _favoritesPanelStateKey.currentState?.reloadFavorites(),
+                showBackButton: false,
+                calendarPanelKey: _calendarPanelKey,
+                appFocusNode: _appFocusNode,
+                onForceSync: _refreshAllPanels,
+              ),
+              ResizablePanel(
+                key: _sidebarKey,
+                minWidth: 200,
+                maxWidth: 400,
+                appFocusNode: _appFocusNode,
+                title: 'Notebooks',
+                preferencesKey: 'notebooks_panel',
+                showLeftSeparator: !_immersiveModeService.isImmersiveMode,
+                onTitleTap: () {
+                  final rootNotebook = Notebook(
+                    id: null,
+                    name: '',
+                    parentId: null,
+                    createdAt: DateTime.now(),
+                    orderIndex: 0,
+                  );
+                  setState(() {
+                    _selectedNotebook = rootNotebook;
+                    _selectedTag = null;
+                    _titleController.clear();
+                    _noteController.clear();
+                  });
+                  _databaseSidebarKey.currentState?.clearSelectedTag();
+                  _selectNote(null);
+                  _saveLastSelectedNotebook(null);
+                },
+                trailing: Builder(
+                  builder: (context) {
+                    final databaseSidebarState =
+                        _databaseSidebarKey.currentState;
+                    if (databaseSidebarState == null) {
+                      return const SizedBox.shrink();
+                    }
+                    return databaseSidebarState.buildTrailingButton();
+                  },
+                ),
+                child: DatabaseSidebar(
+                  key: _databaseSidebarKey,
+                  selectedNotebook: _selectedNotebook,
+                  onNotebookSelected: (notebook) {
+                    setState(() {
+                      _selectedNotebook = notebook;
+                      _selectedTag = null; // Clear tag when notebook is selected
+                      _titleController.clear();
+                      _noteController.clear();
+                    });
+                    // Clear tag selection in notebooks panel
+                    _databaseSidebarKey.currentState?.clearSelectedTag();
+                    _selectNote(null);
+                    _saveLastSelectedNotebook(notebook.id);
+                  },
+                  onTagSelected: (tag) {
+                    setState(() {
+                      _selectedTag = tag;
+                      _selectedNotebook = null; // Clear notebook when tag is selected
+                      _titleController.clear();
+                      _noteController.clear();
+                    });
+                    _selectNote(null);
+                    _saveLastSelectedNotebook(null);
+                  },
+                  onTrashUpdated: () {
+                    setState(() {
+                      _titleController.clear();
+                      _noteController.clear();
+                    });
+                    _selectNote(null);
+                    _saveLastSelectedNotebook(null);
+                  },
+                  onExpansionChanged: () {
+                    setState(() {});
+                  },
+                  onNotebookDeleted: _onNotebookDeleted,
+                ),
+              ),
+              ResizablePanel(
+                key: _notesPanelKey,
+                minWidth: 200,
+                maxWidth: 400,
+                appFocusNode: _appFocusNode,
+                title: 'Notes',
+                preferencesKey: 'notes_panel',
+                showLeftSeparator: !_immersiveModeService.isImmersiveMode,
+                trailing: Builder(
+                  builder: (context) {
+                    final notesPanel = _notesPanelStateKey.currentState;
+                    if (notesPanel == null) {
+                      return const SizedBox.shrink();
+                    }
+                    return notesPanel.buildTrailingButton();
+                  },
+                ),
+                child: NotesPanel(
+                  key: _notesPanelStateKey,
+                  selectedNotebookId: _selectedNotebook?.id,
+                  filterByTag: _selectedTag,
+                    selectedNote: _selectedNote,
                     onNoteSelected: _onNoteSelected,
-                    onNoteSelectedWithSearch: _onNoteSelectedWithSearch,
-                    onThemeUpdated: widget.onThemeUpdated,
-                    onFavoriteRemoved: () {
-                      if (mounted) {
-                        setState(() {});
+                    onNoteSelectedFromPanel: (note) {
+                      // If this note already has an open tab, suppress the next open animation
+                      if (mounted && _editorTabsKey.currentState != null) {
+                        // Request EditorTabs to skip visual animations for the immediate update
+                        _editorTabsKey.currentState!.suppressNextUpdateAnimations();
                       }
+
+                      _onNoteSelected(note);
                     },
-                    onCreateNewNote: createNewNote,
-                    onCreateNewNotebook: createNewNotebook,
-                    onCreateNewTodo: createNewTodo,
-                    onOpenTrash: _toggleTrashPanel,
-                    onTrashReload:
-                        () => _trashPanelStateKey.currentState?.reloadTrash(),
-                    onOpenFavorites: _toggleFavoritesPanel,
-                    onFavoritesReload:
-                        () =>
-                            _favoritesPanelStateKey.currentState
-                                ?.reloadFavorites(),
-                    showBackButton: false,
-                    calendarPanelKey: _calendarPanelKey,
-                    appFocusNode: _appFocusNode,
-                    onForceSync: _refreshAllPanels,
-                  ),
-                  ResizablePanel(
-                    key: _sidebarKey,
-                    minWidth: 200,
-                    maxWidth: 400,
-                    appFocusNode: _appFocusNode,
-                    title: 'Notebooks',
-                    preferencesKey: 'notebooks_panel',
-                    showLeftSeparator: !_immersiveModeService.isImmersiveMode,
-                    onTitleTap: () {
-                      final rootNotebook = Notebook(
-                        id: null,
-                        name: '',
-                        parentId: null,
-                        createdAt: DateTime.now(),
-                        orderIndex: 0,
-                      );
-                      setState(() {
-                        _selectedNotebook = rootNotebook;
-                        _selectedTag = null;
-                        _titleController.clear();
-                        _noteController.clear();
-                      });
-                      _databaseSidebarKey.currentState?.clearSelectedTag();
-                      _selectNote(null);
-                      _saveLastSelectedNotebook(null);
-                    },
-                    trailing: Builder(
-                      builder: (context) {
-                        final databaseSidebarState =
-                            _databaseSidebarKey.currentState;
-                        if (databaseSidebarState == null) {
-                          return const SizedBox.shrink();
-                        }
-                        return databaseSidebarState.buildTrailingButton();
-                      },
-                    ),
-                    child: DatabaseSidebar(
-                      key: _databaseSidebarKey,
-                      selectedNotebook: _selectedNotebook,
-                      onNotebookSelected: (notebook) {
-                        setState(() {
-                          _selectedNotebook = notebook;
-                          _selectedTag =
-                              null; // Clear tag when notebook is selected
-                          _titleController.clear();
-                          _noteController.clear();
-                        });
-                        // Clear tag selection in notebooks panel
-                        _databaseSidebarKey.currentState?.clearSelectedTag();
-                        _selectNote(null);
-                        _saveLastSelectedNotebook(notebook.id);
-                      },
-                      onTagSelected: (tag) {
-                        setState(() {
-                          _selectedTag = tag;
-                          _selectedNotebook =
-                              null; // Clear notebook when tag is selected
-                          _titleController.clear();
-                          _noteController.clear();
-                        });
-                        _selectNote(null);
-                        _saveLastSelectedNotebook(null);
-                      },
-                      onTrashUpdated: () {
-                        setState(() {
-                          _titleController.clear();
-                          _noteController.clear();
-                        });
-                        _selectNote(null);
-                        _saveLastSelectedNotebook(null);
-                      },
-                      onExpansionChanged: () {
-                        setState(() {});
-                      },
-                      onNotebookDeleted: _onNotebookDeleted,
-                    ),
-                  ),
-                  ResizablePanel(
-                    key: _notesPanelKey,
-                    minWidth: 200,
-                    maxWidth: 400,
-                    appFocusNode: _appFocusNode,
-                    title: 'Notes',
-                    preferencesKey: 'notes_panel',
-                    showLeftSeparator: !_immersiveModeService.isImmersiveMode,
-                    trailing: Builder(
-                      builder: (context) {
-                        final notesPanel = _notesPanelStateKey.currentState;
-                        if (notesPanel == null) {
-                          return const SizedBox.shrink();
-                        }
-                        return notesPanel.buildTrailingButton();
-                      },
-                    ),
-                    child: NotesPanel(
-                      key: _notesPanelStateKey,
-                      selectedNotebookId: _selectedNotebook?.id,
-                      filterByTag: _selectedTag,
-                      selectedNote: _selectedNote,
-                      onNoteSelected: _onNoteSelected,
-                      onNoteSelectedFromPanel: (note) {
-                        // If this note already has an open tab, suppress the next open animation
-                        if (mounted && _editorTabsKey.currentState != null) {
-                          // Request EditorTabs to skip visual animations for the immediate update
-                          _editorTabsKey.currentState!
-                              .suppressNextUpdateAnimations();
-                        }
+                  onNoteOpenInNewTab: (note) {
+                    _onNoteOpenInNewTab(note);
+                  },
+                  onTrashUpdated: () {
+                    _isLoadingNoteContent = true;
 
-                        _onNoteSelected(note);
-                      },
-                      onNoteOpenInNewTab: (note) {
-                        _onNoteOpenInNewTab(note);
-                      },
-                      onTrashUpdated: () {
-                        _isLoadingNoteContent = true;
+                    _titleController.clear();
+                    _noteController.clear();
 
-                        _titleController.clear();
-                        _noteController.clear();
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      if (mounted) {
+                        _isLoadingNoteContent = false;
+                      }
+                    });
 
-                        Future.delayed(const Duration(milliseconds: 500), () {
-                          if (mounted) {
-                            _isLoadingNoteContent = false;
-                          }
-                        });
-
-                        _selectNote(null);
-                      },
-                      onSortChanged: () {
-                        setState(() {});
-                      },
-                      onNoteDeleted: _onNoteDeleted,
-                    ),
-                  ),
-                  Expanded(
-                    child: Stack(
+                    _selectNote(null);
+                  },
+                  onSortChanged: () {
+                    setState(() {});
+                  },
+                  onNoteDeleted: _onNoteDeleted,
+                ),
+              ),
+              Expanded(
+                child: Stack(
+                  children: [
+                    Column(
                       children: [
-                        Column(
-                          children: [
-                            // Tabs bar (hidden in immersive mode if configured)
-                            if (!_immersiveModeService.isImmersiveMode ||
-                                !EditorSettingsCache
-                                    .instance
-                                    .hideTabsInImmersive)
-                              EditorTabs(
-                                key: _editorTabsKey,
-                                tabs: _tabManager.tabs,
-                                activeTab: _tabManager.activeTab,
-                                onTabSelected: _onTabSelected,
-                                onTabClosed: _onTabClosed,
-                                onTabTogglePin:
-                                    (tab) => _tabManager.togglePin(tab),
-                                onNewTab: _onNewTab,
-                                onTabReorder: _onTabReorder,
-                                onOpenNotebook: _onOpenNotebookFromTab,
-                              ),
-                            // Editor content
-                            Expanded(child: _buildEditorContent()),
-                          ],
-                        ),
+                        // Tabs bar (hidden in immersive mode if configured)
+                        if (!_immersiveModeService.isImmersiveMode ||
+                            !EditorSettingsCache.instance.hideTabsInImmersive)
+                          EditorTabs(
+                            key: _editorTabsKey,
+                            tabs: _tabManager.tabs,
+                            activeTab: _tabManager.activeTab,
+                            onTabSelected: _onTabSelected,
+                            onTabClosed: _onTabClosed,
+                            onTabTogglePin: (tab) => _tabManager.togglePin(tab),
+                            onNewTab: _onNewTab,
+                            onTabReorder: _onTabReorder,
+                          ),
+                        // Editor content
+                        Expanded(child: _buildEditorContent()),
                       ],
                     ),
-                  ),
+                  ],
+                ),
+              ),
 
-                  // Calendar Panel (independent)
-                  SizedBox(
-                    height: MediaQuery.of(context).size.height,
-                    child: ResizablePanelLeft(
-                      key: _calendarPanelKey,
-                      minWidth: 300,
-                      maxWidth: 400,
-                      appFocusNode: _appFocusNode,
-                      title: '',
-                      preferencesKey: 'calendar_panel',
-                      child: CalendarPanel(
-                        key: _calendarPanelStateKey,
-                        onNoteSelected: _onNoteSelected,
-                        onNoteSelectedFromPanel: (note) {
-                          if (mounted && _editorTabsKey.currentState != null) {
-                            _editorTabsKey.currentState!
-                                .suppressNextUpdateAnimations();
-                          }
+              // Calendar Panel (independent)
+              SizedBox(
+                height: MediaQuery.of(context).size.height,
+                child: ResizablePanelLeft(
+                  key: _calendarPanelKey,
+                  minWidth: 300,
+                  maxWidth: 400,
+                  appFocusNode: _appFocusNode,
+                  title: '',
+                  preferencesKey: 'calendar_panel',
+                  child: CalendarPanel(
+                    key: _calendarPanelStateKey,
+                    onNoteSelected: _onNoteSelected,
+                    onNoteSelectedFromPanel: (note) {
+                      if (mounted && _editorTabsKey.currentState != null) {
+                        _editorTabsKey.currentState!.suppressNextUpdateAnimations();
+                      }
 
-                          _onNoteSelected(note);
-                        },
-                        onNoteOpenInNewTab: _onNoteOpenInNewTab,
-                        onNotebookSelected: _onNotebookSelected,
-                        onNotebookSelectedFromFavorite:
-                            _onNotebookSelectedFromFavorite,
-                        appFocusNode: _appFocusNode,
-                      ),
-                    ),
+                      _onNoteSelected(note);
+                    },
+                    onNoteOpenInNewTab: _onNoteOpenInNewTab,
+                    onNotebookSelected: _onNotebookSelected,
+                    onNotebookSelectedFromFavorite: _onNotebookSelectedFromFavorite,
+                    appFocusNode: _appFocusNode,
                   ),
+                ),
+              ),
+
                 ],
               ),
 
@@ -2000,8 +2016,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                       onNoteSelected: _onNoteSelected,
                       onNoteSelectedFromPanel: (note) {
                         if (mounted && _editorTabsKey.currentState != null) {
-                          _editorTabsKey.currentState!
-                              .suppressNextUpdateAnimations();
+                          _editorTabsKey.currentState!.suppressNextUpdateAnimations();
                         }
                         return null;
                       },
@@ -2182,15 +2197,15 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
         final dbHelper = DatabaseHelper();
         final noteRepository = NoteRepository(dbHelper);
         final refreshedNote = await noteRepository.getNote(activeTab.note!.id!);
-
+        
         if (refreshedNote != null && mounted) {
           // Update the tab's note reference
           _tabManager.updateNoteInTab(refreshedNote);
-
+          
           // Update the controllers with the refreshed content
           activeTab.titleController.text = refreshedNote.title;
           activeTab.noteController.text = refreshedNote.content;
-
+          
           setState(() {
             _selectedNote = refreshedNote;
           });
@@ -2425,48 +2440,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
         }
       } catch (e) {
         debugPrint('Error loading parent notebook: $e');
-      }
-    }
-  }
-
-  void _onOpenNotebookFromTab(EditorTab tab) async {
-    // Only proceed if the tab has a note
-    if (tab.note == null) return;
-
-    final note = tab.note!;
-
-    // If the note has a notebook, load and select it
-    if (note.notebookId != 0) {
-      try {
-        final dbHelper = DatabaseHelper();
-        final notebookRepository = NotebookRepository(dbHelper);
-        final parentNotebook = await notebookRepository.getNotebook(
-          note.notebookId,
-        );
-
-        if (parentNotebook != null && mounted) {
-          // Select the notebook in the sidebar
-          _onNotebookSelected(parentNotebook);
-
-          // Wait for the notes panel to load the notes from the new notebook
-          await Future.delayed(const Duration(milliseconds: 100));
-
-          // Select the note in the notes panel
-          if (mounted) {
-            _notesPanelStateKey.currentState?.selectNoteAfterNotebookChange(
-              note,
-            );
-          }
-        }
-      } catch (e) {
-        debugPrint('Error loading parent notebook: $e');
-        if (mounted) {
-          CustomSnackbar.show(
-            context: context,
-            message: 'Error opening notebook: ${e.toString()}',
-            type: CustomSnackbarType.error,
-          );
-        }
       }
     }
   }

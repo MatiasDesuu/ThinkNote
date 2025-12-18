@@ -20,7 +20,6 @@ import 'package:html/parser.dart' as html;
 import '../widgets/custom_snackbar.dart';
 import '../widgets/context_menu.dart';
 import '../widgets/confirmation_dialogue.dart';
-import '../widgets/custom_dialog.dart';
 
 class LinksScreenDesktopDB extends StatefulWidget {
   final VoidCallback onLinkRemoved;
@@ -72,10 +71,7 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     required ColorScheme colorScheme,
   }) {
     return Material(
-      color:
-          isSelected
-              ? colorScheme.primary.withAlpha(25)
-              : colorScheme.surfaceContainerHighest,
+      color: isSelected ? colorScheme.primary.withAlpha(25) : colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
@@ -87,13 +83,7 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                label == LinksHandlerDB.hiddenTag
-                    ? (isSelected
-                        ? Icons.visibility_rounded
-                        : Icons.visibility_off_rounded)
-                    : (isSelected
-                        ? Icons.label_rounded
-                        : Icons.label_outline_rounded),
+                label == LinksHandlerDB.hiddenTag ? (isSelected ? Icons.visibility_rounded : Icons.visibility_off_rounded) : (isSelected ? Icons.label_rounded : Icons.label_outline_rounded),
                 size: 20,
                 color: colorScheme.primary,
               ),
@@ -102,8 +92,7 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                 label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   height: 1.0,
-                  color:
-                      isSelected ? colorScheme.primary : colorScheme.onSurface,
+                  color: isSelected ? colorScheme.primary : colorScheme.onSurface,
                 ),
               ),
             ],
@@ -337,8 +326,7 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                                         ),
                                         child: _buildTagChip(
                                           label: 'All',
-                                          isSelected:
-                                              _linksHandler.selectedTag == null,
+                                          isSelected: _linksHandler.selectedTag == null,
                                           onTap: () {
                                             _linksHandler.setSelectedTag(null);
                                             _loadBookmarks();
@@ -354,14 +342,10 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                                           ),
                                           child: _buildTagChip(
                                             label: tag,
-                                            isSelected:
-                                                _linksHandler.selectedTag ==
-                                                tag,
+                                            isSelected: _linksHandler.selectedTag == tag,
                                             onTap: () {
                                               _linksHandler.setSelectedTag(
-                                                _linksHandler.selectedTag == tag
-                                                    ? null
-                                                    : tag,
+                                                _linksHandler.selectedTag == tag ? null : tag,
                                               );
                                               _loadBookmarks();
                                               setState(() {});
@@ -745,162 +729,213 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     await showDialog(
       context: context,
       builder:
-          (context) => CustomDialog(
-            title: 'Edit Bookmark',
-            icon: Icons.edit_rounded,
-            width: 500,
-            bottomBar: Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(context).colorScheme.surfaceContainerHigh,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onSurface,
-                        minimumSize: const Size(0, 44),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        if (formKey.currentState!.validate()) {
-                          await _linksHandler.updateBookmark(
-                            id: bookmark.id!,
-                            newTitle: titleController.text,
-                            newUrl: urlController.text,
-                            newDescription: descController.text,
-                            newTags:
-                                tagsController.text
-                                    .split(',')
-                                    .map((e) => e.trim())
-                                    .where((e) => e.isNotEmpty)
-                                    .toList(),
-                          );
-                          await _loadBookmarks();
-                          if (context.mounted) {
-                            Navigator.pop(context);
-                          }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onPrimary,
-                        minimumSize: const Size(0, 44),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Save Changes',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            child: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 500,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: titleController,
-                      decoration: InputDecoration(
-                        labelText: 'Title*',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        height: 56,
+                        decoration: BoxDecoration(),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.edit_rounded,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Edit Bookmark',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ],
                         ),
-                        filled: true,
-                        fillColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest.withAlpha(76),
-                        prefixIcon: const Icon(Icons.title_rounded),
                       ),
-                      validator:
-                          (value) => value?.isEmpty ?? true ? 'Required' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: urlController,
-                      decoration: InputDecoration(
-                        labelText: 'URL*',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
                         ),
-                        filled: true,
-                        fillColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest.withAlpha(76),
-                        prefixIcon: const Icon(Icons.link_rounded),
-                      ),
-                      validator: (value) {
-                        if (value?.isEmpty ?? true) return 'Required';
-                        if (!Uri.parse(value!).isAbsolute) {
-                          return 'Invalid URL';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: descController,
-                      decoration: InputDecoration(
-                        labelText: 'Description',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: titleController,
+                              decoration: InputDecoration(
+                                labelText: 'Title*',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                filled: true,
+                                fillColor: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest
+                                    .withAlpha(76),
+                                prefixIcon: const Icon(Icons.title_rounded),
+                              ),
+                              validator:
+                                  (value) =>
+                                      value?.isEmpty ?? true
+                                          ? 'Required'
+                                          : null,
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: urlController,
+                              decoration: InputDecoration(
+                                labelText: 'URL*',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                filled: true,
+                                fillColor: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest
+                                    .withAlpha(76),
+                                prefixIcon: const Icon(Icons.link_rounded),
+                              ),
+                              validator: (value) {
+                                if (value?.isEmpty ?? true) return 'Required';
+                                if (!Uri.parse(value!).isAbsolute) {
+                                  return 'Invalid URL';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: descController,
+                              decoration: InputDecoration(
+                                labelText: 'Description',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                filled: true,
+                                fillColor: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest
+                                    .withAlpha(76),
+                                prefixIcon: const Icon(
+                                  Icons.description_rounded,
+                                ),
+                              ),
+                              maxLines: 1,
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: tagsController,
+                              decoration: InputDecoration(
+                                labelText: 'Tags (comma separated)',
+                                hintText: 'e.g.: work, research, personal',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                filled: true,
+                                fillColor: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest
+                                    .withAlpha(76),
+                                prefixIcon: const Icon(Icons.tag_rounded),
+                              ),
+                            ),
+                          ],
                         ),
-                        filled: true,
-                        fillColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest.withAlpha(76),
-                        prefixIcon: const Icon(Icons.description_rounded),
                       ),
-                      maxLines: 1,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: tagsController,
-                      decoration: InputDecoration(
-                        labelText: 'Tags (comma separated)',
-                        hintText: 'e.g.: work, research, personal',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                      Container(
+                        height: 56,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: TextButton.styleFrom(
+                                  backgroundColor:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerHigh,
+                                  foregroundColor:
+                                      Theme.of(context).colorScheme.onSurface,
+                                  minimumSize: const Size(0, 44),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () async {
+                                  if (formKey.currentState!.validate()) {
+                                    await _linksHandler.updateBookmark(
+                                      id: bookmark.id!,
+                                      newTitle: titleController.text,
+                                      newUrl: urlController.text,
+                                      newDescription: descController.text,
+                                      newTags:
+                                          tagsController.text
+                                              .split(',')
+                                              .map((e) => e.trim())
+                                              .where((e) => e.isNotEmpty)
+                                              .toList(),
+                                    );
+                                    await _loadBookmarks();
+                                    if (context.mounted) {
+                                      Navigator.pop(context);
+                                    }
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.primary,
+                                  foregroundColor:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                  minimumSize: const Size(0, 44),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Save Changes',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        filled: true,
-                        fillColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest.withAlpha(76),
-                        prefixIcon: const Icon(Icons.tag_rounded),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -933,16 +968,12 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
 
         final pathSegments = uri.pathSegments;
         final postIdIndex = pathSegments.indexOf('comments');
-        if (postIdIndex == -1 || postIdIndex + 1 >= pathSegments.length) {
-          return null;
-        }
+        if (postIdIndex == -1 || postIdIndex + 1 >= pathSegments.length) return null;
 
         final postId = pathSegments[postIdIndex + 1];
         final apiUrl = 'https://www.reddit.com/comments/$postId.json';
 
-        final response = await http
-            .get(Uri.parse(apiUrl))
-            .timeout(const Duration(seconds: 3));
+        final response = await http.get(Uri.parse(apiUrl)).timeout(const Duration(seconds: 3));
         if (response.statusCode == 200) {
           final jsonData = jsonDecode(response.body);
           if (jsonData is List && jsonData.isNotEmpty) {
@@ -970,10 +1001,7 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
             .timeout(const Duration(seconds: 3));
         if (response.statusCode == 200) {
           final document = html.parse(response.body);
-          final ogTitle =
-              document
-                  .querySelector('meta[property="og:title"]')
-                  ?.attributes['content'];
+          final ogTitle = document.querySelector('meta[property="og:title"]')?.attributes['content'];
           String? pageTitle;
 
           if (ogTitle != null && ogTitle.isNotEmpty) {
@@ -1004,189 +1032,242 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     await showDialog(
       context: context,
       builder:
-          (context) => CustomDialog(
-            title: 'New Bookmark',
-            icon: Icons.bookmark_rounded,
-            width: 500,
-            bottomBar: Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(context).colorScheme.surfaceContainerHigh,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onSurface,
-                        minimumSize: const Size(0, 44),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        if (formKey.currentState!.validate()) {
-                          await _linksHandler.addBookmark(
-                            title: titleController.text,
-                            url: urlController.text,
-                            description: descController.text,
-                            tags:
-                                tagsController.text
-                                    .split(',')
-                                    .map((e) => e.trim())
-                                    .where((e) => e.isNotEmpty)
-                                    .toList(),
-                          );
-                          await _loadBookmarks();
-                          if (context.mounted) {
-                            Navigator.pop(context);
-                          }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onPrimary,
-                        minimumSize: const Size(0, 44),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Save Link',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            child: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 500,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextFormField(
-                      controller: urlController,
-                      decoration: InputDecoration(
-                        labelText: 'URL*',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        filled: true,
-                        fillColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest.withAlpha(76),
-                        prefixIcon: const Icon(Icons.link_rounded),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            Icons.search_rounded,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          onPressed: () => fetchWebTitle(urlController.text),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        height: 56,
+                        decoration: BoxDecoration(),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.bookmark_rounded,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'New Bookmark',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ],
                         ),
                       ),
-                      validator: (value) {
-                        if (value?.isEmpty ?? true) return 'Required';
-                        if (!Uri.parse(value!).isAbsolute) {
-                          return 'Invalid URL';
-                        }
-                        return null;
-                      },
-                      onChanged: (value) async {
-                        if (titleController.text.isEmpty || !isTitleEdited) {
-                          await fetchWebTitle(value);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: titleController,
-                      decoration: InputDecoration(
-                        labelText: 'Title*',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
                         ),
-                        filled: true,
-                        fillColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest.withAlpha(76),
-                        prefixIcon: const Icon(Icons.title_rounded),
-                        suffixIcon:
-                            isFetchingTitle
-                                ? const Padding(
-                                  padding: EdgeInsets.all(12.0),
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: urlController,
+                              decoration: InputDecoration(
+                                labelText: 'URL*',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                filled: true,
+                                fillColor: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest
+                                    .withAlpha(76),
+                                prefixIcon: const Icon(Icons.link_rounded),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    Icons.search_rounded,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
                                   ),
-                                )
-                                : null,
-                      ),
-                      validator:
-                          (value) => value?.isEmpty ?? true ? 'Required' : null,
-                      onChanged: (value) {
-                        if (value.isNotEmpty) {
-                          setState(() => isTitleEdited = true);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: descController,
-                      decoration: InputDecoration(
-                        labelText: 'Description',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        filled: true,
-                        fillColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest.withAlpha(76),
-                        prefixIcon: const Icon(Icons.description_rounded),
-                      ),
-                      maxLines: 1,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: tagsController,
+                                  onPressed:
+                                      () => fetchWebTitle(urlController.text),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value?.isEmpty ?? true) return 'Required';
+                                if (!Uri.parse(value!).isAbsolute) {
+                                  return 'Invalid URL';
+                                }
+                                return null;
+                              },
+                              onChanged: (value) async {
+                                if (titleController.text.isEmpty ||
+                                    !isTitleEdited) {
+                                  await fetchWebTitle(value);
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: titleController,
+                              decoration: InputDecoration(
+                                labelText: 'Title*',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                filled: true,
+                                fillColor: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest
+                                    .withAlpha(76),
+                                prefixIcon: const Icon(Icons.title_rounded),
+                                suffixIcon:
+                                    isFetchingTitle
+                                        ? const Padding(
+                                          padding: EdgeInsets.all(12.0),
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                        : null,
+                              ),
+                              validator:
+                                  (value) =>
+                                      value?.isEmpty ?? true
+                                          ? 'Required'
+                                          : null,
+                              onChanged: (value) {
+                                if (value.isNotEmpty) {
+                                  setState(() => isTitleEdited = true);
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: descController,
+                              decoration: InputDecoration(
+                                labelText: 'Description',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                filled: true,
+                                fillColor: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest
+                                    .withAlpha(76),
+                                prefixIcon: const Icon(
+                                  Icons.description_rounded,
+                                ),
+                              ),
+                              maxLines: 1,
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: tagsController,
 
-                      decoration: InputDecoration(
-                        labelText: 'Tags (comma separated)',
-                        hintText: 'e.g.: work, research, personal',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                              decoration: InputDecoration(
+                                labelText: 'Tags (comma separated)',
+                                hintText: 'e.g.: work, research, personal',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                filled: true,
+                                fillColor: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest
+                                    .withAlpha(76),
+                                prefixIcon: const Icon(Icons.tag_rounded),
+                              ),
+                            ),
+                          ],
                         ),
-                        filled: true,
-                        fillColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest.withAlpha(76),
-                        prefixIcon: const Icon(Icons.tag_rounded),
                       ),
-                    ),
-                  ],
+                      Container(
+                        height: 56,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: TextButton.styleFrom(
+                                  backgroundColor:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerHigh,
+                                  foregroundColor:
+                                      Theme.of(context).colorScheme.onSurface,
+                                  minimumSize: const Size(0, 44),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () async {
+                                  if (formKey.currentState!.validate()) {
+                                    await _linksHandler.addBookmark(
+                                      title: titleController.text,
+                                      url: urlController.text,
+                                      description: descController.text,
+                                      tags:
+                                          tagsController.text
+                                              .split(',')
+                                              .map((e) => e.trim())
+                                              .where((e) => e.isNotEmpty)
+                                              .toList(),
+                                    );
+                                    await _loadBookmarks();
+                                    if (context.mounted) {
+                                      Navigator.pop(context);
+                                    }
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.primary,
+                                  foregroundColor:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                  minimumSize: const Size(0, 44),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Save Link',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1206,120 +1287,172 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            return CustomDialog(
-              title: 'Predefined Tags',
-              icon: Icons.label_rounded,
-              width: 500,
-              height: 400,
-              headerActions: [
-                IconButton(
-                  icon: Icon(
-                    Icons.new_label_rounded,
-                    color: Theme.of(context).colorScheme.primary,
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 500,
+                  height: 400,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainer,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  onPressed: () async {
-                    await _showAddTagDialog();
-                    await _tagsHandler.loadPatterns();
-                    setState(() {});
-                  },
-                ),
-              ],
-              child: FutureBuilder<List<TagUrlPattern>>(
-                // Usar FutureBuilder para tener los datos más actualizados
-                future: Future.value(_tagsHandler.allPatterns),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  final patterns = snapshot.data ?? [];
-
-                  return patterns.isEmpty
-                      ? Center(
-                        child: Text(
-                          'No predefined tags',
-                          style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                  child: Column(
+                    children: [
+                      Container(
+                        height: 56,
+                        decoration: BoxDecoration(),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.label_rounded,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Predefined Tags',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              icon: Icon(
+                                Icons.new_label_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              onPressed: () async {
+                                await _showAddTagDialog();
+                                await _tagsHandler.loadPatterns();
+                                setState(() {});
+                              },
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ],
                         ),
-                      )
-                      : ListView.builder(
-                        itemCount: patterns.length,
-                        itemBuilder: (context, index) {
-                          final pattern = patterns[index];
-                          return ListTile(
-                            title: Row(
-                              children: [
-                                // URL Pattern (primera columna)
-                                Expanded(
+                      ),
+                      Expanded(
+                        child: FutureBuilder<List<TagUrlPattern>>(
+                          // Usar FutureBuilder para tener los datos más actualizados
+                          future: Future.value(_tagsHandler.allPatterns),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+
+                            final patterns = snapshot.data ?? [];
+
+                            return patterns.isEmpty
+                                ? Center(
                                   child: Text(
-                                    pattern.urlPattern,
+                                    'No predefined tags',
                                     style: TextStyle(
                                       color:
                                           Theme.of(
                                             context,
-                                          ).colorScheme.onSurface,
+                                          ).colorScheme.onSurfaceVariant,
                                     ),
-                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                                // Flecha (columna central)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
-                                  child: Icon(
-                                    Icons.arrow_forward_rounded,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                                ),
-                                // Tag (tercera columna)
-                                Expanded(
-                                  child: Text(
-                                    pattern.tag,
-                                    style: TextStyle(
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            trailing: IconButton(
-                              icon: Icon(
-                                Icons.delete_forever_rounded,
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                              onPressed: () async {
-                                final confirmed =
-                                    await showDeleteConfirmationDialog(
-                                      context: context,
-                                      title: 'Delete Tag Mapping',
-                                      message:
-                                          'Are you sure you want to delete this tag mapping?\n\nURL Pattern: ${pattern.urlPattern}\nTag: ${pattern.tag}',
-                                      confirmText: 'Delete',
-                                      confirmColor:
-                                          Theme.of(context).colorScheme.error,
-                                    );
+                                )
+                                : ListView.builder(
+                                  itemCount: patterns.length,
+                                  itemBuilder: (context, index) {
+                                    final pattern = patterns[index];
+                                    return ListTile(
+                                      title: Row(
+                                        children: [
+                                          // URL Pattern (primera columna)
+                                          Expanded(
+                                            child: Text(
+                                              pattern.urlPattern,
+                                              style: TextStyle(
+                                                color:
+                                                    Theme.of(
+                                                      context,
+                                                    ).colorScheme.onSurface,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          // Flecha (columna central)
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                            ),
+                                            child: Icon(
+                                              Icons.arrow_forward_rounded,
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                            ),
+                                          ),
+                                          // Tag (tercera columna)
+                                          Expanded(
+                                            child: Text(
+                                              pattern.tag,
+                                              style: TextStyle(
+                                                color:
+                                                    Theme.of(
+                                                      context,
+                                                    ).colorScheme.primary,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      trailing: IconButton(
+                                        icon: Icon(
+                                          Icons.delete_forever_rounded,
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.error,
+                                        ),
+                                        onPressed: () async {
+                                          final confirmed =
+                                              await showDeleteConfirmationDialog(
+                                                context: context,
+                                                title: 'Delete Tag Mapping',
+                                                message:
+                                                    'Are you sure you want to delete this tag mapping?\n\nURL Pattern: ${pattern.urlPattern}\nTag: ${pattern.tag}',
+                                                confirmText: 'Delete',
+                                                confirmColor:
+                                                    Theme.of(
+                                                      context,
+                                                    ).colorScheme.error,
+                                              );
 
-                                if (confirmed == true) {
-                                  await _tagsHandler.removeTagMapping(
-                                    pattern.urlPattern,
-                                    pattern.tag,
-                                  );
-                                  // Actualizar el estado después de eliminar un tag
-                                  setState(() {});
-                                }
-                              },
-                            ),
-                          );
-                        },
-                      );
-                },
+                                          if (confirmed == true) {
+                                            await _tagsHandler.removeTagMapping(
+                                              pattern.urlPattern,
+                                              pattern.tag,
+                                            );
+                                            // Actualizar el estado después de eliminar un tag
+                                            setState(() {});
+                                          }
+                                        },
+                                      ),
+                                    );
+                                  },
+                                );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             );
           },
@@ -1336,142 +1469,194 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     await showDialog(
       context: context,
       builder:
-          (context) => CustomDialog(
-            title: 'New Predefined Tag',
-            icon: Icons.label_rounded,
-            width: 400,
-            bottomBar: Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(context).colorScheme.surfaceContainerHigh,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onSurface,
-                        minimumSize: const Size(0, 44),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        if (formKey.currentState!.validate()) {
-                          try {
-                            await _tagsHandler.addTagMapping(
-                              urlController.text.trim(),
-                              tagController.text.trim(),
-                            );
-                            if (context.mounted) {
-                              Navigator.pop(context);
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              String errorMessage = 'Error adding pattern';
-
-                              if (e.toString().contains('already exists')) {
-                                errorMessage =
-                                    'A tag pattern with this URL and tag already exists.';
-                              } else if (e.toString().contains(
-                                'UNIQUE constraint failed',
-                              )) {
-                                errorMessage =
-                                    'A tag pattern with this URL and tag already exists.';
-                              } else {
-                                errorMessage =
-                                    'Error adding pattern: ${e.toString()}';
-                              }
-
-                              CustomSnackbar.show(
-                                context: context,
-                                message: errorMessage,
-                                type: CustomSnackbarType.error,
-                              );
-                            }
-                          }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onPrimary,
-                        minimumSize: const Size(0, 44),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Save',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            child: Form(
-              key: formKey,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 400,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextFormField(
-                      controller: urlController,
-                      decoration: InputDecoration(
-                        labelText: 'URL Pattern*',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        height: 56,
+                        decoration: BoxDecoration(),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.label_rounded,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'New Predefined Tag',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ],
                         ),
-                        filled: true,
-                        fillColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest.withAlpha(76),
-                        prefixIcon: const Icon(Icons.link_rounded),
                       ),
-                      validator:
-                          (value) => value?.isEmpty ?? true ? 'Required' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: tagController,
-                      decoration: InputDecoration(
-                        labelText: 'Tag*',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
                         ),
-                        filled: true,
-                        fillColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest.withAlpha(76),
-                        prefixIcon: const Icon(Icons.tag_rounded),
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: urlController,
+                              decoration: InputDecoration(
+                                labelText: 'URL Pattern*',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                filled: true,
+                                fillColor: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest
+                                    .withAlpha(76),
+                                prefixIcon: const Icon(Icons.link_rounded),
+                              ),
+                              validator:
+                                  (value) =>
+                                      value?.isEmpty ?? true
+                                          ? 'Required'
+                                          : null,
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: tagController,
+                              decoration: InputDecoration(
+                                labelText: 'Tag*',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                filled: true,
+                                fillColor: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest
+                                    .withAlpha(76),
+                                prefixIcon: const Icon(Icons.tag_rounded),
+                              ),
+                              validator:
+                                  (value) =>
+                                      value?.isEmpty ?? true
+                                          ? 'Required'
+                                          : null,
+                            ),
+                          ],
+                        ),
                       ),
-                      validator:
-                          (value) => value?.isEmpty ?? true ? 'Required' : null,
-                    ),
-                  ],
+                      Container(
+                        height: 56,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: TextButton.styleFrom(
+                                  backgroundColor:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerHigh,
+                                  foregroundColor:
+                                      Theme.of(context).colorScheme.onSurface,
+                                  minimumSize: const Size(0, 44),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () async {
+                                  if (formKey.currentState!.validate()) {
+                                    try {
+                                      await _tagsHandler.addTagMapping(
+                                        urlController.text.trim(),
+                                        tagController.text.trim(),
+                                      );
+                                      if (context.mounted) {
+                                        Navigator.pop(context);
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        String errorMessage =
+                                            'Error adding pattern';
+
+                                        if (e.toString().contains(
+                                          'already exists',
+                                        )) {
+                                          errorMessage =
+                                              'A tag pattern with this URL and tag already exists.';
+                                        } else if (e.toString().contains(
+                                          'UNIQUE constraint failed',
+                                        )) {
+                                          errorMessage =
+                                              'A tag pattern with this URL and tag already exists.';
+                                        } else {
+                                          errorMessage =
+                                              'Error adding pattern: ${e.toString()}';
+                                        }
+
+                                        CustomSnackbar.show(
+                                          context: context,
+                                          message: errorMessage,
+                                          type: CustomSnackbarType.error,
+                                        );
+                                      }
+                                    }
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.primary,
+                                  foregroundColor:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                  minimumSize: const Size(0, 44),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Save',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1648,8 +1833,9 @@ class _BookmarkCardState extends State<_BookmarkCard> {
                                     style: Theme.of(
                                       context,
                                     ).textTheme.bodySmall?.copyWith(
-                                      color: widget.colorScheme.onSurface
-                                          .withAlpha(150),
+                                      color: widget.colorScheme.onSurface.withAlpha(
+                                        150,
+                                      ),
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -1666,8 +1852,9 @@ class _BookmarkCardState extends State<_BookmarkCard> {
                                   style: Theme.of(
                                     context,
                                   ).textTheme.bodySmall?.copyWith(
-                                    color: widget.colorScheme.onSurface
-                                        .withAlpha(150),
+                                    color: widget.colorScheme.onSurface.withAlpha(
+                                      150,
+                                    ),
                                   ),
                                 ),
                                 FutureBuilder<List<String>>(
@@ -1720,8 +1907,7 @@ class _BookmarkCardState extends State<_BookmarkCard> {
                                                                         .colorScheme
                                                                         .primary,
                                                                 fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
+                                                                    FontWeight.w500,
                                                               ),
                                                             ),
                                                           ),
@@ -1803,10 +1989,9 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
         decoration: BoxDecoration(
-          color:
-              _isHovering
-                  ? widget.colorScheme.surfaceContainerHighest
-                  : widget.colorScheme.surface,
+          color: _isHovering
+              ? widget.colorScheme.surfaceContainerHighest
+              : widget.colorScheme.surface,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Material(
@@ -1857,24 +2042,22 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
                         shape: const CircleBorder(),
                         color: Colors.transparent,
                         child: Center(
-                          child:
-                              uri != null
-                                  ? Image.network(
-                                    'https://www.google.com/s2/favicons?domain=${uri.host}&sz=64',
-                                    width: 32,
-                                    height: 32,
-                                    errorBuilder:
-                                        (_, __, ___) => Icon(
-                                          Icons.link_rounded,
-                                          size: 32,
-                                          color: widget.colorScheme.primary,
-                                        ),
-                                  )
-                                  : Icon(
-                                    Icons.link_rounded,
-                                    size: 28,
-                                    color: widget.colorScheme.primary,
-                                  ),
+                          child: uri != null
+                              ? Image.network(
+                                'https://www.google.com/s2/favicons?domain=${uri.host}&sz=64',
+                                width: 32,
+                                height: 32,
+                                errorBuilder: (_, __, ___) => Icon(
+                                  Icons.link_rounded,
+                                  size: 32,
+                                  color: widget.colorScheme.primary,
+                                ),
+                              )
+                              : Icon(
+                                Icons.link_rounded,
+                                size: 28,
+                                color: widget.colorScheme.primary,
+                              ),
                         ),
                       ),
                     ),
@@ -1917,18 +2100,14 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
                             Text(
                               formattedDate,
                               style: TextStyle(
-                                color: widget.colorScheme.onSurface.withAlpha(
-                                  150,
-                                ),
+                                color: widget.colorScheme.onSurface.withAlpha(150),
                                 fontSize: 12,
                               ),
                             ),
                             FutureBuilder<List<String>>(
-                              future: DatabaseService().bookmarkService
-                                  .getTagsByBookmarkId(widget.bookmark.id!),
+                              future: DatabaseService().bookmarkService.getTagsByBookmarkId(widget.bookmark.id!),
                               builder: (context, snapshot) {
-                                if (!snapshot.hasData ||
-                                    snapshot.data!.isEmpty) {
+                                if (!snapshot.hasData || snapshot.data!.isEmpty) {
                                   return const SizedBox.shrink();
                                 }
 
@@ -1939,14 +2118,11 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
                                   children: [
                                     if (visibleTags.isNotEmpty) ...[
                                       Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 4,
-                                        ),
+                                        padding: const EdgeInsets.symmetric(horizontal: 4),
                                         child: Text(
                                           '|',
                                           style: TextStyle(
-                                            color: widget.colorScheme.onSurface
-                                                .withAlpha(150),
+                                            color: widget.colorScheme.onSurface.withAlpha(150),
                                             fontSize: 12,
                                           ),
                                         ),
@@ -1956,29 +2132,19 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
                                         child: SingleChildScrollView(
                                           scrollDirection: Axis.horizontal,
                                           child: Row(
-                                            children:
-                                                visibleTags
-                                                    .map(
-                                                      (tag) => Padding(
-                                                        padding:
-                                                            const EdgeInsets.only(
-                                                              right: 4,
-                                                            ),
-                                                        child: Text(
-                                                          '#$tag',
-                                                          style: TextStyle(
-                                                            fontSize: 12,
-                                                            color:
-                                                                widget
-                                                                    .colorScheme
-                                                                    .primary,
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    )
-                                                    .toList(),
+                                            children: visibleTags.map(
+                                              (tag) => Padding(
+                                                padding: const EdgeInsets.only(right: 4),
+                                                child: Text(
+                                                  '#$tag',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: widget.colorScheme.primary,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ),
+                                            ).toList(),
                                           ),
                                         ),
                                       ),

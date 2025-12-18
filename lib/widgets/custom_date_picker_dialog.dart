@@ -50,7 +50,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
         child: Container(
           width: 320,
           decoration: BoxDecoration(
-            color: colorScheme.surface,
+            color: colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
