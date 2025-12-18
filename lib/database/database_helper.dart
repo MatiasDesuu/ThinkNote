@@ -115,6 +115,7 @@ class DatabaseHelper {
         ${config.DatabaseConfig.columnOrderNoteIndex} INTEGER NOT NULL DEFAULT 0,
         ${config.DatabaseConfig.columnIsTask} INTEGER NOT NULL DEFAULT 0,
         ${config.DatabaseConfig.columnIsCompleted} INTEGER NOT NULL DEFAULT 0,
+        ${config.DatabaseConfig.columnNoteIsPinned} INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (${config.DatabaseConfig.columnNotebookId}) REFERENCES ${config.DatabaseConfig.tableNotebooks} (${config.DatabaseConfig.columnId})
       )
     ''');
@@ -424,14 +425,15 @@ class DatabaseHelper {
         db.execute(
           'ALTER TABLE ${config.DatabaseConfig.tableNotes} ADD COLUMN ${config.DatabaseConfig.columnOrderNoteIndex} INTEGER NOT NULL DEFAULT 0;',
         );
-
       } catch (e) {
         // Si la columna ya existe, ignorar el error
       }
       try {
         final result = db.select("PRAGMA table_info(bookmarks)");
 
-        final hasDescription = result.any((row) => row['name'] == 'description');
+        final hasDescription = result.any(
+          (row) => row['name'] == 'description',
+        );
         if (!hasDescription) {
           db.execute('ALTER TABLE bookmarks ADD COLUMN description TEXT;');
         }
@@ -439,17 +441,23 @@ class DatabaseHelper {
         final hasTimestamp = result.any((row) => row['name'] == 'timestamp');
         if (!hasTimestamp) {
           // Add a timestamp column with a safe default to avoid NOT NULL issues on existing rows
-          db.execute("ALTER TABLE bookmarks ADD COLUMN timestamp TEXT NOT NULL DEFAULT '';");
+          db.execute(
+            "ALTER TABLE bookmarks ADD COLUMN timestamp TEXT NOT NULL DEFAULT '';",
+          );
         }
 
         final hasHidden = result.any((row) => row['name'] == 'hidden');
         if (!hasHidden) {
-          db.execute('ALTER TABLE bookmarks ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0;');
+          db.execute(
+            'ALTER TABLE bookmarks ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0;',
+          );
         }
 
         final hasTagIds = result.any((row) => row['name'] == 'tag_ids');
         if (!hasTagIds) {
-          db.execute("ALTER TABLE bookmarks ADD COLUMN tag_ids TEXT DEFAULT '[]';");
+          db.execute(
+            "ALTER TABLE bookmarks ADD COLUMN tag_ids TEXT DEFAULT '[]';",
+          );
         }
       } catch (e) {
         // Ignorar si alguna columna ya existe o si la migración falla por compatibilidad
@@ -460,7 +468,6 @@ class DatabaseHelper {
         db.execute(
           'ALTER TABLE ${config.DatabaseConfig.tableNotebooks} ADD COLUMN ${config.DatabaseConfig.columnDeletedAt} INTEGER;',
         );
-
       } catch (e) {
         // Si la columna ya existe, ignorar el error
       }
@@ -470,7 +477,6 @@ class DatabaseHelper {
         db.execute(
           'ALTER TABLE ${config.DatabaseConfig.tableNotebooks} ADD COLUMN ${config.DatabaseConfig.columnIsFavorite} INTEGER NOT NULL DEFAULT 0;',
         );
-
       } catch (e) {
         // Si la columna ya existe, ignorar el error
       }
@@ -480,7 +486,6 @@ class DatabaseHelper {
         db.execute(
           'ALTER TABLE ${config.DatabaseConfig.tableNotebooks} ADD COLUMN ${config.DatabaseConfig.columnIconId} INTEGER;',
         );
-
       } catch (e) {
         // Si la columna ya existe, ignorar el error
       }
@@ -490,7 +495,6 @@ class DatabaseHelper {
         db.execute(
           'ALTER TABLE ${config.DatabaseConfig.tableNotes} ADD COLUMN ${config.DatabaseConfig.columnIsTask} INTEGER NOT NULL DEFAULT 0;',
         );
-
       } catch (e) {
         // Si la columna ya existe, ignorar el error
       }
@@ -500,7 +504,15 @@ class DatabaseHelper {
         db.execute(
           'ALTER TABLE ${config.DatabaseConfig.tableNotes} ADD COLUMN ${config.DatabaseConfig.columnIsCompleted} INTEGER NOT NULL DEFAULT 0;',
         );
+      } catch (e) {
+        // Si la columna ya existe, ignorar el error
+      }
 
+      // Migración para notes - is_completed
+      try {
+        db.execute(
+          'ALTER TABLE ${config.DatabaseConfig.tableNotes} ADD COLUMN ${config.DatabaseConfig.columnNoteIsPinned} INTEGER NOT NULL DEFAULT 0;',
+        );
       } catch (e) {
         // Si la columna ya existe, ignorar el error
       }
@@ -520,7 +532,6 @@ class DatabaseHelper {
             ALTER TABLE ${config.DatabaseConfig.tableTasks}
             ADD COLUMN ${config.DatabaseConfig.columnTaskIsPinned} INTEGER NOT NULL DEFAULT 0
           ''');
-
         }
       } catch (e) {
         // Si la columna ya existe, ignorar el error
@@ -528,7 +539,9 @@ class DatabaseHelper {
 
       // Migración para task_tags - asegurarse que task_id sea nullable
       try {
-        final result = db.select('PRAGMA table_info(${config.DatabaseConfig.tableTaskTags})');
+        final result = db.select(
+          'PRAGMA table_info(${config.DatabaseConfig.tableTaskTags})',
+        );
         Map<String, Object?>? taskIdRow;
         for (final row in result) {
           if (row['name'] == config.DatabaseConfig.columnTagTaskId) {
@@ -540,11 +553,13 @@ class DatabaseHelper {
         if (taskIdRow != null) {
           final notnullValue = taskIdRow['notnull'] as int? ?? 0;
           if (notnullValue == 1) {
-          // La columna task_id existe pero es NOT NULL en una versión previa de la DB.
-          // Recreate the table to allow NULL task_id (can't alter nullability directly).
-          db.execute('ALTER TABLE ${config.DatabaseConfig.tableTaskTags} RENAME TO ${config.DatabaseConfig.tableTaskTags}_old;');
+            // La columna task_id existe pero es NOT NULL en una versión previa de la DB.
+            // Recreate the table to allow NULL task_id (can't alter nullability directly).
+            db.execute(
+              'ALTER TABLE ${config.DatabaseConfig.tableTaskTags} RENAME TO ${config.DatabaseConfig.tableTaskTags}_old;',
+            );
 
-          db.execute('''
+            db.execute('''
             CREATE TABLE ${config.DatabaseConfig.tableTaskTags} (
               ${config.DatabaseConfig.columnId} INTEGER PRIMARY KEY AUTOINCREMENT,
               ${config.DatabaseConfig.columnTagName} TEXT NOT NULL,
@@ -553,9 +568,13 @@ class DatabaseHelper {
             )
           ''');
 
-          db.execute('INSERT INTO ${config.DatabaseConfig.tableTaskTags} (${config.DatabaseConfig.columnTagName}, ${config.DatabaseConfig.columnTagTaskId}) SELECT ${config.DatabaseConfig.columnTagName}, ${config.DatabaseConfig.columnTagTaskId} FROM ${config.DatabaseConfig.tableTaskTags}_old;');
+            db.execute(
+              'INSERT INTO ${config.DatabaseConfig.tableTaskTags} (${config.DatabaseConfig.columnTagName}, ${config.DatabaseConfig.columnTagTaskId}) SELECT ${config.DatabaseConfig.columnTagName}, ${config.DatabaseConfig.columnTagTaskId} FROM ${config.DatabaseConfig.tableTaskTags}_old;',
+            );
 
-          db.execute('DROP TABLE ${config.DatabaseConfig.tableTaskTags}_old;');
+            db.execute(
+              'DROP TABLE ${config.DatabaseConfig.tableTaskTags}_old;',
+            );
           }
         }
       } catch (e) {
@@ -575,7 +594,6 @@ class DatabaseHelper {
             ALTER TABLE ${config.DatabaseConfig.tableCalendarEvents}
             ADD COLUMN ${config.DatabaseConfig.columnCalendarEventStatus} TEXT
           ''');
-
         }
       } catch (e) {
         // Si la columna ya existe, ignorar el error

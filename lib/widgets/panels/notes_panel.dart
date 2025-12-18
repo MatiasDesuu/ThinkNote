@@ -758,18 +758,23 @@ class NotesPanelState extends State<NotesPanel> {
 
       switch (_sortMode) {
         case SortMode.date:
-          notes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          notes.sort((a, b) {
+            if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+            return b.createdAt.compareTo(a.createdAt);
+          });
           break;
         case SortMode.order:
-          notes.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+          notes.sort((a, b) {
+            if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+            return a.orderIndex.compareTo(b.orderIndex);
+          });
           break;
         case SortMode.completion:
           notes.sort((a, b) {
+            if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
             if (a.isCompleted == b.isCompleted) {
               if (_completionSubSortByDate) {
-                return b.createdAt.compareTo(
-                  a.createdAt,
-                ); // Más reciente primero
+                return b.createdAt.compareTo(a.createdAt);
               } else {
                 return a.title.compareTo(b.title);
               }
@@ -843,6 +848,39 @@ class NotesPanelState extends State<NotesPanel> {
         ),
       );
     }
+
+    // Add Pin/Unpin option
+    menuItems.add(
+      ContextMenuItem(
+        icon: note.isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+        label: note.isPinned ? 'Unpin' : 'Pin to top',
+        onTap: () {
+          if (_isProcessingAction) return;
+          _isProcessingAction = true;
+
+          _noteRepository
+              .updateNote(note.copyWith(isPinned: !note.isPinned))
+              .then((_) {
+                if (mounted) {
+                  _loadNotes();
+                }
+              })
+              .catchError((e) {
+                if (mounted) {
+                  CustomSnackbar.show(
+                    context: context,
+                    message: 'Error updating note: ${e.toString()}',
+                    type: CustomSnackbarType.error,
+                  );
+                }
+              })
+              .whenComplete(() {
+                _isProcessingAction = false;
+                _isContextMenuOpen = false;
+              });
+        },
+      ),
+    );
 
     // Agregar opción de completar/descompletar solo si es un todo
     if (note.isTask) {
@@ -1248,6 +1286,15 @@ class NotesPanelState extends State<NotesPanel> {
                       color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
+                if (_showNoteIcons && note.isPinned)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Icon(
+                      Icons.push_pin_rounded,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -1535,7 +1582,9 @@ class NotesPanelState extends State<NotesPanel> {
                   decoration: BoxDecoration(
                     color:
                         isTarget && _dragTargetIsAbove
-                            ? Theme.of(context).colorScheme.primary.withAlpha(60)
+                            ? Theme.of(
+                              context,
+                            ).colorScheme.primary.withAlpha(60)
                             : Colors.transparent,
                     borderRadius:
                         isTarget && _dragTargetIsAbove
@@ -1554,7 +1603,9 @@ class NotesPanelState extends State<NotesPanel> {
                   decoration: BoxDecoration(
                     color:
                         isTarget && !_dragTargetIsAbove
-                            ? Theme.of(context).colorScheme.onPrimary.withAlpha(60)
+                            ? Theme.of(
+                              context,
+                            ).colorScheme.onPrimary.withAlpha(60)
                             : Colors.transparent,
                     borderRadius:
                         isTarget && !_dragTargetIsAbove
@@ -1587,13 +1638,31 @@ class NotesPanelState extends State<NotesPanel> {
     final currentIndex = _notes.indexWhere((note) => note.id == draggedNote.id);
     if (currentIndex == -1) return;
 
+    // Constrain reordering to pinned/unpinned sections
+    final pinnedNotesCount = _notes.where((n) => n.isPinned).length;
+    int adjustedTargetIndex = targetIndex;
+
+    if (draggedNote.isPinned) {
+      // Pinned notes can only move within the pinned section
+      if (adjustedTargetIndex > pinnedNotesCount) {
+        adjustedTargetIndex = pinnedNotesCount;
+      }
+    } else {
+      // Unpinned notes can only move within the unpinned section
+      if (adjustedTargetIndex < pinnedNotesCount) {
+        adjustedTargetIndex = pinnedNotesCount;
+      }
+    }
+
     // Actualizar la UI inmediatamente para feedback visual
     setState(() {
-      final adjustedTargetIndex =
-          targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
+      final finalTargetIndex =
+          adjustedTargetIndex > currentIndex
+              ? adjustedTargetIndex - 1
+              : adjustedTargetIndex;
       final newNotes = List<Note>.from(_notes);
       newNotes.removeAt(currentIndex);
-      newNotes.insert(adjustedTargetIndex, draggedNote);
+      newNotes.insert(finalTargetIndex, draggedNote);
       _notes = newNotes;
     });
 
@@ -1602,15 +1671,21 @@ class NotesPanelState extends State<NotesPanel> {
 
       // Obtener todas las notas del notebook ordenadas
       final allNotes = await repo.getNotesByNotebookId(draggedNote.notebookId);
-      allNotes.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+      // Ensure local sorting matches the constraint
+      allNotes.sort((a, b) {
+        if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+        return a.orderIndex.compareTo(b.orderIndex);
+      });
 
       // Remover la nota que se está moviendo de la lista
       allNotes.removeWhere((note) => note.id == draggedNote.id);
 
-      // Insertar la nota en la nueva posición
-      final adjustedTargetIndex =
-          targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
-      allNotes.insert(adjustedTargetIndex, draggedNote);
+      // Insertar la nota en la nueva posición restringida
+      final finalTargetIndex =
+          adjustedTargetIndex > currentIndex
+              ? adjustedTargetIndex - 1
+              : adjustedTargetIndex;
+      allNotes.insert(finalTargetIndex, draggedNote);
 
       // Actualizar todos los orderIndex de forma optimizada
       final db = await DatabaseHelper().database;

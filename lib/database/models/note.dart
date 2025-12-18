@@ -11,6 +11,7 @@ class Note {
   final int orderIndex;
   final bool isTask;
   final bool isCompleted;
+  final bool isPinned;
 
   Note({
     this.id,
@@ -25,6 +26,7 @@ class Note {
     this.orderIndex = 0,
     this.isTask = false,
     this.isCompleted = false,
+    this.isPinned = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -41,6 +43,7 @@ class Note {
       'order_index': orderIndex,
       'is_task': isTask ? 1 : 0,
       'is_completed': isCompleted ? 1 : 0,
+      'is_pinned': isPinned ? 1 : 0,
     };
   }
 
@@ -61,6 +64,7 @@ class Note {
       orderIndex: map['order_index'] as int? ?? 0,
       isTask: map['is_task'] == 1,
       isCompleted: map['is_completed'] == 1,
+      isPinned: map['is_pinned'] == 1,
     );
   }
 
@@ -77,6 +81,7 @@ class Note {
     int? orderIndex,
     bool? isTask,
     bool? isCompleted,
+    bool? isPinned,
   }) {
     return Note(
       id: id ?? this.id,
@@ -91,6 +96,7 @@ class Note {
       orderIndex: orderIndex ?? this.orderIndex,
       isTask: isTask ?? this.isTask,
       isCompleted: isCompleted ?? this.isCompleted,
+      isPinned: isPinned ?? this.isPinned,
     );
   }
 }

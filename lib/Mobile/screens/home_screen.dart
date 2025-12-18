@@ -560,13 +560,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void _sortNotes(List<Note> notes) {
     switch (_sortMode) {
       case SortMode.date:
-        notes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        notes.sort((a, b) {
+          if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+          return b.createdAt.compareTo(a.createdAt);
+        });
         break;
       case SortMode.order:
-        notes.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+        notes.sort((a, b) {
+          if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+          return a.orderIndex.compareTo(b.orderIndex);
+        });
         break;
       case SortMode.completion:
         notes.sort((a, b) {
+          if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
           if (a.isCompleted == b.isCompleted) {
             if (_completionSubSortByDate) {
               return b.createdAt.compareTo(a.createdAt); // Más reciente primero
@@ -1026,6 +1033,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                   color: colorScheme.primary,
                                                 ),
                                               ),
+                                            if (_showNoteIcons && note.isPinned)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  left: 8,
+                                                ),
+                                                child: Icon(
+                                                  Icons.push_pin_rounded,
+                                                  size: 14,
+                                                  color: colorScheme.primary,
+                                                ),
+                                              ),
                                           ],
                                         ),
                                       ),
@@ -1132,7 +1150,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 size: 20,
                                 color: Theme.of(context).colorScheme.primary,
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 12),
                               Text(
                                 note.isCompleted
                                     ? 'Mark as incomplete'
@@ -1143,6 +1161,37 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        final updatedNote = note.copyWith(
+                          isPinned: !note.isPinned,
+                        );
+                        _updateNote(note, updatedNote);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              note.isPinned
+                                  ? Icons.push_pin_rounded
+                                  : Icons.push_pin_outlined,
+                              size: 20,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(note.isPinned ? 'Unpin' : 'Pin to top'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                   Material(
                     color: Colors.transparent,
                     child: InkWell(

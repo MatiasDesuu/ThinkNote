@@ -37,8 +37,9 @@ class NoteRepository {
         ${config.DatabaseConfig.columnTags},
         order_index,
         ${config.DatabaseConfig.columnIsTask},
-        ${config.DatabaseConfig.columnIsCompleted}
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ${config.DatabaseConfig.columnIsCompleted},
+        ${config.DatabaseConfig.columnNoteIsPinned}
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ''');
     try {
       stmt.execute([
@@ -52,6 +53,7 @@ class NoteRepository {
         targetOrderIndex,
         note.isTask ? 1 : 0,
         note.isCompleted ? 1 : 0,
+        note.isPinned ? 1 : 0,
       ]);
 
       db.execute(
@@ -102,6 +104,7 @@ class NoteRepository {
       orderIndex: row['order_index'] as int? ?? 0,
       isTask: isTask,
       isCompleted: isCompleted,
+      isPinned: row[config.DatabaseConfig.columnNoteIsPinned] == 1,
     );
   }
 
@@ -112,65 +115,23 @@ class NoteRepository {
       SELECT * FROM ${config.DatabaseConfig.tableNotes}
       WHERE ${config.DatabaseConfig.columnNotebookId} = ?
       AND ${config.DatabaseConfig.columnDeletedAt} IS NULL
-      ORDER BY order_index ASC
+      ORDER BY ${config.DatabaseConfig.columnNoteIsPinned} DESC, order_index ASC
     ''',
       [notebookId],
     );
 
-    return result
-        .map(
-          (row) => Note(
-            id: row['id'] as int,
-            title: row[config.DatabaseConfig.columnTitle] as String? ?? '',
-            content: row[config.DatabaseConfig.columnContent] as String? ?? '',
-            notebookId: row[config.DatabaseConfig.columnNotebookId] as int,
-            createdAt: DateTime.fromMillisecondsSinceEpoch(
-              row[config.DatabaseConfig.columnCreatedAt] as int,
-            ),
-            updatedAt: DateTime.fromMillisecondsSinceEpoch(
-              row[config.DatabaseConfig.columnUpdatedAt] as int,
-            ),
-            isFavorite: row[config.DatabaseConfig.columnIsFavorite] == 1,
-            tags: row[config.DatabaseConfig.columnTags] as String? ?? '',
-            orderIndex: row['order_index'] as int? ?? 0,
-            isTask: row[config.DatabaseConfig.columnIsTask] == 1,
-            isCompleted: row[config.DatabaseConfig.columnIsCompleted] == 1,
-          ),
-        )
-        .toList();
+    return result.map((row) => Note.fromMap(row)).toList();
   }
 
   Future<List<Note>> getAllNotes() async {
     final db = await _dbHelper.database;
-    final result = db.select(
-      '''
+    final result = db.select('''
       SELECT * FROM ${config.DatabaseConfig.tableNotes}
       WHERE ${config.DatabaseConfig.columnDeletedAt} IS NULL
       ORDER BY ${config.DatabaseConfig.columnTitle} ASC
-    ''',
-    );
+    ''');
 
-    return result
-        .map(
-          (row) => Note(
-            id: row['id'] as int,
-            title: row[config.DatabaseConfig.columnTitle] as String? ?? '',
-            content: row[config.DatabaseConfig.columnContent] as String? ?? '',
-            notebookId: row[config.DatabaseConfig.columnNotebookId] as int,
-            createdAt: DateTime.fromMillisecondsSinceEpoch(
-              row[config.DatabaseConfig.columnCreatedAt] as int,
-            ),
-            updatedAt: DateTime.fromMillisecondsSinceEpoch(
-              row[config.DatabaseConfig.columnUpdatedAt] as int,
-            ),
-            isFavorite: row[config.DatabaseConfig.columnIsFavorite] == 1,
-            tags: row[config.DatabaseConfig.columnTags] as String? ?? '',
-            orderIndex: row['order_index'] as int? ?? 0,
-            isTask: row[config.DatabaseConfig.columnIsTask] == 1,
-            isCompleted: row[config.DatabaseConfig.columnIsCompleted] == 1,
-          ),
-        )
-        .toList();
+    return result.map((row) => Note.fromMap(row)).toList();
   }
 
   Future<int> updateNote(Note note) async {
@@ -185,7 +146,8 @@ class NoteRepository {
           ${config.DatabaseConfig.columnTags} = ?,
           order_index = ?,
           ${config.DatabaseConfig.columnIsTask} = ?,
-          ${config.DatabaseConfig.columnIsCompleted} = ?
+          ${config.DatabaseConfig.columnIsCompleted} = ?,
+          ${config.DatabaseConfig.columnNoteIsPinned} = ?
       WHERE id = ?
     ''');
 
@@ -200,6 +162,7 @@ class NoteRepository {
         note.orderIndex,
         note.isTask ? 1 : 0,
         note.isCompleted ? 1 : 0,
+        note.isPinned ? 1 : 0,
         note.id,
       ]);
 

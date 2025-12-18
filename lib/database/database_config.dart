@@ -54,6 +54,7 @@ class DatabaseConfig {
   static const String columnOrderNoteIndex = 'order_index';
   static const String columnIsTask = 'is_task';
   static const String columnIsCompleted = 'is_completed';
+  static const String columnNoteIsPinned = 'is_pinned';
 
   // Columnas para la tabla tasks
   static const String columnTaskName = 'name';
