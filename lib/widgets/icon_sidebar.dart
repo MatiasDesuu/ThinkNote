@@ -195,6 +195,7 @@ class IconSidebar extends StatefulWidget {
   final VoidCallback? onOpenTrash;
   final VoidCallback? onTrashReload;
   final VoidCallback? onOpenFavorites;
+  final VoidCallback? onOpenTemplates;
   final VoidCallback? onFavoritesReload;
   final bool showBackButton;
   final bool isWorkflowsScreen;
@@ -238,6 +239,7 @@ class IconSidebar extends StatefulWidget {
     this.onOpenTrash,
     this.onTrashReload,
     this.onOpenFavorites,
+    this.onOpenTemplates,
     this.onFavoritesReload,
     this.showBackButton = true,
     this.isWorkflowsScreen = false,
@@ -374,14 +376,15 @@ class _IconSidebarState extends State<IconSidebar>
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        insetPadding: EdgeInsets.zero,
-        child: TodoScreenDB(
-          rootDir: widget.rootDir!,
-          onDirectorySet: widget.onDirectorySet ?? () {},
-          onThemeUpdated: widget.onThemeUpdated,
-        ),
-      ),
+      builder:
+          (context) => Dialog(
+            insetPadding: EdgeInsets.zero,
+            child: TodoScreenDB(
+              rootDir: widget.rootDir!,
+              onDirectorySet: widget.onDirectorySet ?? () {},
+              onThemeUpdated: widget.onThemeUpdated,
+            ),
+          ),
     );
   }
 
@@ -427,13 +430,14 @@ class _IconSidebarState extends State<IconSidebar>
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        insetPadding: EdgeInsets.zero,
-        child: LinksScreenDesktopDB(
-          onLinkRemoved: () {},
-          onBack: () => Navigator.of(context).pop(),
-        ),
-      ),
+      builder:
+          (context) => Dialog(
+            insetPadding: EdgeInsets.zero,
+            child: LinksScreenDesktopDB(
+              onLinkRemoved: () {},
+              onBack: () => Navigator.of(context).pop(),
+            ),
+          ),
     );
   }
 
@@ -471,14 +475,15 @@ class _IconSidebarState extends State<IconSidebar>
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        insetPadding: EdgeInsets.zero,
-        child: ThinksScreen(
-          rootDir: widget.rootDir!,
-          onOpenNote: widget.onOpenNote ?? (_) {},
-          onClose: () => Navigator.of(context).pop(),
-        ),
-      ),
+      builder:
+          (context) => Dialog(
+            insetPadding: EdgeInsets.zero,
+            child: ThinksScreen(
+              rootDir: widget.rootDir!,
+              onOpenNote: widget.onOpenNote ?? (_) {},
+              onClose: () => Navigator.of(context).pop(),
+            ),
+          ),
     );
   }
 
@@ -516,14 +521,15 @@ class _IconSidebarState extends State<IconSidebar>
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        insetPadding: EdgeInsets.zero,
-        child: DiaryScreen(
-          rootDir: Directory.current,
-          onOpenNote: (file) {},
-          onClose: () => Navigator.of(context).pop(),
-        ),
-      ),
+      builder:
+          (context) => Dialog(
+            insetPadding: EdgeInsets.zero,
+            child: DiaryScreen(
+              rootDir: Directory.current,
+              onOpenNote: (file) {},
+              onClose: () => Navigator.of(context).pop(),
+            ),
+          ),
     );
   }
 
@@ -682,6 +688,11 @@ class _IconSidebarState extends State<IconSidebar>
                 icon: Icons.add_task_rounded,
                 onTap: widget.onCreateNewTodo,
                 label: 'New Task',
+              ),
+              HoverMenuItem(
+                icon: Icons.auto_awesome_motion_rounded,
+                onTap: widget.onOpenTemplates,
+                label: 'New from Template',
               ),
             ],
             iconSize: widget.iconSize,
@@ -898,7 +909,10 @@ class _IconSidebarState extends State<IconSidebar>
           onPressed: _openTrashScreen,
         ),
       // Botón para ocultar/mostrar panel lateral en tasks, thinks y diary
-      if ((widget.isTasksScreen || widget.isThinksScreen || widget.isDiaryScreen) && widget.onToggleSidebar != null)
+      if ((widget.isTasksScreen ||
+              widget.isThinksScreen ||
+              widget.isDiaryScreen) &&
+          widget.onToggleSidebar != null)
         IconSidebarButton(
           icon: Icons.view_sidebar_rounded,
           onPressed: widget.onToggleSidebar!,

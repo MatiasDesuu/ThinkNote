@@ -38,6 +38,7 @@ class ShortcutsHandler {
     required VoidCallback onToggleCalendarPanel,
     required VoidCallback onToggleFavoritesPanel,
     required VoidCallback onToggleTrashPanel,
+    required VoidCallback onToggleTemplatesPanel,
   }) {
     return {
       const SingleActivator(LogicalKeyboardKey.escape): onCloseDialog,
@@ -56,6 +57,12 @@ class ShortcutsHandler {
       const SingleActivator(LogicalKeyboardKey.keyT, control: true): onNewTab,
       const SingleActivator(LogicalKeyboardKey.keyD, control: true):
           onCreateTodo,
+      const SingleActivator(
+            LogicalKeyboardKey.keyT,
+            control: true,
+            shift: true,
+          ):
+          onToggleTemplatesPanel,
       const SingleActivator(LogicalKeyboardKey.keyS, control: true): onSaveNote,
       const SingleActivator(LogicalKeyboardKey.keyF, control: true): onSearch,
       const SingleActivator(LogicalKeyboardKey.f4): onToggleImmersiveMode,
@@ -70,7 +77,8 @@ class ShortcutsHandler {
           ):
           onGlobalSearch,
       const SingleActivator(LogicalKeyboardKey.keyW, control: true): onCloseTab,
-      const SingleActivator(LogicalKeyboardKey.keyP, control: true): onToggleReadMode,
+      const SingleActivator(LogicalKeyboardKey.keyP, control: true):
+          onToggleReadMode,
     };
   }
 
@@ -96,6 +104,7 @@ class ShortcutsHandler {
     required VoidCallback onToggleCalendarPanel,
     required VoidCallback onToggleFavoritesPanel,
     required VoidCallback onToggleTrashPanel,
+    required VoidCallback onToggleTemplatesPanel,
   }) {
     // Only handle key down events
     if (event is! KeyDownEvent) return false;
@@ -113,6 +122,10 @@ class ShortcutsHandler {
       }
       if (key == LogicalKeyboardKey.keyF) {
         onGlobalSearch();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.keyT) {
+        onToggleTemplatesPanel();
         return true;
       }
     }
@@ -250,7 +263,7 @@ class AppShortcuts extends StatelessWidget {
 /// A widget that captures keyboard shortcuts globally, regardless of focus.
 /// This ensures shortcuts like Ctrl+N, Ctrl+Shift+N, Ctrl+D, Ctrl+Shift+F
 /// work from anywhere in the application.
-/// 
+///
 /// The shortcuts only execute when the main screen is active (no dialogs open).
 class GlobalAppShortcuts extends StatefulWidget {
   final Widget child;
@@ -272,6 +285,8 @@ class GlobalAppShortcuts extends StatefulWidget {
   final VoidCallback onToggleCalendarPanel;
   final VoidCallback onToggleFavoritesPanel;
   final VoidCallback onToggleTrashPanel;
+  final VoidCallback onToggleTemplatesPanel;
+
   /// Optional callback to check if shortcuts should be enabled.
   /// If null, shortcuts are always enabled when the main route is active.
   final bool Function()? isEnabled;
@@ -297,6 +312,7 @@ class GlobalAppShortcuts extends StatefulWidget {
     required this.onToggleCalendarPanel,
     required this.onToggleFavoritesPanel,
     required this.onToggleTrashPanel,
+    required this.onToggleTemplatesPanel,
     this.isEnabled,
   });
 
@@ -321,14 +337,14 @@ class _GlobalAppShortcutsState extends State<GlobalAppShortcuts> {
     // Check if we're on the main screen (no dialogs or other routes on top)
     final modalRoute = ModalRoute.of(context);
     final isMainRouteActive = modalRoute?.isCurrent ?? false;
-    
+
     // If isEnabled callback is provided, use it; otherwise check route
     final shouldHandle = widget.isEnabled?.call() ?? isMainRouteActive;
-    
+
     if (!shouldHandle) {
       return false;
     }
-    
+
     return ShortcutsHandler.handleGlobalKeyEvent(
       event,
       onCloseDialog: widget.onCloseDialog,
@@ -349,6 +365,7 @@ class _GlobalAppShortcutsState extends State<GlobalAppShortcuts> {
       onToggleCalendarPanel: widget.onToggleCalendarPanel,
       onToggleFavoritesPanel: widget.onToggleFavoritesPanel,
       onToggleTrashPanel: widget.onToggleTrashPanel,
+      onToggleTemplatesPanel: widget.onToggleTemplatesPanel,
     );
   }
 

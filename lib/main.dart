@@ -38,6 +38,7 @@ import 'services/immersive_mode_service.dart';
 import 'services/tab_manager.dart';
 import 'Settings/editor_settings_panel.dart';
 import 'widgets/draggable_header.dart';
+import 'widgets/panels/templates_panel.dart';
 
 class WindowStateManager {
   static const String _windowWidthKey = 'window_width';
@@ -725,6 +726,10 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       GlobalKey<ResizablePanelLeftState>();
   final GlobalKey<TrashPanelState> _trashPanelStateKey =
       GlobalKey<TrashPanelState>();
+  final GlobalKey<ResizablePanelLeftState> _templatesPanelKey =
+      GlobalKey<ResizablePanelLeftState>();
+  final GlobalKey<TemplatesPanelState> _templatesPanelStateKey =
+      GlobalKey<TemplatesPanelState>();
   final GlobalKey<EditorTabsState> _editorTabsKey =
       GlobalKey<EditorTabsState>();
   late SyncAnimationController _syncController;
@@ -1824,6 +1829,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       onToggleCalendarPanel: _toggleCalendarPanel,
       onToggleFavoritesPanel: _toggleFavoritesPanel,
       onToggleTrashPanel: _toggleTrashPanel,
+      onToggleTemplatesPanel: _toggleTemplatesPanel,
       child: Focus(
         focusNode: _appFocusNode,
         autofocus: true,
@@ -1854,6 +1860,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                     onTrashReload:
                         () => _trashPanelStateKey.currentState?.reloadTrash(),
                     onOpenFavorites: _toggleFavoritesPanel,
+                    onOpenTemplates: _toggleTemplatesPanel,
                     onFavoritesReload:
                         () =>
                             _favoritesPanelStateKey.currentState
@@ -2118,6 +2125,43 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                   ),
                 ),
               ),
+
+              // Templates Panel (independent, positioned absolutely)
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height,
+                  child: ResizablePanelLeft(
+                    key: _templatesPanelKey,
+                    minWidth: 300,
+                    maxWidth: 400,
+                    appFocusNode: _appFocusNode,
+                    title: '',
+                    preferencesKey: 'templates_panel',
+                    child: TemplatesPanel(
+                      key: _templatesPanelStateKey,
+                      selectedNotebookId: _selectedNotebook?.id,
+                      onTemplateApplied: (note) {
+                        _tabManager.openTab(note);
+                        _selectNote(note);
+                        _databaseSidebarKey.currentState?.reloadSidebar();
+                        DatabaseHelper.notifyDatabaseChanged();
+
+                        // Move focus to editor after creating from template
+                        Future.delayed(const Duration(milliseconds: 100), () {
+                          if (mounted && _appFocusNode.canRequestFocus) {
+                            FocusScope.of(context).requestFocus(_appFocusNode);
+                          }
+                        });
+                      },
+                      onClose: _toggleTemplatesPanel,
+                      appFocusNode: _appFocusNode,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -2152,6 +2196,12 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   void _toggleTrashPanel() {
     if (_trashPanelKey.currentState != null) {
       _trashPanelKey.currentState!.togglePanel();
+    }
+  }
+
+  void _toggleTemplatesPanel() {
+    if (_templatesPanelKey.currentState != null) {
+      _templatesPanelKey.currentState!.togglePanel();
     }
   }
 

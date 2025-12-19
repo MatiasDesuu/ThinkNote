@@ -8,6 +8,7 @@ import '../../database/repositories/note_repository.dart';
 import '../../database/repositories/notebook_repository.dart';
 import '../../database/controllers/app_controller.dart';
 import 'notebook_selector_screen.dart';
+import 'templates_screen.dart';
 import '../../database/database_helper.dart';
 import '../../database/models/calendar_event.dart';
 import '../../database/repositories/calendar_event_repository.dart';
@@ -388,6 +389,75 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _isUpdatingManually = false;
       if (mounted) _loadNotes();
     }
+  }
+
+  Future<void> _createNewNoteFromTemplate(Note template) async {
+    try {
+      if (widget.selectedNotebook == null) {
+        if (mounted) {
+          CustomSnackbar.show(
+            context: context,
+            message: 'Please select a notebook first',
+            type: CustomSnackbarType.error,
+          );
+        }
+        return;
+      }
+
+      final notebookId = widget.selectedNotebook!.id!;
+
+      final newNote = Note(
+        title: template.title,
+        content: template.content,
+        notebookId: notebookId,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        isFavorite: false,
+        tags: template.tags,
+        orderIndex: 0,
+        isTask: template.isTask,
+        isCompleted: false,
+      );
+
+      _isUpdatingManually = true;
+      final noteId = await _noteRepository.createNote(newNote);
+      final createdNote = await _noteRepository.getNote(noteId);
+
+      if (createdNote != null && mounted) {
+        setState(() {
+          _notes = [..._notes, createdNote];
+          _sortNotes(_notes);
+        });
+        DatabaseHelper.notifyDatabaseChanged();
+        _openNoteEditor(createdNote);
+      }
+    } catch (e) {
+      debugPrint('Error creating note from template: $e');
+      if (mounted) {
+        CustomSnackbar.show(
+          context: context,
+          message: 'Error creating note from template: ${e.toString()}',
+          type: CustomSnackbarType.error,
+        );
+      }
+    } finally {
+      _isUpdatingManually = false;
+      if (mounted) _loadNotes();
+    }
+  }
+
+  void _openTemplatesScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => TemplatesScreen(
+              onTemplateApplied: (Note template) async {
+                await _createNewNoteFromTemplate(template);
+              },
+            ),
+      ),
+    );
   }
 
   Future<void> _updateNote(Note note, Note updatedNote) async {
@@ -1082,6 +1152,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          FloatingActionButton(
+                            elevation: 4,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primaryContainer,
+                            foregroundColor:
+                                Theme.of(
+                                  context,
+                                ).colorScheme.onPrimaryContainer,
+                            onPressed: _openTemplatesScreen,
+                            heroTag: "new_template_button",
+                            child: const Icon(
+                              Icons.auto_awesome_motion_rounded,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
                           FloatingActionButton(
                             elevation: 4,
                             onPressed: createNewTodo,

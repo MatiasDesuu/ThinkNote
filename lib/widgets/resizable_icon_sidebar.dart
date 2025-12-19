@@ -27,6 +27,7 @@ class ResizableIconSidebar extends StatefulWidget {
   final VoidCallback? onOpenTrash;
   final VoidCallback? onTrashReload;
   final VoidCallback? onOpenFavorites;
+  final VoidCallback? onOpenTemplates;
   final VoidCallback? onFavoritesReload;
   final bool showBackButton;
   final bool isWorkflowsScreen;
@@ -70,6 +71,7 @@ class ResizableIconSidebar extends StatefulWidget {
     this.onOpenTrash,
     this.onTrashReload,
     this.onOpenFavorites,
+    this.onOpenTemplates,
     this.onFavoritesReload,
     this.showBackButton = true,
     this.isWorkflowsScreen = false,
@@ -237,9 +239,8 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
-        final targetWidth = _globalIconSidebarState.isExpanded
-            ? _widthAnimation.value
-            : 0.0;
+        final targetWidth =
+            _globalIconSidebarState.isExpanded ? _widthAnimation.value : 0.0;
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -256,14 +257,16 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
                       Container(
                         width: double.infinity,
                         height: double.infinity,
-                        color: Theme.of(context).colorScheme.surfaceContainerLow,
+                        color:
+                            Theme.of(context).colorScheme.surfaceContainerLow,
                         child: IconSidebar(
                           rootDir: widget.rootDir,
                           onOpenNote: widget.onOpenNote,
                           onOpenFolder: widget.onOpenFolder,
                           onNotebookSelected: widget.onNotebookSelected,
                           onNoteSelected: widget.onNoteSelected,
-                          onNoteSelectedWithSearch: widget.onNoteSelectedWithSearch,
+                          onNoteSelectedWithSearch:
+                              widget.onNoteSelectedWithSearch,
                           onBack: widget.onBack,
                           onDirectorySet: widget.onDirectorySet,
                           onThemeUpdated: widget.onThemeUpdated,
@@ -279,6 +282,7 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
                           onOpenTrash: widget.onOpenTrash,
                           onTrashReload: widget.onTrashReload,
                           onOpenFavorites: widget.onOpenFavorites,
+                          onOpenTemplates: widget.onOpenTemplates,
                           onFavoritesReload: widget.onFavoritesReload,
                           showBackButton: widget.showBackButton,
                           isWorkflowsScreen: widget.isWorkflowsScreen,
@@ -309,7 +313,10 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
                           child: GestureDetector(
                             onPanUpdate: _onDragUpdate,
                             onPanEnd: _onDragEnd,
-                            child: Container(width: 8, color: Colors.transparent),
+                            child: Container(
+                              width: 8,
+                              color: Colors.transparent,
+                            ),
                           ),
                         ),
                       ),
