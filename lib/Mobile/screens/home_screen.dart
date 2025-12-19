@@ -19,6 +19,7 @@ import '../../database/sync_service.dart';
 import '../../animations/animations_handler.dart';
 import '../../services/tags_service.dart';
 import '../../widgets/custom_date_picker_dialog.dart';
+import '../../database/database_service.dart';
 
 enum SortMode { order, date, completion }
 
@@ -85,9 +86,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   List<Note> _notes = [];
   List<CalendarEvent> _calendarEvents = [];
-  bool _isLocalUpdate = false;
   bool _showNoteIcons = true;
   StreamSubscription<bool>? _showNoteIconsSubscription;
+  StreamSubscription? _dbSubscription;
+  bool _isUpdatingManually = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -100,6 +103,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _loadLastSelectedNotebook();
     _loadIconSettings();
     _setupIconSettingsListener();
+    _setupDatabaseListener();
+    _loadNotes();
   }
 
   @override
@@ -115,6 +120,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       setState(() {
         _notes = [];
       });
+      _loadNotes();
     }
   }
 
@@ -122,6 +128,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void dispose() {
     _completionDebounceTimer?.cancel();
     _showNoteIconsSubscription?.cancel();
+    _dbSubscription?.cancel();
     _syncController.dispose();
     super.dispose();
   }
@@ -207,17 +214,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         setState(() {
           _syncController.stop();
         });
+        _loadNotes();
       }
     }
   }
 
-  Future<List<Note>> _loadNotes() async {
-    try {
-      if (_isLocalUpdate) {
-        _isLocalUpdate = false;
-        return _notes;
-      }
+  Future<void> _loadNotes() async {
+    if (!mounted || _isLoading) return;
 
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
       List<Note> notes;
       if (widget.selectedTag != null) {
         notes = await TagsService().getNotesByTag(widget.selectedTag!);
@@ -226,26 +235,35 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         notes = await _noteRepository.getNotesByNotebookId(notebookId);
       }
 
+      if (!mounted) return;
+
+      // Apply pending optimistic changes to the fresh data from database
+      if (_pendingCompletionChanges.isNotEmpty) {
+        for (int i = 0; i < notes.length; i++) {
+          final id = notes[i].id;
+          if (id != null && _pendingCompletionChanges.containsKey(id)) {
+            notes[i] = notes[i].copyWith(
+              isCompleted: _pendingCompletionChanges[id],
+            );
+          }
+        }
+      }
+
       _sortNotes(notes);
 
-      final updatedNotes =
-          notes.map((note) {
-            if (_pendingCompletionChanges.containsKey(note.id)) {
-              return note.copyWith(
-                isCompleted: _pendingCompletionChanges[note.id]!,
-              );
-            }
-            return note;
-          }).toList();
-
       setState(() {
-        _notes = updatedNotes;
+        _notes = notes;
+        _isLoading = false;
+        _errorMessage = null;
       });
-
-      return updatedNotes;
     } catch (e) {
       print('Error loading notes: $e');
-      throw Exception('Error loading notes: ${e.toString()}');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Error loading notes';
+        });
+      }
     }
   }
 
@@ -292,12 +310,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         orderIndex: 0,
       );
 
+      _isUpdatingManually = true;
       final noteId = await _noteRepository.createNote(newNote);
       final createdNote = await _noteRepository.getNote(noteId);
 
       if (createdNote != null && mounted) {
         setState(() {
-          _isLocalUpdate = true;
           _notes = [..._notes, createdNote];
           _sortNotes(_notes);
         });
@@ -312,6 +330,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           type: CustomSnackbarType.error,
         );
       }
+    } finally {
+      _isUpdatingManually = false;
+      if (mounted) _loadNotes();
     }
   }
 
@@ -343,12 +364,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         isCompleted: false,
       );
 
+      _isUpdatingManually = true;
       final noteId = await _noteRepository.createNote(newTodo);
       final createdTodo = await _noteRepository.getNote(noteId);
 
       if (createdTodo != null && mounted) {
         setState(() {
-          _isLocalUpdate = true;
           _notes = [..._notes, createdTodo];
           _sortNotes(_notes);
         });
@@ -363,22 +384,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           type: CustomSnackbarType.error,
         );
       }
+    } finally {
+      _isUpdatingManually = false;
+      if (mounted) _loadNotes();
     }
   }
 
   Future<void> _updateNote(Note note, Note updatedNote) async {
     try {
+      _isUpdatingManually = true;
+      setState(() {
+        final index = _notes.indexWhere((n) => n.id == note.id);
+        if (index != -1) {
+          _notes[index] = updatedNote;
+          _sortNotes(_notes);
+        }
+      });
+
       await _noteRepository.updateNote(updatedNote);
-      if (mounted) {
-        setState(() {
-          _isLocalUpdate = true;
-          final index = _notes.indexWhere((n) => n.id == note.id);
-          if (index != -1) {
-            _notes[index] = updatedNote;
-          }
-        });
-        DatabaseHelper.notifyDatabaseChanged();
-      }
+      DatabaseHelper.notifyDatabaseChanged();
     } catch (e) {
       debugPrint('Error updating note: $e');
       if (mounted) {
@@ -386,6 +410,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           final index = _notes.indexWhere((n) => n.id == note.id);
           if (index != -1) {
             _notes[index] = note; // Revert to original state
+            _sortNotes(_notes);
           }
         });
         CustomSnackbar.show(
@@ -394,18 +419,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           type: CustomSnackbarType.error,
         );
       }
+    } finally {
+      _isUpdatingManually = false;
+      if (mounted) {
+        _loadNotes();
+      }
     }
   }
 
   Future<void> _deleteNote(Note note) async {
     try {
+      _isUpdatingManually = true;
+      setState(() {
+        _notes.removeWhere((n) => n.id == note.id);
+      });
+
       await _noteRepository.deleteNote(note.id!);
+      DatabaseHelper.notifyDatabaseChanged();
       if (mounted) {
-        setState(() {
-          _isLocalUpdate = true;
-          _notes.removeWhere((n) => n.id == note.id);
-        });
-        DatabaseHelper.notifyDatabaseChanged();
         widget.onTrashUpdated?.call();
       }
     } catch (e) {
@@ -423,84 +454,89 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           type: CustomSnackbarType.error,
         );
       }
+    } finally {
+      _isUpdatingManually = false;
+      if (mounted) {
+        _loadNotes();
+      }
     }
   }
 
   void _openNoteEditor(Note note) {
-    final editorTitleController = TextEditingController(text: note.title);
-    final editorContentController = TextEditingController(text: note.content);
-    final editorFocusNode = FocusNode();
+    if (widget.onNoteSelected != null) {
+      widget.onNoteSelected!(note);
+    } else {
+      final editorTitleController = TextEditingController(text: note.title);
+      final editorContentController = TextEditingController(text: note.content);
+      final editorFocusNode = FocusNode();
 
-    Navigator.of(context)
-        .push(
-          MaterialPageRoute(
-            builder:
-                (context) => NoteEditor(
-                  selectedNote: note,
-                  titleController: editorTitleController,
-                  contentController: editorContentController,
-                  contentFocusNode: editorFocusNode,
-                  isEditing: widget.isEditing,
-                  isImmersiveMode: widget.isImmersiveMode,
-                  onSaveNote: () async {
-                    try {
-                      final dbHelper = DatabaseHelper();
-                      final noteRepository = NoteRepository(dbHelper);
+      Navigator.of(context)
+          .push(
+            MaterialPageRoute(
+              builder:
+                  (context) => NoteEditor(
+                    selectedNote: note,
+                    titleController: editorTitleController,
+                    contentController: editorContentController,
+                    contentFocusNode: editorFocusNode,
+                    isEditing: widget.isEditing,
+                    isImmersiveMode: widget.isImmersiveMode,
+                    onSaveNote: () async {
+                      try {
+                        final dbHelper = DatabaseHelper();
+                        final noteRepository = NoteRepository(dbHelper);
 
-                      final updatedNote = Note(
-                        id: note.id,
-                        title: editorTitleController.text.trim(),
-                        content: editorContentController.text,
-                        notebookId: note.notebookId,
-                        createdAt: note.createdAt,
-                        updatedAt: DateTime.now(),
-                        isFavorite: note.isFavorite,
-                        tags: note.tags,
-                        orderIndex: note.orderIndex,
-                        isTask: note.isTask,
-                        isCompleted: note.isCompleted,
-                      );
-
-                      final result = await noteRepository.updateNote(
-                        updatedNote,
-                      );
-                      if (result > 0) {
-                        DatabaseHelper.notifyDatabaseChanged();
-                      }
-                    } catch (e) {
-                      debugPrint('Error saving note: $e');
-                      if (mounted) {
-                        CustomSnackbar.show(
-                          context: context,
-                          message: 'Error saving note: ${e.toString()}',
-                          type: CustomSnackbarType.error,
+                        final updatedNote = note.copyWith(
+                          title: editorTitleController.text.trim(),
+                          content: editorContentController.text,
+                          updatedAt: DateTime.now(),
                         );
+
+                        final result = await noteRepository.updateNote(
+                          updatedNote,
+                        );
+                        if (result > 0) {
+                          DatabaseHelper.notifyDatabaseChanged();
+                        }
+                      } catch (e) {
+                        debugPrint('Error saving note: $e');
+                        if (mounted) {
+                          CustomSnackbar.show(
+                            context: context,
+                            message: 'Error saving note: ${e.toString()}',
+                            type: CustomSnackbarType.error,
+                          );
+                        }
                       }
-                    }
-                  },
-                  onToggleEditing: widget.onToggleEditing,
-                  onTitleChanged: () {
-                    widget.onTitleChanged();
-                  },
-                  onContentChanged: () {
-                    widget.onContentChanged();
-                  },
-                  onToggleImmersiveMode: widget.onToggleImmersiveMode,
-                ),
-          ),
-        )
-        .then((_) {});
+                    },
+                    onToggleEditing: widget.onToggleEditing,
+                    onTitleChanged: () {
+                      widget.onTitleChanged();
+                    },
+                    onContentChanged: () {
+                      widget.onContentChanged();
+                    },
+                    onToggleImmersiveMode: widget.onToggleImmersiveMode,
+                  ),
+            ),
+          )
+          .then((_) {
+            _loadNotes();
+          });
+    }
   }
 
   Future<void> _loadSortPreference() async {
     final prefs = await SharedPreferences.getInstance();
     final sortModeString = prefs.getString(_sortPreferenceKey) ?? 'order';
-    setState(() {
-      _sortMode = SortMode.values.firstWhere(
-        (mode) => mode.name == sortModeString,
-        orElse: () => SortMode.order,
-      );
-    });
+    if (mounted) {
+      setState(() {
+        _sortMode = SortMode.values.firstWhere(
+          (mode) => mode.name == sortModeString,
+          orElse: () => SortMode.order,
+        );
+      });
+    }
   }
 
   Future<void> _saveSortPreference() async {
@@ -510,10 +546,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _loadCompletionSubSortPreference() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _completionSubSortByDate =
-          prefs.getBool(_completionSubSortPreferenceKey) ?? false;
-    });
+    if (mounted) {
+      setState(() {
+        _completionSubSortByDate =
+            prefs.getBool(_completionSubSortPreferenceKey) ?? false;
+      });
+    }
   }
 
   Future<void> _saveCompletionSubSortPreference() async {
@@ -544,7 +582,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     await _saveSortPreference();
     _pendingCompletionChanges.clear();
     _completionDebounceTimer?.cancel();
-    DatabaseHelper.notifyDatabaseChanged();
+    _loadNotes();
   }
 
   Future<void> _toggleCompletionSubSort() async {
@@ -554,7 +592,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     await _saveCompletionSubSortPreference();
     _pendingCompletionChanges.clear();
     _completionDebounceTimer?.cancel();
-    DatabaseHelper.notifyDatabaseChanged();
+    _loadNotes();
   }
 
   void _sortNotes(List<Note> notes) {
@@ -671,6 +709,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
 
     _pendingCompletionChanges.clear();
+    _isUpdatingManually = true;
 
     try {
       await Future.wait(
@@ -681,70 +720,50 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           );
         }),
       );
-
+      DatabaseHelper.notifyDatabaseChanged();
+    } catch (e) {
       if (mounted) {
         setState(() {
-          _isLocalUpdate = true;
-          for (final updatedNote in notesToUpdate) {
-            final index = _notes.indexWhere((n) => n.id == updatedNote.id);
+          for (final entry in changesToProcess.entries) {
+            final noteId = entry.key;
+            final newState = entry.value;
+
+            final index = _notes.indexWhere((n) => n.id == noteId);
             if (index != -1) {
-              _notes[index] = updatedNote;
+              _notes[index] = _notes[index].copyWith(isCompleted: !newState);
             }
           }
+          _sortNotes(_notes);
         });
-        DatabaseHelper.notifyDatabaseChanged();
-      }
-    } catch (e) {
-      setState(() {
-        for (final entry in changesToProcess.entries) {
-          final noteId = entry.key;
-          final newState = entry.value;
 
-          final index = _notes.indexWhere((n) => n.id == noteId);
-          if (index != -1) {
-            _notes[index] = _notes[index].copyWith(isCompleted: !newState);
-          }
-        }
-      });
-
-      if (mounted) {
         CustomSnackbar.show(
           context: context,
           message: 'Error updating notes: ${e.toString()}',
           type: CustomSnackbarType.error,
         );
       }
+    } finally {
+      _isUpdatingManually = false;
+      if (mounted) {
+        _loadNotes();
+      }
     }
+  }
+
+  void _setupDatabaseListener() {
+    _dbSubscription?.cancel();
+    _dbSubscription = DatabaseService().onDatabaseChanged.listen((_) {
+      if (!_isUpdatingManually && mounted) {
+        _loadNotes();
+        _loadCalendarEvents();
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isInitialLoad) {
       return const SizedBox.shrink();
-    }
-
-    if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              _errorMessage!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _errorMessage = null;
-                });
-              },
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
     }
 
     List<Widget> buildAppBarActions() {
@@ -799,51 +818,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
         actions: buildAppBarActions(),
       ),
-      body: StreamBuilder<void>(
-        stream: DatabaseHelper.onDatabaseChanged,
-        builder: (context, snapshot) {
-          // Recargar eventos del calendario cuando hay cambios en la base de datos
-          if (snapshot.hasData) {
-            _loadCalendarEvents();
-          }
-
-          return FutureBuilder<List<Note>>(
-            future: _loadNotes(),
-            builder: (context, notesSnapshot) {
-              if (notesSnapshot.connectionState == ConnectionState.waiting &&
-                  notesSnapshot.data == null) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (notesSnapshot.hasError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Error loading notes: ${notesSnapshot.error}',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                        textAlign: TextAlign.center,
+      body:
+          _isLoading && _notes.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : _errorMessage != null
+              ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Error loading notes: $_errorMessage',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
                       ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          DatabaseHelper.notifyDatabaseChanged();
-                        },
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              final notes = notesSnapshot.data ?? [];
-
-              if (notes.isEmpty) {
-                if (widget.selectedTag != null) {
-                  return Center(
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        _loadNotes();
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              )
+              : _notes.isEmpty
+              ? widget.selectedTag != null
+                  ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -858,11 +860,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                  );
-                }
-
-                if (widget.selectedNotebook?.id == null) {
-                  return Center(
+                  )
+                  : widget.selectedNotebook?.id == null
+                  ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -884,60 +884,57 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                  );
-                }
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.note_alt_outlined,
-                        size: 64,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withAlpha(127),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No notes in this notebook',
-                        style: TextStyle(
+                  )
+                  : Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.note_alt_outlined,
+                          size: 64,
                           color: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withAlpha(127),
+                          ).colorScheme.primary.withAlpha(127),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: createNewNote,
-                        icon: const Icon(Icons.note_add_rounded),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
-                          foregroundColor:
-                              Theme.of(context).colorScheme.onPrimary,
-                          minimumSize: const Size(200, 45),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No notes in this notebook',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withAlpha(127),
+                          ),
                         ),
-                        label: const Text('Create New Note'),
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton.icon(
-                        onPressed: createNewTodo,
-                        icon: const Icon(Icons.add_task_rounded),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
-                          foregroundColor:
-                              Theme.of(context).colorScheme.onPrimary,
-                          minimumSize: const Size(200, 45),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: createNewNote,
+                          icon: const Icon(Icons.note_add_rounded),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
+                            minimumSize: const Size(200, 45),
+                          ),
+                          label: const Text('Create New Note'),
                         ),
-                        label: const Text('Create New Todo'),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              return Stack(
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: createNewTodo,
+                          icon: const Icon(Icons.add_task_rounded),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
+                            minimumSize: const Size(200, 45),
+                          ),
+                          label: const Text('Create New Todo'),
+                        ),
+                      ],
+                    ),
+                  )
+              : Stack(
                 children: [
                   Column(
                     children: [
@@ -945,9 +942,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         child: RefreshIndicator(
                           onRefresh: _performManualSync,
                           child: ListView.builder(
-                            itemCount: notes.length,
+                            itemCount: _notes.length,
                             itemBuilder: (context, index) {
-                              final note = notes[index];
+                              final note = _notes[index];
                               final isSelected =
                                   widget.selectedNote?.id == note.id;
                               final colorScheme = Theme.of(context).colorScheme;
@@ -1063,7 +1060,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       ),
                                     ),
                                   ),
-                                  if (index < notes.length - 1)
+                                  if (index < _notes.length - 1)
                                     Divider(
                                       height: 1,
                                       indent: 16,
@@ -1102,11 +1099,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ),
                 ],
-              );
-            },
-          );
-        },
-      ),
+              ),
     );
   }
 
@@ -1138,7 +1131,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  // Opción de completar/descompletar solo si es un todo
                   if (note.isTask)
                     Material(
                       color: Colors.transparent,
@@ -1409,6 +1401,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       final dbHelper = DatabaseHelper();
       final appController = AppController(dbHelper);
 
+      _isUpdatingManually = true;
       await appController.moveNote(note.id!, targetNotebook.id!);
 
       if (mounted) {
@@ -1418,7 +1411,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           type: CustomSnackbarType.success,
         );
 
-        // Remove the note from the current list since it's now in a different notebook
         setState(() {
           _notes.removeWhere((n) => n.id == note.id);
         });
@@ -1434,6 +1426,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           type: CustomSnackbarType.error,
         );
       }
+    } finally {
+      _isUpdatingManually = false;
+      if (mounted) _loadNotes();
     }
   }
 
@@ -1479,10 +1474,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         orderIndex: nextOrderIndex,
       );
 
+      _isUpdatingManually = true;
       await _calendarEventRepository.createCalendarEvent(event);
       DatabaseHelper.notifyDatabaseChanged();
 
-      // Recargar eventos del calendario
       await _loadCalendarEvents();
 
       if (mounted) {
@@ -1501,6 +1496,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           type: CustomSnackbarType.error,
         );
       }
+    } finally {
+      _isUpdatingManually = false;
+      if (mounted) _loadNotes();
     }
   }
 }
