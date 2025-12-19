@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../database/database_service.dart';
 import '../../database/models/note.dart';
 import '../../database/repositories/note_repository.dart';
 import '../../database/database_helper.dart';
@@ -76,6 +77,9 @@ class NotesPanelState extends State<NotesPanel> {
   bool _isReloading = false;
 
   bool _isContextMenuOpen = false;
+
+  StreamSubscription? _dbSubscription;
+  bool _isUpdatingManually = false;
 
   // Drag and drop state
   int? _dragTargetIndex;
@@ -308,6 +312,7 @@ class NotesPanelState extends State<NotesPanel> {
 
     // Capture selection state BEFORE any async operations
     final noteIdsToConvert = _getSelectedNoteIdsCopy();
+    _isUpdatingManually = true;
 
     if (noteIdsToConvert.isEmpty) {
       _isProcessingAction = false;
@@ -341,6 +346,10 @@ class NotesPanelState extends State<NotesPanel> {
         );
       }
     } finally {
+      _isUpdatingManually = false;
+      if (mounted) {
+        _loadNotes();
+      }
       _isProcessingAction = false;
       _isContextMenuOpen = false;
     }
@@ -365,6 +374,11 @@ class NotesPanelState extends State<NotesPanel> {
       _notes[currentNoteIndex] = currentNote.copyWith(
         isCompleted: newCompletedState,
       );
+
+      // Instant reordering for better UX if we are sorting by completion
+      if (_sortMode == SortMode.completion) {
+        _sortNotesList(_notes);
+      }
     });
 
     _completionDebounceTimer?.cancel();
@@ -381,6 +395,8 @@ class NotesPanelState extends State<NotesPanel> {
 
     _pendingCompletionChanges.clear();
 
+    _isUpdatingManually = true;
+
     try {
       await Future.wait(
         changesToProcess.entries.map((entry) async {
@@ -391,24 +407,29 @@ class NotesPanelState extends State<NotesPanel> {
         }),
       );
     } catch (e) {
-      setState(() {
-        for (final entry in changesToProcess.entries) {
-          final noteId = entry.key;
-          final newState = entry.value;
-
-          final index = _notes.indexWhere((n) => n.id == noteId);
-          if (index != -1) {
-            _notes[index] = _notes[index].copyWith(isCompleted: !newState);
-          }
-        }
-      });
-
       if (mounted) {
+        setState(() {
+          for (final entry in changesToProcess.entries) {
+            final noteId = entry.key;
+            final newState = entry.value;
+
+            final index = _notes.indexWhere((n) => n.id == noteId);
+            if (index != -1) {
+              _notes[index] = _notes[index].copyWith(isCompleted: !newState);
+            }
+          }
+        });
+
         CustomSnackbar.show(
           context: context,
           message: 'Error updating notes: ${e.toString()}',
           type: CustomSnackbarType.error,
         );
+      }
+    } finally {
+      _isUpdatingManually = false;
+      if (mounted) {
+        _loadNotes();
       }
     }
   }
@@ -432,6 +453,7 @@ class NotesPanelState extends State<NotesPanel> {
     _clearSelection();
 
     final List<Note> deletedNotes = [];
+    _isUpdatingManually = true;
 
     try {
       // Process deletions sequentially to avoid race conditions
@@ -464,6 +486,10 @@ class NotesPanelState extends State<NotesPanel> {
         );
       }
     } finally {
+      _isUpdatingManually = false;
+      if (mounted) {
+        _loadNotes();
+      }
       _isProcessingAction = false;
       _isContextMenuOpen = false;
     }
@@ -533,10 +559,12 @@ class NotesPanelState extends State<NotesPanel> {
     _loadExpandedState();
     _loadIconSettings();
     _setupIconSettingsListener();
+    _setupDatabaseListener();
   }
 
   @override
   void dispose() {
+    _dbSubscription?.cancel();
     _showNoteIconsSubscription?.cancel();
     _completionDebounceTimer?.cancel();
     _isContextMenuOpen = false;
@@ -751,34 +779,19 @@ class NotesPanelState extends State<NotesPanel> {
 
       if (!mounted) return;
 
-      switch (_sortMode) {
-        case SortMode.date:
-          notes.sort((a, b) {
-            if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
-            return b.createdAt.compareTo(a.createdAt);
-          });
-          break;
-        case SortMode.order:
-          notes.sort((a, b) {
-            if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
-            return a.orderIndex.compareTo(b.orderIndex);
-          });
-          break;
-        case SortMode.completion:
-          notes.sort((a, b) {
-            if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
-            if (a.isCompleted == b.isCompleted) {
-              if (_completionSubSortByDate) {
-                return b.createdAt.compareTo(a.createdAt);
-              } else {
-                return a.title.compareTo(b.title);
-              }
-            } else {
-              return a.isCompleted ? 1 : -1;
-            }
-          });
-          break;
+      // Apply pending optimistic changes to the fresh data from database
+      if (_pendingCompletionChanges.isNotEmpty) {
+        for (int i = 0; i < notes.length; i++) {
+          final id = notes[i].id;
+          if (id != null && _pendingCompletionChanges.containsKey(id)) {
+            notes[i] = notes[i].copyWith(
+              isCompleted: _pendingCompletionChanges[id],
+            );
+          }
+        }
       }
+
+      _sortNotesList(notes);
 
       setState(() {
         _notes = notes;
@@ -853,12 +866,19 @@ class NotesPanelState extends State<NotesPanel> {
           if (_isProcessingAction) return;
           _isProcessingAction = true;
 
+          setState(() {
+            final index = _notes.indexWhere((n) => n.id == note.id);
+            if (index != -1) {
+              _notes[index] = note.copyWith(isPinned: !note.isPinned);
+              _sortNotesList(_notes);
+            }
+          });
+
+          _isUpdatingManually = true;
           _noteRepository
               .updateNote(note.copyWith(isPinned: !note.isPinned))
               .then((_) {
-                if (mounted) {
-                  _loadNotes();
-                }
+                // Background refresh to ensure sync
               })
               .catchError((e) {
                 if (mounted) {
@@ -870,6 +890,10 @@ class NotesPanelState extends State<NotesPanel> {
                 }
               })
               .whenComplete(() {
+                _isUpdatingManually = false;
+                if (mounted) {
+                  _loadNotes();
+                }
                 _isProcessingAction = false;
                 _isContextMenuOpen = false;
               });
@@ -890,12 +914,21 @@ class NotesPanelState extends State<NotesPanel> {
             if (_isProcessingAction) return;
             _isProcessingAction = true;
 
+            setState(() {
+              final index = _notes.indexWhere((n) => n.id == note.id);
+              if (index != -1) {
+                _notes[index] = note.copyWith(isCompleted: !note.isCompleted);
+                if (_sortMode == SortMode.completion) {
+                  _sortNotesList(_notes);
+                }
+              }
+            });
+
+            _isUpdatingManually = true;
             _noteRepository
                 .updateNote(note.copyWith(isCompleted: !note.isCompleted))
                 .then((_) {
-                  if (mounted) {
-                    _loadNotes();
-                  }
+                  // Background refresh to ensure sync
                 })
                 .catchError((e) {
                   if (mounted) {
@@ -907,6 +940,10 @@ class NotesPanelState extends State<NotesPanel> {
                   }
                 })
                 .whenComplete(() {
+                  _isUpdatingManually = false;
+                  if (mounted) {
+                    _loadNotes();
+                  }
                   _isProcessingAction = false;
                   _isContextMenuOpen = false;
                 });
@@ -926,12 +963,11 @@ class NotesPanelState extends State<NotesPanel> {
           if (_isProcessingAction) return;
           _isProcessingAction = true;
 
+          _isUpdatingManually = true;
           _noteRepository
               .updateNote(note.copyWith(isFavorite: !note.isFavorite))
               .then((_) {
-                if (mounted) {
-                  _loadNotes();
-                }
+                // Sincronización manejada en whenComplete
               })
               .catchError((e) {
                 if (mounted) {
@@ -943,6 +979,10 @@ class NotesPanelState extends State<NotesPanel> {
                 }
               })
               .whenComplete(() {
+                _isUpdatingManually = false;
+                if (mounted) {
+                  _loadNotes();
+                }
                 _isProcessingAction = false;
                 _isContextMenuOpen = false;
               });
@@ -958,14 +998,13 @@ class NotesPanelState extends State<NotesPanel> {
           if (_isProcessingAction) return;
           _isProcessingAction = true;
 
+          _isUpdatingManually = true;
           _noteRepository
               .updateNote(
                 note.copyWith(isTask: !note.isTask, isCompleted: false),
               )
               .then((_) {
-                if (mounted) {
-                  _loadNotes();
-                }
+                // Sincronización manejada en whenComplete
               })
               .catchError((e) {
                 if (mounted) {
@@ -977,6 +1016,10 @@ class NotesPanelState extends State<NotesPanel> {
                 }
               })
               .whenComplete(() {
+                _isUpdatingManually = false;
+                if (mounted) {
+                  _loadNotes();
+                }
                 _isProcessingAction = false;
                 _isContextMenuOpen = false;
               });
@@ -990,12 +1033,12 @@ class NotesPanelState extends State<NotesPanel> {
           if (_isProcessingAction) return;
           _isProcessingAction = true;
 
+          _isUpdatingManually = true;
           _noteRepository
               .deleteNote(note.id!)
               .then((_) {
                 if (mounted) {
                   widget.onNoteDeleted?.call(note);
-                  _loadNotes();
                   widget.onTrashUpdated?.call();
                 }
               })
@@ -1009,6 +1052,10 @@ class NotesPanelState extends State<NotesPanel> {
                 }
               })
               .whenComplete(() {
+                _isUpdatingManually = false;
+                if (mounted) {
+                  _loadNotes();
+                }
                 _isProcessingAction = false;
                 _isContextMenuOpen = false;
               });
@@ -1867,6 +1914,46 @@ class NotesPanelState extends State<NotesPanel> {
         },
       ),
     );
+  }
+
+  void _sortNotesList(List<Note> notes) {
+    switch (_sortMode) {
+      case SortMode.date:
+        notes.sort((a, b) {
+          if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+          return b.createdAt.compareTo(a.createdAt);
+        });
+        break;
+      case SortMode.order:
+        notes.sort((a, b) {
+          if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+          return a.orderIndex.compareTo(b.orderIndex);
+        });
+        break;
+      case SortMode.completion:
+        notes.sort((a, b) {
+          if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+          if (a.isCompleted == b.isCompleted) {
+            if (_completionSubSortByDate) {
+              return b.createdAt.compareTo(a.createdAt);
+            } else {
+              return a.title.compareTo(b.title);
+            }
+          } else {
+            return a.isCompleted ? 1 : -1;
+          }
+        });
+        break;
+    }
+  }
+
+  void _setupDatabaseListener() {
+    _dbSubscription?.cancel();
+    _dbSubscription = DatabaseService().onDatabaseChanged.listen((_) {
+      if (!_isUpdatingManually && mounted) {
+        _loadNotes();
+      }
+    });
   }
 
   @override
