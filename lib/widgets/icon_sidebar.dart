@@ -645,7 +645,6 @@ class _IconSidebarState extends State<IconSidebar>
   void _toggleImmersiveMode() async {
     await _immersiveModeService.enterImmersiveMode();
   }
-
   IconSidebarButton _buildNewNoteMenuButton() {
     return IconSidebarButton(
       icon: Icons.note_add_rounded,
