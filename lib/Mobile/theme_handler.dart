@@ -174,6 +174,23 @@ class ThemeManager {
         selectionHandleColor: Color(0xFF222222),
         cursorColor: Color(0xFF222222),
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: const Color(0xFFF5F5F5),
+        indicatorColor: const Color(0xFF222222),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: Color(0xFFFFFFFF));
+          }
+          return const IconThemeData(color: Color(0xFF222222));
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const TextStyle(
+                color: Color(0xFF222222), fontWeight: FontWeight.bold, fontSize: 12);
+          }
+          return const TextStyle(color: Color(0xFF222222), fontSize: 12);
+        }),
+      ),
     );
   }
 
@@ -219,6 +236,23 @@ class ThemeManager {
         selectionColor: Color(0x4DDADADA),
         selectionHandleColor: Color(0xFFDADADA),
         cursorColor: Color(0xFFDADADA),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: const Color(0xFF1E1E1E),
+        indicatorColor: const Color(0xFFDADADA),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: Color(0xFF1E1E1E));
+          }
+          return const IconThemeData(color: Color(0xFFDADADA));
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const TextStyle(
+                color: Color(0xFFDADADA), fontWeight: FontWeight.bold, fontSize: 12);
+          }
+          return const TextStyle(color: Color(0xFFDADADA), fontSize: 12);
+        }),
       ),
     );
   }
