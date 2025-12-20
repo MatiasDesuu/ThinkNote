@@ -8,8 +8,13 @@ import '../../widgets/custom_snackbar.dart';
 
 class TemplatesScreen extends StatefulWidget {
   final Function(Note) onTemplateApplied;
+  final Map<Notebook, List<Note>>? initialTemplates;
 
-  const TemplatesScreen({super.key, required this.onTemplateApplied});
+  const TemplatesScreen({
+    super.key,
+    required this.onTemplateApplied,
+    this.initialTemplates,
+  });
 
   @override
   State<TemplatesScreen> createState() => _TemplatesScreenState();
@@ -24,12 +29,11 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeRepositories();
-  }
-
-  Future<void> _initializeRepositories() async {
+    if (widget.initialTemplates != null) {
+      _groupedTemplates = widget.initialTemplates!;
+      _isLoading = false;
+    }
     final dbHelper = DatabaseHelper();
-    await dbHelper.database;
     _notebookRepository = NotebookRepository(dbHelper);
     _noteRepository = NoteRepository(dbHelper);
     _loadTemplates();
@@ -37,7 +41,6 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
 
   void _loadTemplates() async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
 
     try {
       final allNotebooks = await _notebookRepository.getAllNotebooks();
@@ -85,7 +88,7 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
       ),
       body:
           _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const SizedBox.shrink()
               : _groupedTemplates.isEmpty
               ? _buildEmptyState()
               : _buildContent(),

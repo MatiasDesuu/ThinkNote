@@ -464,12 +464,38 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _openTemplatesScreen() {
+  Future<void> _openTemplatesScreen() async {
+    // Pre-fetch templates for instant display
+    Map<Notebook, List<Note>> preloadedTemplates = {};
+    try {
+      final dbHelper = DatabaseHelper();
+      final notebookRepository = NotebookRepository(dbHelper);
+      final noteRepository = NoteRepository(dbHelper);
+
+      final allNotebooks = await notebookRepository.getAllNotebooks();
+      final templateNotebooks =
+          allNotebooks
+              .where((n) => n.name.toLowerCase().startsWith('#templates'))
+              .toList();
+
+      for (final notebook in templateNotebooks) {
+        final notes = await noteRepository.getNotesByNotebookId(notebook.id!);
+        if (notes.isNotEmpty) {
+          preloadedTemplates[notebook] = notes;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error pre-fetching templates: $e');
+    }
+
+    if (!mounted) return;
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder:
             (context) => TemplatesScreen(
+              initialTemplates: preloadedTemplates,
               onTemplateApplied: (Note template) async {
                 await _createNewNoteFromTemplate(template);
               },
