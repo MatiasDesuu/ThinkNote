@@ -28,6 +28,7 @@ class HomeScreen extends StatefulWidget {
   final Note? selectedNote;
   final Notebook? selectedNotebook;
   final String? selectedTag;
+  final List<Note>? initialNotes;
   final TextEditingController titleController;
   final TextEditingController contentController;
   final FocusNode contentFocusNode;
@@ -47,6 +48,7 @@ class HomeScreen extends StatefulWidget {
     this.selectedNote,
     this.selectedNotebook,
     this.selectedTag,
+    this.initialNotes,
     required this.titleController,
     required this.contentController,
     required this.contentFocusNode,
@@ -105,7 +107,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _loadIconSettings();
     _setupIconSettingsListener();
     _setupDatabaseListener();
-    _loadNotes();
+
+    if (widget.initialNotes != null) {
+      _notes = List.from(widget.initialNotes!);
+      _sortNotes(_notes);
+      _isLoading = false;
+    } else {
+      _loadNotes();
+    }
   }
 
   @override
@@ -118,10 +127,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
       _pendingCompletionChanges.clear();
       _completionDebounceTimer?.cancel();
-      setState(() {
-        _notes = [];
-      });
-      _loadNotes();
+
+      if (widget.initialNotes != null) {
+        setState(() {
+          _notes = List.from(widget.initialNotes!);
+          _sortNotes(_notes);
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _notes = [];
+        });
+        _loadNotes();
+      }
     }
   }
 
@@ -890,7 +908,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
       body:
           _isLoading && _notes.isEmpty
-              ? const Center(child: CircularProgressIndicator())
+              ? const SizedBox.shrink()
               : _errorMessage != null
               ? Center(
                 child: Column(

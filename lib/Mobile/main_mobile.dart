@@ -101,12 +101,13 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
     }
   }
 
-  void _initializeScreens() {
+  void _initializeScreens({List<Note>? initialNotes}) {
     _screens = [
       HomeScreen(
         selectedNote: _selectedNote,
         selectedNotebook: _selectedNotebook,
         selectedTag: _selectedTag,
+        initialNotes: initialNotes,
         titleController: _titleController,
         contentController: _noteController,
         contentFocusNode: _contentFocusNode,
@@ -185,9 +186,21 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                 });
                 _initializeScreens();
               },
-              onNotebookSelected: (Notebook notebook) {
+              onNotebookSelected: (Notebook notebook) async {
                 if (mounted) {
-                  _handleNotebookSelected(notebook);
+                  // Pre-fetch notes for instant display
+                  List<Note> preloadedNotes = [];
+                  try {
+                    final dbHelper = DatabaseHelper();
+                    final noteRepository = NoteRepository(dbHelper);
+                    preloadedNotes = await noteRepository.getNotesByNotebookId(
+                      notebook.id ?? 0,
+                    );
+                  } catch (e) {
+                    debugPrint('Error pre-fetching notes: $e');
+                  }
+
+                  _handleNotebookSelected(notebook, initialNotes: preloadedNotes);
                   setState(() {
                     _selectedIndex = 0;
                   });
@@ -295,7 +308,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
     });
   }
 
-  void _handleNotebookSelected(Notebook notebook) {
+  void _handleNotebookSelected(Notebook notebook, {List<Note>? initialNotes}) {
     setState(() {
       _selectedNotebook = notebook;
       _selectedTag = null;
@@ -303,10 +316,10 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
       _titleController.clear();
       _noteController.clear();
     });
-    _initializeScreens();
+    _initializeScreens(initialNotes: initialNotes);
   }
 
-  void _handleTagSelected(String tag) {
+  void _handleTagSelected(String tag, {List<Note>? initialNotes}) {
     setState(() {
       _selectedTag = tag;
       _selectedNotebook = null;
@@ -316,7 +329,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
       _selectedIndex = 0;
       _scaffoldKey.currentState?.closeDrawer();
     });
-    _initializeScreens();
+    _initializeScreens(initialNotes: initialNotes);
   }
 
   void _onNoteChanged() {
@@ -596,8 +609,37 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                               : MobileDrawer(
                                 onNavigateBack: () {},
                                 onCreateNewNotebook: () {},
-                                onNotebookSelected: _handleNotebookSelected,
-                                onTagSelected: _handleTagSelected,
+                                onNotebookSelected: (notebook) async {
+                                  // Pre-fetch notes for instant display
+                                  List<Note> preloadedNotes = [];
+                                  try {
+                                    final dbHelper = DatabaseHelper();
+                                    final noteRepository =
+                                        NoteRepository(dbHelper);
+                                    preloadedNotes = await noteRepository
+                                        .getNotesByNotebookId(notebook.id ?? 0);
+                                  } catch (e) {
+                                    debugPrint('Error pre-fetching notes: $e');
+                                  }
+                                  _handleNotebookSelected(
+                                    notebook,
+                                    initialNotes: preloadedNotes,
+                                  );
+                                },
+                                onTagSelected: (tag) async {
+                                  // Pre-fetch notes for instant display
+                                  List<Note> preloadedNotes = [];
+                                  try {
+                                    preloadedNotes =
+                                        await TagsService().getNotesByTag(tag);
+                                  } catch (e) {
+                                    debugPrint('Error pre-fetching notes: $e');
+                                  }
+                                  _handleTagSelected(
+                                    tag,
+                                    initialNotes: preloadedNotes,
+                                  );
+                                },
                                 selectedNotebook: _selectedNotebook,
                                 scaffoldKey: _scaffoldKey,
                               ),
@@ -735,9 +777,29 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                       (context) => FavoritesScreen(
                                         onNotebookSelected: (
                                           Notebook notebook,
-                                        ) {
+                                        ) async {
                                           if (mounted) {
-                                            _handleNotebookSelected(notebook);
+                                            // Pre-fetch notes for instant display
+                                            List<Note> preloadedNotes = [];
+                                            try {
+                                              final dbHelper = DatabaseHelper();
+                                              final noteRepository =
+                                                  NoteRepository(dbHelper);
+                                              preloadedNotes =
+                                                  await noteRepository
+                                                      .getNotesByNotebookId(
+                                                        notebook.id ?? 0,
+                                                      );
+                                            } catch (e) {
+                                              debugPrint(
+                                                'Error pre-fetching notes: $e',
+                                              );
+                                            }
+
+                                            _handleNotebookSelected(
+                                              notebook,
+                                              initialNotes: preloadedNotes,
+                                            );
                                             setState(() {
                                               _selectedIndex = 0;
                                             });
