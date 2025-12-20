@@ -50,6 +50,7 @@ class _ThinkEditorState extends State<ThinkEditor>
   late SaveAnimationController _saveController;
   final ValueNotifier<int> _currentBlockIndex = ValueNotifier<int>(0);
   bool _isImmersiveMode = false;
+  String _lastTextContent = '';
 
   @override
   void initState() {
@@ -59,6 +60,7 @@ class _ThinkEditorState extends State<ThinkEditor>
       duration: const Duration(milliseconds: 200),
     );
     _saveController = SaveAnimationController(vsync: this);
+    _lastTextContent = widget.contentController.text;
     widget.contentController.addListener(_onContentChanged);
     widget.titleController.addListener(_onTitleChanged);
     _detectScriptMode();
@@ -74,6 +76,14 @@ class _ThinkEditorState extends State<ThinkEditor>
   }
 
   void _onContentChanged() {
+    final currentText = widget.contentController.text;
+
+    // Only trigger updates if the actual text changed, not just selection
+    if (currentText == _lastTextContent) {
+      return;
+    }
+    _lastTextContent = currentText;
+
     widget.onContentChanged();
 
     _scriptDetectionDebouncer?.cancel();
@@ -335,6 +345,37 @@ class _ThinkEditorState extends State<ThinkEditor>
                                     ),
                                     onChanged: (_) => widget.onContentChanged(),
                                     readOnly: _isReadMode,
+                                    contextMenuBuilder: (context, editableTextState) {
+                                      final buttonItems = editableTextState.contextMenuButtonItems;
+                                      final anchors = editableTextState.contextMenuAnchors;
+                                      final mediaQuery = MediaQuery.of(context);
+                                      
+                                      // Define visible bounds
+                                      final topBound = mediaQuery.padding.top + kToolbarHeight + 20;
+                                      final bottomBound = mediaQuery.size.height - mediaQuery.viewInsets.bottom - 20;
+                                      
+                                      // Check if primary anchor is outside visible area
+                                      final primaryY = anchors.primaryAnchor.dy;
+                                      
+                                      if (primaryY < topBound || primaryY > bottomBound) {
+                                        // Clamp to visible area
+                                        final clampedY = primaryY.clamp(topBound, bottomBound);
+                                        final centerX = mediaQuery.size.width / 2;
+                                        final clampedAnchors = TextSelectionToolbarAnchors(
+                                          primaryAnchor: Offset(centerX, clampedY),
+                                          secondaryAnchor: anchors.secondaryAnchor,
+                                        );
+                                        return AdaptiveTextSelectionToolbar.buttonItems(
+                                          anchors: clampedAnchors,
+                                          buttonItems: buttonItems,
+                                        );
+                                      }
+                                      
+                                      return AdaptiveTextSelectionToolbar.buttonItems(
+                                        anchors: anchors,
+                                        buttonItems: buttonItems,
+                                      );
+                                    },
                                   ),
                                 ),
                               )
