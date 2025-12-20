@@ -865,7 +865,18 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                             label: 'Bookmarks',
                           ),
                         ],
-                        backgroundColor: colorScheme.surfaceContainer,
+                        backgroundColor: monochromeMode
+                            ? colorScheme.surfaceContainer
+                            : colorScheme.surfaceContainer,
+                        indicatorColor: monochromeMode
+                            ? colorScheme.primaryContainer
+                            : null,
+                        surfaceTintColor: monochromeMode
+                            ? Colors.transparent
+                            : null,
+                        overlayColor: monochromeMode
+                            ? WidgetStateProperty.all(Colors.transparent)
+                            : null,
                         labelBehavior:
                             NavigationDestinationLabelBehavior.onlyShowSelected,
                       ),

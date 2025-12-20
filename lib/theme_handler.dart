@@ -294,6 +294,38 @@ class ThemeManager {
                 ? const Color.fromRGBO(19, 19, 19, 1)
                 : const Color(0xFF252525),
       ),
+      // NavigationBar theme configuration for monochrome mode
+      navigationBarTheme: monochromeEnabled
+          ? NavigationBarThemeData(
+              backgroundColor: colorScheme.surfaceContainer,
+              indicatorColor: colorScheme.primaryContainer, // Use primaryContainer for high contrast
+              surfaceTintColor: Colors.transparent,
+              overlayColor: WidgetStateProperty.all(Colors.transparent),
+              iconTheme: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return IconThemeData(
+                    color: colorScheme.onPrimaryContainer, // White on black or black on white
+                  );
+                }
+                return IconThemeData(
+                  color: colorScheme.onSurface, // Unselected icons
+                );
+              }),
+              labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return TextStyle(
+                    color: colorScheme.onSurface,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  );
+                }
+                return TextStyle(
+                  color: colorScheme.onSurface.withAlpha(153),
+                  fontSize: 12,
+                );
+              }),
+            )
+          : null,
     );
   }
 
@@ -615,8 +647,8 @@ class ThemeManager {
       onTertiary: const Color(0xFFFFFFFF),
 
       // Containers and backgrounds
-      primaryContainer: const Color(0xFFE0E0E0), // Button sidebar
-      onPrimaryContainer: const Color(0xFF222222),
+      primaryContainer: const Color(0xFF000000), // Black indicator for selected items
+      onPrimaryContainer: const Color(0xFFFFFFFF),
       secondaryContainer: const Color(0xFFF6F6F6), // Elements sidebar
       onSecondaryContainer: const Color(0xFF858585),
       tertiaryContainer: const Color(0xFFF6F6F6),
@@ -629,6 +661,7 @@ class ThemeManager {
       // Surface colors
       surface: const Color(0xFFFFFFFF), // Editor background
       onSurface: const Color(0xFF222222),
+      surfaceContainer: const Color(0xFFFFFFFF), // Bottom bar background
       surfaceContainerLow: const Color(0xFFF6F6F6),
       surfaceContainerHigh: const Color(0xFFF6F6F6),
       surfaceContainerHighest: const Color(0xFFE0E0E0),
@@ -669,8 +702,8 @@ class ThemeManager {
       onTertiary: const Color(0xFF1E1E1E),
 
       // Containers and backgrounds
-      primaryContainer: const Color(0xFF363636), // Button and element hover
-      onPrimaryContainer: const Color(0xFFDADADA),
+      primaryContainer: const Color(0xFFFFFFFF), // White indicator for selected items
+      onPrimaryContainer: const Color(0xFF000000),
       secondaryContainer: const Color(0xFF262626),
       onSecondaryContainer: const Color(0xFF949494),
       tertiaryContainer: const Color(0xFF363636),
@@ -683,6 +716,7 @@ class ThemeManager {
       // Surface colors
       surface: const Color(0xFF2D2D2D),
       onSurface: const Color(0xFFDADADA),
+      surfaceContainer: const Color(0xFF000000), // Bottom bar background
       surfaceContainerLow: const Color(0xFF262626),
       surfaceContainerHigh: const Color(0xFF363636),
       surfaceContainerHighest: const Color(0xFF363636),
