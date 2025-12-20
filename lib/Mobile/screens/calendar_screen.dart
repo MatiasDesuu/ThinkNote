@@ -1017,7 +1017,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                                       decoration: BoxDecoration(
                                         color:
                                             isSelected
-                                                ? colorScheme.primary
+                                                ? colorScheme.onPrimaryContainer
                                                 : colorScheme.primary,
                                         shape: BoxShape.circle,
                                       ),
