@@ -13,6 +13,7 @@ import '../../services/notification_service.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../widgets/note_editor.dart';
 import 'calendar_event_status_screen.dart';
+import '../../database/database_service.dart';
 
 class CalendarScreen extends StatefulWidget {
   final Function(Note) onNoteSelected;
@@ -35,6 +36,9 @@ class CalendarScreenState extends State<CalendarScreen> {
   bool _isExpanded = true;
   bool _isInitialized = false;
   late StreamSubscription<Note> _noteUpdateSubscription;
+  StreamSubscription? _dbSubscription;
+  StreamSubscription? _dbHelperSubscription;
+  bool _isUpdatingManually = false;
 
   @override
   void initState() {
@@ -47,6 +51,7 @@ class CalendarScreenState extends State<CalendarScreen> {
     _noteUpdateSubscription = NotificationService().noteUpdateStream.listen(
       _handleNoteUpdate,
     );
+    _setupDatabaseListener();
     _loadEvents();
     _loadStatuses();
   }
@@ -69,6 +74,8 @@ class CalendarScreenState extends State<CalendarScreen> {
   @override
   void dispose() {
     _noteUpdateSubscription.cancel();
+    _dbSubscription?.cancel();
+    _dbHelperSubscription?.cancel();
     super.dispose();
   }
 
@@ -81,6 +88,24 @@ class CalendarScreenState extends State<CalendarScreen> {
             }
             return event;
           }).toList();
+    });
+  }
+
+  void _setupDatabaseListener() {
+    _dbSubscription?.cancel();
+    _dbHelperSubscription?.cancel();
+    
+    // Listen to both DatabaseService and DatabaseHelper for maximum compatibility
+    _dbSubscription = DatabaseService().onDatabaseChanged.listen((_) {
+      if (!_isUpdatingManually && mounted) {
+        _loadEvents();
+      }
+    });
+    
+    _dbHelperSubscription = DatabaseHelper.onDatabaseChanged.listen((_) {
+      if (!_isUpdatingManually && mounted) {
+        _loadEvents();
+      }
     });
   }
 
@@ -263,9 +288,11 @@ class CalendarScreenState extends State<CalendarScreen> {
         orderIndex: nextOrderIndex,
       );
 
+      _isUpdatingManually = true;
       await _calendarEventRepository.createCalendarEvent(event);
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
       await _loadEvents();
+      _isUpdatingManually = false;
     } catch (e) {
       print('Error adding note to calendar: $e');
       if (mounted) {
@@ -280,10 +307,13 @@ class CalendarScreenState extends State<CalendarScreen> {
 
   Future<void> _deleteEvent(CalendarEvent event) async {
     try {
+      _isUpdatingManually = true;
       await _calendarEventRepository.deleteCalendarEvent(event.id);
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
       await _loadEvents();
+      _isUpdatingManually = false;
     } catch (e) {
+      _isUpdatingManually = false;
       print('Error removing note from calendar: $e');
       if (mounted) {
         CustomSnackbar.show(
@@ -300,6 +330,7 @@ class CalendarScreenState extends State<CalendarScreen> {
     String? statusName,
   ) async {
     try {
+      _isUpdatingManually = true;
       CalendarEvent updatedEvent;
       if (statusName == null) {
         // Limpiar el status
@@ -309,9 +340,11 @@ class CalendarScreenState extends State<CalendarScreen> {
         updatedEvent = event.copyWith(status: statusName);
       }
       await _calendarEventRepository.updateCalendarEvent(updatedEvent);
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
       await _loadEvents();
+      _isUpdatingManually = false;
     } catch (e) {
+      _isUpdatingManually = false;
       if (mounted) {
         CustomSnackbar.show(
           context: context,

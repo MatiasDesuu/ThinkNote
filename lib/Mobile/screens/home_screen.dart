@@ -1561,7 +1561,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       _isUpdatingManually = true;
       await _calendarEventRepository.createCalendarEvent(event);
-      DatabaseHelper.notifyDatabaseChanged();
+      DatabaseService().notifyDatabaseChanged();
 
       await _loadCalendarEvents();
 

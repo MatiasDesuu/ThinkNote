@@ -117,7 +117,6 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
         onTitleChanged: _handleTitleChanged,
         onContentChanged: _handleNoteChanged,
         onToggleImmersiveMode: _handleToggleImmersiveMode,
-        onNoteSelected: _handleNoteSelected,
         onNotebookSelected: _handleNotebookSelected,
         onTrashUpdated: _handleTrashUpdated,
       ),
