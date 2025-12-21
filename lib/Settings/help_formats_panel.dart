@@ -238,6 +238,186 @@ class HelpFormatsPanel extends StatelessWidget {
             ),
           ),
         ),
+
+        const SizedBox(height: 16),
+
+        // Template Variables Section
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, color: colorScheme.primary),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Template Variables',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Use these variables in your templates to auto-fill information',
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Dates & Time',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Current Date',
+                  syntax: '{{date}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'ISO Date',
+                  syntax: '{{dateiso}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Long Date',
+                  syntax: '{{datelong}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Current Time',
+                  syntax: '{{time}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Time (12h)',
+                  syntax: '{{time12}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Day of Month',
+                  syntax: '{{day}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Month Number',
+                  syntax: '{{month}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Full Month Name',
+                  syntax: '{{monthname}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Short Month Name',
+                  syntax: '{{monthnameshort}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Year',
+                  syntax: '{{year}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Weekday',
+                  syntax: '{{weekday}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Short Weekday',
+                  syntax: '{{weekdayshort}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Week of Year',
+                  syntax: '{{week}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Day of Year',
+                  syntax: '{{dayofyear}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Week Start',
+                  syntax: '{{weekstart}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Week End',
+                  syntax: '{{weekend}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Tomorrow',
+                  syntax: '{{tomorrow}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Yesterday',
+                  syntax: '{{yesterday}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Created Timestamp',
+                  syntax: '{{created}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Hour (24h)',
+                  syntax: '{{hour}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Minute',
+                  syntax: '{{minute}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'AM/PM',
+                  syntax: '{{ampm}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Unix Timestamp',
+                  syntax: '{{timestamp}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Timezone',
+                  syntax: '{{timezone}}',
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Contextual',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Notebook Name',
+                  syntax: '{{notebook}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Greeting',
+                  syntax: '{{greeting}}',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Platform',
+                  syntax: '{{platform}}',
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }

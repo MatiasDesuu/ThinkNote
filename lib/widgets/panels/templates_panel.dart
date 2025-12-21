@@ -6,6 +6,7 @@ import '../../database/repositories/notebook_repository.dart';
 import '../../database/repositories/note_repository.dart';
 import '../../database/database_helper.dart';
 import '../../database/database_service.dart';
+import '../../services/template_variable_processor.dart';
 import '../custom_snackbar.dart';
 
 class TemplatesPanel extends StatefulWidget {
@@ -109,9 +110,26 @@ class TemplatesPanelState extends State<TemplatesPanel> {
     }
 
     try {
+      String? notebookName;
+      if (widget.selectedNotebookId != null) {
+        final notebook = await _notebookRepository.getNotebook(
+          widget.selectedNotebookId!,
+        );
+        notebookName = notebook?.name;
+      }
+
+      final processedTitle = TemplateVariableProcessor.process(
+        template.title,
+        notebookName: notebookName,
+      );
+      final processedContent = TemplateVariableProcessor.process(
+        template.content,
+        notebookName: notebookName,
+      );
+
       final newNote = Note(
-        title: template.title,
-        content: template.content,
+        title: processedTitle,
+        content: processedContent,
         notebookId: widget.selectedNotebookId!,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

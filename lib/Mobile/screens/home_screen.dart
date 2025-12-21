@@ -5,6 +5,7 @@ import '../../database/models/note.dart';
 import '../../database/models/notebook.dart';
 import '../../database/models/notebook_icons.dart';
 import '../../database/repositories/note_repository.dart';
+import '../../services/template_variable_processor.dart';
 import '../../database/repositories/notebook_repository.dart';
 import '../../database/controllers/app_controller.dart';
 import 'notebook_selector_screen.dart';
@@ -423,10 +424,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
 
       final notebookId = widget.selectedNotebook!.id!;
+      final notebookName = widget.selectedNotebook!.name;
+
+      final processedTitle = TemplateVariableProcessor.process(
+        template.title,
+        notebookName: notebookName,
+      );
+      final processedContent = TemplateVariableProcessor.process(
+        template.content,
+        notebookName: notebookName,
+      );
 
       final newNote = Note(
-        title: template.title,
-        content: template.content,
+        title: processedTitle,
+        content: processedContent,
         notebookId: notebookId,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
