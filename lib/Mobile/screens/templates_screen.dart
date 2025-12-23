@@ -139,10 +139,15 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
 
   Widget _buildTemplateItem(Note note) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isStack = note.title.toLowerCase().contains('#stack');
 
     return ListTile(
       leading: Icon(
-        note.isTask ? Icons.add_task_rounded : Icons.description_outlined,
+        isStack
+            ? Icons.library_books_rounded
+            : note.isTask
+                ? Icons.add_task_rounded
+                : Icons.description_outlined,
         color: colorScheme.primary,
       ),
       title: Text(
@@ -152,6 +157,7 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
           fontWeight: FontWeight.w500,
         ),
       ),
+      subtitle: isStack ? const Text('Stack Template') : null,
       trailing: const Icon(Icons.chevron_right_rounded),
       onTap: () {
         widget.onTemplateApplied(note);

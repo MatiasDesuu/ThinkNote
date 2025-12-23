@@ -423,6 +423,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return;
       }
 
+      // Check if this is a stack template
+      if (template.title.toLowerCase().contains('#stack')) {
+        await _createNotesFromStackTemplate(template);
+        return;
+      }
+
       final notebookId = widget.selectedNotebook!.id!;
       final notebookName = widget.selectedNotebook!.name;
 
@@ -470,6 +476,109 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         CustomSnackbar.show(
           context: context,
           message: 'Error creating note from template: ${e.toString()}',
+          type: CustomSnackbarType.error,
+        );
+      }
+    } finally {
+      _isUpdatingManually = false;
+      if (mounted) _loadNotes();
+    }
+  }
+
+  Future<void> _createNotesFromStackTemplate(Note template) async {
+    try {
+      if (widget.selectedNotebook == null) {
+        if (mounted) {
+          CustomSnackbar.show(
+            context: context,
+            message: 'Please select a notebook first',
+            type: CustomSnackbarType.error,
+          );
+        }
+        return;
+      }
+
+      // Parse the content for {{note1, note2, ...}}
+      final regExp = RegExp(r'\{\{([^}]+)\}\}');
+      final match = regExp.firstMatch(template.content);
+      if (match == null) {
+        throw Exception('Stack template must contain {{note1, note2, ...}} in content');
+      }
+
+      final noteNamesString = match.group(1)!;
+      final noteNames = noteNamesString.split(',').map((name) => name.trim()).toList();
+
+      // Get all notes from the template's notebook
+      final templateNotes = await _noteRepository.getNotesByNotebookId(template.notebookId);
+      final templateNoteMap = {for (var note in templateNotes) note.title: note};
+
+      // Check if all specified notes exist
+      final missingNotes = noteNames.where((name) => !templateNoteMap.containsKey(name)).toList();
+      if (missingNotes.isNotEmpty) {
+        throw Exception('The following notes are missing in the template notebook: ${missingNotes.join(', ')}');
+      }
+
+      final notebookId = widget.selectedNotebook!.id!;
+      final notebookName = widget.selectedNotebook!.name;
+
+      final existingNotes = await _noteRepository.getNotesByNotebookId(notebookId);
+      List<String> existingTitles = existingNotes.map((note) => note.title).toList();
+
+      List<Note> createdNotes = [];
+
+      // Create each note
+      for (final noteName in noteNames) {
+        final sourceNote = templateNoteMap[noteName]!;
+        
+        final processedTitle = TemplateVariableProcessor.process(
+          sourceNote.title,
+          notebookName: notebookName,
+          existingTitles: existingTitles,
+        );
+        final processedContent = TemplateVariableProcessor.process(
+          sourceNote.content,
+          notebookName: notebookName,
+        );
+
+        final newNote = Note(
+          title: processedTitle,
+          content: processedContent,
+          notebookId: notebookId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          isFavorite: false,
+          tags: sourceNote.tags,
+          orderIndex: 0,
+          isTask: sourceNote.isTask,
+          isCompleted: false,
+        );
+
+        final noteId = await _noteRepository.createNote(newNote);
+        final createdNote = await _noteRepository.getNote(noteId);
+        if (createdNote != null) {
+          createdNotes.add(createdNote);
+          existingTitles.add(processedTitle);
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _notes = [..._notes, ...createdNotes];
+          _sortNotes(_notes);
+        });
+        DatabaseHelper.notifyDatabaseChanged();
+        CustomSnackbar.show(
+          context: context,
+          message: 'Created ${createdNotes.length} notes from stack template',
+          type: CustomSnackbarType.success,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error creating notes from stack template: $e');
+      if (mounted) {
+        CustomSnackbar.show(
+          context: context,
+          message: 'Error creating notes from stack template: ${e.toString()}',
           type: CustomSnackbarType.error,
         );
       }

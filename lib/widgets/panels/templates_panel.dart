@@ -110,45 +110,11 @@ class TemplatesPanelState extends State<TemplatesPanel> {
     }
 
     try {
-      String? notebookName;
-      List<String> existingTitles = [];
-      if (widget.selectedNotebookId != null) {
-        final notebook = await _notebookRepository.getNotebook(
-          widget.selectedNotebookId!,
-        );
-        notebookName = notebook?.name;
-        final existingNotes = await _noteRepository.getNotesByNotebookId(widget.selectedNotebookId!);
-        existingTitles = existingNotes.map((note) => note.title).toList();
-      }
-
-      final processedTitle = TemplateVariableProcessor.process(
-        template.title,
-        notebookName: notebookName,
-        existingTitles: existingTitles,
-      );
-      final processedContent = TemplateVariableProcessor.process(
-        template.content,
-        notebookName: notebookName,
-      );
-
-      final newNote = Note(
-        title: processedTitle,
-        content: processedContent,
-        notebookId: widget.selectedNotebookId!,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        isFavorite: false,
-        tags: template.tags,
-        isTask: template.isTask,
-        isCompleted: false,
-      );
-
-      final noteId = await _noteRepository.createNote(newNote);
-      final createdNote = await _noteRepository.getNote(noteId);
-
-      if (createdNote != null) {
-        widget.onTemplateApplied(createdNote);
-        widget.onClose?.call();
+      // Check if this is a stack template
+      if (template.title.toLowerCase().contains('#stack')) {
+        await _applyStackTemplate(template);
+      } else {
+        await _applySingleTemplate(template);
       }
     } catch (e) {
       debugPrint('Error applying template: $e');
@@ -159,6 +125,125 @@ class TemplatesPanelState extends State<TemplatesPanel> {
           type: CustomSnackbarType.error,
         );
       }
+    }
+  }
+
+  Future<void> _applySingleTemplate(Note template) async {
+    String? notebookName;
+    List<String> existingTitles = [];
+    if (widget.selectedNotebookId != null) {
+      final notebook = await _notebookRepository.getNotebook(
+        widget.selectedNotebookId!,
+      );
+      notebookName = notebook?.name;
+      final existingNotes = await _noteRepository.getNotesByNotebookId(widget.selectedNotebookId!);
+      existingTitles = existingNotes.map((note) => note.title).toList();
+    }
+
+    final processedTitle = TemplateVariableProcessor.process(
+      template.title,
+      notebookName: notebookName,
+      existingTitles: existingTitles,
+    );
+    final processedContent = TemplateVariableProcessor.process(
+      template.content,
+      notebookName: notebookName,
+    );
+
+    final newNote = Note(
+      title: processedTitle,
+      content: processedContent,
+      notebookId: widget.selectedNotebookId!,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      isFavorite: false,
+      tags: template.tags,
+      isTask: template.isTask,
+      isCompleted: false,
+    );
+
+    final noteId = await _noteRepository.createNote(newNote);
+    final createdNote = await _noteRepository.getNote(noteId);
+
+    if (createdNote != null) {
+      widget.onTemplateApplied(createdNote);
+      widget.onClose?.call();
+    }
+  }
+
+  Future<void> _applyStackTemplate(Note template) async {
+    // Parse the content for {{note1, note2, ...}}
+    final regExp = RegExp(r'\{\{([^}]+)\}\}');
+    final match = regExp.firstMatch(template.content);
+    if (match == null) {
+      throw Exception('Stack template must contain {{note1, note2, ...}} in content');
+    }
+
+    final noteNamesString = match.group(1)!;
+    final noteNames = noteNamesString.split(',').map((name) => name.trim()).toList();
+
+    // Get all notes from the template's notebook
+    final templateNotes = await _noteRepository.getNotesByNotebookId(template.notebookId);
+    final templateNoteMap = {for (var note in templateNotes) note.title: note};
+
+    // Check if all specified notes exist
+    final missingNotes = noteNames.where((name) => !templateNoteMap.containsKey(name)).toList();
+    if (missingNotes.isNotEmpty) {
+      throw Exception('The following notes are missing in the template notebook: ${missingNotes.join(', ')}');
+    }
+
+    // Get target notebook info
+    String? notebookName;
+    List<String> existingTitles = [];
+    if (widget.selectedNotebookId != null) {
+      final notebook = await _notebookRepository.getNotebook(
+        widget.selectedNotebookId!,
+      );
+      notebookName = notebook?.name;
+      final existingNotes = await _noteRepository.getNotesByNotebookId(widget.selectedNotebookId!);
+      existingTitles = existingNotes.map((note) => note.title).toList();
+    }
+
+    // Create each note
+    for (final noteName in noteNames) {
+      final sourceNote = templateNoteMap[noteName]!;
+      
+      final processedTitle = TemplateVariableProcessor.process(
+        sourceNote.title,
+        notebookName: notebookName,
+        existingTitles: existingTitles,
+      );
+      final processedContent = TemplateVariableProcessor.process(
+        sourceNote.content,
+        notebookName: notebookName,
+      );
+
+      final newNote = Note(
+        title: processedTitle,
+        content: processedContent,
+        notebookId: widget.selectedNotebookId!,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        isFavorite: false,
+        tags: sourceNote.tags,
+        isTask: sourceNote.isTask,
+        isCompleted: false,
+      );
+
+      await _noteRepository.createNote(newNote);
+      // Update existingTitles for numbering
+      existingTitles.add(processedTitle);
+    }
+
+    // Close the panel after applying stack template
+    widget.onClose?.call();
+
+    if (mounted) {
+      CustomSnackbar.show(
+        context: context,
+        message: 'Created ${noteNames.length} notes from stack template',
+        type: CustomSnackbarType.success,
+      );
     }
   }
 
@@ -295,9 +380,11 @@ class TemplatesPanelState extends State<TemplatesPanel> {
                 child: Row(
                   children: [
                     Icon(
-                      note.isTask
-                          ? Icons.add_task_rounded
-                          : Icons.description_outlined,
+                      note.title.toLowerCase().contains('#stack')
+                          ? Icons.library_add_rounded
+                          : note.isTask
+                              ? Icons.add_task_rounded
+                              : Icons.description_outlined,
                       color: colorScheme.primary,
                       size: 18,
                     ),
