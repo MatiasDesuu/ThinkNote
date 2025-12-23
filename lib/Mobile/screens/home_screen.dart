@@ -426,9 +426,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       final notebookId = widget.selectedNotebook!.id!;
       final notebookName = widget.selectedNotebook!.name;
 
+      final existingNotes = await _noteRepository.getNotesByNotebookId(notebookId);
+      final existingTitles = existingNotes.map((note) => note.title).toList();
+
       final processedTitle = TemplateVariableProcessor.process(
         template.title,
         notebookName: notebookName,
+        existingTitles: existingTitles,
       );
       final processedContent = TemplateVariableProcessor.process(
         template.content,

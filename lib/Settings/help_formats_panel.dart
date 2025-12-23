@@ -414,6 +414,11 @@ class HelpFormatsPanel extends StatelessWidget {
                   label: 'Platform',
                   syntax: '{{platform}}',
                 ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Sequential Number (titles only)',
+                  syntax: '{{number}}',
+                ),
               ],
             ),
           ),

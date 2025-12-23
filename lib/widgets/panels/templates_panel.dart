@@ -111,16 +111,20 @@ class TemplatesPanelState extends State<TemplatesPanel> {
 
     try {
       String? notebookName;
+      List<String> existingTitles = [];
       if (widget.selectedNotebookId != null) {
         final notebook = await _notebookRepository.getNotebook(
           widget.selectedNotebookId!,
         );
         notebookName = notebook?.name;
+        final existingNotes = await _noteRepository.getNotesByNotebookId(widget.selectedNotebookId!);
+        existingTitles = existingNotes.map((note) => note.title).toList();
       }
 
       final processedTitle = TemplateVariableProcessor.process(
         template.title,
         notebookName: notebookName,
+        existingTitles: existingTitles,
       );
       final processedContent = TemplateVariableProcessor.process(
         template.content,

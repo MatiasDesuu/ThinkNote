@@ -3,10 +3,19 @@ import 'dart:io';
 
 class TemplateVariableProcessor {
   /// Processes a string by replacing template variables with their actual values.
-  static String process(String text, {String? notebookName}) {
+  static String process(String text, {String? notebookName, List<String>? existingTitles}) {
     final now = DateTime.now();
     
     String processed = text;
+    
+    // Number variable
+    if (processed.contains('{{number}}') && existingTitles != null) {
+      String baseTemplate = processed.replaceAll('{{number}}', '');
+      String processedBase = process(baseTemplate, notebookName: notebookName);
+      int count = existingTitles.where((title) => title.startsWith(processedBase)).length;
+      String number = (count + 1).toString();
+      processed = processed.replaceAll('{{number}}', number);
+    }
     
     // Date variables
     processed = processed.replaceAll('{{date}}', DateFormat('yyyy/MM/dd').format(now));
@@ -62,7 +71,7 @@ class TemplateVariableProcessor {
     String platform = 'Unknown';
     if (Platform.isAndroid) {
       platform = 'Android';
-    } else if (Platform.isIOS) {platform = 'iOS';
+    } else if (Platform.isIOS) {
       platform = 'iOS';
     } else if (Platform.isWindows) {
       platform = 'Windows';
