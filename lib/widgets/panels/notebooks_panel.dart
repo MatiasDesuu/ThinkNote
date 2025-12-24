@@ -923,6 +923,9 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                     _showContextMenu(context, details.globalPosition, notebook);
                   }
                 },
+                onTertiaryTapDown: (details) {
+                  _handleChevronClick(notebook);
+                },
                 child: _notebookRow(notebook, level),
               ),
             );
