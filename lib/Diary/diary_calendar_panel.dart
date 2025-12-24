@@ -24,15 +24,12 @@ class DiaryCalendarPanel extends StatefulWidget {
   DiaryCalendarPanelState createState() => DiaryCalendarPanelState();
 }
 
-class DiaryCalendarPanelState extends State<DiaryCalendarPanel>
-    with SingleTickerProviderStateMixin {
+class DiaryCalendarPanelState extends State<DiaryCalendarPanel> {
   late DiaryService _diaryService;
   late DateTime _selectedMonth;
   late DateTime _selectedDate;
   List<DiaryEntry> _entries = [];
   bool _isLoading = true;
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
@@ -40,15 +37,6 @@ class DiaryCalendarPanelState extends State<DiaryCalendarPanel>
     _diaryService = DiaryService(DiaryRepository(DatabaseHelper()));
     _selectedMonth = DateTime.now();
     _selectedDate = DateTime.now();
-
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
 
     _loadEntries();
   }
@@ -74,7 +62,6 @@ class DiaryCalendarPanelState extends State<DiaryCalendarPanel>
 
   @override
   void dispose() {
-    _animationController.dispose();
     super.dispose();
   }
 
@@ -95,7 +82,6 @@ class DiaryCalendarPanelState extends State<DiaryCalendarPanel>
           _entries = entries;
           _isLoading = false;
         });
-        _animationController.forward();
       }
     } catch (e) {
       if (mounted) {
@@ -111,39 +97,33 @@ class DiaryCalendarPanelState extends State<DiaryCalendarPanel>
   }
 
   void _goToPreviousMonth() {
-    _animationController.reverse().then((_) {
-      setState(() {
-        _selectedMonth = DateTime(
-          _selectedMonth.year,
-          _selectedMonth.month - 1,
-          1,
-        );
-      });
-      _loadEntries();
+    setState(() {
+      _selectedMonth = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month - 1,
+        1,
+      );
     });
+    _loadEntries();
   }
 
   void _goToNextMonth() {
-    _animationController.reverse().then((_) {
-      setState(() {
-        _selectedMonth = DateTime(
-          _selectedMonth.year,
-          _selectedMonth.month + 1,
-          1,
-        );
-      });
-      _loadEntries();
+    setState(() {
+      _selectedMonth = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month + 1,
+        1,
+      );
     });
+    _loadEntries();
   }
 
   void _goToCurrentMonth() {
-    _animationController.reverse().then((_) {
-      setState(() {
-        _selectedMonth = DateTime.now();
-        _selectedDate = DateTime.now();
-      });
-      _loadEntries();
+    setState(() {
+      _selectedMonth = DateTime.now();
+      _selectedDate = DateTime.now();
     });
+    _loadEntries();
   }
 
   String get _formattedMonth {
@@ -322,13 +302,10 @@ class DiaryCalendarPanelState extends State<DiaryCalendarPanel>
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: FadeTransition(
-                    opacity: _fadeAnimation,
-                    child:
-                        _isLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : _buildCalendarGrid(days),
-                  ),
+                  child:
+                      _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : _buildCalendarGrid(days),
                 ),
               ),
             ],

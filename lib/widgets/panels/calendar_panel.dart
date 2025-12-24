@@ -147,7 +147,7 @@ class CalendarPanelState extends State<CalendarPanel>
     }
   }
 
-  Future<void> _loadEvents() async {
+  Future<void> _loadEvents({bool animate = true}) async {
     if (!mounted) return;
 
     final int callId = ++_eventsLoadCounter;
@@ -221,7 +221,9 @@ class CalendarPanelState extends State<CalendarPanel>
       }
       // Only animate the calendar (not the events panel) so the events
       // list doesn't disappear while switching months.
-      _animationController.forward();
+      if (animate) {
+        _animationController.forward();
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -329,39 +331,33 @@ class CalendarPanelState extends State<CalendarPanel>
   }
 
   void _goToPreviousMonth() {
-    _animationController.reverse().then((_) {
-      setState(() {
-        _selectedMonth = DateTime(
-          _selectedMonth.year,
-          _selectedMonth.month - 1,
-          1,
-        );
-      });
-      _loadEvents();
+    setState(() {
+      _selectedMonth = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month - 1,
+        1,
+      );
     });
+    _loadEvents(animate: false);
   }
 
   void _goToNextMonth() {
-    _animationController.reverse().then((_) {
-      setState(() {
-        _selectedMonth = DateTime(
-          _selectedMonth.year,
-          _selectedMonth.month + 1,
-          1,
-        );
-      });
-      _loadEvents();
+    setState(() {
+      _selectedMonth = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month + 1,
+        1,
+      );
     });
+    _loadEvents(animate: false);
   }
 
   void _goToCurrentMonth() {
-    _animationController.reverse().then((_) {
-      setState(() {
-        _selectedMonth = DateTime.now();
-        _selectedDate = DateTime.now();
-      });
-      _loadEvents();
+    setState(() {
+      _selectedMonth = DateTime.now();
+      _selectedDate = DateTime.now();
     });
+    _loadEvents(animate: false);
   }
 
   String get _formattedMonth {

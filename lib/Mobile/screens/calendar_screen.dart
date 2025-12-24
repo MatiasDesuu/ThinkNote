@@ -813,8 +813,7 @@ class CalendarScreenState extends State<CalendarScreen> {
     }
     return Column(
       children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+        Container(
           height:
               _isExpanded
                   ? 400
