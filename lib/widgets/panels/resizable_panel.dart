@@ -57,7 +57,7 @@ class ResizablePanelLeft extends StatefulWidget {
 
 class ResizablePanelState extends State<ResizablePanel>
     with SingleTickerProviderStateMixin {
-  double _width = 250;
+  late double _width;
   bool _isExpanded = true;
   late AnimationController _animationController;
   late Animation<double> _widthAnimation;
@@ -71,6 +71,7 @@ class ResizablePanelState extends State<ResizablePanel>
   @override
   void initState() {
     super.initState();
+    _width = widget.minWidth;
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
@@ -93,7 +94,7 @@ class ResizablePanelState extends State<ResizablePanel>
     if (!mounted) return;
     final savedExpanded = prefs.getBool('${widget.preferencesKey}_expanded') ?? true;
     setState(() {
-      _width = prefs.getDouble('${widget.preferencesKey}_width') ?? 250;
+      _width = prefs.getDouble('${widget.preferencesKey}_width') ?? widget.minWidth;
       _isExpanded = savedExpanded;
       _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
         CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
@@ -334,7 +335,7 @@ class ResizablePanelState extends State<ResizablePanel>
 
 class ResizablePanelLeftState extends State<ResizablePanelLeft>
     with SingleTickerProviderStateMixin {
-  double _width = 250;
+  late double _width;
   bool _isExpanded = true;
   late AnimationController _animationController;
   late Animation<double> _widthAnimation;
@@ -346,6 +347,7 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
   @override
   void initState() {
     super.initState();
+    _width = widget.minWidth;
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
@@ -368,7 +370,7 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     if (!mounted) return;
     final savedExpanded = prefs.getBool('${widget.preferencesKey}_expanded') ?? true;
     setState(() {
-      _width = prefs.getDouble('${widget.preferencesKey}_width') ?? 250;
+      _width = prefs.getDouble('${widget.preferencesKey}_width') ?? widget.minWidth;
       _isExpanded = savedExpanded;
       _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
         CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
