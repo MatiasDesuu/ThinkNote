@@ -8,6 +8,7 @@ import '../animations/animations_handler.dart';
 import '../scriptmode_handler.dart';
 import '../theme_handler.dart';
 import '../../widgets/custom_snackbar.dart';
+import '../../Settings/editor_settings_panel.dart';
 import '../../widgets/Editor/list_continuation_handler.dart';
 
 class NoteEditor extends StatefulWidget {
@@ -586,12 +587,19 @@ class DurationEstimator extends StatefulWidget {
 class _DurationEstimatorState extends State<DurationEstimator> {
   Timer? _debounceTimer;
   String _duration = "00:00";
+  StreamSubscription<double>? _wordsPerSecondSubscription;
 
   @override
   void initState() {
     super.initState();
     _calculateDuration();
     widget.controller.addListener(_onTextChanged);
+    _wordsPerSecondSubscription = EditorSettingsEvents.wordsPerSecondStream
+        .listen((wps) {
+          if (mounted) {
+            _calculateDuration();
+          }
+        });
   }
 
   void _onTextChanged() {
@@ -618,6 +626,7 @@ class _DurationEstimatorState extends State<DurationEstimator> {
   void dispose() {
     _debounceTimer?.cancel();
     widget.controller.removeListener(_onTextChanged);
+    _wordsPerSecondSubscription?.cancel();
     super.dispose();
   }
 

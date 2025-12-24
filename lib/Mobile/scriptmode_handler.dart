@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../Settings/editor_settings_panel.dart' show EditorSettingsCache;
 
 class ScriptBlock {
   final int number;
@@ -58,7 +59,8 @@ class ScriptModeHandler {
           block.content.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length,
     );
 
-    final totalSeconds = (totalWords * 0.20).ceil();
+    final wordsPerSecond = EditorSettingsCache.instance.wordsPerSecond;
+    final totalSeconds = (totalWords / wordsPerSecond).ceil();
     final minutes = (totalSeconds / 60).floor();
     final seconds = totalSeconds % 60;
     return "${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";

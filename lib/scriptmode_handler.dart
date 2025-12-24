@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'widgets/Editor/unified_text_handler.dart';
 import 'database/models/note.dart';
+import 'Settings/editor_settings_panel.dart' show EditorSettingsCache;
 
 class ScriptModeHandlerDesktop {
   static bool isScript(String content) {
@@ -121,7 +122,8 @@ class DurationEstimatorDesktop extends StatelessWidget {
           block.content.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length,
     );
 
-    final totalSeconds = (totalWords * 0.20).ceil(); // Same calculation
+    final wordsPerSecond = EditorSettingsCache.instance.wordsPerSecond;
+    final totalSeconds = (totalWords / wordsPerSecond).ceil();
     final minutes = (totalSeconds / 60).floor();
     final seconds = totalSeconds % 60;
     final duration =

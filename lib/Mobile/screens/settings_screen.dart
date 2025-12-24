@@ -37,6 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isWebDAVEnabled = false;
   bool _showNotebookIcons = true;
   bool _showNoteIcons = true;
+  double _wordsPerSecond = 5.0;
   final _webdavUrlController = TextEditingController();
   final _webdavUserController = TextEditingController();
   final _webdavPassController = TextEditingController();
@@ -70,6 +71,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final prefs = await SharedPreferences.getInstance();
       final showNotebookIcons = await EditorSettings.getShowNotebookIcons();
       final showNoteIcons = await EditorSettings.getShowNoteIcons();
+      final wordsPerSecond = await EditorSettings.getWordsPerSecond();
 
       if (mounted) {
         setState(() {
@@ -80,6 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _webdavPassController.text = prefs.getString('webdav_password') ?? '';
           _showNotebookIcons = showNotebookIcons;
           _showNoteIcons = showNoteIcons;
+          _wordsPerSecond = wordsPerSecond;
           timeDilation = _isAnimationDisabled ? 0.0001 : 1.0;
           _isInitialized = true;
         });
@@ -96,6 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _webdavPassController.text = '';
           _showNotebookIcons = true;
           _showNoteIcons = true;
+          _wordsPerSecond = 5.0;
           timeDilation = 1.0;
           _isInitialized = true;
         });
@@ -239,6 +243,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _showNoteIcons = value;
     });
     await EditorSettings.setShowNoteIcons(value);
+  }
+
+  void _updateWordsPerSecond(double value) async {
+    setState(() {
+      _wordsPerSecond = value;
+    });
+    await EditorSettings.setWordsPerSecond(value);
   }
 
   @override
@@ -396,6 +407,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onChanged: _toggleShowNoteIcons,
                       ),
                     ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Editor',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Card(
+                  elevation: 0,
+                  color: colorScheme.surfaceContainerHigh,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Script mode words per second',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Adjust the reading speed for script mode duration estimation',
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Text(
+                              '${_wordsPerSecond.toStringAsFixed(1)} WPS',
+                              style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Expanded(
+                              child: Slider(
+                                value: _wordsPerSecond,
+                                min: 1.0,
+                                max: 10.0,
+                                divisions: 90,
+                                onChanged: _updateWordsPerSecond,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),

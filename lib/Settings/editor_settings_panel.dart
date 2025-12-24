@@ -34,6 +34,7 @@ class EditorSettingsCache {
   bool? _hideTabsInImmersive;
   bool? _expandNotebooksOnSelection;
   bool? _expandNotebooksOnNoteOpen;
+  double? _wordsPerSecond;
 
   double get fontSize => _fontSize ?? EditorSettings.defaultFontSize;
   double get lineSpacing => _lineSpacing ?? EditorSettings.defaultLineSpacing;
@@ -60,6 +61,8 @@ class EditorSettingsCache {
   bool get expandNotebooksOnNoteOpen =>
       _expandNotebooksOnNoteOpen ??
       EditorSettings.defaultExpandNotebooksOnNoteOpen;
+  double get wordsPerSecond =>
+      _wordsPerSecond ?? EditorSettings.defaultWordsPerSecond;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -79,6 +82,7 @@ class EditorSettingsCache {
         EditorSettings.getHideTabsInImmersive(),
         EditorSettings.getExpandNotebooksOnSelection(),
         EditorSettings.getExpandNotebooksOnNoteOpen(),
+        EditorSettings.getWordsPerSecond(),
       ]);
 
       _fontSize = results[0] as double;
@@ -94,6 +98,7 @@ class EditorSettingsCache {
       _hideTabsInImmersive = results[10] as bool;
       _expandNotebooksOnSelection = results[11] as bool;
       _expandNotebooksOnNoteOpen = results[12] as bool;
+      _wordsPerSecond = results[13] as double;
       _isInitialized = true;
     } catch (e) {
       print('Error initializing editor settings cache: $e');
@@ -113,6 +118,7 @@ class EditorSettingsCache {
           EditorSettings.defaultExpandNotebooksOnSelection;
       _expandNotebooksOnNoteOpen =
           EditorSettings.defaultExpandNotebooksOnNoteOpen;
+      _wordsPerSecond = EditorSettings.defaultWordsPerSecond;
       _isInitialized = true;
     }
   }
@@ -172,6 +178,10 @@ class EditorSettingsCache {
   void updateExpandNotebooksOnNoteOpen(bool expand) {
     _expandNotebooksOnNoteOpen = expand;
   }
+
+  void updateWordsPerSecond(double wps) {
+    _wordsPerSecond = wps;
+  }
 }
 
 // Eventos de configuración
@@ -192,6 +202,7 @@ class EditorSettingsEvents {
       StreamController<bool>.broadcast();
   static final _expandNotebooksOnNoteOpenController =
       StreamController<bool>.broadcast();
+  static final _wordsPerSecondController = StreamController<double>.broadcast();
 
   static Stream<double> get fontSizeStream => _fontSizeController.stream;
   static Stream<double> get lineSpacingStream => _lineSpacingController.stream;
@@ -213,6 +224,8 @@ class EditorSettingsEvents {
       _expandNotebooksOnSelectionController.stream;
   static Stream<bool> get expandNotebooksOnNoteOpenStream =>
       _expandNotebooksOnNoteOpenController.stream;
+  static Stream<double> get wordsPerSecondStream =>
+      _wordsPerSecondController.stream;
 
   static void notifyFontSizeChanged(double size) {
     _fontSizeController.add(size);
@@ -262,6 +275,10 @@ class EditorSettingsEvents {
     _expandNotebooksOnNoteOpenController.add(expand);
   }
 
+  static void notifyWordsPerSecondChanged(double wps) {
+    _wordsPerSecondController.add(wps);
+  }
+
   static void dispose() {
     _fontSizeController.close();
     _lineSpacingController.close();
@@ -275,6 +292,7 @@ class EditorSettingsEvents {
     _hideTabsInImmersiveController.close();
     _expandNotebooksOnSelectionController.close();
     _expandNotebooksOnNoteOpenController.close();
+    _wordsPerSecondController.close();
   }
 }
 
@@ -294,6 +312,7 @@ class EditorSettings {
       'expand_notebooks_on_selection';
   static const String _expandNotebooksOnNoteOpenKey =
       'expand_notebooks_on_note_open';
+  static const String _wordsPerSecondKey = 'words_per_second';
   static const double defaultLineSpacing = 1.0;
 
   // Default values
@@ -309,6 +328,7 @@ class EditorSettings {
   static const bool defaultHideTabsInImmersive = false;
   static const bool defaultExpandNotebooksOnSelection = true;
   static const bool defaultExpandNotebooksOnNoteOpen = true;
+  static const double defaultWordsPerSecond = 5.0;
 
   // Fuentes disponibles
   static const List<String> availableFonts = [
@@ -527,6 +547,18 @@ class EditorSettings {
     EditorSettingsEvents.notifyExpandNotebooksOnNoteOpenChanged(value);
   }
 
+  // Get words per second setting
+  static Future<double> getWordsPerSecond() async {
+    return await PlatformSettings.get(_wordsPerSecondKey, defaultWordsPerSecond);
+  }
+
+  // Save words per second setting
+  static Future<void> setWordsPerSecond(double value) async {
+    await PlatformSettings.set(_wordsPerSecondKey, value);
+    EditorSettingsCache.instance.updateWordsPerSecond(value);
+    EditorSettingsEvents.notifyWordsPerSecondChanged(value);
+  }
+
   // Método para precargar todas las configuraciones del editor
   static Future<void> preloadSettings() async {
     await EditorSettingsCache.instance.initialize();
@@ -554,6 +586,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
   bool _hideTabsInImmersive = false;
   bool _expandNotebooksOnSelection = true;
   bool _expandNotebooksOnNoteOpen = true;
+  double _wordsPerSecond = 5.0;
   bool _isLoading = true;
 
   @override
@@ -578,6 +611,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
         await EditorSettings.getExpandNotebooksOnSelection();
     final expandNotebooksOnNoteOpen =
         await EditorSettings.getExpandNotebooksOnNoteOpen();
+    final wordsPerSecond = await EditorSettings.getWordsPerSecond();
     setState(() {
       _fontSize = fontSize;
       _lineSpacing = lineSpacing;
@@ -592,6 +626,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
       _hideTabsInImmersive = hideTabsInImmersive;
       _expandNotebooksOnSelection = expandNotebooksOnSelection;
       _expandNotebooksOnNoteOpen = expandNotebooksOnNoteOpen;
+      _wordsPerSecond = wordsPerSecond;
       _isLoading = false;
     });
   }
@@ -674,6 +709,12 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
     setState(() => _expandNotebooksOnNoteOpen = value);
     await EditorSettings.setExpandNotebooksOnNoteOpen(value);
     EditorSettingsEvents.notifyExpandNotebooksOnNoteOpenChanged(value);
+  }
+
+  Future<void> _updateWordsPerSecond(double value) async {
+    setState(() => _wordsPerSecond = value);
+    await EditorSettings.setWordsPerSecond(value);
+    EditorSettingsEvents.notifyWordsPerSecondChanged(value);
   }
 
   void _showFontSelector() {
@@ -964,6 +1005,45 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                     Switch(
                       value: _expandNotebooksOnNoteOpen,
                       onChanged: _updateExpandNotebooksOnNoteOpen,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Words Per Second for Script Mode
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Script mode words per second', style: textStyle),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Adjust the reading speed for script mode duration estimation',
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Text(
+                          '${_wordsPerSecond.toStringAsFixed(1)} WPS',
+                          style: TextStyle(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Expanded(
+                          child: Slider(
+                            value: _wordsPerSecond,
+                            min: 1.0,
+                            max: 10.0,
+                            divisions: 90,
+                            onChanged: _updateWordsPerSecond,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

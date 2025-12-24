@@ -87,6 +87,7 @@ class _NotaEditorState extends State<NotaEditor>
   StreamSubscription? _fontFamilySubscription;
   StreamSubscription? _editorCenteredSubscription;
   StreamSubscription? _autoSaveEnabledSubscription;
+  StreamSubscription? _wordsPerSecondSubscription;
   late ImmersiveModeService _immersiveModeService;
   late SearchManager _searchManager;
   final ScrollController _scrollController = ScrollController();
@@ -258,6 +259,7 @@ class _NotaEditorState extends State<NotaEditor>
     _fontFamilySubscription?.cancel();
     _editorCenteredSubscription?.cancel();
     _autoSaveEnabledSubscription?.cancel();
+    _wordsPerSecondSubscription?.cancel();
     _immersiveModeService.removeListener(_onImmersiveModeChanged);
     _scrollController.dispose();
 
@@ -471,6 +473,15 @@ class _NotaEditorState extends State<NotaEditor>
     _fontFamilySubscription?.cancel();
     _editorCenteredSubscription?.cancel();
     _autoSaveEnabledSubscription?.cancel();
+
+    _wordsPerSecondSubscription = EditorSettingsEvents.wordsPerSecondStream
+        .listen((wps) {
+          if (mounted) {
+            setState(() {
+              // Force rebuild to update duration estimator
+            });
+          }
+        });
 
     _fontSizeSubscription = EditorSettingsEvents.fontSizeStream.listen((size) {
       if (mounted) {
@@ -1366,7 +1377,8 @@ class DurationEstimatorDesktop extends StatelessWidget {
                 .length,
       );
 
-      final totalSeconds = (totalWords * 0.20).ceil();
+      final wordsPerSecond = EditorSettingsCache.instance.wordsPerSecond;
+      final totalSeconds = (totalWords / wordsPerSecond).ceil();
       final minutes = (totalSeconds / 60).floor();
       final seconds = totalSeconds % 60;
       return "${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";
