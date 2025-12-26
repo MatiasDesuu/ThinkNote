@@ -1261,10 +1261,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                     note.title,
                                                     style: TextStyle(
                                                       fontSize: 16,
-                                                      fontWeight:
-                                                          isSelected
-                                                              ? FontWeight.bold
-                                                              : FontWeight.w600,
+                                                      fontWeight: FontWeight.bold,
                                                       color:
                                                           note.isTask &&
                                                                   note.isCompleted

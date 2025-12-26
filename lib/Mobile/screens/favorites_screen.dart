@@ -223,7 +223,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         leading: Icon(iconData, size: 32, color: iconColor),
         title: Align(
           alignment: Alignment.centerLeft,
-          child: Text(title, style: const TextStyle(fontSize: 16, height: 1.2)),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              height: 1.2,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
         trailing: IconButton(
           icon: Icon(Icons.favorite_rounded, color: colorScheme.primary),

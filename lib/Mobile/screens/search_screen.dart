@@ -347,6 +347,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 isNotebook ? item.name : item.title,
                 style: TextStyle(
                   fontSize: 16,
+                  fontWeight: FontWeight.bold,
                   color: theme.colorScheme.onSurface,
                 ),
               )
@@ -358,6 +359,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     isNotebook ? item.name : item.title,
                     style: TextStyle(
                       fontSize: 16,
+                      fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
                     ),
                   ),
@@ -372,6 +374,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 style: TextStyle(
                   color: theme.colorScheme.onSurface.withAlpha(153),
                   fontSize: 14,
+                  fontWeight: FontWeight.w300,
                 ),
               )
               : null,

@@ -556,7 +556,7 @@ class _ThinksScreenState extends State<ThinksScreen> {
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                               style: TextStyle(
-                                                fontWeight: FontWeight.w500,
+                                                fontWeight: FontWeight.bold,
                                                 color: colorScheme.onSurface,
                                                 fontSize: 14,
                                               ),
