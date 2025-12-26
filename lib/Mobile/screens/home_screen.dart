@@ -75,6 +75,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final SyncAnimationController _syncController;
   late final SyncService _syncService;
   bool _isInitialLoad = true;
+  bool _isInitialized = false;
+  Future<void>? _initializationFuture;
   String? _errorMessage;
   SortMode _sortMode = SortMode.order;
   bool _completionSubSortByDate = false;
@@ -101,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     _syncController = SyncAnimationController(vsync: this);
     _syncService = SyncService();
-    _initializeRepository();
+    _initializationFuture = _initializeRepository();
     _loadSortPreference();
     _loadCompletionSubSortPreference();
     _loadLastSelectedNotebook();
@@ -180,6 +182,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       await dbHelper.database;
       _noteRepository = NoteRepository(dbHelper);
       _calendarEventRepository = CalendarEventRepository(dbHelper);
+      _isInitialized = true;
 
       // Cargar eventos del calendario
       await _loadCalendarEvents();
@@ -190,6 +193,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _errorMessage = 'Error initializing database';
         });
       }
+      rethrow;
     }
   }
 
@@ -247,6 +251,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
 
     try {
+      if (!_isInitialized && _initializationFuture != null) {
+        await _initializationFuture;
+      }
+
       List<Note> notes;
       if (widget.selectedTag != null) {
         notes = await TagsService().getNotesByTag(widget.selectedTag!);
@@ -289,6 +297,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _loadCalendarEvents() async {
     try {
+      if (!_isInitialized && _initializationFuture != null) {
+        await _initializationFuture;
+      }
+
       final currentMonth = DateTime.now();
       final events = await _calendarEventRepository.getCalendarEventsByMonth(
         currentMonth,
