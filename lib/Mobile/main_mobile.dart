@@ -926,25 +926,47 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                 },
                                 child: ScaleTransition(
                                   scale: _scaleController.drive(
-                                    Tween<double>(begin: 1.0, end: 1.2).chain(
-                                      CurveTween(curve: Curves.easeOutBack),
+                                    Tween<double>(begin: 1.0, end: 1.1).chain(
+                                      CurveTween(curve: Curves.easeOutCubic),
                                     ),
                                   ),
-                                  child: SizedBox(
+                                  child: RotationTransition(
+                                    turns: _scaleController.drive(
+                                      Tween<double>(begin: 0.0, end: 0.01).chain(
+                                        CurveTween(curve: Curves.easeOutCubic),
+                                      ),
+                                    ),
                                     child: FloatingActionButton(
                                       heroTag: UniqueKey(),
                                       onPressed: null,
                                       backgroundColor: colorScheme.primary,
                                       foregroundColor: colorScheme.onPrimary,
                                       elevation: 4,
-                                      child: Icon(
-                                        _selectedIndex == 0
-                                            ? Symbols.neurology_rounded
-                                            : _selectedIndex == 2
-                                            ? Symbols.add_task_rounded
-                                            : Icons.bookmark_add_rounded,
-                                        size: 36,
-                                        grade: 200,
+                                      child: AnimatedSwitcher(
+                                        duration:
+                                            const Duration(milliseconds: 300),
+                                        transitionBuilder: (
+                                          Widget child,
+                                          Animation<double> animation,
+                                        ) {
+                                          return FadeTransition(
+                                            opacity: animation,
+                                            child: ScaleTransition(
+                                              scale: animation,
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                        child: Icon(
+                                          _selectedIndex == 0
+                                              ? Symbols.neurology_rounded
+                                              : _selectedIndex == 2
+                                              ? Symbols.add_task_rounded
+                                              : Icons.bookmark_add_rounded,
+                                          key: ValueKey<int>(_selectedIndex),
+                                          size: 36,
+                                          grade: 200,
+                                        ),
                                       ),
                                     ),
                                   ),
