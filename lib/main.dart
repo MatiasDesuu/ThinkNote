@@ -1573,7 +1573,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   void _onNotebookSelected(Notebook notebook) async {
     setState(() {
       _selectedNotebook = notebook;
+      _selectedTag = null;
     });
+    _databaseSidebarKey.currentState?.clearSelectedTag();
     final expand = await EditorSettings.getExpandNotebooksOnNoteOpen();
     _databaseSidebarKey.currentState?.handleNotebookSelection(
       notebook,
@@ -1584,7 +1586,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   void _onNotebookSelectedFromFavorite(Notebook notebook) async {
     setState(() {
       _selectedNotebook = notebook;
+      _selectedTag = null;
     });
+    _databaseSidebarKey.currentState?.clearSelectedTag();
     final expand = await EditorSettings.getExpandNotebooksOnSelection();
     _databaseSidebarKey.currentState?.handleNotebookSelection(
       notebook,

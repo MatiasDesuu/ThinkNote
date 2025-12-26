@@ -813,7 +813,7 @@ class CalendarScreenState extends State<CalendarScreen> {
     }
     return Column(
       children: [
-        Container(
+        SizedBox(
           height:
               _isExpanded
                   ? 400

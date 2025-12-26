@@ -142,6 +142,9 @@ class TagsService {
         // Skip deleted notes
         if (note.deletedAt != null) continue;
 
+        // Skip template notes (those containing template variables)
+        if (note.content.contains('{{') || note.title.contains('{{')) continue;
+
         // Extract tags from both title and content
         final contentTags = extractTags(note.content);
         final titleTags = extractTags(note.title);
