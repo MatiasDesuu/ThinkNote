@@ -256,30 +256,61 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     if (_task.sortByPriority) return;
 
     try {
-      final subtasks = await widget.databaseService.taskService
-          .getSubtasksByTaskId(_task.id!);
+      // Obtener subtareas actuales del cache o de la base de datos si no hay cache
+      List<Subtask> subtasks =
+          _cachedSubtasks ??
+          await widget.databaseService.taskService.getSubtasksByTaskId(
+            _task.id!,
+          );
+
+      // Separar pendientes y completadas
+      final pendingSubtasks = subtasks.where((s) => !s.completed).toList();
+      final completedSubtasks = subtasks.where((s) => s.completed).toList();
+
       if (newIndex > oldIndex) {
         newIndex -= 1;
       }
-      final item = subtasks.removeAt(oldIndex);
-      subtasks.insert(newIndex, item);
 
-      // Actualizar el orden de todas las subtareas
-      for (int i = 0; i < subtasks.length; i++) {
-        final subtask = subtasks[i].copyWith(orderIndex: i);
-        await widget.databaseService.taskService.updateSubtask(subtask);
+      // Reordenar solo las pendientes
+      final item = pendingSubtasks.removeAt(oldIndex);
+      pendingSubtasks.insert(newIndex, item);
+
+      // Actualizar el orden en memoria para las pendientes
+      final updatedPending = <Subtask>[];
+      final subtasksToUpdate = <Subtask>[];
+
+      for (int i = 0; i < pendingSubtasks.length; i++) {
+        final subtask = pendingSubtasks[i];
+        if (subtask.orderIndex != i) {
+          final updated = subtask.copyWith(orderIndex: i);
+          updatedPending.add(updated);
+          subtasksToUpdate.add(updated);
+        } else {
+          updatedPending.add(subtask);
+        }
       }
 
+      // Actualizar UI inmediatamente
       if (!mounted) return;
       setState(() {
+        _cachedSubtasks = [...updatedPending, ...completedSubtasks];
         _taskChanged = true;
       });
-      await _saveTask();
 
-      // Notify database changed to refresh cached subtasks
-      try {
-        widget.databaseService.notifyDatabaseChanged();
-      } catch (_) {}
+      // Actualizar base de datos en segundo plano
+      unawaited(
+        () async {
+          try {
+            for (final subtask in subtasksToUpdate) {
+              await widget.databaseService.taskService.updateSubtask(subtask);
+            }
+            await _saveTask();
+            widget.databaseService.notifyDatabaseChanged();
+          } catch (e) {
+            print('Error updating subtasks in background: $e');
+          }
+        }(),
+      );
     } catch (e) {
       print('Error reordering subtasks: $e');
       if (!mounted) return;
