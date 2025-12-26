@@ -358,9 +358,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
   }
 
   Future<void> _showThinksScreen() async {
-    if (_scaleController.status == AnimationStatus.forward) {
-      _scaleController.reverse();
-    }
+    _scaleController.reverse();
 
     // Pre-fetch thinks for instant display
     List<Think> preloadedThinks = [];
@@ -917,6 +915,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                       _scaleController.status ==
                                           AnimationStatus.completed) {
                                     _bookmarksKey.currentState?.showSearch();
+                                    _scaleController.reverse();
                                   }
                                 },
                                 onLongPressEnd: (_) {
