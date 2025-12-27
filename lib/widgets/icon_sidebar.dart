@@ -6,7 +6,6 @@ import '../Settings/settings_screen.dart';
 import '../Tasks/tasks_screen.dart';
 import '../Bookmarks/bookmarks_screen.dart';
 import '../Thinks/thinks_screen.dart';
-import '../Diary/diary_screen.dart';
 import '../database/sync_service.dart';
 import 'custom_snackbar.dart';
 import 'search_screen_desktop.dart';
@@ -198,12 +197,10 @@ class IconSidebar extends StatefulWidget {
   final VoidCallback? onOpenTemplates;
   final VoidCallback? onFavoritesReload;
   final bool showBackButton;
-  final bool isWorkflowsScreen;
   final bool isTasksScreen;
   final bool isThinksScreen;
   final bool isSettingsScreen;
   final bool isBookmarksScreen;
-  final bool isDiaryScreen;
   final Function(int)? onPageChanged;
   final VoidCallback? onAddBookmark;
   final VoidCallback? onManageTags;
@@ -242,12 +239,10 @@ class IconSidebar extends StatefulWidget {
     this.onOpenTemplates,
     this.onFavoritesReload,
     this.showBackButton = true,
-    this.isWorkflowsScreen = false,
     this.isTasksScreen = false,
     this.isThinksScreen = false,
     this.isSettingsScreen = false,
     this.isBookmarksScreen = false,
-    this.isDiaryScreen = false,
     this.onPageChanged,
     this.onAddBookmark,
     this.onManageTags,
@@ -487,52 +482,6 @@ class _IconSidebarState extends State<IconSidebar>
     );
   }
 
-  void _openDiaryScreen() async {
-    if (widget.rootDir == null) return;
-
-    // Mostrar indicador de sincronización
-    setState(() {
-      _syncController.start();
-    });
-
-    // Force synchronization before opening the screen
-    try {
-      final syncService = SyncService();
-      await syncService.forceSync();
-
-      if (!mounted) return;
-    } catch (e) {
-      if (mounted) {
-        CustomSnackbar.show(
-          context: context,
-          message: 'Error synchronizing: ${e.toString()}',
-          type: CustomSnackbarType.error,
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _syncController.stop();
-        });
-      }
-    }
-
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      builder:
-          (context) => Dialog(
-            insetPadding: EdgeInsets.zero,
-            child: DiaryScreen(
-              rootDir: Directory.current,
-              onOpenNote: (file) {},
-              onClose: () => Navigator.of(context).pop(),
-            ),
-          ),
-    );
-  }
-
   void _openSearchScreen() {
     showDialog(
       context: context,
@@ -712,41 +661,14 @@ class _IconSidebarState extends State<IconSidebar>
           onPressed: widget.onBack!,
           showInBookmarks: true,
         ),
-      // Botones específicos para diary
-      if (widget.isDiaryScreen) ...[
-        if (widget.onCreateNewNote != null)
-          IconSidebarButton(
-            icon: Icons.note_add_rounded,
-            onPressed: widget.onCreateNewNote!,
-          ),
-        if (widget.onToggleCalendar != null)
-          IconSidebarButton(
-            icon: Icons.calendar_month_rounded,
-            onPressed: widget.onToggleCalendar!,
-          ),
-      ],
-      // Botones para otras pantallas (solo si no es diary)
-      if (!widget.isDiaryScreen) ...[
-        if (!widget.isWorkflowsScreen &&
-            !isBookmarksScreen &&
+      // Botones para otras pantallas
+        if (!isBookmarksScreen &&
             !widget.isTasksScreen &&
             !widget.isThinksScreen &&
             !widget.isSettingsScreen)
           IconSidebarButton(
             icon: Icons.search_rounded,
             onPressed: _openSearchScreen,
-          ),
-        if (widget.isWorkflowsScreen)
-          IconSidebarButton(
-            icon: Icons.filter_1_rounded,
-            onPressed: () => widget.onPageChanged?.call(0),
-            showInBookmarks: true,
-          ),
-        if (widget.isWorkflowsScreen)
-          IconSidebarButton(
-            icon: Icons.filter_2_rounded,
-            onPressed: () => widget.onPageChanged?.call(1),
-            showInBookmarks: true,
           ),
         // Botón combinado de New Note + New Todo con menú desplegable
         if (!widget.isTasksScreen &&
@@ -773,8 +695,7 @@ class _IconSidebarState extends State<IconSidebar>
             icon: Icons.add_circle_outline_rounded,
             onPressed: widget.onCreateThink!,
           ),
-        if (!widget.isWorkflowsScreen &&
-            !isBookmarksScreen &&
+        if (!isBookmarksScreen &&
             !widget.isTasksScreen &&
             !widget.isThinksScreen &&
             !widget.isSettingsScreen)
@@ -783,18 +704,7 @@ class _IconSidebarState extends State<IconSidebar>
             onPressed: _openThinksScreen,
             showInBookmarks: true,
           ),
-        if (!widget.isWorkflowsScreen &&
-            !isBookmarksScreen &&
-            !widget.isTasksScreen &&
-            !widget.isThinksScreen &&
-            !widget.isSettingsScreen)
-          IconSidebarButton(
-            icon: Icons.book_rounded,
-            onPressed: _openDiaryScreen,
-            showInBookmarks: true,
-          ),
-        if (!widget.isWorkflowsScreen &&
-            !isBookmarksScreen &&
+        if (!isBookmarksScreen &&
             !widget.isTasksScreen &&
             !widget.isThinksScreen &&
             !widget.isSettingsScreen)
@@ -803,8 +713,7 @@ class _IconSidebarState extends State<IconSidebar>
             onPressed: _openToDoScreen,
             showInBookmarks: true,
           ),
-        if (!widget.isWorkflowsScreen &&
-            !isBookmarksScreen &&
+        if (!isBookmarksScreen &&
             !widget.isTasksScreen &&
             !widget.isThinksScreen &&
             !widget.isSettingsScreen)
@@ -824,8 +733,7 @@ class _IconSidebarState extends State<IconSidebar>
             onPressed: widget.onManageTags!,
             showInBookmarks: true,
           ),
-        if (!widget.isWorkflowsScreen &&
-            !isBookmarksScreen &&
+        if (!isBookmarksScreen &&
             !widget.isTasksScreen &&
             !widget.isThinksScreen &&
             !widget.isSettingsScreen)
@@ -862,8 +770,7 @@ class _IconSidebarState extends State<IconSidebar>
             },
             showInBookmarks: true,
           ),
-        if (!widget.isWorkflowsScreen &&
-            !isBookmarksScreen &&
+        if (!isBookmarksScreen &&
             !widget.isTasksScreen &&
             !widget.isThinksScreen &&
             !widget.isSettingsScreen)
@@ -872,7 +779,6 @@ class _IconSidebarState extends State<IconSidebar>
             onPressed: _toggleImmersiveMode,
             showInBookmarks: true,
           ),
-      ],
     ];
   }
 
@@ -907,10 +813,9 @@ class _IconSidebarState extends State<IconSidebar>
           color: colorScheme.error,
           onPressed: _openTrashScreen,
         ),
-      // Botón para ocultar/mostrar panel lateral en tasks, thinks y diary
+      // Botón para ocultar/mostrar panel lateral en tasks y thinks
       if ((widget.isTasksScreen ||
-              widget.isThinksScreen ||
-              widget.isDiaryScreen) &&
+              widget.isThinksScreen) &&
           widget.onToggleSidebar != null)
         IconSidebarButton(
           icon: Icons.view_sidebar_rounded,

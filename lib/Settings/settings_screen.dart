@@ -63,7 +63,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onOpenTrash: null,
                     onOpenFavorites: null,
                     showBackButton: true,
-                    isWorkflowsScreen: false,
                     isTasksScreen: false,
                     isThinksScreen: false,
                     isSettingsScreen: true,

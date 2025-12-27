@@ -30,12 +30,10 @@ class ResizableIconSidebar extends StatefulWidget {
   final VoidCallback? onOpenTemplates;
   final VoidCallback? onFavoritesReload;
   final bool showBackButton;
-  final bool isWorkflowsScreen;
   final bool isTasksScreen;
   final bool isThinksScreen;
   final bool isSettingsScreen;
   final bool isBookmarksScreen;
-  final bool isDiaryScreen;
   final Function(int)? onPageChanged;
   final VoidCallback? onAddBookmark;
   final VoidCallback? onManageTags;
@@ -74,12 +72,10 @@ class ResizableIconSidebar extends StatefulWidget {
     this.onOpenTemplates,
     this.onFavoritesReload,
     this.showBackButton = true,
-    this.isWorkflowsScreen = false,
     this.isTasksScreen = false,
     this.isThinksScreen = false,
     this.isSettingsScreen = false,
     this.isBookmarksScreen = false,
-    this.isDiaryScreen = false,
     this.onPageChanged,
     this.onAddBookmark,
     this.onManageTags,
@@ -285,12 +281,10 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
                           onOpenTemplates: widget.onOpenTemplates,
                           onFavoritesReload: widget.onFavoritesReload,
                           showBackButton: widget.showBackButton,
-                          isWorkflowsScreen: widget.isWorkflowsScreen,
                           isTasksScreen: widget.isTasksScreen,
                           isThinksScreen: widget.isThinksScreen,
                           isSettingsScreen: widget.isSettingsScreen,
                           isBookmarksScreen: widget.isBookmarksScreen,
-                          isDiaryScreen: widget.isDiaryScreen,
                           onPageChanged: widget.onPageChanged,
                           onAddBookmark: widget.onAddBookmark,
                           onManageTags: widget.onManageTags,

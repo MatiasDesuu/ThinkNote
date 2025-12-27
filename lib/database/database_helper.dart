@@ -219,20 +219,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabla diary
-    db.execute('''
-      CREATE TABLE IF NOT EXISTS ${config.DatabaseConfig.tableDiary} (
-        ${config.DatabaseConfig.columnId} INTEGER PRIMARY KEY AUTOINCREMENT,
-        ${config.DatabaseConfig.columnContent} TEXT NOT NULL,
-        ${config.DatabaseConfig.columnDate} INTEGER NOT NULL,
-        ${config.DatabaseConfig.columnCreatedAt} INTEGER NOT NULL,
-        ${config.DatabaseConfig.columnUpdatedAt} INTEGER NOT NULL,
-        ${config.DatabaseConfig.columnDeletedAt} INTEGER,
-        ${config.DatabaseConfig.columnIsFavorite} INTEGER NOT NULL DEFAULT 0,
-        ${config.DatabaseConfig.columnTags} TEXT
-      )
-    ''');
-
     // Crear triggers para actualizar last_modified automáticamente
     db.execute('''
       CREATE TRIGGER IF NOT EXISTS update_last_modified_notes_insert

@@ -18,7 +18,6 @@
     <img src="Screenshots/6.png" alt="Notes Editor (distraction free)" width="140" style="border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.22);"/>
     <img src="Screenshots/2.png" alt="Task Management" width="140" style="border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.22);"/>
     <img src="Screenshots/5.png" alt="Theme Customization" width="140" style="border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.22);"/>
-    <img src="Screenshots/3.png" alt="Diary Screen" width="140" style="border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.22);"/>
     <img src="Screenshots/4.png" alt="Bookmarks Screen" width="140" style="border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.22);"/>
 </div>
 
@@ -46,7 +45,6 @@
 - **Notes**: Simple text editor with some style support
 - **Thinks**: Specialized system for capturing and organizing thoughts fast
 - **Tasks**: Complete task management with subtasks, tags, and due dates
-- **Diary**: Daily entries with integrated calendar view
 - **Bookmarks**: Bookmark system with tags and categorization
 
 ### 🎨 Advanced Customization

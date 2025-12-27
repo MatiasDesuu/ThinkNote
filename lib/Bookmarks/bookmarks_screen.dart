@@ -198,7 +198,6 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                 onOpenTrash: null,
                 onOpenFavorites: null,
                 showBackButton: true,
-                isWorkflowsScreen: false,
                 isTasksScreen: false,
                 isThinksScreen: false,
                 isSettingsScreen: false,

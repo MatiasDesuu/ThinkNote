@@ -759,7 +759,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                       onOpenTrash: null,
                       onOpenFavorites: null,
                       showBackButton: true,
-                      isWorkflowsScreen: false,
                       isTasksScreen: true,
                       isThinksScreen: false,
                       isSettingsScreen: false,

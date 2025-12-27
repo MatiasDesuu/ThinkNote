@@ -609,7 +609,6 @@ class _ThinksScreenState extends State<ThinksScreen>
                       onOpenSettings: _openSettings,
                       onOpenFavorites: null,
                       showBackButton: true,
-                      isWorkflowsScreen: false,
                       isTasksScreen: false,
                       isThinksScreen: true,
                       isSettingsScreen: false,
