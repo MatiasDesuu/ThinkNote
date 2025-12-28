@@ -1003,7 +1003,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                           : Icons.search_rounded,
                       color: _showSearchField ? colorScheme.primary : null,
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       setState(() {
                         _showSearchField = !_showSearchField;
                         if (!_showSearchField) {
@@ -1011,6 +1011,9 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                           _searchController.clear();
                         }
                       });
+                      if (!_showSearchField) {
+                        await loadData();
+                      }
                     },
                     tooltip:
                         _showSearchField
