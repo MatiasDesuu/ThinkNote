@@ -91,13 +91,13 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
 
   void _onContentChanged() {
     final currentText = widget.contentController.text;
-    
+
     // Only trigger updates if the actual text changed, not just selection
     if (currentText == _lastTextContent) {
       return;
     }
     _lastTextContent = currentText;
-    
+
     widget.onContentChanged();
 
     _scriptDetectionDebouncer?.cancel();
@@ -357,35 +357,45 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                           child: Focus(
                                             onKeyEvent: (node, event) {
                                               // Handle Enter key for list continuation
-                                              if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
-                                                final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
-                                                
+                                              if (event is KeyDownEvent &&
+                                                  event.logicalKey ==
+                                                      LogicalKeyboardKey
+                                                          .enter) {
+                                                final isShiftPressed =
+                                                    HardwareKeyboard
+                                                        .instance
+                                                        .isShiftPressed;
+
                                                 // Try to handle list continuation
-                                                if (ListContinuationHandler.handleEnterKey(widget.contentController, isShiftPressed)) {
+                                                if (ListContinuationHandler.handleEnterKey(
+                                                  widget.contentController,
+                                                  isShiftPressed,
+                                                )) {
                                                   widget.onContentChanged();
                                                   return KeyEventResult.handled;
                                                 }
-                                                
+
                                                 // If not handled by list continuation, let default behavior proceed
                                               }
-                                              
+
                                               return KeyEventResult.ignored;
                                             },
                                             child: TextField(
                                               controller:
                                                   widget.contentController,
                                               autofocus:
-                                                  widget.selectedNote.id != null,
-                                              focusNode: widget.contentFocusNode,
+                                                  widget.selectedNote.id !=
+                                                  null,
+                                              focusNode:
+                                                  widget.contentFocusNode,
                                               maxLines: null,
                                               expands: true,
                                               textCapitalization:
                                                   TextCapitalization.sentences,
                                               cursorOpacityAnimates: true,
                                               cursorWidth: 2,
-                                              cursorRadius: const Radius.circular(
-                                                2,
-                                              ),
+                                              cursorRadius:
+                                                  const Radius.circular(2),
                                               cursorColor:
                                                   theme.colorScheme.primary,
                                               style: TextStyle(
@@ -405,31 +415,58 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                                   (_) =>
                                                       widget.onContentChanged(),
                                               readOnly: _isReadMode,
-                                              contextMenuBuilder: (context, editableTextState) {
-                                                final buttonItems = editableTextState.contextMenuButtonItems;
-                                                final anchors = editableTextState.contextMenuAnchors;
-                                                final mediaQuery = MediaQuery.of(context);
-                                                
+                                              contextMenuBuilder: (
+                                                context,
+                                                editableTextState,
+                                              ) {
+                                                final buttonItems =
+                                                    editableTextState
+                                                        .contextMenuButtonItems;
+                                                final anchors =
+                                                    editableTextState
+                                                        .contextMenuAnchors;
+                                                final mediaQuery =
+                                                    MediaQuery.of(context);
+
                                                 // Define visible bounds
-                                                final topBound = mediaQuery.padding.top + kToolbarHeight + 20;
-                                                final bottomBound = mediaQuery.size.height - mediaQuery.viewInsets.bottom - 20;
-                                                
+                                                final topBound =
+                                                    mediaQuery.padding.top +
+                                                    kToolbarHeight +
+                                                    20;
+                                                final bottomBound =
+                                                    mediaQuery.size.height -
+                                                    mediaQuery
+                                                        .viewInsets
+                                                        .bottom -
+                                                    20;
+
                                                 // Check if primary anchor is outside visible area
-                                                final primaryY = anchors.primaryAnchor.dy;
-                                                
-                                                if (primaryY < topBound || primaryY > bottomBound) {
+                                                final primaryY =
+                                                    anchors.primaryAnchor.dy;
+
+                                                if (primaryY < topBound ||
+                                                    primaryY > bottomBound) {
                                                   // Clamp to visible area
-                                                  final clampedY = primaryY.clamp(topBound, bottomBound);
-                                                  final centerX = mediaQuery.size.width / 2;
-                                                  
+                                                  final clampedY = primaryY
+                                                      .clamp(
+                                                        topBound,
+                                                        bottomBound,
+                                                      );
+                                                  final centerX =
+                                                      mediaQuery.size.width / 2;
+
                                                   return AdaptiveTextSelectionToolbar.buttonItems(
-                                                    anchors: TextSelectionToolbarAnchors(
-                                                      primaryAnchor: Offset(centerX, clampedY),
-                                                    ),
+                                                    anchors:
+                                                        TextSelectionToolbarAnchors(
+                                                          primaryAnchor: Offset(
+                                                            centerX,
+                                                            clampedY,
+                                                          ),
+                                                        ),
                                                     buttonItems: buttonItems,
                                                   );
                                                 }
-                                                
+
                                                 return AdaptiveTextSelectionToolbar.buttonItems(
                                                   anchors: anchors,
                                                   buttonItems: buttonItems,
@@ -460,97 +497,37 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 300),
-                                    reverseDuration: const Duration(
-                                      milliseconds: 300,
+                                  if (widget.isEditing && !_isReadMode) ...[
+                                    FloatingActionButton(
+                                      key: const ValueKey('save'),
+                                      heroTag: 'saveButton',
+                                      onPressed: () => _handleSave(),
+                                      elevation: 4,
+                                      child: const Icon(Icons.save_rounded),
                                     ),
-                                    transitionBuilder: (
-                                      Widget child,
-                                      Animation<double> animation,
-                                    ) {
-                                      final offsetAnimation = Tween<Offset>(
-                                        begin: const Offset(0.0, 0.5),
-                                        end: Offset.zero,
-                                      ).animate(
-                                        CurvedAnimation(
-                                          parent: animation,
-                                          curve: Curves.easeOutBack,
-                                          reverseCurve: Curves.easeInBack,
-                                        ),
-                                      );
-
-                                      final fadeAnimation = Tween<double>(
-                                        begin: 0.0,
-                                        end: 1.0,
-                                      ).animate(
-                                        CurvedAnimation(
-                                          parent: animation,
-                                          curve: Interval(
-                                            0.0,
-                                            0.5,
-                                            curve: Curves.easeInOut,
-                                          ),
-                                        ),
-                                      );
-
-                                      final scaleAnimation = Tween<double>(
-                                        begin: 0.5,
-                                        end: 1.0,
-                                      ).animate(
-                                        CurvedAnimation(
-                                          parent: animation,
-                                          curve: Interval(
-                                            0.3,
-                                            1.0,
-                                            curve: Curves.easeOutBack,
-                                          ),
-                                        ),
-                                      );
-
-                                      return SlideTransition(
-                                        position: offsetAnimation,
-                                        child: ScaleTransition(
-                                          scale: scaleAnimation,
-                                          child: FadeTransition(
-                                            opacity: fadeAnimation,
-                                            child: child,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child:
-                                        widget.isEditing && !_isReadMode
-                                            ? FloatingActionButton(
-                                              key: const ValueKey('save'),
-                                              heroTag: 'saveButton',
-                                              onPressed: () => _handleSave(),
-                                              elevation: 4,
-                                              child: const Icon(
-                                                Icons.save_rounded,
-                                              ),
-                                            )
-                                            : null,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  FloatingActionButton(
-                                    heroTag: 'editButton',
-                                    onPressed: _toggleReadMode,
-                                    elevation: 4,
-                                    child: AnimatedSwitcher(
-                                      duration: const Duration(
-                                        milliseconds: 200,
+                                    const SizedBox(height: 16),
+                                  ],
+                                  Theme(
+                                    data: Theme.of(context).copyWith(
+                                      colorScheme: Theme.of(
+                                        context,
+                                      ).colorScheme.copyWith(
+                                        surfaceTint:
+                                            _isReadMode && _isScript
+                                                ? Colors.transparent
+                                                : null,
                                       ),
-                                      child:
-                                          _isReadMode
-                                              ? const Icon(
-                                                Icons.edit_rounded,
-                                                key: ValueKey('edit'),
-                                              )
-                                              : const Icon(
-                                                Icons.visibility_rounded,
-                                                key: ValueKey('eye'),
-                                              ),
+                                    ),
+                                    child: FloatingActionButton(
+                                      key: ValueKey('editButton_$_isReadMode'),
+                                      heroTag: 'editButton',
+                                      onPressed: _toggleReadMode,
+                                      elevation: 4,
+                                      child: Icon(
+                                        _isReadMode
+                                            ? Icons.edit_rounded
+                                            : Icons.visibility_rounded,
+                                      ),
                                     ),
                                   ),
                                 ],

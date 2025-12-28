@@ -444,7 +444,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       final notebookId = widget.selectedNotebook!.id!;
       final notebookName = widget.selectedNotebook!.name;
 
-      final existingNotes = await _noteRepository.getNotesByNotebookId(notebookId);
+      final existingNotes = await _noteRepository.getNotesByNotebookId(
+        notebookId,
+      );
       final existingTitles = existingNotes.map((note) => note.title).toList();
 
       final processedTitle = TemplateVariableProcessor.process(
@@ -514,34 +516,49 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       final regExp = RegExp(r'\{\{([^}]+)\}\}');
       final match = regExp.firstMatch(template.content);
       if (match == null) {
-        throw Exception('Stack template must contain {{note1, note2, ...}} in content');
+        throw Exception(
+          'Stack template must contain {{note1, note2, ...}} in content',
+        );
       }
 
       final noteNamesString = match.group(1)!;
-      final noteNames = noteNamesString.split(',').map((name) => name.trim()).toList();
+      final noteNames =
+          noteNamesString.split(',').map((name) => name.trim()).toList();
 
       // Get all notes from the template's notebook
-      final templateNotes = await _noteRepository.getNotesByNotebookId(template.notebookId);
-      final templateNoteMap = {for (var note in templateNotes) note.title: note};
+      final templateNotes = await _noteRepository.getNotesByNotebookId(
+        template.notebookId,
+      );
+      final templateNoteMap = {
+        for (var note in templateNotes) note.title: note,
+      };
 
       // Check if all specified notes exist
-      final missingNotes = noteNames.where((name) => !templateNoteMap.containsKey(name)).toList();
+      final missingNotes =
+          noteNames
+              .where((name) => !templateNoteMap.containsKey(name))
+              .toList();
       if (missingNotes.isNotEmpty) {
-        throw Exception('The following notes are missing in the template notebook: ${missingNotes.join(', ')}');
+        throw Exception(
+          'The following notes are missing in the template notebook: ${missingNotes.join(', ')}',
+        );
       }
 
       final notebookId = widget.selectedNotebook!.id!;
       final notebookName = widget.selectedNotebook!.name;
 
-      final existingNotes = await _noteRepository.getNotesByNotebookId(notebookId);
-      List<String> existingTitles = existingNotes.map((note) => note.title).toList();
+      final existingNotes = await _noteRepository.getNotesByNotebookId(
+        notebookId,
+      );
+      List<String> existingTitles =
+          existingNotes.map((note) => note.title).toList();
 
       List<Note> createdNotes = [];
 
       // Create each note
       for (final noteName in noteNames) {
         final sourceNote = templateNoteMap[noteName]!;
-        
+
         final processedTitle = TemplateVariableProcessor.process(
           sourceNote.title,
           notebookName: notebookName,
@@ -1261,7 +1278,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                     note.title,
                                                     style: TextStyle(
                                                       fontSize: 16,
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                       color:
                                                           note.isTask &&
                                                                   note.isCompleted
