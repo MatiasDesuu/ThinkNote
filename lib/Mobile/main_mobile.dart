@@ -871,11 +871,24 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                         labelBehavior:
                             NavigationDestinationLabelBehavior.onlyShowSelected,
                       ),
-                      floatingActionButton:
-                          !isKeyboardVisible &&
-                                  !_isImmersiveMode &&
-                                  _selectedIndex != 1
-                              ? GestureDetector(
+                      floatingActionButton: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (Widget child, Animation<double> animation) {
+                          return ScaleTransition(
+                            scale: animation,
+                            child: FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: !isKeyboardVisible &&
+                                !_isImmersiveMode &&
+                                _selectedIndex != 1
+                            ? GestureDetector(
+                                key: const ValueKey('fab_active'),
                                 onTapDown: (_) {
                                   if (_selectedIndex != 2) {
                                     _scaleController.forward();
@@ -937,7 +950,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                       ),
                                     ),
                                     child: FloatingActionButton(
-                                      heroTag: UniqueKey(),
+                                      heroTag: 'main_fab',
                                       onPressed: null,
                                       backgroundColor: colorScheme.primary,
                                       foregroundColor: colorScheme.onPrimary,
@@ -972,7 +985,8 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                   ),
                                 ),
                               )
-                              : null,
+                            : const SizedBox.shrink(key: ValueKey('fab_hidden')),
+                      ),
                       floatingActionButtonLocation:
                           FloatingActionButtonLocation.centerDocked,
                     );
