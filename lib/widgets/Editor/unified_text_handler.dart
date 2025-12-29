@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import '../../database/models/note.dart';
 import '../../database/database_helper.dart';
 import '../../database/repositories/note_repository.dart';
@@ -443,12 +444,11 @@ class UnifiedTextHandler extends StatelessWidget {
         );
 
       case FormatType.code:
-        return TextSpan(
-          text: segment.text,
-          style: baseStyle.copyWith(
-            backgroundColor: Theme.of(context).colorScheme.error.withAlpha(30),
-            color: Theme.of(context).colorScheme.error,
-            fontFamily: 'monospace',
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: _InlineCodeWidget(
+            text: segment.text,
+            style: baseStyle,
           ),
         );
 
@@ -658,6 +658,84 @@ class _NoteLinkWidget extends StatelessWidget {
           },
           child: Text(text, style: textStyle),
         ),
+      ),
+    );
+  }
+}
+
+class _InlineCodeWidget extends StatefulWidget {
+  final String text;
+  final TextStyle style;
+
+  const _InlineCodeWidget({
+    required this.text,
+    required this.style,
+  });
+
+  @override
+  State<_InlineCodeWidget> createState() => _InlineCodeWidgetState();
+}
+
+class _InlineCodeWidgetState extends State<_InlineCodeWidget> {
+  bool _isHovered = false;
+  bool _isCopied = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() {
+        _isHovered = false;
+        _isCopied = false;
+      }),
+      child: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(128),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline.withAlpha(40),
+              ),
+            ),
+            child: Text(
+              widget.text,
+              style: widget.style.copyWith(
+                fontFamily: 'monospace',
+                fontSize: (widget.style.fontSize ?? 16) * 0.9,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          if (_isHovered)
+            Positioned(
+              top: 2,
+              right: 2,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () async {
+                    await Clipboard.setData(ClipboardData(text: widget.text));
+                    setState(() => _isCopied = true);
+                    Future.delayed(const Duration(seconds: 2), () {
+                      if (mounted) setState(() => _isCopied = false);
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(4),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      _isCopied ? Icons.check_rounded : Icons.copy_rounded,
+                      size: 16,
+                      color: _isCopied ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -184,22 +184,22 @@ class FormatDetector {
     // Inline Formatting
     _FormatPattern(
       type: FormatType.bold,
-      regex: RegExp(r'\*\*(.*?)\*\*|__(.*?)__'),
+      regex: RegExp(r'\*\*(.*?)\*\*|__(.*?)__', dotAll: true),
       contentExtractor: (m) => m.group(1) ?? m.group(2) ?? '',
     ),
     _FormatPattern(
       type: FormatType.italic,
-      regex: RegExp(r'\*(.*?)\*|_(.*?)_'),
+      regex: RegExp(r'\*(.*?)\*|_(.*?)_', dotAll: true),
       contentExtractor: (m) => m.group(1) ?? m.group(2) ?? '',
     ),
     _FormatPattern(
       type: FormatType.strikethrough,
-      regex: RegExp(r'~~(.*?)~~'),
+      regex: RegExp(r'~~(.*?)~~', dotAll: true),
       contentExtractor: (m) => m.group(1) ?? '',
     ),
     _FormatPattern(
       type: FormatType.code,
-      regex: RegExp(r'`(.*?)`'),
+      regex: RegExp(r'`(.*?)`', dotAll: true),
       contentExtractor: (m) => m.group(1) ?? '',
     ),
     _FormatPattern(
@@ -346,11 +346,32 @@ class FormatDetector {
         );
         break;
       case FormatType.code:
-        style = baseStyle.copyWith(
-          backgroundColor: Theme.of(context).colorScheme.error.withAlpha(100),
-          color: Theme.of(context).colorScheme.onError,
+        return TextSpan(
+          children: [
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(128),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline.withAlpha(40),
+                  ),
+                ),
+                child: Text(
+                  segment.text,
+                  style: baseStyle.copyWith(
+                    fontFamily: 'monospace',
+                    fontSize: (baseStyle.fontSize ?? 16) * 0.9,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          ],
         );
-        break;
       case FormatType.heading1:
         style = baseStyle.copyWith(
           fontSize: (baseStyle.fontSize ?? 16) * 2.0,
