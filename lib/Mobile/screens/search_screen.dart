@@ -98,7 +98,7 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  void _handleItemTap(dynamic item) {
+  void _handleItemTap(dynamic item, ThemeData theme) {
     if (item is Note) {
       final editorTitleController = TextEditingController(text: item.title);
       final editorContentController = TextEditingController(text: item.content);
@@ -108,48 +108,51 @@ class _SearchScreenState extends State<SearchScreen> {
         context,
         MaterialPageRoute(
           builder:
-              (context) => NoteEditor(
-                selectedNote: item,
-                titleController: editorTitleController,
-                contentController: editorContentController,
-                contentFocusNode: editorFocusNode,
-                isEditing: true,
-                isImmersiveMode: false,
-                onSaveNote: () async {
-                  try {
-                    final updatedNote = Note(
-                      id: item.id,
-                      title: editorTitleController.text.trim(),
-                      content: editorContentController.text,
-                      notebookId: item.notebookId,
-                      createdAt: item.createdAt,
-                      updatedAt: DateTime.now(),
-                      isFavorite: item.isFavorite,
-                      tags: item.tags,
-                      orderIndex: item.orderIndex,
-                      isTask: item.isTask,
-                      isCompleted: item.isCompleted,
-                    );
-
-                    final dbHelper = DatabaseHelper();
-                    final noteRepository = NoteRepository(dbHelper);
-                    await noteRepository.updateNote(updatedNote);
-                    DatabaseHelper.notifyDatabaseChanged();
-                  } catch (e) {
-                    debugPrint('Error saving note: $e');
-                    if (mounted) {
-                      CustomSnackbar.show(
-                        context: context,
-                        message: 'Error saving note: ${e.toString()}',
-                        type: CustomSnackbarType.error,
+              (context) => Theme(
+                data: theme,
+                child: NoteEditor(
+                  selectedNote: item,
+                  titleController: editorTitleController,
+                  contentController: editorContentController,
+                  contentFocusNode: editorFocusNode,
+                  isEditing: true,
+                  isImmersiveMode: false,
+                  onSaveNote: () async {
+                    try {
+                      final updatedNote = Note(
+                        id: item.id,
+                        title: editorTitleController.text.trim(),
+                        content: editorContentController.text,
+                        notebookId: item.notebookId,
+                        createdAt: item.createdAt,
+                        updatedAt: DateTime.now(),
+                        isFavorite: item.isFavorite,
+                        tags: item.tags,
+                        orderIndex: item.orderIndex,
+                        isTask: item.isTask,
+                        isCompleted: item.isCompleted,
                       );
+
+                      final dbHelper = DatabaseHelper();
+                      final noteRepository = NoteRepository(dbHelper);
+                      await noteRepository.updateNote(updatedNote);
+                      DatabaseHelper.notifyDatabaseChanged();
+                    } catch (e) {
+                      debugPrint('Error saving note: $e');
+                      if (mounted) {
+                        CustomSnackbar.show(
+                          context: context,
+                          message: 'Error saving note: ${e.toString()}',
+                          type: CustomSnackbarType.error,
+                        );
+                      }
                     }
-                  }
-                },
-                onToggleEditing: () {},
-                onTitleChanged: () {},
-                onContentChanged: () {},
-                onToggleImmersiveMode: (isImmersive) {},
+                  },
+                  onToggleEditing: () {},
+                  onTitleChanged: () {},
+                  onContentChanged: () {},
+                  onToggleImmersiveMode: (isImmersive) {},
+                ),
               ),
         ),
       ).then((_) {
@@ -389,7 +392,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               )
               : null,
-      onTap: () => _handleItemTap(item),
+      onTap: () => _handleItemTap(item, theme),
     );
   }
 }
