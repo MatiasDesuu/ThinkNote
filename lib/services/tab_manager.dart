@@ -411,6 +411,23 @@ class TabManager extends ChangeNotifier {
     }
   }
 
+  void setTabEditorCentered(EditorTab tab, bool isEditorCentered) {
+    final index = _tabs.indexOf(tab);
+    if (index != -1) {
+      final updatedTab = tab.copyWith(isEditorCentered: isEditorCentered);
+      _tabs[index] = updatedTab;
+
+      if (_activeTab == tab) {
+        _activeTab = updatedTab;
+      }
+
+      _saveTabsToStorage();
+
+      // No notificamos listeners aquí para evitar reconstrucciones innecesarias
+      // El estado del centrado se maneja localmente en el editor
+    }
+  }
+
   void updateNoteInTab(Note updatedNote) {
     final index = _tabs.indexWhere(
       (tab) => tab.note != null && tab.note!.id == updatedNote.id,
@@ -566,6 +583,7 @@ class TabManager extends ChangeNotifier {
           'isDirty': tab.isDirty,
           'isPinned': tab.isPinned,
           'isReadMode': tab.isReadMode,
+          'isEditorCentered': tab.isEditorCentered,
           'lastAccessed': tab.lastAccessed.toIso8601String(),
         };
 
@@ -610,6 +628,8 @@ class TabManager extends ChangeNotifier {
           final isDirty = tabData['isDirty'] as bool? ?? false;
           final isPinned = tabData['isPinned'] as bool? ?? false;
           final isReadMode = tabData['isReadMode'] as bool? ?? false;
+          final isEditorCentered =
+              tabData['isEditorCentered'] as bool? ?? false;
           final lastAccessed = DateTime.parse(
             tabData['lastAccessed'] as String,
           );
@@ -629,6 +649,7 @@ class TabManager extends ChangeNotifier {
               isDirty: isDirty,
               isPinned: isPinned,
               isReadMode: isReadMode,
+              isEditorCentered: isEditorCentered,
               lastAccessed: lastAccessed,
               tabId: tabId,
             );

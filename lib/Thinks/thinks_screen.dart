@@ -136,14 +136,6 @@ class _ThinksScreenState extends State<ThinksScreen>
     await prefs.setDouble('thinks_sidebar_width', width);
   }
 
-  Future<void> _toggleEditorCentered() async {
-    final prefs = await SharedPreferences.getInstance();
-    final newValue = !_isEditorCentered;
-    await prefs.setBool('editor_centered', newValue);
-    setState(() {
-      _isEditorCentered = newValue;
-    });
-  }
 
   @override
   void dispose() {
@@ -840,11 +832,16 @@ class _ThinksScreenState extends State<ThinksScreen>
                                     noteController: _noteController,
                                     titleController: _titleController,
                                     onSave: _saveThink,
-                                    isEditorCentered: _isEditorCentered,
                                     onTitleChanged: _onNoteChanged,
                                     onContentChanged: _onNoteChanged,
-                                    onToggleEditorCentered:
-                                        _toggleEditorCentered,
+                                    initialEditorCentered: _isEditorCentered,
+                                    onEditorCenteredChanged: (isEditorCentered) async {
+                                      final prefs = await SharedPreferences.getInstance();
+                                      await prefs.setBool('editor_centered', isEditorCentered);
+                                      setState(() {
+                                        _isEditorCentered = isEditorCentered;
+                                      });
+                                    },
                                   ),
                         ),
                       ),

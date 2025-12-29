@@ -37,10 +37,8 @@ class NotaEditor extends StatefulWidget {
   final TextEditingController noteController;
   final TextEditingController titleController;
   final VoidCallback onSave;
-  final bool isEditorCentered;
   final VoidCallback onTitleChanged;
   final VoidCallback onContentChanged;
-  final VoidCallback? onToggleEditorCentered;
   final String? searchQuery;
   final bool isAdvancedSearch;
   final VoidCallback? onAutoSaveCompleted;
@@ -48,6 +46,9 @@ class NotaEditor extends StatefulWidget {
   final bool initialReadMode; // Estado inicial del modo lectura desde el tab
   final ValueChanged<bool>?
   onReadModeChanged; // Callback cuando cambia el modo lectura
+  final bool initialEditorCentered; // Estado inicial del centrado desde el tab
+  final ValueChanged<bool>?
+  onEditorCenteredChanged; // Callback cuando cambia el centrado
 
   const NotaEditor({
     super.key,
@@ -55,16 +56,16 @@ class NotaEditor extends StatefulWidget {
     required this.noteController,
     required this.titleController,
     required this.onSave,
-    required this.isEditorCentered,
     required this.onTitleChanged,
     required this.onContentChanged,
-    this.onToggleEditorCentered,
     this.searchQuery,
     this.isAdvancedSearch = false,
     this.onAutoSaveCompleted,
     this.tabManager,
     this.initialReadMode = false,
     this.onReadModeChanged,
+    this.initialEditorCentered = false,
+    this.onEditorCenteredChanged,
   });
 
   @override
@@ -75,6 +76,7 @@ class _NotaEditorState extends State<NotaEditor>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   bool _isScript = false;
   bool _isReadMode = false;
+  bool _isEditorCentered = false; // Estado individual de centrado por tab
   bool _showFindBar = false;
   bool _isEditorSettingsLoaded = false;
   Timer? _scriptDetectionDebouncer;
@@ -94,7 +96,6 @@ class _NotaEditorState extends State<NotaEditor>
   StreamSubscription? _lineSpacingSubscription;
   StreamSubscription? _fontColorSubscription;
   StreamSubscription? _fontFamilySubscription;
-  StreamSubscription? _editorCenteredSubscription;
   StreamSubscription? _autoSaveEnabledSubscription;
   StreamSubscription? _wordsPerSecondSubscription;
   StreamSubscription? _showBottomBarSubscription;
@@ -182,6 +183,9 @@ class _NotaEditorState extends State<NotaEditor>
     // Inicializar modo lectura desde el tab
     _isReadMode = widget.initialReadMode;
 
+    // Inicializar centrado desde el tab
+    _isEditorCentered = widget.initialEditorCentered;
+
     // Register this editor as the active one for global toggle function
     _currentActiveEditorToggleReadMode = _toggleReadMode;
 
@@ -237,6 +241,13 @@ class _NotaEditorState extends State<NotaEditor>
         });
       }
 
+      // Sincronizar el centrado con el estado del nuevo tab
+      if (_isEditorCentered != widget.initialEditorCentered) {
+        setState(() {
+          _isEditorCentered = widget.initialEditorCentered;
+        });
+      }
+
       // Cerrar el find bar y limpiar el texto de búsqueda cuando cambia la nota
       if (_showFindBar) {
         _findController.clear();
@@ -279,9 +290,9 @@ class _NotaEditorState extends State<NotaEditor>
     _lineSpacingSubscription?.cancel();
     _fontColorSubscription?.cancel();
     _fontFamilySubscription?.cancel();
-    _editorCenteredSubscription?.cancel();
     _autoSaveEnabledSubscription?.cancel();
     _wordsPerSecondSubscription?.cancel();
+    _showBottomBarSubscription?.cancel();
     _immersiveModeService.removeListener(_onImmersiveModeChanged);
     _scrollController.dispose();
 
@@ -364,6 +375,15 @@ class _NotaEditorState extends State<NotaEditor>
     if (_isReadMode && _showFindBar) {
       _hideFindBar();
     }
+  }
+
+  void _toggleEditorCentered() {
+    setState(() {
+      _isEditorCentered = !_isEditorCentered;
+    });
+
+    // Notificar al TabManager del cambio de centrado
+    widget.onEditorCenteredChanged?.call(_isEditorCentered);
   }
 
   Future<void> _handleSave({bool isAutoSave = false}) async {
@@ -496,7 +516,6 @@ class _NotaEditorState extends State<NotaEditor>
     _lineSpacingSubscription?.cancel();
     _fontColorSubscription?.cancel();
     _fontFamilySubscription?.cancel();
-    _editorCenteredSubscription?.cancel();
     _autoSaveEnabledSubscription?.cancel();
     _showBottomBarSubscription?.cancel();
 
@@ -547,12 +566,6 @@ class _NotaEditorState extends State<NotaEditor>
         });
       }
     });
-
-    _editorCenteredSubscription = EditorSettingsEvents.editorCenteredStream
-        .listen((isCentered) {
-          // Esta configuración se maneja en el widget padre (main.dart)
-          // Solo actualizamos el estado local si es necesario
-        });
 
     _autoSaveEnabledSubscription = EditorSettingsEvents.autoSaveEnabledStream
         .listen((isEnabled) {
@@ -1292,13 +1305,13 @@ class _NotaEditorState extends State<NotaEditor>
                   Container(
                     padding: EdgeInsets.only(
                       left:
-                          widget.isEditorCentered && constraints.maxWidth >= 600
+                          _isEditorCentered && constraints.maxWidth >= 600
                               ? _calculateCenteredPaddingForEditor(
                                 constraints.maxWidth,
                               )
                               : 0,
                       right:
-                          widget.isEditorCentered && constraints.maxWidth >= 600
+                          _isEditorCentered && constraints.maxWidth >= 600
                               ? _calculateCenteredPaddingForEditor(
                                 constraints.maxWidth,
                               )
@@ -1416,20 +1429,21 @@ class _NotaEditorState extends State<NotaEditor>
                               ),
                               onPressed: _toggleReadMode,
                             ),
-                            if (widget.onToggleEditorCentered != null)
-                              Tooltip(
-                                message: '',
-                                child: IconButton(
-                                  icon: Icon(
-                                    widget.isEditorCentered
-                                        ? Icons.format_align_justify_rounded
-                                        : Icons.format_align_center_rounded,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                                  onPressed: widget.onToggleEditorCentered,
+                            Tooltip(
+                              message:
+                                  _isEditorCentered
+                                      ? 'Disable centered editor'
+                                      : 'Center editor',
+                              child: IconButton(
+                                icon: Icon(
+                                  _isEditorCentered
+                                      ? Icons.format_align_justify_rounded
+                                      : Icons.format_align_center_rounded,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
+                                onPressed: _toggleEditorCentered,
                               ),
+                            ),
                             IconButton(
                               icon: Icon(
                                 _showBottomBar
@@ -1471,15 +1485,13 @@ class _NotaEditorState extends State<NotaEditor>
                     Container(
                       padding: EdgeInsets.only(
                         left:
-                            widget.isEditorCentered &&
-                                    constraints.maxWidth >= 600
+                            _isEditorCentered && constraints.maxWidth >= 600
                                 ? _calculateCenteredPaddingForEditor(
                                   constraints.maxWidth,
                                 )
                                 : 0,
                         right:
-                            widget.isEditorCentered &&
-                                    constraints.maxWidth >= 600
+                            _isEditorCentered && constraints.maxWidth >= 600
                                 ? _calculateCenteredPaddingForEditor(
                                   constraints.maxWidth,
                                 )
@@ -1509,15 +1521,13 @@ class _NotaEditorState extends State<NotaEditor>
                     child: Container(
                       padding: EdgeInsets.only(
                         left:
-                            widget.isEditorCentered &&
-                                    constraints.maxWidth >= 600
+                            _isEditorCentered && constraints.maxWidth >= 600
                                 ? _calculateCenteredPaddingForEditor(
                                   constraints.maxWidth,
                                 )
                                 : 0,
                         right:
-                            widget.isEditorCentered &&
-                                    constraints.maxWidth >= 600
+                            _isEditorCentered && constraints.maxWidth >= 600
                                 ? _calculateCenteredPaddingForEditor(
                                   constraints.maxWidth,
                                 )

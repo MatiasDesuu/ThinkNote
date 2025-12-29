@@ -702,8 +702,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   Timer? _debounceNote;
   Timer? _debounceTitle;
   Timer? _autoSyncTimer;
-  bool _isEditorCentered = false;
-  bool _isEditorCenteredTemporary = false;
   final GlobalKey<ResizableIconSidebarState> _iconSidebarKey =
       GlobalKey<ResizableIconSidebarState>();
   final GlobalKey<ResizablePanelState> _sidebarKey =
@@ -739,7 +737,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   late ImmersiveModeService _immersiveModeService;
   String _searchQuery = '';
   bool _isAdvancedSearch = false;
-  StreamSubscription? _editorCenteredSubscription;
   StreamSubscription? _hideTabsInImmersiveSubscription;
   late TabManager _tabManager;
   Timer? _dbChangeDebounceTimer;
@@ -796,7 +793,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     };
     // Load saved tabs or create initial empty tab
     _loadSavedTabs();
-    _loadEditorSettings();
     _initializeRepositories();
     _loadLastSelectedNotebook();
     _startAutoSyncTimer();
@@ -821,19 +817,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   }
 
   void _setupEditorSettingsListeners() {
-    _editorCenteredSubscription?.cancel();
-    _editorCenteredSubscription = EditorSettingsEvents.editorCenteredStream
-        .listen((isCentered) {
-          if (mounted) {
-            setState(() {
-              _isEditorCentered = isCentered;
-              if (_selectedNote == null) {
-                _isEditorCenteredTemporary = isCentered;
-              }
-            });
-          }
-        });
-
     _hideTabsInImmersiveSubscription?.cancel();
     _hideTabsInImmersiveSubscription = EditorSettingsEvents
         .hideTabsInImmersiveStream
@@ -859,18 +842,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     });
   }
 
-  void _resetTemporaryEditorState() {
-    if (mounted) {
-      setState(() {
-        _isEditorCenteredTemporary = _isEditorCentered;
-      });
-    }
-  }
-
   void _selectNote(Note? note) {
     setState(() {
       _selectedNote = note;
-      _resetTemporaryEditorState();
     });
   }
 
@@ -947,21 +921,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       await _refreshAllPanels();
     } catch (e) {
       debugPrint('Auto-sync error: $e');
-    }
-  }
-
-  Future<void> _loadEditorSettings() async {
-    final isEditorCentered = await EditorSettings.getEditorCentered();
-
-    if (mounted) {
-      setState(() {
-        _isEditorCentered = isEditorCentered;
-        _isEditorCenteredTemporary = isEditorCentered;
-      });
-    }
-
-    if (_selectedNote != null) {
-      setState(() {});
     }
   }
 
@@ -1371,10 +1330,12 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     return result;
   }
 
-  void _toggleEditorCentered() async {
-    setState(() {
-      _isEditorCenteredTemporary = !_isEditorCenteredTemporary;
-    });
+  void _toggleEditorCentered() {
+    final activeTab = _tabManager.activeTab;
+    if (activeTab != null) {
+      _tabManager.setTabEditorCentered(activeTab, !activeTab.isEditorCentered);
+      setState(() {});
+    }
   }
 
   void registerDialog(VoidCallback closeCallback) {
@@ -1806,7 +1767,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     _autoSyncTimer?.cancel();
     _dbChangeDebounceTimer?.cancel();
     _immersiveModeService.removeListener(_onImmersiveModeChanged);
-    _editorCenteredSubscription?.cancel();
     _hideTabsInImmersiveSubscription?.cancel();
     _tabManager.dispose();
     super.dispose();
@@ -2688,7 +2648,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       noteController: activeTab.noteController,
       titleController: activeTab.titleController,
       onSave: _handleSave,
-      isEditorCentered: _isEditorCenteredTemporary,
       onTitleChanged: () {
         setState(() {
           isEditing = true;
@@ -2728,13 +2687,16 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
           _tabManager.updateNoteObjectInTab(updatedNote);
         }
       },
-      onToggleEditorCentered: _toggleEditorCentered,
       searchQuery: _searchQuery,
       isAdvancedSearch: _isAdvancedSearch,
       tabManager: _tabManager, // Para navigation entre notas
       initialReadMode: activeTab.isReadMode,
       onReadModeChanged: (isReadMode) {
         _tabManager.setTabReadMode(activeTab, isReadMode);
+      },
+      initialEditorCentered: activeTab.isEditorCentered,
+      onEditorCenteredChanged: (isEditorCentered) {
+        _tabManager.setTabEditorCentered(activeTab, isEditorCentered);
       },
     );
   }

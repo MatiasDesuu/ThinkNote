@@ -10,6 +10,7 @@ class EditorTab {
   final bool isDirty;
   final bool isPinned;
   final bool isReadMode;
+  final bool isEditorCentered; // Individual centered state for each tab
   final DateTime lastAccessed;
   final String? tabId; // Unique identifier for empty tabs
 
@@ -22,6 +23,7 @@ class EditorTab {
     this.isDirty = false,
     this.isPinned = false,
     this.isReadMode = false,
+    this.isEditorCentered = false,
     required this.lastAccessed,
     this.tabId,
   });
@@ -35,6 +37,7 @@ class EditorTab {
     bool? isDirty,
     bool? isPinned,
     bool? isReadMode,
+    bool? isEditorCentered,
     DateTime? lastAccessed,
     String? tabId,
   }) {
@@ -47,6 +50,7 @@ class EditorTab {
       isDirty: isDirty ?? this.isDirty,
       isPinned: isPinned ?? this.isPinned,
       isReadMode: isReadMode ?? this.isReadMode,
+      isEditorCentered: isEditorCentered ?? this.isEditorCentered,
       lastAccessed: lastAccessed ?? this.lastAccessed,
       tabId: tabId ?? this.tabId,
     );
