@@ -35,7 +35,7 @@ class _FormatHandlerState extends State<FormatHandler> {
     if (!widget.enableFormatDetection || widget.text.isEmpty) {
       return Text(widget.text, style: widget.textStyle);
     }
-    
+
     // Dispose old recognizers before building new ones
     for (final recognizer in _recognizers) {
       recognizer.dispose();
@@ -51,8 +51,8 @@ class _FormatHandlerState extends State<FormatHandler> {
 
   List<TextSpan> _buildTextSpansWithFormatting(BuildContext context) {
     return FormatDetector.buildFormattedSpans(
-      widget.text, 
-      widget.textStyle, 
+      widget.text,
+      widget.textStyle,
       context,
       recognizers: _recognizers,
     );
@@ -61,24 +61,25 @@ class _FormatHandlerState extends State<FormatHandler> {
 
 /// Enum for different format types
 enum FormatType {
-  bold,        // **text** or __text__
-  italic,      // *text* or _text_
+  bold, // **text** or __text__
+  italic, // *text* or _text_
   strikethrough, // ~~text~~
-  code,        // `text`
-  heading1,    // # text
-  heading2,    // ## text
-  heading3,    // ### text
-  heading4,    // #### text
-  heading5,    // ##### text
-  numbered,    // 1. text
-  bullet,      // - text
-  asterisk,    // * text
+  code, // `text`
+  heading1, // # text
+  heading2, // ## text
+  heading3, // ### text
+  heading4, // #### text
+  heading5, // ##### text
+  numbered, // 1. text
+  bullet, // - text
+  asterisk, // * text
   checkboxUnchecked, // [ ] text
-  checkboxChecked,   // [x] text
-  noteLink,          // [[text]]
-  link,              // [text](url)
-  url,               // http://...
-  normal,      // regular text
+  checkboxChecked, // [x] text
+  noteLink, // [[text]]
+  link, // [text](url)
+  url, // http://...
+  horizontalRule, // * * * (horizontal divider line)
+  normal, // regular text
 }
 
 /// Represents a detected format segment
@@ -148,6 +149,12 @@ class FormatDetector {
       regex: RegExp(r'^#####\s+(.+)$', multiLine: true),
       contentExtractor: (m) => m.group(1) ?? '',
     ),
+    // Horizontal Rule (must be before asterisk list)
+    _FormatPattern(
+      type: FormatType.horizontalRule,
+      regex: RegExp(r'^\* \* \*$', multiLine: true),
+      contentExtractor: (m) => m.group(0)!,
+    ),
     // Lists
     _FormatPattern(
       type: FormatType.numbered,
@@ -208,7 +215,10 @@ class FormatDetector {
     ),
     _FormatPattern(
       type: FormatType.url,
-      regex: RegExp(r'(?:https?://|www\.)[^\s<>"{}|\\^`[\]]+', caseSensitive: false),
+      regex: RegExp(
+        r'(?:https?://|www\.)[^\s<>"{}|\\^`[\]]+',
+        caseSensitive: false,
+      ),
       contentExtractor: (m) => m.group(0)!,
       dataExtractor: (m) => m.group(0)!,
     ),
@@ -216,11 +226,11 @@ class FormatDetector {
 
   /// Builds formatted text spans from markdown text
   static List<TextSpan> buildFormattedSpans(
-    String text, 
-    TextStyle baseStyle, 
-    BuildContext context,
-    {List<TapGestureRecognizer>? recognizers}
-  ) {
+    String text,
+    TextStyle baseStyle,
+    BuildContext context, {
+    List<TapGestureRecognizer>? recognizers,
+  }) {
     if (text.isEmpty) {
       return [TextSpan(text: text, style: baseStyle)];
     }
@@ -234,16 +244,37 @@ class FormatDetector {
       if (segment.start > lastIndex) {
         final beforeText = text.substring(lastIndex, segment.start);
         if (beforeText.isNotEmpty) {
-          spans.addAll(_buildNestedFormattedSpans(beforeText, baseStyle, context, recognizers: recognizers));
+          spans.addAll(
+            _buildNestedFormattedSpans(
+              beforeText,
+              baseStyle,
+              context,
+              recognizers: recognizers,
+            ),
+          );
         }
       }
-      spans.add(_buildFormattedSpan(segment, baseStyle, context, recognizers: recognizers));
+      spans.add(
+        _buildFormattedSpan(
+          segment,
+          baseStyle,
+          context,
+          recognizers: recognizers,
+        ),
+      );
       lastIndex = segment.end;
     }
     if (lastIndex < text.length) {
       final remainingText = text.substring(lastIndex);
       if (remainingText.isNotEmpty) {
-        spans.addAll(_buildNestedFormattedSpans(remainingText, baseStyle, context, recognizers: recognizers));
+        spans.addAll(
+          _buildNestedFormattedSpans(
+            remainingText,
+            baseStyle,
+            context,
+            recognizers: recognizers,
+          ),
+        );
       }
     }
     return spans.isNotEmpty ? spans : [TextSpan(text: text, style: baseStyle)];
@@ -252,32 +283,37 @@ class FormatDetector {
   /// Parses text and returns format segments in order
   static List<FormatSegment> parseSegments(String text) {
     final List<FormatSegment> segments = [];
-    
+
     for (final pattern in _patterns) {
       final matches = pattern.regex.allMatches(text);
       for (final match in matches) {
         final content = pattern.contentExtractor(match);
         if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-          segments.add(FormatSegment(
-            type: pattern.type,
-            text: content,
-            originalText: match.group(0)!,
-            start: match.start,
-            end: match.end,
-            data: pattern.dataExtractor?.call(match),
-          ));
+          segments.add(
+            FormatSegment(
+              type: pattern.type,
+              text: content,
+              originalText: match.group(0)!,
+              start: match.start,
+              end: match.end,
+              data: pattern.dataExtractor?.call(match),
+            ),
+          );
         }
       }
     }
 
     // Sort segments by start position
     segments.sort((a, b) => a.start.compareTo(b.start));
-    
+
     return segments;
   }
 
   /// Checks if a match overlaps with existing segments
-  static bool _isOverlapping(RegExpMatch match, List<FormatSegment> existingSegments) {
+  static bool _isOverlapping(
+    RegExpMatch match,
+    List<FormatSegment> existingSegments,
+  ) {
     for (final segment in existingSegments) {
       if (match.start < segment.end && match.end > segment.start) {
         return true;
@@ -288,24 +324,20 @@ class FormatDetector {
 
   /// Builds a formatted TextSpan for a segment
   static TextSpan _buildFormattedSpan(
-    FormatSegment segment, 
-    TextStyle baseStyle, 
-    BuildContext context,
-    {List<TapGestureRecognizer>? recognizers}
-  ) {
+    FormatSegment segment,
+    TextStyle baseStyle,
+    BuildContext context, {
+    List<TapGestureRecognizer>? recognizers,
+  }) {
     TextStyle style = baseStyle;
     TapGestureRecognizer? recognizer;
-    
+
     switch (segment.type) {
       case FormatType.bold:
-        style = baseStyle.copyWith(
-          fontWeight: FontWeight.bold,
-        );
+        style = baseStyle.copyWith(fontWeight: FontWeight.bold);
         break;
       case FormatType.italic:
-        style = baseStyle.copyWith(
-          fontStyle: FontStyle.italic,
-        );
+        style = baseStyle.copyWith(fontStyle: FontStyle.italic);
         break;
       case FormatType.strikethrough:
         style = baseStyle.copyWith(
@@ -363,16 +395,20 @@ class FormatDetector {
           decoration: TextDecoration.underline,
         );
         if (segment.data != null && recognizers != null) {
-          recognizer = TapGestureRecognizer()
-            ..onTap = () async {
-              final url = Uri.parse(segment.data!);
-              if (await canLaunchUrl(url)) {
-                await launchUrl(url);
-              }
-            };
+          recognizer =
+              TapGestureRecognizer()
+                ..onTap = () async {
+                  final url = Uri.parse(segment.data!);
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url);
+                  }
+                };
           recognizers.add(recognizer);
         }
         break;
+      case FormatType.horizontalRule:
+        // Return empty span - the actual divider is rendered separately
+        return TextSpan(text: '', style: baseStyle);
       case FormatType.numbered:
       case FormatType.bullet:
       case FormatType.asterisk:
@@ -383,20 +419,16 @@ class FormatDetector {
         break;
     }
 
-    return TextSpan(
-      text: segment.text,
-      style: style,
-      recognizer: recognizer,
-    );
+    return TextSpan(text: segment.text, style: style, recognizer: recognizer);
   }
 
   /// Builds nested formatted spans for text that may contain multiple formats
   static List<TextSpan> _buildNestedFormattedSpans(
-    String text, 
-    TextStyle baseStyle, 
-    BuildContext context,
-    {List<TapGestureRecognizer>? recognizers}
-  ) {
+    String text,
+    TextStyle baseStyle,
+    BuildContext context, {
+    List<TapGestureRecognizer>? recognizers,
+  }) {
     final segments = parseSegments(text);
     if (segments.isEmpty) {
       return [TextSpan(text: text, style: baseStyle)];
@@ -410,7 +442,14 @@ class FormatDetector {
           spans.add(TextSpan(text: beforeText, style: baseStyle));
         }
       }
-      spans.add(_buildFormattedSpan(segment, baseStyle, context, recognizers: recognizers));
+      spans.add(
+        _buildFormattedSpan(
+          segment,
+          baseStyle,
+          context,
+          recognizers: recognizers,
+        ),
+      );
       lastIndex = segment.end;
     }
     if (lastIndex < text.length) {
@@ -428,7 +467,7 @@ class FormatDetector {
   }
 
   /// Strips all markdown formatting from text
-  static String stripFormatting(String text) {        
+  static String stripFormatting(String text) {
     return text
         .replaceAll(RegExp(r'\*\*(.*?)\*\*|__(.*?)__'), r'$1$2')
         .replaceAll(RegExp(r'\*(.*?)\*|_(.*?)_'), r'$1$2')
@@ -452,18 +491,17 @@ class FormatDetector {
   static Map<String, int> getFormatStatistics(String text) {
     final stats = <String, int>{};
     int total = 0;
-    
+
     for (final pattern in _patterns) {
       final count = pattern.regex.allMatches(text).length;
       stats[pattern.type.toString().split('.').last] = count;
       total += count;
     }
-    
+
     stats['total'] = total;
     return stats;
   }
 }
-
 
 /// A text field that automatically detects and displays markdown formatting in read mode
 class FormatAwareTextField extends StatefulWidget {
@@ -497,17 +535,16 @@ class FormatAwareTextField extends StatefulWidget {
 }
 
 class _FormatAwareTextFieldState extends State<FormatAwareTextField> {
+  // Regex to match horizontal rule pattern
+  static final RegExp _horizontalRuleRegex = RegExp(r'^\* \* \*$');
+
   @override
   Widget build(BuildContext context) {
     if (widget.readOnly && widget.enableFormatDetection) {
-      // In read-only mode, show formatted text
+      // In read-only mode, show formatted text with horizontal rules as Dividers
       return SingleChildScrollView(
         controller: widget.scrollController,
-        child: FormatHandler(
-          text: widget.controller.text,
-          textStyle: widget.style ?? Theme.of(context).textTheme.bodyMedium!,
-          enableFormatDetection: widget.enableFormatDetection,
-        ),
+        child: _buildFormattedContent(context),
       );
     }
 
@@ -525,6 +562,74 @@ class _FormatAwareTextFieldState extends State<FormatAwareTextField> {
         hintText: widget.hintText,
       ),
       onChanged: widget.onChanged,
+    );
+  }
+
+  /// Builds content with horizontal rules rendered as actual Divider widgets
+  Widget _buildFormattedContent(BuildContext context) {
+    final text = widget.controller.text;
+    final lines = text.split('\n');
+    final textStyle = widget.style ?? Theme.of(context).textTheme.bodyMedium!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final List<Widget> widgets = [];
+    final StringBuffer currentTextBuffer = StringBuffer();
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+
+      if (_horizontalRuleRegex.hasMatch(line.trim())) {
+        // Flush any accumulated text before the horizontal rule
+        if (currentTextBuffer.isNotEmpty) {
+          widgets.add(
+            FormatHandler(
+              text: currentTextBuffer.toString(),
+              textStyle: textStyle,
+              enableFormatDetection: widget.enableFormatDetection,
+            ),
+          );
+          currentTextBuffer.clear();
+        }
+
+        // Add the horizontal rule divider
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12.0),
+            child: Divider(
+              height: 1,
+              thickness: 1,
+              color: colorScheme.outline.withAlpha(100),
+            ),
+          ),
+        );
+      } else {
+        // Accumulate text lines
+        if (currentTextBuffer.isNotEmpty) {
+          currentTextBuffer.write('\n');
+        }
+        currentTextBuffer.write(line);
+      }
+    }
+
+    // Flush remaining text
+    if (currentTextBuffer.isNotEmpty) {
+      widgets.add(
+        FormatHandler(
+          text: currentTextBuffer.toString(),
+          textStyle: textStyle,
+          enableFormatDetection: widget.enableFormatDetection,
+        ),
+      );
+    }
+
+    // If there's only one widget and it's a FormatHandler, return it directly
+    if (widgets.length == 1 && widgets.first is FormatHandler) {
+      return widgets.first;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: widgets,
     );
   }
 }
@@ -549,7 +654,12 @@ class FormatUtils {
   }
 
   /// Wraps selected text with markdown formatting
-  static String wrapWithFormat(String text, int start, int end, FormatType formatType) {
+  static String wrapWithFormat(
+    String text,
+    int start,
+    int end,
+    FormatType formatType,
+  ) {
     if (start < 0 || end > text.length || start >= end) {
       return text;
     }
@@ -607,7 +717,11 @@ class FormatUtils {
         wrappedText = '[$selectedText]()';
         break;
       case FormatType.url:
-        wrappedText = selectedText; // URLs are usually auto-detected, no specific wrapping
+        wrappedText =
+            selectedText; // URLs are usually auto-detected, no specific wrapping
+        break;
+      case FormatType.horizontalRule:
+        wrappedText = '* * *';
         break;
       case FormatType.normal:
         wrappedText = selectedText;
@@ -632,7 +746,12 @@ class FormatUtils {
   }
 
   /// Toggles formatting for selected text
-  static String toggleFormat(String text, int start, int end, FormatType formatType) {
+  static String toggleFormat(
+    String text,
+    int start,
+    int end,
+    FormatType formatType,
+  ) {
     if (start < 0 || end > text.length || start >= end) {
       return text;
     }
@@ -653,7 +772,8 @@ class FormatUtils {
       case FormatType.bold:
         return RegExp(r'^\*\*.*\*\*$|^__.*__$').hasMatch(text);
       case FormatType.italic:
-        return RegExp(r'^\*.*\*$|^_.*_$').hasMatch(text) && !RegExp(r'^\*\*.*\*\*$').hasMatch(text);
+        return RegExp(r'^\*.*\*$|^_.*_$').hasMatch(text) &&
+            !RegExp(r'^\*\*.*\*\*$').hasMatch(text);
       case FormatType.strikethrough:
         return RegExp(r'^~~.*~~$').hasMatch(text);
       case FormatType.code:
@@ -683,7 +803,11 @@ class FormatUtils {
       case FormatType.link:
         return RegExp(r'^\[.*\]\(.*\)$').hasMatch(text);
       case FormatType.url:
-        return RegExp(r'^(?:https?://|www\.)[^\s<>"{}|\\^`[\]]+$').hasMatch(text);
+        return RegExp(
+          r'^(?:https?://|www\.)[^\s<>"{}|\\^`[\]]+$',
+        ).hasMatch(text);
+      case FormatType.horizontalRule:
+        return RegExp(r'^\* \* \*$').hasMatch(text);
       case FormatType.normal:
         return false;
     }

@@ -945,6 +945,32 @@ class _NotaEditorState extends State<NotaEditor>
           suffix = ']()';
           cursorOffset = 1;
           break;
+        case FormatType.horizontalRule:
+          // Insert horizontal rule on a new line
+          final currentText = widget.noteController.text;
+          String insertText;
+          int newCursorOffset;
+
+          // Check if we're at the start of a line or need to add a newline before
+          if (start == 0 || currentText[start - 1] == '\n') {
+            insertText = '* * *\n';
+            newCursorOffset = 6; // After the newline
+          } else {
+            insertText = '\n* * *\n';
+            newCursorOffset = 7; // After the newline
+          }
+
+          final hrNewText =
+              currentText.substring(0, start) +
+              insertText +
+              currentText.substring(start);
+          widget.noteController.text = hrNewText;
+          widget.noteController.selection = TextSelection.collapsed(
+            offset: start + newCursorOffset,
+          );
+          widget.onContentChanged();
+          _editorFocusNode.requestFocus();
+          return;
         default:
           return;
       }

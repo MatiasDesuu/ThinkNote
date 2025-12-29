@@ -785,11 +785,9 @@ class CalendarPanelState extends State<CalendarPanel>
                                           }
                                           widget.onNoteSelected(event.note!);
                                         },
-                                        onSecondaryTapDown: (details) =>
-                                            _showStatusMenu(
-                                          event,
-                                          details,
-                                        ),
+                                        onSecondaryTapDown:
+                                            (details) =>
+                                                _showStatusMenu(event, details),
                                         child: Listener(
                                           onPointerDown: (pointerEvent) {
                                             try {
@@ -827,9 +825,9 @@ class CalendarPanelState extends State<CalendarPanel>
                                             child: Padding(
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                horizontal: 16,
-                                                vertical: 6,
-                                              ),
+                                                    horizontal: 16,
+                                                    vertical: 6,
+                                                  ),
                                               child: Row(
                                                 children: [
                                                   Icon(
@@ -848,8 +846,8 @@ class CalendarPanelState extends State<CalendarPanel>
                                                         Text(
                                                           event.note!.title,
                                                           style: Theme.of(
-                                                            context,
-                                                          )
+                                                                context,
+                                                              )
                                                               .textTheme
                                                               .bodyMedium
                                                               ?.copyWith(
@@ -875,15 +873,14 @@ class CalendarPanelState extends State<CalendarPanel>
                                                               Container(
                                                                 width: 8,
                                                                 height: 8,
-                                                                decoration:
-                                                                    BoxDecoration(
-                                                                  color:
-                                                                      _getStatusColor(
+                                                                decoration: BoxDecoration(
+                                                                  color: _getStatusColor(
                                                                     event
                                                                         .status!,
                                                                   ),
-                                                                  shape: BoxShape
-                                                                      .circle,
+                                                                  shape:
+                                                                      BoxShape
+                                                                          .circle,
                                                                 ),
                                                               ),
                                                               const SizedBox(
@@ -897,8 +894,8 @@ class CalendarPanelState extends State<CalendarPanel>
                                                                 child: Text(
                                                                   event.status!,
                                                                   style: Theme.of(
-                                                                    context,
-                                                                  )
+                                                                        context,
+                                                                      )
                                                                       .textTheme
                                                                       .bodySmall
                                                                       ?.copyWith(
@@ -923,39 +920,34 @@ class CalendarPanelState extends State<CalendarPanel>
                                                       ignoring: !isHovering,
                                                       child: Padding(
                                                         padding:
-                                                            const EdgeInsets
-                                                                .only(
-                                                          left: 4,
-                                                        ),
+                                                            const EdgeInsets.only(
+                                                              left: 4,
+                                                            ),
                                                         child: MouseRegion(
                                                           cursor:
                                                               SystemMouseCursors
                                                                   .click,
-                                                          child:
-                                                              GestureDetector(
-                                                            onTap: () =>
-                                                                _deleteEvent(
-                                                              event,
-                                                            ),
+                                                          child: GestureDetector(
+                                                            onTap:
+                                                                () =>
+                                                                    _deleteEvent(
+                                                                      event,
+                                                                    ),
                                                             child: Container(
                                                               padding:
-                                                                  const EdgeInsets
-                                                                      .all(
-                                                                4,
-                                                              ),
-                                                              decoration:
-                                                                  BoxDecoration(
-                                                                color:
-                                                                    colorScheme
-                                                                        .error
-                                                                        .withAlpha(
-                                                                  20,
-                                                                ),
+                                                                  const EdgeInsets.all(
+                                                                    4,
+                                                                  ),
+                                                              decoration: BoxDecoration(
+                                                                color: colorScheme
+                                                                    .error
+                                                                    .withAlpha(
+                                                                      20,
+                                                                    ),
                                                                 borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                  6,
-                                                                ),
+                                                                    BorderRadius.circular(
+                                                                      6,
+                                                                    ),
                                                               ),
                                                               child: Icon(
                                                                 Icons

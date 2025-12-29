@@ -39,10 +39,34 @@ class UnifiedTextHandler extends StatelessWidget {
     this.enableFormatDetection = true,
   });
 
+  // Regex to match horizontal rule pattern
+  static final RegExp _horizontalRuleRegex = RegExp(r'^\* \* \*$');
+
   @override
   Widget build(BuildContext context) {
     if (text.isEmpty) {
       return Text(text, style: textStyle);
+    }
+
+    // Check if text contains horizontal rules - if so, use the line-by-line approach
+    final lines = text.split('\n');
+    final hasHorizontalRule = lines.any(
+      (line) => _horizontalRuleRegex.hasMatch(line.trim()),
+    );
+
+    if (hasHorizontalRule) {
+      return FutureBuilder<List<Widget>>(
+        future: _buildWidgetsWithHorizontalRules(context, lines),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: snapshot.data!,
+            );
+          }
+          return Text(text, style: textStyle);
+        },
+      );
     }
 
     return FutureBuilder<List<InlineSpan>>(
@@ -58,6 +82,80 @@ class UnifiedTextHandler extends StatelessWidget {
         return Text(text, style: textStyle);
       },
     );
+  }
+
+  /// Builds widgets with horizontal rules as Dividers
+  Future<List<Widget>> _buildWidgetsWithHorizontalRules(
+    BuildContext context,
+    List<String> lines,
+  ) async {
+    final List<Widget> widgets = [];
+    final StringBuffer currentTextBuffer = StringBuffer();
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // 1. Fetch notes if needed (only once)
+    List<Note> allNotes = [];
+    if (enableNoteLinkDetection && NoteLinkDetector.hasNoteLinks(text)) {
+      final dbHelper = DatabaseHelper();
+      final noteRepository = NoteRepository(dbHelper);
+      allNotes = await noteRepository.getAllNotes();
+    }
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+
+      if (_horizontalRuleRegex.hasMatch(line.trim())) {
+        // Flush any accumulated text before the horizontal rule
+        if (currentTextBuffer.isNotEmpty) {
+          final spans = _buildNestedSpans(
+            context,
+            currentTextBuffer.toString(),
+            allNotes,
+            textStyle,
+          );
+          widgets.add(
+            RichText(
+              text: TextSpan(children: spans),
+              textAlign: TextAlign.start,
+            ),
+          );
+          currentTextBuffer.clear();
+        }
+
+        // Add the horizontal rule divider
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12.0),
+            child: Divider(
+              height: 1,
+              thickness: 1,
+              color: colorScheme.outline.withAlpha(100),
+            ),
+          ),
+        );
+      } else {
+        // Accumulate text lines
+        if (currentTextBuffer.isNotEmpty) {
+          currentTextBuffer.write('\n');
+        }
+        currentTextBuffer.write(line);
+      }
+    }
+
+    // Flush remaining text
+    if (currentTextBuffer.isNotEmpty) {
+      final spans = _buildNestedSpans(
+        context,
+        currentTextBuffer.toString(),
+        allNotes,
+        textStyle,
+      );
+      widgets.add(
+        RichText(text: TextSpan(children: spans), textAlign: TextAlign.start),
+      );
+    }
+
+    return widgets;
   }
 
   Future<List<InlineSpan>> _buildUnifiedTextSpans(BuildContext context) async {
