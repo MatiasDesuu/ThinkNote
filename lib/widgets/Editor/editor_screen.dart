@@ -1468,19 +1468,40 @@ class _NotaEditorState extends State<NotaEditor>
                     ),
                   ),
                   if (_showBottomBar)
-                    EditorBottomBar(
-                      onUndo: () {
-                        if (_undoController.value.canUndo) {
-                          _undoController.undo();
-                        }
-                      },
-                      onRedo: () {
-                        if (_undoController.value.canRedo) {
-                          _undoController.redo();
-                        }
-                      },
-                      onFormatTap: _handleFormat,
-                      isReadMode: _isReadMode,
+                    Container(
+                      padding: EdgeInsets.only(
+                        left:
+                            widget.isEditorCentered &&
+                                    constraints.maxWidth >= 600
+                                ? _calculateCenteredPaddingForEditor(
+                                  constraints.maxWidth,
+                                )
+                                : 0,
+                        right:
+                            widget.isEditorCentered &&
+                                    constraints.maxWidth >= 600
+                                ? _calculateCenteredPaddingForEditor(
+                                  constraints.maxWidth,
+                                )
+                                : 0,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: EditorBottomBar(
+                          onUndo: () {
+                            if (_undoController.value.canUndo) {
+                              _undoController.undo();
+                            }
+                          },
+                          onRedo: () {
+                            if (_undoController.value.canRedo) {
+                              _undoController.redo();
+                            }
+                          },
+                          onFormatTap: _handleFormat,
+                          isReadMode: _isReadMode,
+                        ),
+                      ),
                     ),
 
                   // Editor content - with centered padding when needed

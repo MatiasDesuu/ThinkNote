@@ -87,7 +87,6 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-              const SizedBox(width: 8),
               _buildTooltipIconButton(
                 context,
                 icon: const Icon(Icons.undo_rounded, size: 20),
