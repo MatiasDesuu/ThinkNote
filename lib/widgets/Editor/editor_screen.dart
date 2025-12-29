@@ -842,6 +842,26 @@ class _NotaEditorState extends State<NotaEditor>
     final selection = widget.noteController.selection;
     if (!selection.isValid) return;
 
+    if (type == FormatType.insertScript) {
+      final text = widget.noteController.text;
+      if (text.startsWith('#script')) {
+        // Remove #script and any following newline
+        String newText = text.replaceFirst(RegExp(r'^#script\n?'), '');
+        widget.noteController.text = newText;
+        widget.onContentChanged();
+      } else {
+        widget.noteController.text = '#script\n$text';
+        widget.onContentChanged();
+      }
+      _editorFocusNode.requestFocus();
+      return;
+    }
+
+    if (type == FormatType.convertToScript) {
+      _handleCreateScriptBlock();
+      return;
+    }
+
     if (!selection.isCollapsed) {
       final text = widget.noteController.text;
       final newText = FormatUtils.toggleFormat(

@@ -79,6 +79,8 @@ enum FormatType {
   link, // [text](url)
   url, // http://...
   horizontalRule, // * * * (horizontal divider line)
+  insertScript, // #script at the top
+  convertToScript, // #1 block
   normal, // regular text
 }
 
@@ -430,6 +432,8 @@ class FormatDetector {
       case FormatType.horizontalRule:
         // Return empty span - the actual divider is rendered separately
         return TextSpan(text: '', style: baseStyle);
+      case FormatType.insertScript:
+      case FormatType.convertToScript:
       case FormatType.numbered:
       case FormatType.bullet:
       case FormatType.asterisk:
@@ -744,6 +748,12 @@ class FormatUtils {
       case FormatType.horizontalRule:
         wrappedText = '* * *';
         break;
+      case FormatType.insertScript:
+        wrappedText = '#script\n$selectedText';
+        break;
+      case FormatType.convertToScript:
+        wrappedText = '#1\n$selectedText';
+        break;
       case FormatType.normal:
         wrappedText = selectedText;
         break;
@@ -829,6 +839,10 @@ class FormatUtils {
         ).hasMatch(text);
       case FormatType.horizontalRule:
         return RegExp(r'^\* \* \*$').hasMatch(text);
+      case FormatType.insertScript:
+        return text.startsWith('#script');
+      case FormatType.convertToScript:
+        return RegExp(r'^#\d+\n').hasMatch(text);
       case FormatType.normal:
         return false;
     }
