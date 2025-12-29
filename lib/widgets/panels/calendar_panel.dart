@@ -764,232 +764,214 @@ class CalendarPanelState extends State<CalendarPanel>
                               ),
                               child: MouseRegionHoverItem(
                                 builder: (context, isHovering) {
-                                  return Tooltip(
-                                    message: event.note!.title,
-                                    waitDuration: const Duration(
-                                      milliseconds: 500,
+                                  final card = Card(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    color: colorScheme.surfaceContainerHighest,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
-                                    textStyle: TextStyle(
-                                      color: colorScheme.onSurface,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.surfaceContainerHigh
-                                          .withAlpha(255),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Card(
-                                      margin: const EdgeInsets.only(bottom: 8),
-                                      color:
-                                          colorScheme.surfaceContainerHighest,
-                                      shape: RoundedRectangleBorder(
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
                                         borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Material(
-                                        color: Colors.transparent,
-                                        child: InkWell(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          onTap: () {
-                                            // Inform parent that the note was selected from the calendar
-                                            // so it can suppress tab open/replace animations if desired.
-                                            if (widget
-                                                    .onNoteSelectedFromPanel !=
-                                                null) {
-                                              widget.onNoteSelectedFromPanel!(
-                                                event.note!,
-                                              );
-                                            }
-                                            widget.onNoteSelected(event.note!);
-                                          },
-                                          onSecondaryTapDown:
-                                              (details) => _showStatusMenu(
-                                                event,
-                                                details,
-                                              ),
-                                          child: Listener(
-                                            onPointerDown: (pointerEvent) {
-                                              try {
-                                                if ((pointerEvent.buttons &
-                                                        4) !=
-                                                    0) {
-                                                  if (widget.onNoteOpenInNewTab !=
-                                                          null &&
-                                                      event.note != null) {
-                                                    widget.onNoteOpenInNewTab!(
-                                                      event.note!,
-                                                    );
-                                                  } else {}
-                                                }
-                                              } catch (e) {
-                                                print(
-                                                  '[calendar] error in onPointerDown: $e',
-                                                );
-                                              }
-                                            },
-                                            child: GestureDetector(
-                                              behavior: HitTestBehavior.opaque,
-                                              onTertiaryTapDown: (details) {
+                                        onTap: () {
+                                          // Inform parent that the note was selected from the calendar
+                                          // so it can suppress tab open/replace animations if desired.
+                                          if (widget.onNoteSelectedFromPanel !=
+                                              null) {
+                                            widget.onNoteSelectedFromPanel!(
+                                              event.note!,
+                                            );
+                                          }
+                                          widget.onNoteSelected(event.note!);
+                                        },
+                                        onSecondaryTapDown: (details) =>
+                                            _showStatusMenu(
+                                          event,
+                                          details,
+                                        ),
+                                        child: Listener(
+                                          onPointerDown: (pointerEvent) {
+                                            try {
+                                              if ((pointerEvent.buttons & 4) !=
+                                                  0) {
                                                 if (widget.onNoteOpenInNewTab !=
                                                         null &&
                                                     event.note != null) {
                                                   widget.onNoteOpenInNewTab!(
                                                     event.note!,
                                                   );
-                                                } else {
-                                                  print(
-                                                    '[calendar] onNoteOpenInNewTab callback is null or note is null',
-                                                  );
-                                                }
-                                              },
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 16,
-                                                      vertical: 6,
-                                                    ),
-                                                child: Row(
-                                                  children: [
-                                                    Icon(
-                                                      Icons
-                                                          .description_outlined,
-                                                      color:
-                                                          colorScheme.primary,
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Expanded(
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          Text(
-                                                            event.note!.title,
-                                                            style: Theme.of(
-                                                                  context,
-                                                                )
-                                                                .textTheme
-                                                                .bodyMedium
-                                                                ?.copyWith(
-                                                                  color:
-                                                                      colorScheme
-                                                                          .onSurface,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
-                                                                ),
-                                                            maxLines: 1,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
+                                                } else {}
+                                              }
+                                            } catch (e) {
+                                              print(
+                                                '[calendar] error in onPointerDown: $e',
+                                              );
+                                            }
+                                          },
+                                          child: GestureDetector(
+                                            behavior: HitTestBehavior.opaque,
+                                            onTertiaryTapDown: (details) {
+                                              if (widget.onNoteOpenInNewTab !=
+                                                      null &&
+                                                  event.note != null) {
+                                                widget.onNoteOpenInNewTab!(
+                                                  event.note!,
+                                                );
+                                              } else {
+                                                print(
+                                                  '[calendar] onNoteOpenInNewTab callback is null or note is null',
+                                                );
+                                              }
+                                            },
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 6,
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.description_outlined,
+                                                    color: colorScheme.primary,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Text(
+                                                          event.note!.title,
+                                                          style: Theme.of(
+                                                            context,
+                                                          )
+                                                              .textTheme
+                                                              .bodyMedium
+                                                              ?.copyWith(
+                                                                color:
+                                                                    colorScheme
+                                                                        .onSurface,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
+                                                              ),
+                                                          maxLines: 1,
+                                                          overflow:
+                                                              TextOverflow
+                                                                  .ellipsis,
+                                                        ),
+                                                        if (event.status !=
+                                                            null) ...[
+                                                          const SizedBox(
+                                                            height: 2,
                                                           ),
-                                                          if (event.status !=
-                                                              null) ...[
-                                                            const SizedBox(
-                                                              height: 2,
-                                                            ),
-                                                            Row(
-                                                              children: [
-                                                                Container(
-                                                                  width: 8,
-                                                                  height: 8,
-                                                                  decoration: BoxDecoration(
-                                                                    color: _getStatusColor(
-                                                                      event
-                                                                          .status!,
-                                                                    ),
-                                                                    shape:
-                                                                        BoxShape
-                                                                            .circle,
-                                                                  ),
-                                                                ),
-                                                                const SizedBox(
-                                                                  width: 4,
-                                                                ),
-                                                                Baseline(
-                                                                  baseline: 8,
-                                                                  baselineType:
-                                                                      TextBaseline
-                                                                          .alphabetic,
-                                                                  child: Text(
+                                                          Row(
+                                                            children: [
+                                                              Container(
+                                                                width: 8,
+                                                                height: 8,
+                                                                decoration:
+                                                                    BoxDecoration(
+                                                                  color:
+                                                                      _getStatusColor(
                                                                     event
                                                                         .status!,
-                                                                    style: Theme.of(
-                                                                          context,
-                                                                        )
-                                                                        .textTheme
-                                                                        .bodySmall
-                                                                        ?.copyWith(
-                                                                          color:
-                                                                              colorScheme.onSurfaceVariant,
-                                                                          fontSize:
-                                                                              10,
-                                                                        ),
                                                                   ),
+                                                                  shape: BoxShape
+                                                                      .circle,
                                                                 ),
-                                                              ],
-                                                            ),
-                                                          ],
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    // Delete button (only visible on hover)
-                                                    Opacity(
-                                                      opacity:
-                                                          isHovering
-                                                              ? 1.0
-                                                              : 0.0,
-                                                      child: IgnorePointer(
-                                                        ignoring: !isHovering,
-                                                        child: Padding(
-                                                          padding:
-                                                              const EdgeInsets.only(
-                                                                left: 4,
                                                               ),
-                                                          child: MouseRegion(
-                                                            cursor:
-                                                                SystemMouseCursors
-                                                                    .click,
-                                                            child: GestureDetector(
-                                                              onTap:
-                                                                  () =>
-                                                                      _deleteEvent(
-                                                                        event,
-                                                                      ),
-                                                              child: Container(
-                                                                padding:
-                                                                    const EdgeInsets.all(
-                                                                      4,
-                                                                    ),
-                                                                decoration: BoxDecoration(
-                                                                  color: colorScheme
-                                                                      .error
-                                                                      .withAlpha(
-                                                                        20,
-                                                                      ),
-                                                                  borderRadius:
-                                                                      BorderRadius.circular(
-                                                                        6,
+                                                              const SizedBox(
+                                                                width: 4,
+                                                              ),
+                                                              Baseline(
+                                                                baseline: 8,
+                                                                baselineType:
+                                                                    TextBaseline
+                                                                        .alphabetic,
+                                                                child: Text(
+                                                                  event.status!,
+                                                                  style: Theme.of(
+                                                                    context,
+                                                                  )
+                                                                      .textTheme
+                                                                      .bodySmall
+                                                                      ?.copyWith(
+                                                                        color:
+                                                                            colorScheme.onSurfaceVariant,
+                                                                        fontSize:
+                                                                            10,
                                                                       ),
                                                                 ),
-                                                                child: Icon(
-                                                                  Icons
-                                                                      .close_rounded,
-                                                                  size: 14,
-                                                                  color:
-                                                                      colorScheme
-                                                                          .error,
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  // Delete button (only visible on hover)
+                                                  Opacity(
+                                                    opacity:
+                                                        isHovering ? 1.0 : 0.0,
+                                                    child: IgnorePointer(
+                                                      ignoring: !isHovering,
+                                                      child: Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .only(
+                                                          left: 4,
+                                                        ),
+                                                        child: MouseRegion(
+                                                          cursor:
+                                                              SystemMouseCursors
+                                                                  .click,
+                                                          child:
+                                                              GestureDetector(
+                                                            onTap: () =>
+                                                                _deleteEvent(
+                                                              event,
+                                                            ),
+                                                            child: Container(
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .all(
+                                                                4,
+                                                              ),
+                                                              decoration:
+                                                                  BoxDecoration(
+                                                                color:
+                                                                    colorScheme
+                                                                        .error
+                                                                        .withAlpha(
+                                                                  20,
                                                                 ),
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                  6,
+                                                                ),
+                                                              ),
+                                                              child: Icon(
+                                                                Icons
+                                                                    .close_rounded,
+                                                                size: 14,
+                                                                color:
+                                                                    colorScheme
+                                                                        .error,
                                                               ),
                                                             ),
                                                           ),
                                                         ),
                                                       ),
                                                     ),
-                                                  ],
-                                                ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                           ),
@@ -997,6 +979,26 @@ class CalendarPanelState extends State<CalendarPanel>
                                       ),
                                     ),
                                   );
+
+                                  if (isHovering) {
+                                    return Tooltip(
+                                      message: event.note!.title,
+                                      waitDuration: const Duration(
+                                        milliseconds: 500,
+                                      ),
+                                      textStyle: TextStyle(
+                                        color: colorScheme.onSurface,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.surfaceContainerHigh
+                                            .withAlpha(255),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: card,
+                                    );
+                                  }
+
+                                  return card;
                                 },
                               ),
                             );
