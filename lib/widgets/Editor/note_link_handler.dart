@@ -44,10 +44,12 @@ class NoteLinkHandler extends StatelessWidget {
     );
   }
 
-  Future<List<InlineSpan>> _buildTextSpansWithNoteLinks(BuildContext context) async {
+  Future<List<InlineSpan>> _buildTextSpansWithNoteLinks(
+    BuildContext context,
+  ) async {
     final List<InlineSpan> spans = [];
     final noteLinks = NoteLinkDetector.detectNoteLinks(text);
-    
+
     if (noteLinks.isEmpty) {
       spans.add(TextSpan(text: text, style: textStyle));
       return spans;
@@ -57,74 +59,129 @@ class NoteLinkHandler extends StatelessWidget {
     final dbHelper = DatabaseHelper();
     final noteRepository = NoteRepository(dbHelper);
     final allNotes = await noteRepository.getAllNotes();
-    
+
     int lastIndex = 0;
-    
+
     for (final noteLink in noteLinks) {
       // Add text before the link
       if (noteLink.start > lastIndex) {
-        spans.add(TextSpan(
-          text: text.substring(lastIndex, noteLink.start),
-          style: textStyle,
-        ));
+        spans.add(
+          TextSpan(
+            text: text.substring(lastIndex, noteLink.start),
+            style: textStyle,
+          ),
+        );
       }
-      
+
       // Find matching notes by title (can be multiple)
-      final matchingNotes = allNotes.where((note) => 
-        note.title.toLowerCase().trim() == noteLink.title.toLowerCase().trim()
-      ).toList();
-      
+      final matchingNotes =
+          allNotes
+              .where(
+                (note) =>
+                    note.title.toLowerCase().trim() ==
+                    noteLink.title.toLowerCase().trim(),
+              )
+              .toList();
+
       if (matchingNotes.isNotEmpty) {
         // Add the clickable note link with middle click support
-        spans.add(WidgetSpan(
-          child: _NoteLinkWidget(
-            text: noteLink.originalText,
-            textStyle: textStyle.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              decorationColor: Theme.of(context).colorScheme.primary,
-              decoration: TextDecoration.underline,
-              fontWeight: FontWeight.w500,
+        spans.add(
+          WidgetSpan(
+            child: _NoteLinkWidget(
+              text: noteLink.originalText,
+              textStyle: textStyle.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                decorationColor: Theme.of(context).colorScheme.primary,
+                decoration: TextDecoration.underline,
+                fontWeight: FontWeight.w500,
+              ),
+              onTap:
+                  (position) => _handleNoteLinkSelection(
+                    matchingNotes,
+                    noteLink.title,
+                    context,
+                    false,
+                    position,
+                  ),
+              onMiddleClick:
+                  (position) => _handleNoteLinkSelection(
+                    matchingNotes,
+                    noteLink.title,
+                    context,
+                    true,
+                    position,
+                  ),
             ),
-            onTap: (position) => _handleNoteLinkSelection(matchingNotes, noteLink.title, context, false, position),
-            onMiddleClick: (position) => _handleNoteLinkSelection(matchingNotes, noteLink.title, context, true, position),
           ),
-        ));
+        );
       } else {
-        // Note doesn't exist, show in different style (grayed out)
-        spans.add(TextSpan(
-          text: noteLink.originalText,
-          style: textStyle.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-            decoration: TextDecoration.underline,
-            decorationStyle: TextDecorationStyle.dashed,
-            fontStyle: FontStyle.italic,
+        // Note doesn't exist, but make it clickable to allow creation
+        spans.add(
+          WidgetSpan(
+            child: _NoteLinkWidget(
+              text: noteLink.originalText,
+              textStyle: textStyle.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                decorationColor: Theme.of(context).colorScheme.primary,
+                decoration: TextDecoration.underline,
+                fontWeight: FontWeight.w500,
+              ),
+              onTap:
+                  (position) => _handleNoteLinkSelection(
+                    matchingNotes,
+                    noteLink.title,
+                    context,
+                    false,
+                    position,
+                  ),
+              onMiddleClick:
+                  (position) => _handleNoteLinkSelection(
+                    matchingNotes,
+                    noteLink.title,
+                    context,
+                    true,
+                    position,
+                  ),
+            ),
           ),
-        ));
+        );
       }
-      
+
       lastIndex = noteLink.end;
     }
-    
+
     // Add remaining text after the last link
     if (lastIndex < text.length) {
-      spans.add(TextSpan(
-        text: text.substring(lastIndex),
-        style: textStyle,
-      ));
+      spans.add(TextSpan(text: text.substring(lastIndex), style: textStyle));
     }
-    
+
     return spans;
   }
 
-  void _handleNoteLinkSelection(List<Note> matchingNotes, String title, BuildContext context, bool isMiddleClick, Offset position) {
-    if (matchingNotes.isEmpty) return;
-    
+  void _handleNoteLinkSelection(
+    List<Note> matchingNotes,
+    String title,
+    BuildContext context,
+    bool isMiddleClick,
+    Offset position,
+  ) {
+    // If no matching notes exist, simply do nothing
+    if (matchingNotes.isEmpty) {
+      return;
+    }
+
     if (matchingNotes.length == 1) {
       // Only one note, open it directly
       _handleNoteLinkTap(matchingNotes.first, isMiddleClick);
     } else {
       // Multiple notes with same title, show selection context menu
-      _showNoteSelectionContextMenu(context, matchingNotes, title, isMiddleClick, position);
+      _showNoteSelectionContextMenu(
+        context,
+        matchingNotes,
+        title,
+        isMiddleClick,
+        position,
+      );
     }
   }
 
@@ -134,16 +191,23 @@ class NoteLinkHandler extends StatelessWidget {
     }
   }
 
-  void _showNoteSelectionContextMenu(BuildContext context, List<Note> notes, String title, bool isMiddleClick, Offset position) async {
+  void _showNoteSelectionContextMenu(
+    BuildContext context,
+    List<Note> notes,
+    String title,
+    bool isMiddleClick,
+    Offset position,
+  ) async {
     final List<ContextMenuItem> menuItems = [];
-    
+
     for (final note in notes) {
       final notebook = await _getNotebook(note.notebookId);
       final notebookIcon = _getNotebookIcon(notebook?.iconId);
-      
+
       menuItems.add(
         ContextMenuItem(
-          icon: note.isTask ? Icons.task_alt_rounded : Icons.description_rounded,
+          icon:
+              note.isTask ? Icons.task_alt_rounded : Icons.description_rounded,
           label: '', // No usado cuando hay customWidget
           onTap: () => _handleNoteLinkTap(note, false),
           onMiddleClick: () => _handleNoteLinkTap(note, true),
@@ -155,7 +219,9 @@ class NoteLinkHandler extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    note.isTask ? Icons.task_alt_rounded : Icons.description_rounded,
+                    note.isTask
+                        ? Icons.task_alt_rounded
+                        : Icons.description_rounded,
                     size: 20,
                     color: Theme.of(context).colorScheme.primary,
                   ),
@@ -198,7 +264,7 @@ class NoteLinkHandler extends StatelessWidget {
         ),
       );
     }
-    
+
     ContextMenuOverlay.show(
       context: context,
       tapPosition: position,
@@ -214,8 +280,11 @@ class NoteLinkHandler extends StatelessWidget {
 
   IconData _getNotebookIcon(int? iconId) {
     if (iconId == null) return Icons.folder_rounded;
-    
-    final icon = NotebookIconsRepository.icons.where((icon) => icon.id == iconId).firstOrNull;
+
+    final icon =
+        NotebookIconsRepository.icons
+            .where((icon) => icon.id == iconId)
+            .firstOrNull;
     return icon?.icon ?? Icons.folder_rounded;
   }
 }
@@ -232,19 +301,21 @@ class NoteLinkDetector {
   static List<NoteLinkMatch> detectNoteLinks(String text) {
     final List<NoteLinkMatch> noteLinks = [];
     final matches = _noteLinkRegex.allMatches(text);
-    
+
     for (final match in matches) {
       final fullMatch = match.group(0)!;
       final title = match.group(1)!.trim();
-      
-      noteLinks.add(NoteLinkMatch(
-        title: title,
-        originalText: fullMatch,
-        start: match.start,
-        end: match.end,
-      ));
+
+      noteLinks.add(
+        NoteLinkMatch(
+          title: title,
+          originalText: fullMatch,
+          start: match.start,
+          end: match.end,
+        ),
+      );
     }
-    
+
     return noteLinks;
   }
 
@@ -254,9 +325,12 @@ class NoteLinkDetector {
   }
 
   /// Suggests note titles based on partial input
-  static List<String> suggestNoteTitle(String partialTitle, List<Note> availableNotes) {
+  static List<String> suggestNoteTitle(
+    String partialTitle,
+    List<Note> availableNotes,
+  ) {
     if (partialTitle.isEmpty) return [];
-    
+
     final lowercaseInput = partialTitle.toLowerCase();
     return availableNotes
         .where((note) => note.title.toLowerCase().contains(lowercaseInput))
@@ -317,8 +391,9 @@ class CombinedTextHandler extends StatelessWidget {
     }
 
     // Check if we have note links
-    final hasNoteLinks = enableNoteLinkDetection && NoteLinkDetector.hasNoteLinks(text);
-    
+    final hasNoteLinks =
+        enableNoteLinkDetection && NoteLinkDetector.hasNoteLinks(text);
+
     if (hasNoteLinks) {
       return FutureBuilder<List<InlineSpan>>(
         future: _buildCombinedTextSpans(context),
@@ -330,25 +405,28 @@ class CombinedTextHandler extends StatelessWidget {
             );
           }
           // While loading, use fallback handler or plain text
-          return fallbackHandler?.call(text, textStyle) ?? Text(text, style: textStyle);
+          return fallbackHandler?.call(text, textStyle) ??
+              Text(text, style: textStyle);
         },
       );
     }
 
     // No note links, use fallback handler
-    return fallbackHandler?.call(text, textStyle) ?? Text(text, style: textStyle);
+    return fallbackHandler?.call(text, textStyle) ??
+        Text(text, style: textStyle);
   }
 
   Future<List<InlineSpan>> _buildCombinedTextSpans(BuildContext context) async {
     final List<InlineSpan> spans = [];
     final noteLinks = NoteLinkDetector.detectNoteLinks(text);
-    
+
     if (noteLinks.isEmpty) {
       // No note links, delegate to fallback handler if available
       if (fallbackHandler != null) {
         final fallbackWidget = fallbackHandler!(text, textStyle);
         if (fallbackWidget is RichText) {
-          return (fallbackWidget.text as TextSpan).children?.cast<InlineSpan>() ?? 
+          return (fallbackWidget.text as TextSpan).children
+                  ?.cast<InlineSpan>() ??
               [(fallbackWidget.text as TextSpan)];
         }
       }
@@ -360,9 +438,9 @@ class CombinedTextHandler extends StatelessWidget {
     final dbHelper = DatabaseHelper();
     final noteRepository = NoteRepository(dbHelper);
     final allNotes = await noteRepository.getAllNotes();
-    
+
     int lastIndex = 0;
-    
+
     for (final noteLink in noteLinks) {
       // Process text before the note link with fallback handler
       if (noteLink.start > lastIndex) {
@@ -370,8 +448,9 @@ class CombinedTextHandler extends StatelessWidget {
         if (fallbackHandler != null) {
           final beforeWidget = fallbackHandler!(beforeText, textStyle);
           if (beforeWidget is RichText) {
-            final beforeSpans = (beforeWidget.text as TextSpan).children?.cast<InlineSpan>() ?? 
-                              [(beforeWidget.text as TextSpan)];
+            final beforeSpans =
+                (beforeWidget.text as TextSpan).children?.cast<InlineSpan>() ??
+                [(beforeWidget.text as TextSpan)];
             spans.addAll(beforeSpans);
           } else {
             spans.add(TextSpan(text: beforeText, style: textStyle));
@@ -380,51 +459,93 @@ class CombinedTextHandler extends StatelessWidget {
           spans.add(TextSpan(text: beforeText, style: textStyle));
         }
       }
-      
+
       // Find matching notes (can be multiple)
-      final matchingNotes = allNotes.where((note) => 
-        note.title.toLowerCase().trim() == noteLink.title.toLowerCase().trim()
-      ).toList();
-      
+      final matchingNotes =
+          allNotes
+              .where(
+                (note) =>
+                    note.title.toLowerCase().trim() ==
+                    noteLink.title.toLowerCase().trim(),
+              )
+              .toList();
+
       if (matchingNotes.isNotEmpty) {
         // Add clickable note link with proper middle click support
-        spans.add(WidgetSpan(
-          child: _NoteLinkWidget(
-            text: noteLink.originalText,
-            textStyle: textStyle.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              decorationColor: Theme.of(context).colorScheme.primary,
-              decoration: TextDecoration.underline,
-              fontWeight: FontWeight.w500,
+        spans.add(
+          WidgetSpan(
+            child: _NoteLinkWidget(
+              text: noteLink.originalText,
+              textStyle: textStyle.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                decorationColor: Theme.of(context).colorScheme.primary,
+                decoration: TextDecoration.underline,
+                fontWeight: FontWeight.w500,
+              ),
+              onTap:
+                  (position) => _handleCombinedNoteLinkSelection(
+                    matchingNotes,
+                    noteLink.title,
+                    context,
+                    false,
+                    position,
+                  ),
+              onMiddleClick:
+                  (position) => _handleCombinedNoteLinkSelection(
+                    matchingNotes,
+                    noteLink.title,
+                    context,
+                    true,
+                    position,
+                  ),
             ),
-            onTap: (position) => _handleCombinedNoteLinkSelection(matchingNotes, noteLink.title, context, false, position),
-            onMiddleClick: (position) => _handleCombinedNoteLinkSelection(matchingNotes, noteLink.title, context, true, position),
           ),
-        ));
+        );
       } else {
-        // Non-existent note
-        spans.add(TextSpan(
-          text: noteLink.originalText,
-          style: textStyle.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-            decoration: TextDecoration.underline,
-            decorationStyle: TextDecorationStyle.dashed,
-            fontStyle: FontStyle.italic,
+        // Non-existent note, but make it clickable
+        spans.add(
+          WidgetSpan(
+            child: _NoteLinkWidget(
+              text: noteLink.originalText,
+              textStyle: textStyle.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                decorationColor: Theme.of(context).colorScheme.primary,
+                decoration: TextDecoration.underline,
+                fontWeight: FontWeight.w500,
+              ),
+              onTap:
+                  (position) => _handleCombinedNoteLinkSelection(
+                    matchingNotes,
+                    noteLink.title,
+                    context,
+                    false,
+                    position,
+                  ),
+              onMiddleClick:
+                  (position) => _handleCombinedNoteLinkSelection(
+                    matchingNotes,
+                    noteLink.title,
+                    context,
+                    true,
+                    position,
+                  ),
+            ),
           ),
-        ));
+        );
       }
-      
+
       lastIndex = noteLink.end;
     }
-    
+
     // Process remaining text after the last note link
     if (lastIndex < text.length) {
       final remainingText = text.substring(lastIndex);
       if (fallbackHandler != null) {
         final remainingWidget = fallbackHandler!(remainingText, textStyle);
         if (remainingWidget is RichText) {
-          final remainingSpans = (remainingWidget.text as TextSpan).children?.cast<InlineSpan>() ?? 
-                                [(remainingWidget.text as TextSpan)];
+          final remainingSpans =
+              (remainingWidget.text as TextSpan).children?.cast<InlineSpan>() ??
+              [(remainingWidget.text as TextSpan)];
           spans.addAll(remainingSpans);
         } else {
           spans.add(TextSpan(text: remainingText, style: textStyle));
@@ -433,19 +554,34 @@ class CombinedTextHandler extends StatelessWidget {
         spans.add(TextSpan(text: remainingText, style: textStyle));
       }
     }
-    
+
     return spans;
   }
 
-  void _handleCombinedNoteLinkSelection(List<Note> matchingNotes, String title, BuildContext context, bool isMiddleClick, Offset position) {
-    if (matchingNotes.isEmpty) return;
-    
+  void _handleCombinedNoteLinkSelection(
+    List<Note> matchingNotes,
+    String title,
+    BuildContext context,
+    bool isMiddleClick,
+    Offset position,
+  ) {
+    // If no matching notes exist, simply do nothing
+    if (matchingNotes.isEmpty) {
+      return;
+    }
+
     if (matchingNotes.length == 1) {
       // Only one note, open it directly
       _handleNoteLinkTap(matchingNotes.first, isMiddleClick);
     } else {
       // Multiple notes with same title, show selection context menu
-      _showCombinedNoteSelectionContextMenu(context, matchingNotes, title, isMiddleClick, position);
+      _showCombinedNoteSelectionContextMenu(
+        context,
+        matchingNotes,
+        title,
+        isMiddleClick,
+        position,
+      );
     }
   }
 
@@ -455,16 +591,23 @@ class CombinedTextHandler extends StatelessWidget {
     }
   }
 
-  void _showCombinedNoteSelectionContextMenu(BuildContext context, List<Note> notes, String title, bool isMiddleClick, Offset position) async {
+  void _showCombinedNoteSelectionContextMenu(
+    BuildContext context,
+    List<Note> notes,
+    String title,
+    bool isMiddleClick,
+    Offset position,
+  ) async {
     final List<ContextMenuItem> menuItems = [];
-    
+
     for (final note in notes) {
       final notebook = await _getCombinedNotebook(note.notebookId);
       final notebookIcon = _getCombinedNotebookIcon(notebook?.iconId);
-      
+
       menuItems.add(
         ContextMenuItem(
-          icon: note.isTask ? Icons.task_alt_rounded : Icons.description_rounded,
+          icon:
+              note.isTask ? Icons.task_alt_rounded : Icons.description_rounded,
           label: '', // No usado cuando hay customWidget
           onTap: () => _handleNoteLinkTap(note, false),
           onMiddleClick: () => _handleNoteLinkTap(note, true),
@@ -476,7 +619,9 @@ class CombinedTextHandler extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    note.isTask ? Icons.task_alt_rounded : Icons.description_rounded,
+                    note.isTask
+                        ? Icons.task_alt_rounded
+                        : Icons.description_rounded,
                     size: 20,
                     color: Theme.of(context).colorScheme.primary,
                   ),
@@ -519,7 +664,7 @@ class CombinedTextHandler extends StatelessWidget {
         ),
       );
     }
-    
+
     ContextMenuOverlay.show(
       context: context,
       tapPosition: position,
@@ -535,8 +680,11 @@ class CombinedTextHandler extends StatelessWidget {
 
   IconData _getCombinedNotebookIcon(int? iconId) {
     if (iconId == null) return Icons.folder_rounded;
-    
-    final icon = NotebookIconsRepository.icons.where((icon) => icon.id == iconId).firstOrNull;
+
+    final icon =
+        NotebookIconsRepository.icons
+            .where((icon) => icon.id == iconId)
+            .firstOrNull;
     return icon?.icon ?? Icons.folder_rounded;
   }
 }
@@ -558,7 +706,7 @@ class _NoteLinkWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Offset? tapPosition;
-    
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: Listener(
@@ -574,10 +722,7 @@ class _NoteLinkWidget extends StatelessWidget {
               onTap(tapPosition!);
             }
           },
-          child: Text(
-            text,
-            style: textStyle,
-          ),
+          child: Text(text, style: textStyle),
         ),
       ),
     );

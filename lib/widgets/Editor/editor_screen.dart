@@ -705,7 +705,9 @@ class _NotaEditorState extends State<NotaEditor>
     // Extract leading whitespace to preserve it
     final whitespaceMatch = RegExp(r'^(\s*)').firstMatch(currentLine);
     final leadingWhitespace = whitespaceMatch?.group(1) ?? '';
-    final lineWithoutWhitespace = currentLine.substring(leadingWhitespace.length);
+    final lineWithoutWhitespace = currentLine.substring(
+      leadingWhitespace.length,
+    );
 
     String prefix = '';
     bool isList = false;
@@ -774,7 +776,9 @@ class _NotaEditorState extends State<NotaEditor>
           newLine = leadingWhitespace + prefix + listItem.content;
           // Calculate the difference in prefix length
           int oldPrefixLength =
-              currentLine.length - leadingWhitespace.length - listItem.content.length;
+              currentLine.length -
+              leadingWhitespace.length -
+              listItem.content.length;
           newCursorOffset = cursorPosition + (prefix.length - oldPrefixLength);
         }
       } else {
@@ -784,8 +788,9 @@ class _NotaEditorState extends State<NotaEditor>
       }
     } else {
       // Heading
-      final headingMatch =
-          RegExp(r'^(#+)\s+(.*)$').firstMatch(lineWithoutWhitespace);
+      final headingMatch = RegExp(
+        r'^(#+)\s+(.*)$',
+      ).firstMatch(lineWithoutWhitespace);
       if (headingMatch != null) {
         final currentPrefix = '${headingMatch.group(1)!} ';
         if (currentPrefix.trim() == prefix.trim()) {
@@ -832,12 +837,12 @@ class _NotaEditorState extends State<NotaEditor>
         widget.noteController.text = newText;
         widget.onContentChanged();
       }
-      
+
       // Restore focus and selection
       _editorFocusNode.requestFocus();
     } else {
       // No selection
-      
+
       // Check if it's a line-level format (list or heading)
       if (_isLineLevelFormat(type)) {
         _toggleLineFormat(type);
@@ -926,13 +931,14 @@ class _NotaEditorState extends State<NotaEditor>
           return;
       }
 
-      final newText = text.substring(0, start) + prefix + suffix + text.substring(start);
+      final newText =
+          text.substring(0, start) + prefix + suffix + text.substring(start);
       widget.noteController.text = newText;
       widget.noteController.selection = TextSelection.collapsed(
         offset: start + cursorOffset,
       );
       widget.onContentChanged();
-      
+
       // Ensure editor has focus
       _editorFocusNode.requestFocus();
     }
@@ -1324,16 +1330,15 @@ class _NotaEditorState extends State<NotaEditor>
 
                                 _handleSave().then((_) {
                                   // Restaurar foco después del guardado si se perdió
-                                  if (hadFocus &&
-                                      !_editorFocusNode.hasFocus) {
+                                  if (hadFocus && !_editorFocusNode.hasFocus) {
                                     WidgetsBinding.instance
                                         .addPostFrameCallback((_) {
-                                      if (mounted) {
-                                        _editorFocusNode.requestFocus();
-                                        widget.noteController.selection =
-                                            currentSelection;
-                                      }
-                                    });
+                                          if (mounted) {
+                                            _editorFocusNode.requestFocus();
+                                            widget.noteController.selection =
+                                                currentSelection;
+                                          }
+                                        });
                                   }
                                 });
                               },
@@ -1369,7 +1374,9 @@ class _NotaEditorState extends State<NotaEditor>
                                 color: Theme.of(context).colorScheme.primary,
                               ),
                               onPressed: () {
-                                EditorSettings.setShowBottomBar(!_showBottomBar);
+                                EditorSettings.setShowBottomBar(
+                                  !_showBottomBar,
+                                );
                               },
                             ),
                             if (_immersiveModeService.isImmersiveMode)
@@ -1624,6 +1631,12 @@ class _NotaEditorState extends State<NotaEditor>
   /// Handles note link taps - opens note in current tab or new tab
   void _handleNoteLinkTap(Note targetNote, bool openInNewTab) {
     if (widget.tabManager == null) return;
+
+    // Skip if the note doesn't exist (notebookId -1 indicates a dummy note)
+    if (targetNote.notebookId == -1 || targetNote.id == null) {
+      return;
+    }
+
     if (openInNewTab) {
       // Open in new tab (middle click or Ctrl+click) and change notebook
       widget.tabManager!.openTabWithNotebookChange(targetNote);

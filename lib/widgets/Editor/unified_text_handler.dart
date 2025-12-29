@@ -64,15 +64,20 @@ class UnifiedTextHandler extends StatelessWidget {
     // 1. Fetch notes if needed (only once)
     List<Note> allNotes = [];
     if (enableNoteLinkDetection && NoteLinkDetector.hasNoteLinks(text)) {
-       final dbHelper = DatabaseHelper();
-       final noteRepository = NoteRepository(dbHelper);
-       allNotes = await noteRepository.getAllNotes();
+      final dbHelper = DatabaseHelper();
+      final noteRepository = NoteRepository(dbHelper);
+      allNotes = await noteRepository.getAllNotes();
     }
 
     return _buildNestedSpans(context, text, allNotes, textStyle);
   }
 
-  List<InlineSpan> _buildNestedSpans(BuildContext context, String text, List<Note> allNotes, TextStyle style) {
+  List<InlineSpan> _buildNestedSpans(
+    BuildContext context,
+    String text,
+    List<Note> allNotes,
+    TextStyle style,
+  ) {
     if (text.isEmpty) return [];
 
     final segments = FormatDetector.parseSegments(text);
@@ -94,25 +99,36 @@ class UnifiedTextHandler extends StatelessWidget {
       spans.add(_buildSegmentSpan(context, segment, allNotes, style));
       lastIndex = segment.end;
     }
-    
+
     // Remaining text
     if (lastIndex < text.length) {
-       spans.add(TextSpan(text: text.substring(lastIndex), style: style));
+      spans.add(TextSpan(text: text.substring(lastIndex), style: style));
     }
 
     return spans;
   }
 
-  InlineSpan _buildSegmentSpan(BuildContext context, FormatSegment segment, List<Note> allNotes, TextStyle baseStyle) {
+  InlineSpan _buildSegmentSpan(
+    BuildContext context,
+    FormatSegment segment,
+    List<Note> allNotes,
+    TextStyle baseStyle,
+  ) {
     switch (segment.type) {
       case FormatType.noteLink:
-        if (!enableNoteLinkDetection) return TextSpan(text: segment.originalText, style: baseStyle);
-        
+        if (!enableNoteLinkDetection) {
+          return TextSpan(text: segment.originalText, style: baseStyle);
+        }
+
         // Extract title from [[Title]]
         final title = segment.text.substring(2, segment.text.length - 2).trim();
-        final matchingNotes = allNotes.where((note) => 
-          note.title.toLowerCase().trim() == title.toLowerCase()
-        ).toList();
+        final matchingNotes =
+            allNotes
+                .where(
+                  (note) =>
+                      note.title.toLowerCase().trim() == title.toLowerCase(),
+                )
+                .toList();
 
         if (matchingNotes.isNotEmpty) {
           return WidgetSpan(
@@ -124,32 +140,73 @@ class UnifiedTextHandler extends StatelessWidget {
                 decoration: TextDecoration.underline,
                 fontWeight: FontWeight.w500,
               ),
-              onTap: (position) => _handleNoteLinkSelection(matchingNotes, title, context, false, position),
-              onMiddleClick: (position) => _handleNoteLinkSelection(matchingNotes, title, context, true, position),
+              onTap:
+                  (position) => _handleNoteLinkSelection(
+                    matchingNotes,
+                    title,
+                    context,
+                    false,
+                    position,
+                  ),
+              onMiddleClick:
+                  (position) => _handleNoteLinkSelection(
+                    matchingNotes,
+                    title,
+                    context,
+                    true,
+                    position,
+                  ),
             ),
           );
         } else {
-          return TextSpan(
-            text: segment.originalText,
-            style: baseStyle.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-              decoration: TextDecoration.underline,
-              decorationStyle: TextDecorationStyle.dashed,
-              fontStyle: FontStyle.italic,
+          // Note doesn't exist, but make it clickable to allow creation
+          return WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: _NoteLinkWidget(
+              text: segment.originalText,
+              textStyle: baseStyle.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                decoration: TextDecoration.underline,
+                fontWeight: FontWeight.w500,
+              ),
+              onTap:
+                  (position) => _handleNoteLinkSelection(
+                    matchingNotes,
+                    title,
+                    context,
+                    false,
+                    position,
+                  ),
+              onMiddleClick:
+                  (position) => _handleNoteLinkSelection(
+                    matchingNotes,
+                    title,
+                    context,
+                    true,
+                    position,
+                  ),
             ),
           );
         }
 
       case FormatType.checkboxUnchecked:
       case FormatType.checkboxChecked:
-        if (!enableListDetection) return TextSpan(text: segment.originalText, style: baseStyle);
-        
+        if (!enableListDetection) {
+          return TextSpan(text: segment.originalText, style: baseStyle);
+        }
+
         final isChecked = segment.type == FormatType.checkboxChecked;
         // Extract content: "- [ ] Content" -> "Content"
         // Regex to split: ^\s*-\s?\[\s*[xX\s]?\s*\]\s*(.+)$
-        final match = RegExp(r'^\s*-\s?\[\s*[xX\s]?\s*\]\s*(.+)$', multiLine: true).firstMatch(segment.originalText);
+        final match = RegExp(
+          r'^\s*-\s?\[\s*[xX\s]?\s*\]\s*(.+)$',
+          multiLine: true,
+        ).firstMatch(segment.originalText);
         final content = match?.group(1) ?? '';
-        segment.originalText.substring(0, segment.originalText.length - content.length);
+        segment.originalText.substring(
+          0,
+          segment.originalText.length - content.length,
+        );
 
         return TextSpan(
           children: [
@@ -159,39 +216,50 @@ class UnifiedTextHandler extends StatelessWidget {
                 color: isChecked ? Colors.grey : baseStyle.color,
                 fontWeight: FontWeight.normal,
               ),
-              recognizer: TapGestureRecognizer()
-                ..onTap = () => _toggleCheckbox(segment, isChecked),
+              recognizer:
+                  TapGestureRecognizer()
+                    ..onTap = () => _toggleCheckbox(segment, isChecked),
             ),
             ..._buildNestedSpans(
-              context, 
-              content, 
-              allNotes, 
+              context,
+              content,
+              allNotes,
               baseStyle.copyWith(
                 color: isChecked ? Colors.grey : baseStyle.color,
                 decoration: isChecked ? TextDecoration.lineThrough : null,
-              )
+              ),
             ),
-          ]
+          ],
         );
 
       case FormatType.bullet:
       case FormatType.asterisk:
-        if (!enableListDetection) return TextSpan(text: segment.originalText, style: baseStyle);
+        if (!enableListDetection) {
+          return TextSpan(text: segment.originalText, style: baseStyle);
+        }
         // Extract content
-        final match = RegExp(r'^\s*[-•*]\s+(.+)$', multiLine: true).firstMatch(segment.originalText);
+        final match = RegExp(
+          r'^\s*[-•*]\s+(.+)$',
+          multiLine: true,
+        ).firstMatch(segment.originalText);
         final content = match?.group(1) ?? '';
-        
+
         return TextSpan(
           children: [
             TextSpan(text: '• ', style: baseStyle), // Standardize bullet
             ..._buildNestedSpans(context, content, allNotes, baseStyle),
-          ]
+          ],
         );
 
       case FormatType.numbered:
-        if (!enableListDetection) return TextSpan(text: segment.originalText, style: baseStyle);
+        if (!enableListDetection) {
+          return TextSpan(text: segment.originalText, style: baseStyle);
+        }
         // Extract content
-        final match = RegExp(r'^\s*(\d+\.)\s+(.+)$', multiLine: true).firstMatch(segment.originalText);
+        final match = RegExp(
+          r'^\s*(\d+\.)\s+(.+)$',
+          multiLine: true,
+        ).firstMatch(segment.originalText);
         final marker = match?.group(1) ?? '1.';
         final content = match?.group(2) ?? '';
 
@@ -199,7 +267,7 @@ class UnifiedTextHandler extends StatelessWidget {
           children: [
             TextSpan(text: '$marker ', style: baseStyle),
             ..._buildNestedSpans(context, content, allNotes, baseStyle),
-          ]
+          ],
         );
 
       case FormatType.heading1:
@@ -207,54 +275,72 @@ class UnifiedTextHandler extends StatelessWidget {
       case FormatType.heading3:
       case FormatType.heading4:
       case FormatType.heading5:
-        if (!enableFormatDetection) return TextSpan(text: segment.originalText, style: baseStyle);
-        
+        if (!enableFormatDetection) {
+          return TextSpan(text: segment.originalText, style: baseStyle);
+        }
+
         double fontSize = baseStyle.fontSize ?? 16;
         switch (segment.type) {
-          case FormatType.heading1: fontSize *= 2.0; break;
-          case FormatType.heading2: fontSize *= 1.5; break;
-          case FormatType.heading3: fontSize *= 1.3; break;
-          case FormatType.heading4: fontSize *= 1.2; break;
-          case FormatType.heading5: fontSize *= 1.1; break;
-          default: break;
+          case FormatType.heading1:
+            fontSize *= 2.0;
+            break;
+          case FormatType.heading2:
+            fontSize *= 1.5;
+            break;
+          case FormatType.heading3:
+            fontSize *= 1.3;
+            break;
+          case FormatType.heading4:
+            fontSize *= 1.2;
+            break;
+          case FormatType.heading5:
+            fontSize *= 1.1;
+            break;
+          default:
+            break;
         }
-        
+
         final headingStyle = baseStyle.copyWith(
           fontSize: fontSize,
           fontWeight: FontWeight.bold,
         );
-        
+
         return TextSpan(
-          children: _buildNestedSpans(context, segment.text, allNotes, headingStyle),
+          children: _buildNestedSpans(
+            context,
+            segment.text,
+            allNotes,
+            headingStyle,
+          ),
         );
 
       case FormatType.bold:
         return TextSpan(
           children: _buildNestedSpans(
-            context, 
-            segment.text, 
-            allNotes, 
-            baseStyle.copyWith(fontWeight: FontWeight.bold)
+            context,
+            segment.text,
+            allNotes,
+            baseStyle.copyWith(fontWeight: FontWeight.bold),
           ),
         );
 
       case FormatType.italic:
         return TextSpan(
           children: _buildNestedSpans(
-            context, 
-            segment.text, 
-            allNotes, 
-            baseStyle.copyWith(fontStyle: FontStyle.italic)
+            context,
+            segment.text,
+            allNotes,
+            baseStyle.copyWith(fontStyle: FontStyle.italic),
           ),
         );
 
       case FormatType.strikethrough:
         return TextSpan(
           children: _buildNestedSpans(
-            context, 
-            segment.text, 
-            allNotes, 
-            baseStyle.copyWith(decoration: TextDecoration.lineThrough)
+            context,
+            segment.text,
+            allNotes,
+            baseStyle.copyWith(decoration: TextDecoration.lineThrough),
           ),
         );
 
@@ -270,8 +356,10 @@ class UnifiedTextHandler extends StatelessWidget {
 
       case FormatType.link:
       case FormatType.url:
-        if (!enableLinkDetection) return TextSpan(text: segment.originalText, style: baseStyle);
-        
+        if (!enableLinkDetection) {
+          return TextSpan(text: segment.originalText, style: baseStyle);
+        }
+
         final url = segment.data ?? segment.text;
         return TextSpan(
           text: segment.text,
@@ -279,8 +367,8 @@ class UnifiedTextHandler extends StatelessWidget {
             color: Colors.blue,
             decoration: TextDecoration.underline,
           ),
-          recognizer: TapGestureRecognizer()
-            ..onTap = () => LinkLauncher.launchURL(url),
+          recognizer:
+              TapGestureRecognizer()..onTap = () => LinkLauncher.launchURL(url),
         );
 
       default:
@@ -290,33 +378,48 @@ class UnifiedTextHandler extends StatelessWidget {
 
   void _toggleCheckbox(FormatSegment segment, bool isChecked) {
     if (onTextChanged == null) return;
-    
+
     // We have the exact range of the segment!
     // But we need to be careful: segment.start/end are relative to the text passed to parseSegments.
     // If text hasn't changed, they are valid.
-    
+
     // Replace [ ] with [x] or vice versa in the segment text
     // The segment text is the whole line "  - [ ] Content"
-    
+
     final newText = text.replaceRange(
-      segment.start, 
-      segment.end, 
+      segment.start,
+      segment.end,
       segment.originalText.replaceFirst(
-        RegExp(r'\[\s*[xX\s]?\s*\]'), 
-        isChecked ? '[ ]' : '[x]'
-      )
+        RegExp(r'\[\s*[xX\s]?\s*\]'),
+        isChecked ? '[ ]' : '[x]',
+      ),
     );
-    
+
     onTextChanged!(newText);
   }
 
-  void _handleNoteLinkSelection(List<Note> matchingNotes, String title, BuildContext context, bool isMiddleClick, Offset position) {
-    if (matchingNotes.isEmpty) return;
-    
+  void _handleNoteLinkSelection(
+    List<Note> matchingNotes,
+    String title,
+    BuildContext context,
+    bool isMiddleClick,
+    Offset position,
+  ) {
+    // If no matching notes exist, simply do nothing
+    if (matchingNotes.isEmpty) {
+      return;
+    }
+
     if (matchingNotes.length == 1) {
       _handleNoteLinkTap(matchingNotes.first, isMiddleClick);
     } else {
-      _showNoteSelectionContextMenu(context, matchingNotes, title, isMiddleClick, position);
+      _showNoteSelectionContextMenu(
+        context,
+        matchingNotes,
+        title,
+        isMiddleClick,
+        position,
+      );
     }
   }
 
@@ -326,17 +429,24 @@ class UnifiedTextHandler extends StatelessWidget {
     }
   }
 
-  void _showNoteSelectionContextMenu(BuildContext context, List<Note> notes, String title, bool isMiddleClick, Offset position) async {
+  void _showNoteSelectionContextMenu(
+    BuildContext context,
+    List<Note> notes,
+    String title,
+    bool isMiddleClick,
+    Offset position,
+  ) async {
     final List<ContextMenuItem> menuItems = [];
-    
+
     for (final note in notes) {
       final notebook = await _getNotebook(note.notebookId);
       final notebookIcon = _getNotebookIcon(notebook?.iconId);
-      
+
       menuItems.add(
         ContextMenuItem(
-          icon: note.isTask ? Icons.task_alt_rounded : Icons.description_rounded,
-          label: '', 
+          icon:
+              note.isTask ? Icons.task_alt_rounded : Icons.description_rounded,
+          label: '',
           onTap: () => _handleNoteLinkTap(note, false),
           onMiddleClick: () => _handleNoteLinkTap(note, true),
           customWidget: Column(
@@ -346,7 +456,9 @@ class UnifiedTextHandler extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    note.isTask ? Icons.task_alt_rounded : Icons.description_rounded,
+                    note.isTask
+                        ? Icons.task_alt_rounded
+                        : Icons.description_rounded,
                     size: 20,
                     color: Theme.of(context).colorScheme.primary,
                   ),
@@ -388,7 +500,7 @@ class UnifiedTextHandler extends StatelessWidget {
         ),
       );
     }
-    
+
     ContextMenuOverlay.show(
       context: context,
       tapPosition: position,
@@ -404,8 +516,11 @@ class UnifiedTextHandler extends StatelessWidget {
 
   IconData _getNotebookIcon(int? iconId) {
     if (iconId == null) return Icons.folder_rounded;
-    
-    final icon = NotebookIconsRepository.icons.where((icon) => icon.id == iconId).firstOrNull;
+
+    final icon =
+        NotebookIconsRepository.icons
+            .where((icon) => icon.id == iconId)
+            .firstOrNull;
     return icon?.icon ?? Icons.folder_rounded;
   }
 }
@@ -427,7 +542,7 @@ class _NoteLinkWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Offset? tapPosition;
-    
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: Listener(
@@ -443,10 +558,7 @@ class _NoteLinkWidget extends StatelessWidget {
               onTap(tapPosition!);
             }
           },
-          child: Text(
-            text,
-            style: textStyle,
-          ),
+          child: Text(text, style: textStyle),
         ),
       ),
     );
