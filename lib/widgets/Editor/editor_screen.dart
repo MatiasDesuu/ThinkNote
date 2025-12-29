@@ -18,6 +18,8 @@ import '../context_menu.dart';
 import 'unified_text_handler.dart';
 import 'list_continuation_handler.dart';
 import 'search_handler.dart';
+import 'editor_bottom_bar.dart';
+import 'format_handler.dart';
 import '../../services/tab_manager.dart';
 import 'note_statistics_dialog.dart';
 
@@ -81,6 +83,7 @@ class _NotaEditorState extends State<NotaEditor>
   bool _useThemeFontColor = true;
   String _fontFamily = 'Roboto';
   bool _isAutoSaveEnabled = true;
+  bool _showBottomBar = true;
   StreamSubscription? _fontSizeSubscription;
   StreamSubscription? _lineSpacingSubscription;
   StreamSubscription? _fontColorSubscription;
@@ -88,8 +91,10 @@ class _NotaEditorState extends State<NotaEditor>
   StreamSubscription? _editorCenteredSubscription;
   StreamSubscription? _autoSaveEnabledSubscription;
   StreamSubscription? _wordsPerSecondSubscription;
+  StreamSubscription? _showBottomBarSubscription;
   late ImmersiveModeService _immersiveModeService;
   late SearchManager _searchManager;
+  final UndoHistoryController _undoController = UndoHistoryController();
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _exportButtonKey = GlobalKey();
 
@@ -250,6 +255,7 @@ class _NotaEditorState extends State<NotaEditor>
     _scriptDetectionDebouncer?.cancel();
     _autoSaveDebounce?.cancel();
     _saveController.dispose();
+    _undoController.dispose();
     _editorFocusNode.dispose();
     _findBarFocusNode.dispose();
     _findController.dispose();
@@ -473,6 +479,7 @@ class _NotaEditorState extends State<NotaEditor>
     _fontFamilySubscription?.cancel();
     _editorCenteredSubscription?.cancel();
     _autoSaveEnabledSubscription?.cancel();
+    _showBottomBarSubscription?.cancel();
 
     _wordsPerSecondSubscription = EditorSettingsEvents.wordsPerSecondStream
         .listen((wps) {
@@ -533,6 +540,15 @@ class _NotaEditorState extends State<NotaEditor>
           if (mounted) {
             setState(() {
               _isAutoSaveEnabled = isEnabled;
+            });
+          }
+        });
+
+    _showBottomBarSubscription = EditorSettingsEvents.showBottomBarStream
+        .listen((show) {
+          if (mounted) {
+            setState(() {
+              _showBottomBar = show;
             });
           }
         });
@@ -659,6 +675,121 @@ class _NotaEditorState extends State<NotaEditor>
     }
   }
 
+  void _handleFormat(FormatType type) {
+    final selection = widget.noteController.selection;
+    if (!selection.isValid) return;
+
+    if (!selection.isCollapsed) {
+      final text = widget.noteController.text;
+      final newText = FormatUtils.toggleFormat(
+        text,
+        selection.start,
+        selection.end,
+        type,
+      );
+
+      if (newText != text) {
+        widget.noteController.text = newText;
+        widget.onContentChanged();
+      }
+      
+      // Restore focus and selection
+      _editorFocusNode.requestFocus();
+    } else {
+      // No selection, insert empty format markers and place cursor inside
+      final text = widget.noteController.text;
+      final start = selection.start;
+      String prefix = '';
+      String suffix = '';
+      int cursorOffset = 0;
+
+      switch (type) {
+        case FormatType.bold:
+          prefix = '**';
+          suffix = '**';
+          cursorOffset = 2;
+          break;
+        case FormatType.italic:
+          prefix = '*';
+          suffix = '*';
+          cursorOffset = 1;
+          break;
+        case FormatType.strikethrough:
+          prefix = '~~';
+          suffix = '~~';
+          cursorOffset = 2;
+          break;
+        case FormatType.code:
+          prefix = '`';
+          suffix = '`';
+          cursorOffset = 1;
+          break;
+        case FormatType.heading1:
+          prefix = '# ';
+          cursorOffset = 2;
+          break;
+        case FormatType.heading2:
+          prefix = '## ';
+          cursorOffset = 3;
+          break;
+        case FormatType.heading3:
+          prefix = '### ';
+          cursorOffset = 4;
+          break;
+        case FormatType.heading4:
+          prefix = '#### ';
+          cursorOffset = 5;
+          break;
+        case FormatType.heading5:
+          prefix = '##### ';
+          cursorOffset = 6;
+          break;
+        case FormatType.numbered:
+          prefix = '1. ';
+          cursorOffset = 3;
+          break;
+        case FormatType.bullet:
+          prefix = '- ';
+          cursorOffset = 2;
+          break;
+        case FormatType.asterisk:
+          prefix = '* ';
+          cursorOffset = 2;
+          break;
+        case FormatType.checkboxUnchecked:
+          prefix = '[ ] ';
+          cursorOffset = 4;
+          break;
+        case FormatType.checkboxChecked:
+          prefix = '[x] ';
+          cursorOffset = 4;
+          break;
+        case FormatType.noteLink:
+          prefix = '[[';
+          suffix = ']]';
+          cursorOffset = 2;
+          break;
+        case FormatType.link:
+          prefix = '[';
+          suffix = ']()';
+          cursorOffset = 1;
+          break;
+        default:
+          return;
+      }
+
+      final newText = text.substring(0, start) + prefix + suffix + text.substring(start);
+      widget.noteController.text = newText;
+      widget.noteController.selection = TextSelection.collapsed(
+        offset: start + cursorOffset,
+      );
+      widget.onContentChanged();
+      
+      // Ensure editor has focus
+      _editorFocusNode.requestFocus();
+    }
+  }
+
   void _handleFindInEditor() {
     if (_isReadMode) return; // Don't show find bar in read mode
 
@@ -729,6 +860,7 @@ class _NotaEditorState extends State<NotaEditor>
         _fontColor = cache.useThemeFontColor ? null : cache.fontColor;
         _fontFamily = cache.fontFamily;
         _isAutoSaveEnabled = cache.isAutoSaveEnabled;
+        _showBottomBar = cache.showBottomBar;
       });
       _isEditorSettingsLoaded = true;
     }
@@ -743,6 +875,7 @@ class _NotaEditorState extends State<NotaEditor>
       _fontColor = cache.useThemeFontColor ? null : cache.fontColor;
       _fontFamily = cache.fontFamily;
       _isAutoSaveEnabled = cache.isAutoSaveEnabled;
+      _showBottomBar = cache.showBottomBar;
     });
     _isEditorSettingsLoaded = true;
   }
@@ -757,6 +890,7 @@ class _NotaEditorState extends State<NotaEditor>
         _fontColor = cache.useThemeFontColor ? null : cache.fontColor;
         _fontFamily = cache.fontFamily;
         _isAutoSaveEnabled = cache.isAutoSaveEnabled;
+        _showBottomBar = cache.showBottomBar;
       });
     }
   }
@@ -1032,7 +1166,6 @@ class _NotaEditorState extends State<NotaEditor>
                                   content: widget.noteController.text,
                                 ),
                               ),
-                            const SizedBox(width: 8),
                             SaveButton(
                               controller: _saveController,
                               onPressed: () {
@@ -1043,15 +1176,16 @@ class _NotaEditorState extends State<NotaEditor>
 
                                 _handleSave().then((_) {
                                   // Restaurar foco después del guardado si se perdió
-                                  if (hadFocus && !_editorFocusNode.hasFocus) {
+                                  if (hadFocus &&
+                                      !_editorFocusNode.hasFocus) {
                                     WidgetsBinding.instance
                                         .addPostFrameCallback((_) {
-                                          if (mounted) {
-                                            _editorFocusNode.requestFocus();
-                                            widget.noteController.selection =
-                                                currentSelection;
-                                          }
-                                        });
+                                      if (mounted) {
+                                        _editorFocusNode.requestFocus();
+                                        widget.noteController.selection =
+                                            currentSelection;
+                                      }
+                                    });
                                   }
                                 });
                               },
@@ -1079,6 +1213,17 @@ class _NotaEditorState extends State<NotaEditor>
                                   onPressed: widget.onToggleEditorCentered,
                                 ),
                               ),
+                            IconButton(
+                              icon: Icon(
+                                _showBottomBar
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.keyboard_arrow_down_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              onPressed: () {
+                                EditorSettings.setShowBottomBar(!_showBottomBar);
+                              },
+                            ),
                             if (_immersiveModeService.isImmersiveMode)
                               IconButton(
                                 icon: Icon(
@@ -1103,6 +1248,21 @@ class _NotaEditorState extends State<NotaEditor>
                       ),
                     ),
                   ),
+                  if (_showBottomBar)
+                    EditorBottomBar(
+                      onUndo: () {
+                        if (_undoController.value.canUndo) {
+                          _undoController.undo();
+                        }
+                      },
+                      onRedo: () {
+                        if (_undoController.value.canRedo) {
+                          _undoController.redo();
+                        }
+                      },
+                      onFormatTap: _handleFormat,
+                      isReadMode: _isReadMode,
+                    ),
 
                   // Editor content - with centered padding when needed
                   Expanded(
@@ -1254,6 +1414,7 @@ class _NotaEditorState extends State<NotaEditor>
       },
       child: HighlightedTextField(
         controller: widget.noteController,
+        undoController: _undoController,
         focusNode: _editorFocusNode,
         textStyle: _textStyle,
         hintText: 'Start writing...',

@@ -35,6 +35,7 @@ class EditorSettingsCache {
   bool? _expandNotebooksOnSelection;
   bool? _expandNotebooksOnNoteOpen;
   double? _wordsPerSecond;
+  bool? _showBottomBar;
 
   double get fontSize => _fontSize ?? EditorSettings.defaultFontSize;
   double get lineSpacing => _lineSpacing ?? EditorSettings.defaultLineSpacing;
@@ -63,6 +64,7 @@ class EditorSettingsCache {
       EditorSettings.defaultExpandNotebooksOnNoteOpen;
   double get wordsPerSecond =>
       _wordsPerSecond ?? EditorSettings.defaultWordsPerSecond;
+  bool get showBottomBar => _showBottomBar ?? EditorSettings.defaultShowBottomBar;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -83,6 +85,7 @@ class EditorSettingsCache {
         EditorSettings.getExpandNotebooksOnSelection(),
         EditorSettings.getExpandNotebooksOnNoteOpen(),
         EditorSettings.getWordsPerSecond(),
+        EditorSettings.getShowBottomBar(),
       ]);
 
       _fontSize = results[0] as double;
@@ -99,6 +102,7 @@ class EditorSettingsCache {
       _expandNotebooksOnSelection = results[11] as bool;
       _expandNotebooksOnNoteOpen = results[12] as bool;
       _wordsPerSecond = results[13] as double;
+      _showBottomBar = results[14] as bool;
       _isInitialized = true;
     } catch (e) {
       print('Error initializing editor settings cache: $e');
@@ -119,6 +123,7 @@ class EditorSettingsCache {
       _expandNotebooksOnNoteOpen =
           EditorSettings.defaultExpandNotebooksOnNoteOpen;
       _wordsPerSecond = EditorSettings.defaultWordsPerSecond;
+      _showBottomBar = EditorSettings.defaultShowBottomBar;
       _isInitialized = true;
     }
   }
@@ -182,6 +187,10 @@ class EditorSettingsCache {
   void updateWordsPerSecond(double wps) {
     _wordsPerSecond = wps;
   }
+
+  void updateShowBottomBar(bool show) {
+    _showBottomBar = show;
+  }
 }
 
 // Eventos de configuración
@@ -203,6 +212,7 @@ class EditorSettingsEvents {
   static final _expandNotebooksOnNoteOpenController =
       StreamController<bool>.broadcast();
   static final _wordsPerSecondController = StreamController<double>.broadcast();
+  static final _showBottomBarController = StreamController<bool>.broadcast();
 
   static Stream<double> get fontSizeStream => _fontSizeController.stream;
   static Stream<double> get lineSpacingStream => _lineSpacingController.stream;
@@ -226,6 +236,8 @@ class EditorSettingsEvents {
       _expandNotebooksOnNoteOpenController.stream;
   static Stream<double> get wordsPerSecondStream =>
       _wordsPerSecondController.stream;
+  static Stream<bool> get showBottomBarStream =>
+      _showBottomBarController.stream;
 
   static void notifyFontSizeChanged(double size) {
     _fontSizeController.add(size);
@@ -279,6 +291,10 @@ class EditorSettingsEvents {
     _wordsPerSecondController.add(wps);
   }
 
+  static void notifyShowBottomBarChanged(bool show) {
+    _showBottomBarController.add(show);
+  }
+
   static void dispose() {
     _fontSizeController.close();
     _lineSpacingController.close();
@@ -313,6 +329,7 @@ class EditorSettings {
   static const String _expandNotebooksOnNoteOpenKey =
       'expand_notebooks_on_note_open';
   static const String _wordsPerSecondKey = 'words_per_second';
+  static const String _showBottomBarKey = 'show_editor_bottom_bar';
   static const double defaultLineSpacing = 1.0;
 
   // Default values
@@ -329,6 +346,7 @@ class EditorSettings {
   static const bool defaultExpandNotebooksOnSelection = true;
   static const bool defaultExpandNotebooksOnNoteOpen = true;
   static const double defaultWordsPerSecond = 5.0;
+  static const bool defaultShowBottomBar = true;
 
   // Fuentes disponibles
   static const List<String> availableFonts = [
@@ -559,6 +577,18 @@ class EditorSettings {
     EditorSettingsEvents.notifyWordsPerSecondChanged(value);
   }
 
+  // Get show bottom bar setting
+  static Future<bool> getShowBottomBar() async {
+    return await PlatformSettings.get(_showBottomBarKey, defaultShowBottomBar);
+  }
+
+  // Save show bottom bar setting
+  static Future<void> setShowBottomBar(bool value) async {
+    await PlatformSettings.set(_showBottomBarKey, value);
+    EditorSettingsCache.instance.updateShowBottomBar(value);
+    EditorSettingsEvents.notifyShowBottomBarChanged(value);
+  }
+
   // Método para precargar todas las configuraciones del editor
   static Future<void> preloadSettings() async {
     await EditorSettingsCache.instance.initialize();
@@ -587,6 +617,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
   bool _expandNotebooksOnSelection = true;
   bool _expandNotebooksOnNoteOpen = true;
   double _wordsPerSecond = 5.0;
+  bool _showBottomBar = true;
   bool _isLoading = true;
 
   @override
@@ -612,6 +643,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
     final expandNotebooksOnNoteOpen =
         await EditorSettings.getExpandNotebooksOnNoteOpen();
     final wordsPerSecond = await EditorSettings.getWordsPerSecond();
+    final showBottomBar = await EditorSettings.getShowBottomBar();
     setState(() {
       _fontSize = fontSize;
       _lineSpacing = lineSpacing;
@@ -627,6 +659,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
       _expandNotebooksOnSelection = expandNotebooksOnSelection;
       _expandNotebooksOnNoteOpen = expandNotebooksOnNoteOpen;
       _wordsPerSecond = wordsPerSecond;
+      _showBottomBar = showBottomBar;
       _isLoading = false;
     });
   }
@@ -717,6 +750,12 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
     EditorSettingsEvents.notifyWordsPerSecondChanged(value);
   }
 
+  Future<void> _updateShowBottomBar(bool value) async {
+    setState(() => _showBottomBar = value);
+    await EditorSettings.setShowBottomBar(value);
+    EditorSettingsEvents.notifyShowBottomBarChanged(value);
+  }
+
   void _showFontSelector() {
     showDialog(
       context: context,
@@ -802,6 +841,34 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                     Switch(
                       value: _isEditorCentered,
                       onChanged: _updateEditorCentered,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Show Editor Bottom Bar
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Show editor toolbar', style: textStyle),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Display the formatting toolbar in the editor',
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: _showBottomBar,
+                      onChanged: _updateShowBottomBar,
                     ),
                   ],
                 ),

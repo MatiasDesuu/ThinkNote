@@ -280,11 +280,11 @@ class UnifiedTextHandler extends StatelessWidget {
       
       // Add the clickable link
       spans.add(TextSpan(
-        text: link.originalText,
+        text: link.text,
         style: style.copyWith(
           color: Theme.of(context).colorScheme.primary,
           decorationColor: Theme.of(context).colorScheme.primary,
-          decoration: TextDecoration.none,
+          decoration: TextDecoration.underline,
           fontWeight: FontWeight.w600,
         ),
         recognizer: TapGestureRecognizer()
@@ -666,11 +666,11 @@ class _EnhancedListHandlerWithLinks extends StatelessWidget {
       
       // Add the clickable link
       spans.add(TextSpan(
-        text: link.originalText,
+        text: link.text,
         style: style.copyWith(
           color: Theme.of(context).colorScheme.primary,
           decorationColor: Theme.of(context).colorScheme.primary,
-          decoration: TextDecoration.none,
+          decoration: TextDecoration.underline,
           fontWeight: FontWeight.w600,
         ),
         recognizer: TapGestureRecognizer()

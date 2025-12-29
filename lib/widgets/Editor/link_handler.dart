@@ -53,11 +53,11 @@ class LinkHandler extends StatelessWidget {
       
       // Add the clickable link
       spans.add(TextSpan(
-        text: link.originalText,
+        text: link.text,
         style: textStyle.copyWith(
           color: Theme.of(context).colorScheme.primary,
           decorationColor: Theme.of(context).colorScheme.primary,
-          decoration: TextDecoration.none,
+          decoration: TextDecoration.underline,
         ),
         recognizer: TapGestureRecognizer()
           ..onTap = () => _handleLinkTap(link.url),
@@ -93,27 +93,58 @@ class LinkDetector {
     r'(?:https?://|www\.)[^\s<>"{}|\\^`[\]]+',
     caseSensitive: false,
   );
+  
+  // Regex for markdown links [Name](url)
+  static final RegExp _markdownLinkRegex = RegExp(r'\[([^\]]+)\]\(([^)]+)\)');
 
   /// Detects all URLs in the given text and returns their positions
   static List<LinkMatch> detectLinks(String text) {
     final List<LinkMatch> links = [];
-    final matches = _extendedUrlRegex.allMatches(text);
     
-    for (final match in matches) {
-      String url = match.group(0)!;
-      
-      // Add protocol if missing for www. links
-      if (url.startsWith('www.')) {
-        url = 'https://$url';
-      }
-      
+    // 1. Detect Markdown links first (they take precedence)
+    final markdownMatches = _markdownLinkRegex.allMatches(text);
+    for (final match in markdownMatches) {
       links.add(LinkMatch(
-        url: url,
+        url: match.group(2)!,
         originalText: match.group(0)!,
+        displayText: match.group(1)!,
         start: match.start,
         end: match.end,
       ));
     }
+
+    // 2. Detect raw URLs
+    final urlMatches = _extendedUrlRegex.allMatches(text);
+    
+    for (final match in urlMatches) {
+      // Check if this URL overlaps with any already detected markdown link
+      bool overlaps = false;
+      for (final link in links) {
+        if (match.start < link.end && match.end > link.start) {
+          overlaps = true;
+          break;
+        }
+      }
+      
+      if (!overlaps) {
+        String url = match.group(0)!;
+        
+        // Add protocol if missing for www. links
+        if (url.startsWith('www.')) {
+          url = 'https://$url';
+        }
+        
+        links.add(LinkMatch(
+          url: url,
+          originalText: match.group(0)!,
+          start: match.start,
+          end: match.end,
+        ));
+      }
+    }
+    
+    // Sort by start position
+    links.sort((a, b) => a.start.compareTo(b.start));
     
     return links;
   }
@@ -138,19 +169,23 @@ class LinkDetector {
 class LinkMatch {
   final String url;
   final String originalText;
+  final String? displayText;
   final int start;
   final int end;
 
   const LinkMatch({
     required this.url,
     required this.originalText,
+    this.displayText,
     required this.start,
     required this.end,
   });
 
+  String get text => displayText ?? originalText;
+
   @override
   String toString() {
-    return 'LinkMatch(url: $url, start: $start, end: $end)';
+    return 'LinkMatch(url: $url, text: $text, start: $start, end: $end)';
   }
 }
 

@@ -242,6 +242,7 @@ class SearchManager {
 /// Widget that provides highlighted text field with search functionality
 class HighlightedTextField extends StatelessWidget {
   final TextEditingController controller;
+  final UndoHistoryController? undoController;
   final FocusNode focusNode;
   final TextStyle textStyle;
   final String hintText;
@@ -253,6 +254,7 @@ class HighlightedTextField extends StatelessWidget {
   const HighlightedTextField({
     super.key,
     required this.controller,
+    this.undoController,
     required this.focusNode,
     required this.textStyle,
     required this.hintText,
@@ -271,6 +273,7 @@ class HighlightedTextField extends StatelessWidget {
         !searchManager!.hasMatches) {
       return TextField(
         controller: controller,
+        undoController: undoController,
         focusNode: focusNode,
         style: textStyle,
         maxLines: null,
@@ -296,6 +299,7 @@ class HighlightedTextField extends StatelessWidget {
           // Main TextField for editing
           TextField(
             controller: controller,
+            undoController: undoController,
             focusNode: focusNode,
             style: textStyle,
             maxLines: null,

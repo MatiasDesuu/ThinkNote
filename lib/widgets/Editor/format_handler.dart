@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// A widget that detects and formats markdown text formatting
-class FormatHandler extends StatelessWidget {
+class FormatHandler extends StatefulWidget {
   final String text;
   final TextStyle textStyle;
   final bool enableFormatDetection;
@@ -14,10 +16,32 @@ class FormatHandler extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    if (!enableFormatDetection || text.isEmpty) {
-      return Text(text, style: textStyle);
+  State<FormatHandler> createState() => _FormatHandlerState();
+}
+
+class _FormatHandlerState extends State<FormatHandler> {
+  final List<TapGestureRecognizer> _recognizers = [];
+
+  @override
+  void dispose() {
+    for (final recognizer in _recognizers) {
+      recognizer.dispose();
     }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.enableFormatDetection || widget.text.isEmpty) {
+      return Text(widget.text, style: widget.textStyle);
+    }
+    
+    // Dispose old recognizers before building new ones
+    for (final recognizer in _recognizers) {
+      recognizer.dispose();
+    }
+    _recognizers.clear();
+
     final spans = _buildTextSpansWithFormatting(context);
     return RichText(
       text: TextSpan(children: spans),
@@ -26,7 +50,12 @@ class FormatHandler extends StatelessWidget {
   }
 
   List<TextSpan> _buildTextSpansWithFormatting(BuildContext context) {
-    return FormatDetector.buildFormattedSpans(text, textStyle, context);
+    return FormatDetector.buildFormattedSpans(
+      widget.text, 
+      widget.textStyle, 
+      context,
+      recognizers: _recognizers,
+    );
   }
 }
 
@@ -41,6 +70,13 @@ enum FormatType {
   heading3,    // ### text
   heading4,    // #### text
   heading5,    // ##### text
+  numbered,    // 1. text
+  bullet,      // - text
+  asterisk,    // * text
+  checkboxUnchecked, // [ ] text
+  checkboxChecked,   // [x] text
+  noteLink,          // [[text]]
+  link,              // [text](url)
   normal,      // regular text
 }
 
@@ -51,6 +87,7 @@ class FormatSegment {
   final String originalText;
   final int start;
   final int end;
+  final String? data; // Extra data like URL for links
 
   const FormatSegment({
     required this.type,
@@ -58,11 +95,12 @@ class FormatSegment {
     required this.originalText,
     required this.start,
     required this.end,
+    this.data,
   });
 
   @override
   String toString() {
-    return 'FormatSegment(type: $type, text: $text, start: $start, end: $end)';
+    return 'FormatSegment(type: $type, text: $text, start: $start, end: $end, data: $data)';
   }
 }
 
@@ -78,9 +116,21 @@ class FormatDetector {
   static final RegExp _heading3Regex = RegExp(r'^###\s+(.+)$', multiLine: true);
   static final RegExp _heading4Regex = RegExp(r'^####\s+(.+)$', multiLine: true);
   static final RegExp _heading5Regex = RegExp(r'^#####\s+(.+)$', multiLine: true);
+  static final RegExp _numberedRegex = RegExp(r'^\d+\.\s+(.+)$', multiLine: true);
+  static final RegExp _bulletRegex = RegExp(r'^- \s+(.+)$|^-\s+(.+)$', multiLine: true);
+  static final RegExp _asteriskRegex = RegExp(r'^\*\s+(.+)$', multiLine: true);
+  static final RegExp _checkboxUncheckedRegex = RegExp(r'^\[ \]\s+(.+)$', multiLine: true);
+  static final RegExp _checkboxCheckedRegex = RegExp(r'^\[x\]\s+(.+)$', multiLine: true);
+  static final RegExp _noteLinkRegex = RegExp(r'\[\[([^\[\]]+)\]\]');
+  static final RegExp _linkRegex = RegExp(r'\[([^\]]+)\]\(([^)]+)\)');
   
   /// Builds formatted text spans from markdown text
-  static List<TextSpan> buildFormattedSpans(String text, TextStyle baseStyle, BuildContext context) {
+  static List<TextSpan> buildFormattedSpans(
+    String text, 
+    TextStyle baseStyle, 
+    BuildContext context,
+    {List<TapGestureRecognizer>? recognizers}
+  ) {
     if (text.isEmpty) {
       return [TextSpan(text: text, style: baseStyle)];
     }
@@ -94,16 +144,16 @@ class FormatDetector {
       if (segment.start > lastIndex) {
         final beforeText = text.substring(lastIndex, segment.start);
         if (beforeText.isNotEmpty) {
-          spans.addAll(_buildNestedFormattedSpans(beforeText, baseStyle, context));
+          spans.addAll(_buildNestedFormattedSpans(beforeText, baseStyle, context, recognizers: recognizers));
         }
       }
-      spans.add(_buildFormattedSpan(segment, baseStyle, context));
+      spans.add(_buildFormattedSpan(segment, baseStyle, context, recognizers: recognizers));
       lastIndex = segment.end;
     }
     if (lastIndex < text.length) {
       final remainingText = text.substring(lastIndex);
       if (remainingText.isNotEmpty) {
-        spans.addAll(_buildNestedFormattedSpans(remainingText, baseStyle, context));
+        spans.addAll(_buildNestedFormattedSpans(remainingText, baseStyle, context, recognizers: recognizers));
       }
     }
     return spans.isNotEmpty ? spans : [TextSpan(text: text, style: baseStyle)];
@@ -123,6 +173,13 @@ class FormatDetector {
     final heading3Matches = _heading3Regex.allMatches(text);
     final heading4Matches = _heading4Regex.allMatches(text);
     final heading5Matches = _heading5Regex.allMatches(text);
+    final numberedMatches = _numberedRegex.allMatches(text);
+    final bulletMatches = _bulletRegex.allMatches(text);
+    final asteriskMatches = _asteriskRegex.allMatches(text);
+    final checkboxUncheckedMatches = _checkboxUncheckedRegex.allMatches(text);
+    final checkboxCheckedMatches = _checkboxCheckedRegex.allMatches(text);
+    final noteLinkMatches = _noteLinkRegex.allMatches(text);
+    final linkMatches = _linkRegex.allMatches(text);
 
     // Process heading matches first (they take precedence over inline formatting)
     for (final match in heading1Matches) {
@@ -190,6 +247,72 @@ class FormatDetector {
       }
     }
 
+    // Process list matches
+    for (final match in numberedMatches) {
+      final content = match.group(1) ?? '';
+      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
+        segments.add(FormatSegment(
+          type: FormatType.numbered,
+          text: match.group(0)!,
+          originalText: match.group(0)!,
+          start: match.start,
+          end: match.end,
+        ));
+      }
+    }
+
+    for (final match in bulletMatches) {
+      final content = match.group(1) ?? match.group(2) ?? '';
+      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
+        segments.add(FormatSegment(
+          type: FormatType.bullet,
+          text: match.group(0)!,
+          originalText: match.group(0)!,
+          start: match.start,
+          end: match.end,
+        ));
+      }
+    }
+
+    for (final match in asteriskMatches) {
+      final content = match.group(1) ?? '';
+      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
+        segments.add(FormatSegment(
+          type: FormatType.asterisk,
+          text: match.group(0)!,
+          originalText: match.group(0)!,
+          start: match.start,
+          end: match.end,
+        ));
+      }
+    }
+
+    for (final match in checkboxUncheckedMatches) {
+      final content = match.group(1) ?? '';
+      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
+        segments.add(FormatSegment(
+          type: FormatType.checkboxUnchecked,
+          text: match.group(0)!,
+          originalText: match.group(0)!,
+          start: match.start,
+          end: match.end,
+        ));
+      }
+    }
+
+    for (final match in checkboxCheckedMatches) {
+      final content = match.group(1) ?? '';
+      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
+        segments.add(FormatSegment(
+          type: FormatType.checkboxChecked,
+          text: match.group(0)!,
+          originalText: match.group(0)!,
+          start: match.start,
+          end: match.end,
+        ));
+      }
+    }
+
     // Process bold matches
     for (final match in boldMatches) {
       final content = match.group(1) ?? match.group(2) ?? '';
@@ -246,6 +369,36 @@ class FormatDetector {
       }
     }
 
+    // Process note link matches
+    for (final match in noteLinkMatches) {
+      final content = match.group(1) ?? '';
+      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
+        segments.add(FormatSegment(
+          type: FormatType.noteLink,
+          text: match.group(0)!, // Keep the brackets for display in this general formatter
+          originalText: match.group(0)!,
+          start: match.start,
+          end: match.end,
+        ));
+      }
+    }
+
+    // Process standard link matches
+    for (final match in linkMatches) {
+      final name = match.group(1) ?? '';
+      final url = match.group(2) ?? '';
+      if (name.isNotEmpty && !_isOverlapping(match, segments)) {
+        segments.add(FormatSegment(
+          type: FormatType.link,
+          text: name, // Display text is just the name
+          originalText: match.group(0)!,
+          start: match.start,
+          end: match.end,
+          data: url, // Store URL
+        ));
+      }
+    }
+
     // Sort segments by start position
     segments.sort((a, b) => a.start.compareTo(b.start));
     
@@ -263,8 +416,14 @@ class FormatDetector {
   }
 
   /// Builds a formatted TextSpan for a segment
-  static TextSpan _buildFormattedSpan(FormatSegment segment, TextStyle baseStyle, BuildContext context) {
+  static TextSpan _buildFormattedSpan(
+    FormatSegment segment, 
+    TextStyle baseStyle, 
+    BuildContext context,
+    {List<TapGestureRecognizer>? recognizers}
+  ) {
     TextStyle style = baseStyle;
+    TapGestureRecognizer? recognizer;
     
     switch (segment.type) {
       case FormatType.bold:
@@ -319,6 +478,34 @@ class FormatDetector {
           fontWeight: FontWeight.bold,
         );
         break;
+      case FormatType.noteLink:
+        style = baseStyle.copyWith(
+          color: Theme.of(context).colorScheme.primary,
+          decoration: TextDecoration.underline,
+          fontWeight: FontWeight.w500,
+        );
+        break;
+      case FormatType.link:
+        style = baseStyle.copyWith(
+          color: Colors.blue,
+          decoration: TextDecoration.underline,
+        );
+        if (segment.data != null && recognizers != null) {
+          recognizer = TapGestureRecognizer()
+            ..onTap = () async {
+              final url = Uri.parse(segment.data!);
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url);
+              }
+            };
+          recognizers.add(recognizer);
+        }
+        break;
+      case FormatType.numbered:
+      case FormatType.bullet:
+      case FormatType.asterisk:
+      case FormatType.checkboxUnchecked:
+      case FormatType.checkboxChecked:
       case FormatType.normal:
         style = baseStyle;
         break;
@@ -327,11 +514,17 @@ class FormatDetector {
     return TextSpan(
       text: segment.text,
       style: style,
+      recognizer: recognizer,
     );
   }
 
   /// Builds nested formatted spans for text that may contain multiple formats
-  static List<TextSpan> _buildNestedFormattedSpans(String text, TextStyle baseStyle, BuildContext context) {
+  static List<TextSpan> _buildNestedFormattedSpans(
+    String text, 
+    TextStyle baseStyle, 
+    BuildContext context,
+    {List<TapGestureRecognizer>? recognizers}
+  ) {
     final segments = _parseFormatSegments(text);
     if (segments.isEmpty) {
       return [TextSpan(text: text, style: baseStyle)];
@@ -345,7 +538,7 @@ class FormatDetector {
           spans.add(TextSpan(text: beforeText, style: baseStyle));
         }
       }
-      spans.add(_buildFormattedSpan(segment, baseStyle, context));
+      spans.add(_buildFormattedSpan(segment, baseStyle, context, recognizers: recognizers));
       lastIndex = segment.end;
     }
     if (lastIndex < text.length) {
@@ -367,7 +560,9 @@ class FormatDetector {
            _heading2Regex.hasMatch(text) ||
            _heading3Regex.hasMatch(text) ||
            _heading4Regex.hasMatch(text) ||
-           _heading5Regex.hasMatch(text);
+           _heading5Regex.hasMatch(text) ||
+           _noteLinkRegex.hasMatch(text) ||
+           _linkRegex.hasMatch(text);
   }
 
   /// Strips all markdown formatting from text
@@ -381,7 +576,14 @@ class FormatDetector {
         .replaceAll(_heading2Regex, r'$1')
         .replaceAll(_heading3Regex, r'$1')
         .replaceAll(_heading4Regex, r'$1')
-        .replaceAll(_heading5Regex, r'$1');
+        .replaceAll(_heading5Regex, r'$1')
+        .replaceAll(_numberedRegex, r'$1')
+        .replaceAll(_bulletRegex, r'$1$2')
+        .replaceAll(_asteriskRegex, r'$1')
+        .replaceAll(_checkboxUncheckedRegex, r'$1')
+        .replaceAll(_checkboxCheckedRegex, r'$1')
+        .replaceAll(_noteLinkRegex, r'$1')
+        .replaceAll(_linkRegex, r'$1');
   }
 
   /// Gets statistics about formatting in the text
@@ -523,6 +725,27 @@ class FormatUtils {
       case FormatType.heading5:
         wrappedText = '##### $selectedText';
         break;
+      case FormatType.numbered:
+        wrappedText = '1. $selectedText';
+        break;
+      case FormatType.bullet:
+        wrappedText = '- $selectedText';
+        break;
+      case FormatType.asterisk:
+        wrappedText = '* $selectedText';
+        break;
+      case FormatType.checkboxUnchecked:
+        wrappedText = '[ ] $selectedText';
+        break;
+      case FormatType.checkboxChecked:
+        wrappedText = '[x] $selectedText';
+        break;
+      case FormatType.noteLink:
+        wrappedText = '[[$selectedText]]';
+        break;
+      case FormatType.link:
+        wrappedText = '[$selectedText]()';
+        break;
       case FormatType.normal:
         wrappedText = selectedText;
         break;
@@ -582,6 +805,20 @@ class FormatUtils {
         return RegExp(r'^####\s+.*$').hasMatch(text);
       case FormatType.heading5:
         return RegExp(r'^#####\s+.*$').hasMatch(text);
+      case FormatType.numbered:
+        return RegExp(r'^\d+\.\s+.*$').hasMatch(text);
+      case FormatType.bullet:
+        return RegExp(r'^- \s+.*$|^-\s+.*$').hasMatch(text);
+      case FormatType.asterisk:
+        return RegExp(r'^\*\s+.*$').hasMatch(text);
+      case FormatType.checkboxUnchecked:
+        return RegExp(r'^\[ \]\s+.*$').hasMatch(text);
+      case FormatType.checkboxChecked:
+        return RegExp(r'^\[x\]\s+.*$').hasMatch(text);
+      case FormatType.noteLink:
+        return RegExp(r'^\[\[.*\]\]$').hasMatch(text);
+      case FormatType.link:
+        return RegExp(r'^\[.*\]\(.*\)$').hasMatch(text);
       case FormatType.normal:
         return false;
     }
