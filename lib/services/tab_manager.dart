@@ -394,6 +394,23 @@ class TabManager extends ChangeNotifier {
     }
   }
 
+  void setTabReadMode(EditorTab tab, bool isReadMode) {
+    final index = _tabs.indexOf(tab);
+    if (index != -1) {
+      final updatedTab = tab.copyWith(isReadMode: isReadMode);
+      _tabs[index] = updatedTab;
+
+      if (_activeTab == tab) {
+        _activeTab = updatedTab;
+      }
+
+      _saveTabsToStorage();
+
+      // No notificamos listeners aquí para evitar reconstrucciones innecesarias
+      // El estado del modo lectura se maneja localmente en el editor
+    }
+  }
+
   void updateNoteInTab(Note updatedNote) {
     final index = _tabs.indexWhere(
       (tab) => tab.note != null && tab.note!.id == updatedNote.id,
@@ -548,6 +565,7 @@ class TabManager extends ChangeNotifier {
           'isAdvancedSearch': tab.isAdvancedSearch,
           'isDirty': tab.isDirty,
           'isPinned': tab.isPinned,
+          'isReadMode': tab.isReadMode,
           'lastAccessed': tab.lastAccessed.toIso8601String(),
         };
 
@@ -591,6 +609,7 @@ class TabManager extends ChangeNotifier {
               tabData['isAdvancedSearch'] as bool? ?? false;
           final isDirty = tabData['isDirty'] as bool? ?? false;
           final isPinned = tabData['isPinned'] as bool? ?? false;
+          final isReadMode = tabData['isReadMode'] as bool? ?? false;
           final lastAccessed = DateTime.parse(
             tabData['lastAccessed'] as String,
           );
@@ -609,6 +628,7 @@ class TabManager extends ChangeNotifier {
               isAdvancedSearch: isAdvancedSearch,
               isDirty: isDirty,
               isPinned: isPinned,
+              isReadMode: isReadMode,
               lastAccessed: lastAccessed,
               tabId: tabId,
             );

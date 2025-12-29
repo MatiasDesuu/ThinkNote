@@ -45,6 +45,9 @@ class NotaEditor extends StatefulWidget {
   final bool isAdvancedSearch;
   final VoidCallback? onAutoSaveCompleted;
   final TabManager? tabManager; // Para manejar navegación entre notas
+  final bool initialReadMode; // Estado inicial del modo lectura desde el tab
+  final ValueChanged<bool>?
+  onReadModeChanged; // Callback cuando cambia el modo lectura
 
   const NotaEditor({
     super.key,
@@ -60,6 +63,8 @@ class NotaEditor extends StatefulWidget {
     this.isAdvancedSearch = false,
     this.onAutoSaveCompleted,
     this.tabManager,
+    this.initialReadMode = false,
+    this.onReadModeChanged,
   });
 
   @override
@@ -174,6 +179,9 @@ class _NotaEditorState extends State<NotaEditor>
     _setupSettingsListeners();
     _initializeImmersiveMode();
 
+    // Inicializar modo lectura desde el tab
+    _isReadMode = widget.initialReadMode;
+
     // Register this editor as the active one for global toggle function
     _currentActiveEditorToggleReadMode = _toggleReadMode;
 
@@ -221,6 +229,13 @@ class _NotaEditorState extends State<NotaEditor>
         newNoteController: widget.noteController,
         newScrollController: _scrollController,
       );
+
+      // Sincronizar el modo lectura con el estado del nuevo tab
+      if (_isReadMode != widget.initialReadMode) {
+        setState(() {
+          _isReadMode = widget.initialReadMode;
+        });
+      }
 
       // Cerrar el find bar y limpiar el texto de búsqueda cuando cambia la nota
       if (_showFindBar) {
@@ -341,6 +356,9 @@ class _NotaEditorState extends State<NotaEditor>
     setState(() {
       _isReadMode = !_isReadMode;
     });
+
+    // Notificar al TabManager del cambio de modo lectura
+    widget.onReadModeChanged?.call(_isReadMode);
 
     // Close search when switching to read mode
     if (_isReadMode && _showFindBar) {

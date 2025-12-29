@@ -2732,6 +2732,10 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       searchQuery: _searchQuery,
       isAdvancedSearch: _isAdvancedSearch,
       tabManager: _tabManager, // Para navigation entre notas
+      initialReadMode: activeTab.isReadMode,
+      onReadModeChanged: (isReadMode) {
+        _tabManager.setTabReadMode(activeTab, isReadMode);
+      },
     );
   }
 }
