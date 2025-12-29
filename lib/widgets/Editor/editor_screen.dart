@@ -757,12 +757,12 @@ class _NotaEditorState extends State<NotaEditor>
           cursorOffset = 2;
           break;
         case FormatType.checkboxUnchecked:
-          prefix = '[ ] ';
-          cursorOffset = 4;
+          prefix = '-[ ] ';
+          cursorOffset = 5;
           break;
         case FormatType.checkboxChecked:
-          prefix = '[x] ';
-          cursorOffset = 4;
+          prefix = '-[x] ';
+          cursorOffset = 5;
           break;
         case FormatType.noteLink:
           prefix = '[[';

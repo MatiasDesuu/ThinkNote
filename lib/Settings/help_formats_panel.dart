@@ -181,12 +181,12 @@ class HelpFormatsPanel extends StatelessWidget {
                 _buildFormatItem(
                   context: context,
                   label: 'Checkbox (unchecked)',
-                  syntax: '- [ ] task',
+                  syntax: '-[ ] task',
                 ),
                 _buildFormatItem(
                   context: context,
                   label: 'Checkbox (checked)',
-                  syntax: '- [x] task',
+                  syntax: '-[x] task',
                 ),
               ],
             ),

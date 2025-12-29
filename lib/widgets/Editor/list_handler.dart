@@ -109,7 +109,7 @@ class ListHandler extends StatelessWidget {
     // Replace the checkbox state in the line
     final newLine = currentLine.replaceFirst(
       RegExp(r'-\s?\[[x\s]*\]'),
-      newCheckedState ? '- [x]' : '- [ ]',
+      newCheckedState ? '-[x]' : '-[ ]',
     );
     
     lines[lineIndex] = newLine;
@@ -196,10 +196,10 @@ class ListItem {
 /// A utility class for detecting lists in text
 class ListDetector {
   // Regex patterns for different list types
-  static final RegExp _numberedListRegex = RegExp(r'^\s*(\d+)\.\s+(.+)$');
-  static final RegExp _bulletListRegex = RegExp(r'^\s*([-•])\s+(.+)$');
-  static final RegExp _asteriskListRegex = RegExp(r'^\s*(\*)\s+(.+)$');
-  static final RegExp _checkboxListRegex = RegExp(r'^\s*-\s?\[\s*([x\s]?)\s*\]\s*(.+)$', caseSensitive: false);
+  static final RegExp _numberedListRegex = RegExp(r'^\s*(\d+)\.\s*(.*)$');
+  static final RegExp _bulletListRegex = RegExp(r'^\s*([-•])\s*(.*)$');
+  static final RegExp _asteriskListRegex = RegExp(r'^\s*(\*)\s*(.*)$');
+  static final RegExp _checkboxListRegex = RegExp(r'^\s*-\s?\[\s*([x\s]?)\s*\]\s*(.*)$', caseSensitive: false);
   
   /// Detects if a line is a list item and returns ListItem if found
   static ListItem? detectListItem(String line, {int lineNumber = 0}) {
@@ -213,7 +213,7 @@ class ListDetector {
       
       return ListItem(
         type: ListType.checkbox,
-        marker: isChecked ? '- [x]' : '- [ ]',
+        marker: isChecked ? '-[x]' : '-[ ]',
         content: content,
         formattedText: '${_getIndentString(indentLevel)}${isChecked ? '[✓]' : '[ ]'} $content',
         indentLevel: indentLevel,
@@ -386,7 +386,7 @@ class ListDetector {
       case ListType.asterisk:
         return '$indent* ';
       case ListType.checkbox:
-        return '$indent- [ ] ';
+        return '$indent-[ ] ';
     }
   }
 }

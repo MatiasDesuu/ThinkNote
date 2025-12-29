@@ -8,7 +8,6 @@ import '../../database/models/notebook_icons.dart';
 import 'note_link_handler.dart';
 import 'link_handler.dart';
 import 'format_handler.dart';
-import 'list_handler.dart';
 import '../context_menu.dart';
 
 /// A unified text handler that processes ALL types of text formatting:
@@ -46,399 +45,277 @@ class UnifiedTextHandler extends StatelessWidget {
       return Text(text, style: textStyle);
     }
 
-    // Check if we have note links first
-    final hasNoteLinks = enableNoteLinkDetection && NoteLinkDetector.hasNoteLinks(text);
-    
-    if (hasNoteLinks) {
-      // Process with note links + all other formatting
-      return FutureBuilder<List<InlineSpan>>(
-        future: _buildUnifiedTextSpans(context),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return RichText(
-              text: TextSpan(children: snapshot.data!),
-              textAlign: TextAlign.start,
-            );
-          }
-          // While loading, show basic formatting
-          return _buildBasicFormattedText(context);
-        },
-      );
-    }
-
-    // No note links, use basic formatting
-    return _buildBasicFormattedText(context);
-  }
-
-  Widget _buildBasicFormattedText(BuildContext context) {
-    final hasLists = enableListDetection && ListDetector.hasListItems(text);
-    
-    if (hasLists) {
-      // Use enhanced list handler with all formatting
-      return _EnhancedListHandlerWithLinks(
-        text: text,
-        textStyle: textStyle,
-        enableListDetection: enableListDetection,
-        enableFormatDetection: enableFormatDetection,
-        enableLinkDetection: enableLinkDetection,
-        controller: controller,
-        onTextChanged: onTextChanged,
-      );
-    }
-
-    // No lists, process line by line for better formatting
-    return _buildLineByLineFormatting(context);
-  }
-
-  Widget _buildLineByLineFormatting(BuildContext context) {
-    final lines = text.split('\n');
-    final List<InlineSpan> spans = [];
-    
-    for (int i = 0; i < lines.length; i++) {
-      final line = lines[i];
-      final lineSpans = _buildFormattedLineSpans(context, line, textStyle);
-      spans.addAll(lineSpans);
-      
-      // Add newline except for the last line
-      if (i < lines.length - 1) {
-        spans.add(TextSpan(text: '\n', style: textStyle));
-      }
-    }
-    
-    return RichText(
-      text: TextSpan(children: spans),
-      textAlign: TextAlign.start,
+    return FutureBuilder<List<InlineSpan>>(
+      future: _buildUnifiedTextSpans(context),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return RichText(
+            text: TextSpan(children: snapshot.data!),
+            textAlign: TextAlign.start,
+          );
+        }
+        // While loading, show basic text
+        return Text(text, style: textStyle);
+      },
     );
   }
 
   Future<List<InlineSpan>> _buildUnifiedTextSpans(BuildContext context) async {
-    final List<InlineSpan> spans = [];
-    final noteLinks = NoteLinkDetector.detectNoteLinks(text);
-    
-    if (noteLinks.isEmpty) {
-      // No note links, use basic formatting
-      final basicWidget = _buildBasicFormattedText(context);
-      if (basicWidget is RichText) {
-        return (basicWidget.text as TextSpan).children?.cast<InlineSpan>() ?? 
-            [(basicWidget.text as TextSpan)];
-      }
-      spans.add(TextSpan(text: text, style: textStyle));
-      return spans;
+    // 1. Fetch notes if needed (only once)
+    List<Note> allNotes = [];
+    if (enableNoteLinkDetection && NoteLinkDetector.hasNoteLinks(text)) {
+       final dbHelper = DatabaseHelper();
+       final noteRepository = NoteRepository(dbHelper);
+       allNotes = await noteRepository.getAllNotes();
     }
 
-    // Get all notes for matching
-    final dbHelper = DatabaseHelper();
-    final noteRepository = NoteRepository(dbHelper);
-    final allNotes = await noteRepository.getAllNotes();
-    
+    return _buildNestedSpans(context, text, allNotes, textStyle);
+  }
+
+  List<InlineSpan> _buildNestedSpans(BuildContext context, String text, List<Note> allNotes, TextStyle style) {
+    if (text.isEmpty) return [];
+
+    final segments = FormatDetector.parseSegments(text);
+    if (segments.isEmpty) {
+      return [TextSpan(text: text, style: style)];
+    }
+
+    final List<InlineSpan> spans = [];
     int lastIndex = 0;
-    
-    for (final noteLink in noteLinks) {
-      // Process text before the note link with all formatting
-      if (noteLink.start > lastIndex) {
-        final beforeText = text.substring(lastIndex, noteLink.start);
-        final beforeSpans = _buildFormattedTextSpans(context, beforeText, textStyle);
-        spans.addAll(beforeSpans);
+
+    for (final segment in segments) {
+      // Text between segments
+      if (segment.start > lastIndex) {
+        final betweenText = text.substring(lastIndex, segment.start);
+        spans.add(TextSpan(text: betweenText, style: style));
       }
-      
-      // Find matching notes (can be multiple)
-      final matchingNotes = allNotes.where((note) => 
-        note.title.toLowerCase().trim() == noteLink.title.toLowerCase().trim()
-      ).toList();
-      
-      if (matchingNotes.isNotEmpty) {
-        // Add clickable note link
-        spans.add(WidgetSpan(
-          child: _NoteLinkWidget(
-            text: noteLink.originalText,
-            textStyle: textStyle.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              decorationColor: Theme.of(context).colorScheme.primary,
-              decoration: TextDecoration.underline,
-              fontWeight: FontWeight.w500,
-            ),
-            onTap: (position) => _handleNoteLinkSelection(matchingNotes, noteLink.title, context, false, position),
-            onMiddleClick: (position) => _handleNoteLinkSelection(matchingNotes, noteLink.title, context, true, position),
-          ),
-        ));
-      } else {
-        // Non-existent note
-        spans.add(TextSpan(
-          text: noteLink.originalText,
-          style: textStyle.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-            decoration: TextDecoration.underline,
-            decorationStyle: TextDecorationStyle.dashed,
-            fontStyle: FontStyle.italic,
-          ),
-        ));
-      }
-      
-      lastIndex = noteLink.end;
+
+      // Process segment
+      spans.add(_buildSegmentSpan(context, segment, allNotes, style));
+      lastIndex = segment.end;
     }
     
-    // Process remaining text after the last note link
+    // Remaining text
     if (lastIndex < text.length) {
-      final remainingText = text.substring(lastIndex);
-      final remainingSpans = _buildFormattedTextSpans(context, remainingText, textStyle);
-      spans.addAll(remainingSpans);
+       spans.add(TextSpan(text: text.substring(lastIndex), style: style));
     }
-    
+
     return spans;
   }
 
-  List<InlineSpan> _buildFormattedTextSpans(BuildContext context, String text, TextStyle style) {
-    // Process text with all formatting: lists, links, and markdown
-    final hasLists = enableListDetection && ListDetector.hasListItems(text);
-    
-    if (hasLists) {
-      // Handle lists with full formatting
-      return _buildFormattedListSpans(context, text, style);
-    }
-    
-    // No lists, handle line by line
-    final lines = text.split('\n');
-    final List<InlineSpan> spans = [];
-    
-    for (int i = 0; i < lines.length; i++) {
-      final line = lines[i];
-      final lineSpans = _buildFormattedLineSpans(context, line, style);
-      spans.addAll(lineSpans);
-      
-      // Add newline except for the last line
-      if (i < lines.length - 1) {
-        spans.add(TextSpan(text: '\n', style: style));
-      }
-    }
-    
-    return spans;
-  }
+  InlineSpan _buildSegmentSpan(BuildContext context, FormatSegment segment, List<Note> allNotes, TextStyle baseStyle) {
+    switch (segment.type) {
+      case FormatType.noteLink:
+        if (!enableNoteLinkDetection) return TextSpan(text: segment.originalText, style: baseStyle);
+        
+        // Extract title from [[Title]]
+        final title = segment.text.substring(2, segment.text.length - 2).trim();
+        final matchingNotes = allNotes.where((note) => 
+          note.title.toLowerCase().trim() == title.toLowerCase()
+        ).toList();
 
-  List<InlineSpan> _buildFormattedListSpans(BuildContext context, String text, TextStyle style) {
-    final lines = text.split('\n');
-    final List<InlineSpan> spans = [];
-    int currentCharPosition = 0; // Track absolute position in original text
-    
-    for (int i = 0; i < lines.length; i++) {
-      final line = lines[i];
-      final listItem = ListDetector.detectListItem(line, lineNumber: i);
-      
-      if (listItem != null && listItem.type == ListType.checkbox) {
-        // Handle checkbox with clickable functionality and full formatting
-        // Pass the absolute character position to identify this specific checkbox
-        spans.add(_buildEnhancedCheckboxSpan(context, listItem, currentCharPosition, style));
-      } else if (listItem != null) {
-        // Add other list items with full formatting
-        final listSpans = _buildFormattedLineSpans(context, listItem.formattedText, style.copyWith(
-          fontWeight: FontWeight.normal,
-        ));
-        spans.addAll(listSpans);
-      } else {
-        // Regular text with full formatting
-        final lineSpans = _buildFormattedLineSpans(context, line, style);
-        spans.addAll(lineSpans);
-      }
-      
-      // Update character position (line + newline)
-      currentCharPosition += line.length + 1;
-      
-      // Add newline except for the last line
-      if (i < lines.length - 1) {
-        spans.add(TextSpan(text: '\n', style: style));
-      }
-    }
-    
-    return spans;
-  }
-
-  List<InlineSpan> _buildFormattedLineSpans(BuildContext context, String line, TextStyle style) {
-    // First detect URLs in the line
-    final links = enableLinkDetection ? LinkDetector.detectLinks(line) : <LinkMatch>[];
-    
-    if (links.isEmpty) {
-      // No links, just apply markdown formatting
-      if (enableFormatDetection && FormatDetector.hasFormatting(line)) {
-        return FormatDetector.buildFormattedSpans(line, style, context).cast<InlineSpan>();
-      }
-      return [TextSpan(text: line, style: style)];
-    }
-
-    // Process line with both links and formatting
-    final List<InlineSpan> spans = [];
-    int lastIndex = 0;
-    
-    for (final link in links) {
-      // Process text before the link with formatting
-      if (link.start > lastIndex) {
-        final beforeText = line.substring(lastIndex, link.start);
-        if (enableFormatDetection && FormatDetector.hasFormatting(beforeText)) {
-          spans.addAll(FormatDetector.buildFormattedSpans(beforeText, style, context).cast<InlineSpan>());
+        if (matchingNotes.isNotEmpty) {
+          return WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: _NoteLinkWidget(
+              text: segment.originalText,
+              textStyle: baseStyle.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                decoration: TextDecoration.underline,
+                fontWeight: FontWeight.w500,
+              ),
+              onTap: (position) => _handleNoteLinkSelection(matchingNotes, title, context, false, position),
+              onMiddleClick: (position) => _handleNoteLinkSelection(matchingNotes, title, context, true, position),
+            ),
+          );
         } else {
-          spans.add(TextSpan(text: beforeText, style: style));
+          return TextSpan(
+            text: segment.originalText,
+            style: baseStyle.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              decoration: TextDecoration.underline,
+              decorationStyle: TextDecorationStyle.dashed,
+              fontStyle: FontStyle.italic,
+            ),
+          );
         }
-      }
-      
-      // Add the clickable link
-      spans.add(TextSpan(
-        text: link.text,
-        style: style.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          decorationColor: Theme.of(context).colorScheme.primary,
-          decoration: TextDecoration.underline,
-          fontWeight: FontWeight.w600,
-        ),
-        recognizer: TapGestureRecognizer()
-          ..onTap = () => LinkLauncher.launchURL(link.url),
-      ));
-      
-      lastIndex = link.end;
+
+      case FormatType.checkboxUnchecked:
+      case FormatType.checkboxChecked:
+        if (!enableListDetection) return TextSpan(text: segment.originalText, style: baseStyle);
+        
+        final isChecked = segment.type == FormatType.checkboxChecked;
+        // Extract content: "- [ ] Content" -> "Content"
+        // Regex to split: ^\s*-\s?\[\s*[xX\s]?\s*\]\s*(.+)$
+        final match = RegExp(r'^\s*-\s?\[\s*[xX\s]?\s*\]\s*(.+)$', multiLine: true).firstMatch(segment.originalText);
+        final content = match?.group(1) ?? '';
+        segment.originalText.substring(0, segment.originalText.length - content.length);
+
+        return TextSpan(
+          children: [
+            TextSpan(
+              text: isChecked ? '▣ ' : '☐ ', // Custom checkbox symbol
+              style: baseStyle.copyWith(
+                color: isChecked ? Colors.grey : baseStyle.color,
+                fontWeight: FontWeight.normal,
+              ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () => _toggleCheckbox(segment, isChecked),
+            ),
+            ..._buildNestedSpans(
+              context, 
+              content, 
+              allNotes, 
+              baseStyle.copyWith(
+                color: isChecked ? Colors.grey : baseStyle.color,
+                decoration: isChecked ? TextDecoration.lineThrough : null,
+              )
+            ),
+          ]
+        );
+
+      case FormatType.bullet:
+      case FormatType.asterisk:
+        if (!enableListDetection) return TextSpan(text: segment.originalText, style: baseStyle);
+        // Extract content
+        final match = RegExp(r'^\s*[-•*]\s+(.+)$', multiLine: true).firstMatch(segment.originalText);
+        final content = match?.group(1) ?? '';
+        
+        return TextSpan(
+          children: [
+            TextSpan(text: '• ', style: baseStyle), // Standardize bullet
+            ..._buildNestedSpans(context, content, allNotes, baseStyle),
+          ]
+        );
+
+      case FormatType.numbered:
+        if (!enableListDetection) return TextSpan(text: segment.originalText, style: baseStyle);
+        // Extract content
+        final match = RegExp(r'^\s*(\d+\.)\s+(.+)$', multiLine: true).firstMatch(segment.originalText);
+        final marker = match?.group(1) ?? '1.';
+        final content = match?.group(2) ?? '';
+
+        return TextSpan(
+          children: [
+            TextSpan(text: '$marker ', style: baseStyle),
+            ..._buildNestedSpans(context, content, allNotes, baseStyle),
+          ]
+        );
+
+      case FormatType.heading1:
+      case FormatType.heading2:
+      case FormatType.heading3:
+      case FormatType.heading4:
+      case FormatType.heading5:
+        if (!enableFormatDetection) return TextSpan(text: segment.originalText, style: baseStyle);
+        
+        double fontSize = baseStyle.fontSize ?? 16;
+        switch (segment.type) {
+          case FormatType.heading1: fontSize *= 2.0; break;
+          case FormatType.heading2: fontSize *= 1.5; break;
+          case FormatType.heading3: fontSize *= 1.3; break;
+          case FormatType.heading4: fontSize *= 1.2; break;
+          case FormatType.heading5: fontSize *= 1.1; break;
+          default: break;
+        }
+        
+        final headingStyle = baseStyle.copyWith(
+          fontSize: fontSize,
+          fontWeight: FontWeight.bold,
+        );
+        
+        return TextSpan(
+          children: _buildNestedSpans(context, segment.text, allNotes, headingStyle),
+        );
+
+      case FormatType.bold:
+        return TextSpan(
+          children: _buildNestedSpans(
+            context, 
+            segment.text, 
+            allNotes, 
+            baseStyle.copyWith(fontWeight: FontWeight.bold)
+          ),
+        );
+
+      case FormatType.italic:
+        return TextSpan(
+          children: _buildNestedSpans(
+            context, 
+            segment.text, 
+            allNotes, 
+            baseStyle.copyWith(fontStyle: FontStyle.italic)
+          ),
+        );
+
+      case FormatType.strikethrough:
+        return TextSpan(
+          children: _buildNestedSpans(
+            context, 
+            segment.text, 
+            allNotes, 
+            baseStyle.copyWith(decoration: TextDecoration.lineThrough)
+          ),
+        );
+
+      case FormatType.code:
+        return TextSpan(
+          text: segment.text,
+          style: baseStyle.copyWith(
+            backgroundColor: Theme.of(context).colorScheme.error.withAlpha(30),
+            color: Theme.of(context).colorScheme.error,
+            fontFamily: 'monospace',
+          ),
+        );
+
+      case FormatType.link:
+      case FormatType.url:
+        if (!enableLinkDetection) return TextSpan(text: segment.originalText, style: baseStyle);
+        
+        final url = segment.data ?? segment.text;
+        return TextSpan(
+          text: segment.text,
+          style: baseStyle.copyWith(
+            color: Colors.blue,
+            decoration: TextDecoration.underline,
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () => LinkLauncher.launchURL(url),
+        );
+
+      default:
+        return TextSpan(text: segment.originalText, style: baseStyle);
     }
-    
-    // Process remaining text after the last link
-    if (lastIndex < line.length) {
-      final remainingText = line.substring(lastIndex);
-      if (enableFormatDetection && FormatDetector.hasFormatting(remainingText)) {
-        spans.addAll(FormatDetector.buildFormattedSpans(remainingText, style, context).cast<InlineSpan>());
-      } else {
-        spans.add(TextSpan(text: remainingText, style: style));
-      }
-    }
-    
-    return spans;
   }
 
-  InlineSpan _buildEnhancedCheckboxSpan(BuildContext context, ListItem listItem, int charPosition, TextStyle style) {
-    final List<InlineSpan> children = [];
+  void _toggleCheckbox(FormatSegment segment, bool isChecked) {
+    if (onTextChanged == null) return;
     
-    // Add checkbox symbol
-    children.add(TextSpan(
-      text: listItem.isChecked ? '▣ ' : '☐ ',
-      style: style.copyWith(
-        fontSize: style.fontSize,
-        fontWeight: FontWeight.normal,
-        height: 1.0,
-        color: listItem.isChecked ? Colors.grey : style.color,
-      ),
-      recognizer: TapGestureRecognizer()
-        ..onTap = () => _toggleCheckboxByPosition(listItem, charPosition),
-    ));
+    // We have the exact range of the segment!
+    // But we need to be careful: segment.start/end are relative to the text passed to parseSegments.
+    // If text hasn't changed, they are valid.
     
-    // Add content with full formatting
-    final contentSpans = _buildFormattedLineSpans(
-      context,
-      listItem.content,
-      style.copyWith(
-        fontWeight: FontWeight.normal,
-        color: listItem.isChecked ? Colors.grey : style.color,
-      ),
+    // Replace [ ] with [x] or vice versa in the segment text
+    // The segment text is the whole line "  - [ ] Content"
+    
+    final newText = text.replaceRange(
+      segment.start, 
+      segment.end, 
+      segment.originalText.replaceFirst(
+        RegExp(r'\[\s*[xX\s]?\s*\]'), 
+        isChecked ? '[ ]' : '[x]'
+      )
     );
-    children.addAll(contentSpans);
     
-    return TextSpan(children: children);
-  }
-
-  void _toggleCheckboxByPosition(ListItem listItem, int approximateCharPosition) {
-    if (onTextChanged == null && controller == null) return;
-    
-    final newCheckedState = !listItem.isChecked;
-    
-    // Find all occurrences of this checkbox content (supports both - [] and -[])
-    final escapedContent = RegExp.escape(listItem.content);
-    final checkboxRegex = RegExp(r'^\s*-\s?\[\s*([x\s]?)\s*\]\s*' + escapedContent + r'\s*$', multiLine: true, caseSensitive: false);
-    
-    final matches = checkboxRegex.allMatches(text).toList();
-    
-    if (matches.isEmpty) {
-      // Fallback to content-based replacement if regex fails
-      _toggleCheckboxByContentFallback(listItem);
-      return;
-    }
-    
-    if (matches.length == 1) {
-      // Only one match, safe to replace
-      final newText = text.replaceFirstMapped(checkboxRegex, (match) {
-        return match.group(0)!.replaceFirst(
-          RegExp(r'-\s?\[\s*([x\s]?)\s*\]'),
-          '- [${newCheckedState ? 'x' : ' '}]',
-        );
-      });
-      
-      if (controller != null) {
-        controller!.text = newText;
-      }
-      onTextChanged?.call(newText);
-      return;
-    }
-    
-    // Multiple matches - find the closest one to our approximate position
-    int bestMatchIndex = 0;
-    int minDistance = (matches[0].start - approximateCharPosition).abs();
-    
-    for (int i = 1; i < matches.length; i++) {
-      int distance = (matches[i].start - approximateCharPosition).abs();
-      if (distance < minDistance) {
-        minDistance = distance;
-        bestMatchIndex = i;
-      }
-    }
-    
-    // Replace only the best match
-    String newText = text;
-    int matchCount = 0;
-    
-    newText = text.replaceAllMapped(checkboxRegex, (match) {
-      bool shouldReplace = matchCount == bestMatchIndex;
-      matchCount++; // Increment after checking
-      
-      if (shouldReplace) {
-        return match.group(0)!.replaceFirst(
-          RegExp(r'-\s?\[\s*([x\s]?)\s*\]'),
-          '- [${newCheckedState ? 'x' : ' '}]',
-        );
-      } else {
-        return match.group(0)!;
-      }
-    });
-    
-    if (controller != null) {
-      controller!.text = newText;
-    }
-    
-    onTextChanged?.call(newText);
-  }
-
-  void _toggleCheckboxByContentFallback(ListItem listItem) {
-    if (onTextChanged == null && controller == null) return;
-    
-    final newCheckedState = !listItem.isChecked;
-    
-    // Use regex to find and replace the checkbox line more flexibly (supports both - [] and -[])
-    final escapedContent = RegExp.escape(listItem.content);
-    final checkboxRegex = RegExp(r'^\s*-\s?\[\s*([x\s]?)\s*\]\s*' + escapedContent, multiLine: true, caseSensitive: false);
-    
-    final newText = text.replaceFirstMapped(checkboxRegex, (match) {
-      final leadingSpaces = match.group(0)!.split('-')[0]; // Preserve leading spaces
-      final replacement = '$leadingSpaces- [${newCheckedState ? 'x' : ' '}] ${listItem.content}';
-      return replacement;
-    });
-    
-    if (controller != null) {
-      controller!.text = newText;
-    }
-    
-    if (onTextChanged != null) {
-      onTextChanged!(newText);
-    }
+    onTextChanged!(newText);
   }
 
   void _handleNoteLinkSelection(List<Note> matchingNotes, String title, BuildContext context, bool isMiddleClick, Offset position) {
     if (matchingNotes.isEmpty) return;
     
     if (matchingNotes.length == 1) {
-      // Only one note, open it directly
       _handleNoteLinkTap(matchingNotes.first, isMiddleClick);
     } else {
-      // Multiple notes with same title, show selection context menu
       _showNoteSelectionContextMenu(context, matchingNotes, title, isMiddleClick, position);
     }
   }
@@ -459,14 +336,13 @@ class UnifiedTextHandler extends StatelessWidget {
       menuItems.add(
         ContextMenuItem(
           icon: note.isTask ? Icons.task_alt_rounded : Icons.description_rounded,
-          label: '', // No usado cuando hay customWidget
+          label: '', 
           onTap: () => _handleNoteLinkTap(note, false),
           onMiddleClick: () => _handleNoteLinkTap(note, true),
           customWidget: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Primera línea: Icono de la nota + Título
               Row(
                 children: [
                   Icon(
@@ -487,10 +363,9 @@ class UnifiedTextHandler extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 4),
-              // Segunda línea: Espacio + Icono del notebook + Nombre del notebook
               Row(
                 children: [
-                  const SizedBox(width: 28), // Espacio a la izquierda
+                  const SizedBox(width: 28),
                   Icon(
                     notebookIcon,
                     size: 16,
@@ -532,233 +407,6 @@ class UnifiedTextHandler extends StatelessWidget {
     
     final icon = NotebookIconsRepository.icons.where((icon) => icon.id == iconId).firstOrNull;
     return icon?.icon ?? Icons.folder_rounded;
-  }
-}
-
-/// Enhanced ListHandler that includes link detection
-class _EnhancedListHandlerWithLinks extends StatelessWidget {
-  final String text;
-  final TextStyle textStyle;
-  final bool enableListDetection;
-  final bool enableFormatDetection;
-  final bool enableLinkDetection;
-  final Function(String)? onTextChanged;
-  final TextEditingController? controller;
-
-  const _EnhancedListHandlerWithLinks({
-    required this.text,
-    required this.textStyle,
-    this.enableListDetection = true,
-    this.enableFormatDetection = true,
-    this.enableLinkDetection = true,
-    this.onTextChanged,
-    this.controller,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (!enableListDetection || text.isEmpty) {
-      return Text(text, style: textStyle);
-    }
-
-    final spans = _buildEnhancedTextSpansWithLists(context);
-    return RichText(
-      text: TextSpan(children: spans),
-      textAlign: TextAlign.start,
-    );
-  }
-
-  List<InlineSpan> _buildEnhancedTextSpansWithLists(BuildContext context) {
-    final lines = text.split('\n');
-    final List<InlineSpan> spans = [];
-    int currentCharPosition = 0; // Track absolute position in original text
-    
-    for (int i = 0; i < lines.length; i++) {
-      final line = lines[i];
-      final listItem = ListDetector.detectListItem(line, lineNumber: i);
-      
-      if (listItem != null && listItem.type == ListType.checkbox) {
-        // Handle checkbox with clickable functionality and full formatting
-        spans.add(_buildEnhancedCheckboxSpan(context, listItem, currentCharPosition));
-      } else if (listItem != null) {
-        // Add other list items with full formatting
-        final listSpans = _buildFormattedSpansWithLinks(context, listItem.formattedText, textStyle.copyWith(
-          fontWeight: FontWeight.normal,
-        ));
-        spans.addAll(listSpans.cast<InlineSpan>());
-      } else {
-        // Regular text with full formatting
-        final lineSpans = _buildFormattedSpansWithLinks(context, line, textStyle);
-        spans.addAll(lineSpans.cast<InlineSpan>());
-      }
-      
-      // Update character position (line + newline)
-      currentCharPosition += line.length + 1;
-      
-      // Add newline except for the last line
-      if (i < lines.length - 1) {
-        spans.add(TextSpan(
-          text: '\n',
-          style: textStyle,
-        ));
-      }
-    }
-    
-    return spans;
-  }
-
-  TextSpan _buildEnhancedCheckboxSpan(BuildContext context, ListItem listItem, int charPosition) {
-    final List<TextSpan> children = [];
-    
-    // Add checkbox symbol
-    children.add(TextSpan(
-      text: listItem.isChecked ? '▣ ' : '☐ ',
-      style: textStyle.copyWith(
-        fontSize: textStyle.fontSize,
-        fontWeight: FontWeight.normal,
-        height: 1.0,
-        color: listItem.isChecked ? Colors.grey : textStyle.color,
-      ),
-      recognizer: TapGestureRecognizer()
-        ..onTap = () => _toggleCheckboxByPosition(listItem, charPosition),
-    ));
-    
-    // Add content with full formatting
-    final contentSpans = _buildFormattedSpansWithLinks(
-      context,
-      listItem.content,
-      textStyle.copyWith(
-        fontWeight: FontWeight.normal,
-        color: listItem.isChecked ? Colors.grey : textStyle.color,
-      ),
-    );
-    children.addAll(contentSpans);
-    
-    return TextSpan(children: children);
-  }
-
-  List<TextSpan> _buildFormattedSpansWithLinks(BuildContext context, String text, TextStyle style) {
-    // First detect URLs in the text
-    final links = enableLinkDetection ? LinkDetector.detectLinks(text) : <LinkMatch>[];
-    
-    if (links.isEmpty) {
-      // No links, just apply markdown formatting
-      if (enableFormatDetection && FormatDetector.hasFormatting(text)) {
-        return FormatDetector.buildFormattedSpans(text, style, context);
-      }
-      return [TextSpan(text: text, style: style)];
-    }
-
-    // Process text with both links and formatting
-    final List<TextSpan> spans = [];
-    int lastIndex = 0;
-    
-    for (final link in links) {
-      // Process text before the link with formatting
-      if (link.start > lastIndex) {
-        final beforeText = text.substring(lastIndex, link.start);
-        if (enableFormatDetection && FormatDetector.hasFormatting(beforeText)) {
-          spans.addAll(FormatDetector.buildFormattedSpans(beforeText, style, context));
-        } else {
-          spans.add(TextSpan(text: beforeText, style: style));
-        }
-      }
-      
-      // Add the clickable link
-      spans.add(TextSpan(
-        text: link.text,
-        style: style.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          decorationColor: Theme.of(context).colorScheme.primary,
-          decoration: TextDecoration.underline,
-          fontWeight: FontWeight.w600,
-        ),
-        recognizer: TapGestureRecognizer()
-          ..onTap = () => LinkLauncher.launchURL(link.url),
-      ));
-      
-      lastIndex = link.end;
-    }
-    
-    // Process remaining text after the last link
-    if (lastIndex < text.length) {
-      final remainingText = text.substring(lastIndex);
-      if (enableFormatDetection && FormatDetector.hasFormatting(remainingText)) {
-        spans.addAll(FormatDetector.buildFormattedSpans(remainingText, style, context));
-      } else {
-        spans.add(TextSpan(text: remainingText, style: style));
-      }
-    }
-    
-    return spans;
-  }
-
-  void _toggleCheckboxByPosition(ListItem listItem, int approximateCharPosition) {
-    if (onTextChanged == null && controller == null) return;
-    
-    final newCheckedState = !listItem.isChecked;
-    
-    // Find all occurrences of this checkbox content (supports both - [] and -[])
-    final escapedContent = RegExp.escape(listItem.content);
-    final checkboxRegex = RegExp(r'^\s*-\s?\[\s*([x\s]?)\s*\]\s*' + escapedContent + r'\s*$', multiLine: true, caseSensitive: false);
-    
-    final matches = checkboxRegex.allMatches(text).toList();
-    
-    if (matches.isEmpty) {
-      return; // No matches found
-    }
-    
-    if (matches.length == 1) {
-      // Only one match, safe to replace
-      final newText = text.replaceFirstMapped(checkboxRegex, (match) {
-        return match.group(0)!.replaceFirst(
-          RegExp(r'-\s?\[\s*([x\s]?)\s*\]'),
-          '- [${newCheckedState ? 'x' : ' '}]',
-        );
-      });
-      
-      if (controller != null) {
-        controller!.text = newText;
-      }
-      onTextChanged?.call(newText);
-      return;
-    }
-    
-    // Multiple matches - find the closest one to our approximate position
-    int bestMatchIndex = 0;
-    int minDistance = (matches[0].start - approximateCharPosition).abs();
-    
-    for (int i = 1; i < matches.length; i++) {
-      int distance = (matches[i].start - approximateCharPosition).abs();
-      if (distance < minDistance) {
-        minDistance = distance;
-        bestMatchIndex = i;
-      }
-    }
-    
-    // Replace only the best match
-    String newText = text;
-    int matchCount = 0;
-    
-    newText = text.replaceAllMapped(checkboxRegex, (match) {
-      bool shouldReplace = matchCount == bestMatchIndex;
-      matchCount++; // Increment after checking
-      
-      if (shouldReplace) {
-        return match.group(0)!.replaceFirst(
-          RegExp(r'-\s?\[\s*([x\s]?)\s*\]'),
-          '- [${newCheckedState ? 'x' : ' '}]',
-        );
-      } else {
-        return match.group(0)!;
-      }
-    });
-    
-    if (controller != null) {
-      controller!.text = newText;
-    }
-    
-    onTextChanged?.call(newText);
   }
 }
 

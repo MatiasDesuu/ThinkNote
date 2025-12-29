@@ -77,6 +77,7 @@ enum FormatType {
   checkboxChecked,   // [x] text
   noteLink,          // [[text]]
   link,              // [text](url)
+  url,               // http://...
   normal,      // regular text
 }
 
@@ -104,26 +105,115 @@ class FormatSegment {
   }
 }
 
+class _FormatPattern {
+  final FormatType type;
+  final RegExp regex;
+  final String Function(RegExpMatch) contentExtractor;
+  final String? Function(RegExpMatch)? dataExtractor;
+
+  const _FormatPattern({
+    required this.type,
+    required this.regex,
+    required this.contentExtractor,
+    this.dataExtractor,
+  });
+}
+
 /// A utility class for detecting and formatting markdown text
 class FormatDetector {
-  // Regex patterns for different format types
-  static final RegExp _boldRegex = RegExp(r'\*\*(.*?)\*\*|__(.*?)__');
-  static final RegExp _italicRegex = RegExp(r'\*(.*?)\*|_(.*?)_');
-  static final RegExp _strikethroughRegex = RegExp(r'~~(.*?)~~');
-  static final RegExp _codeRegex = RegExp(r'`(.*?)`');
-  static final RegExp _heading1Regex = RegExp(r'^#\s+(.+)$', multiLine: true);
-  static final RegExp _heading2Regex = RegExp(r'^##\s+(.+)$', multiLine: true);
-  static final RegExp _heading3Regex = RegExp(r'^###\s+(.+)$', multiLine: true);
-  static final RegExp _heading4Regex = RegExp(r'^####\s+(.+)$', multiLine: true);
-  static final RegExp _heading5Regex = RegExp(r'^#####\s+(.+)$', multiLine: true);
-  static final RegExp _numberedRegex = RegExp(r'^\d+\.\s+(.+)$', multiLine: true);
-  static final RegExp _bulletRegex = RegExp(r'^- \s+(.+)$|^-\s+(.+)$', multiLine: true);
-  static final RegExp _asteriskRegex = RegExp(r'^\*\s+(.+)$', multiLine: true);
-  static final RegExp _checkboxUncheckedRegex = RegExp(r'^\[ \]\s+(.+)$', multiLine: true);
-  static final RegExp _checkboxCheckedRegex = RegExp(r'^\[x\]\s+(.+)$', multiLine: true);
-  static final RegExp _noteLinkRegex = RegExp(r'\[\[([^\[\]]+)\]\]');
-  static final RegExp _linkRegex = RegExp(r'\[([^\]]+)\]\(([^)]+)\)');
-  
+  static final List<_FormatPattern> _patterns = [
+    // Headings (Precedence over inline)
+    _FormatPattern(
+      type: FormatType.heading1,
+      regex: RegExp(r'^#\s+(.+)$', multiLine: true),
+      contentExtractor: (m) => m.group(1) ?? '',
+    ),
+    _FormatPattern(
+      type: FormatType.heading2,
+      regex: RegExp(r'^##\s+(.+)$', multiLine: true),
+      contentExtractor: (m) => m.group(1) ?? '',
+    ),
+    _FormatPattern(
+      type: FormatType.heading3,
+      regex: RegExp(r'^###\s+(.+)$', multiLine: true),
+      contentExtractor: (m) => m.group(1) ?? '',
+    ),
+    _FormatPattern(
+      type: FormatType.heading4,
+      regex: RegExp(r'^####\s+(.+)$', multiLine: true),
+      contentExtractor: (m) => m.group(1) ?? '',
+    ),
+    _FormatPattern(
+      type: FormatType.heading5,
+      regex: RegExp(r'^#####\s+(.+)$', multiLine: true),
+      contentExtractor: (m) => m.group(1) ?? '',
+    ),
+    // Lists
+    _FormatPattern(
+      type: FormatType.numbered,
+      regex: RegExp(r'^\s*\d+\.\s+(.+)$', multiLine: true),
+      contentExtractor: (m) => m.group(0)!,
+    ),
+    _FormatPattern(
+      type: FormatType.bullet,
+      regex: RegExp(r'^\s*[-•]\s+(.+)$', multiLine: true),
+      contentExtractor: (m) => m.group(0)!,
+    ),
+    _FormatPattern(
+      type: FormatType.asterisk,
+      regex: RegExp(r'^\s*\*\s+(.+)$', multiLine: true),
+      contentExtractor: (m) => m.group(0)!,
+    ),
+    _FormatPattern(
+      type: FormatType.checkboxUnchecked,
+      regex: RegExp(r'^\s*-\s?\[\s*(\s?)\s*\]\s*(.+)$', multiLine: true),
+      contentExtractor: (m) => m.group(0)!,
+    ),
+    _FormatPattern(
+      type: FormatType.checkboxChecked,
+      regex: RegExp(r'^\s*-\s?\[\s*([xX])\s*\]\s*(.+)$', multiLine: true),
+      contentExtractor: (m) => m.group(0)!,
+    ),
+    // Inline Formatting
+    _FormatPattern(
+      type: FormatType.bold,
+      regex: RegExp(r'\*\*(.*?)\*\*|__(.*?)__'),
+      contentExtractor: (m) => m.group(1) ?? m.group(2) ?? '',
+    ),
+    _FormatPattern(
+      type: FormatType.italic,
+      regex: RegExp(r'\*(.*?)\*|_(.*?)_'),
+      contentExtractor: (m) => m.group(1) ?? m.group(2) ?? '',
+    ),
+    _FormatPattern(
+      type: FormatType.strikethrough,
+      regex: RegExp(r'~~(.*?)~~'),
+      contentExtractor: (m) => m.group(1) ?? '',
+    ),
+    _FormatPattern(
+      type: FormatType.code,
+      regex: RegExp(r'`(.*?)`'),
+      contentExtractor: (m) => m.group(1) ?? '',
+    ),
+    _FormatPattern(
+      type: FormatType.noteLink,
+      regex: RegExp(r'\[\[([^\[\]]+)\]\]'),
+      contentExtractor: (m) => m.group(0)!, // Keep brackets
+    ),
+    _FormatPattern(
+      type: FormatType.link,
+      regex: RegExp(r'\[([^\]]+)\]\(([^)]+)\)'),
+      contentExtractor: (m) => m.group(1) ?? '',
+      dataExtractor: (m) => m.group(2) ?? '',
+    ),
+    _FormatPattern(
+      type: FormatType.url,
+      regex: RegExp(r'(?:https?://|www\.)[^\s<>"{}|\\^`[\]]+', caseSensitive: false),
+      contentExtractor: (m) => m.group(0)!,
+      dataExtractor: (m) => m.group(0)!,
+    ),
+  ];
+
   /// Builds formatted text spans from markdown text
   static List<TextSpan> buildFormattedSpans(
     String text, 
@@ -134,7 +224,7 @@ class FormatDetector {
     if (text.isEmpty) {
       return [TextSpan(text: text, style: baseStyle)];
     }
-    final segments = _parseFormatSegments(text);
+    final segments = parseSegments(text);
     if (segments.isEmpty) {
       return [TextSpan(text: text, style: baseStyle)];
     }
@@ -160,242 +250,23 @@ class FormatDetector {
   }
 
   /// Parses text and returns format segments in order
-  static List<FormatSegment> _parseFormatSegments(String text) {
+  static List<FormatSegment> parseSegments(String text) {
     final List<FormatSegment> segments = [];
     
-    // Find all format matches
-    final boldMatches = _boldRegex.allMatches(text);
-    final italicMatches = _italicRegex.allMatches(text);
-    final strikethroughMatches = _strikethroughRegex.allMatches(text);
-    final codeMatches = _codeRegex.allMatches(text);
-    final heading1Matches = _heading1Regex.allMatches(text);
-    final heading2Matches = _heading2Regex.allMatches(text);
-    final heading3Matches = _heading3Regex.allMatches(text);
-    final heading4Matches = _heading4Regex.allMatches(text);
-    final heading5Matches = _heading5Regex.allMatches(text);
-    final numberedMatches = _numberedRegex.allMatches(text);
-    final bulletMatches = _bulletRegex.allMatches(text);
-    final asteriskMatches = _asteriskRegex.allMatches(text);
-    final checkboxUncheckedMatches = _checkboxUncheckedRegex.allMatches(text);
-    final checkboxCheckedMatches = _checkboxCheckedRegex.allMatches(text);
-    final noteLinkMatches = _noteLinkRegex.allMatches(text);
-    final linkMatches = _linkRegex.allMatches(text);
-
-    // Process heading matches first (they take precedence over inline formatting)
-    for (final match in heading1Matches) {
-      final content = match.group(1) ?? '';
-      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.heading1,
-          text: content,
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
-      }
-    }
-
-    for (final match in heading2Matches) {
-      final content = match.group(1) ?? '';
-      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.heading2,
-          text: content,
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
-      }
-    }
-
-    for (final match in heading3Matches) {
-      final content = match.group(1) ?? '';
-      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.heading3,
-          text: content,
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
-      }
-    }
-
-    for (final match in heading4Matches) {
-      final content = match.group(1) ?? '';
-      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.heading4,
-          text: content,
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
-      }
-    }
-
-    for (final match in heading5Matches) {
-      final content = match.group(1) ?? '';
-      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.heading5,
-          text: content,
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
-      }
-    }
-
-    // Process list matches
-    for (final match in numberedMatches) {
-      final content = match.group(1) ?? '';
-      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.numbered,
-          text: match.group(0)!,
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
-      }
-    }
-
-    for (final match in bulletMatches) {
-      final content = match.group(1) ?? match.group(2) ?? '';
-      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.bullet,
-          text: match.group(0)!,
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
-      }
-    }
-
-    for (final match in asteriskMatches) {
-      final content = match.group(1) ?? '';
-      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.asterisk,
-          text: match.group(0)!,
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
-      }
-    }
-
-    for (final match in checkboxUncheckedMatches) {
-      final content = match.group(1) ?? '';
-      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.checkboxUnchecked,
-          text: match.group(0)!,
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
-      }
-    }
-
-    for (final match in checkboxCheckedMatches) {
-      final content = match.group(1) ?? '';
-      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.checkboxChecked,
-          text: match.group(0)!,
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
-      }
-    }
-
-    // Process bold matches
-    for (final match in boldMatches) {
-      final content = match.group(1) ?? match.group(2) ?? '';
-      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.bold,
-          text: content,
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
-      }
-    }
-
-    // Process italic matches (avoid overlap with bold)
-    for (final match in italicMatches) {
-      final content = match.group(1) ?? match.group(2) ?? '';
-      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.italic,
-          text: content,
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
-      }
-    }
-
-    // Process strikethrough matches
-    for (final match in strikethroughMatches) {
-      final content = match.group(1) ?? '';
-      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.strikethrough,
-          text: content,
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
-      }
-    }
-
-    // Process code matches
-    for (final match in codeMatches) {
-      final content = match.group(1) ?? '';
-      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.code,
-          text: content,
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
-      }
-    }
-
-    // Process note link matches
-    for (final match in noteLinkMatches) {
-      final content = match.group(1) ?? '';
-      if (content.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.noteLink,
-          text: match.group(0)!, // Keep the brackets for display in this general formatter
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
-      }
-    }
-
-    // Process standard link matches
-    for (final match in linkMatches) {
-      final name = match.group(1) ?? '';
-      final url = match.group(2) ?? '';
-      if (name.isNotEmpty && !_isOverlapping(match, segments)) {
-        segments.add(FormatSegment(
-          type: FormatType.link,
-          text: name, // Display text is just the name
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-          data: url, // Store URL
-        ));
+    for (final pattern in _patterns) {
+      final matches = pattern.regex.allMatches(text);
+      for (final match in matches) {
+        final content = pattern.contentExtractor(match);
+        if (content.isNotEmpty && !_isOverlapping(match, segments)) {
+          segments.add(FormatSegment(
+            type: pattern.type,
+            text: content,
+            originalText: match.group(0)!,
+            start: match.start,
+            end: match.end,
+            data: pattern.dataExtractor?.call(match),
+          ));
+        }
       }
     }
 
@@ -486,6 +357,7 @@ class FormatDetector {
         );
         break;
       case FormatType.link:
+      case FormatType.url:
         style = baseStyle.copyWith(
           color: Colors.blue,
           decoration: TextDecoration.underline,
@@ -525,7 +397,7 @@ class FormatDetector {
     BuildContext context,
     {List<TapGestureRecognizer>? recognizers}
   ) {
-    final segments = _parseFormatSegments(text);
+    final segments = parseSegments(text);
     if (segments.isEmpty) {
       return [TextSpan(text: text, style: baseStyle)];
     }
@@ -552,58 +424,46 @@ class FormatDetector {
 
   /// Detects if text contains any markdown formatting
   static bool hasFormatting(String text) {
-    return _boldRegex.hasMatch(text) ||
-           _italicRegex.hasMatch(text) ||
-           _strikethroughRegex.hasMatch(text) ||
-           _codeRegex.hasMatch(text) ||
-           _heading1Regex.hasMatch(text) ||
-           _heading2Regex.hasMatch(text) ||
-           _heading3Regex.hasMatch(text) ||
-           _heading4Regex.hasMatch(text) ||
-           _heading5Regex.hasMatch(text) ||
-           _noteLinkRegex.hasMatch(text) ||
-           _linkRegex.hasMatch(text);
+    return _patterns.any((pattern) => pattern.regex.hasMatch(text));
   }
 
   /// Strips all markdown formatting from text
-  static String stripFormatting(String text) {
+  static String stripFormatting(String text) {        
     return text
-        .replaceAll(_boldRegex, r'$1$2')
-        .replaceAll(_italicRegex, r'$1$2')
-        .replaceAll(_strikethroughRegex, r'$1')
-        .replaceAll(_codeRegex, r'$1')
-        .replaceAll(_heading1Regex, r'$1')
-        .replaceAll(_heading2Regex, r'$1')
-        .replaceAll(_heading3Regex, r'$1')
-        .replaceAll(_heading4Regex, r'$1')
-        .replaceAll(_heading5Regex, r'$1')
-        .replaceAll(_numberedRegex, r'$1')
-        .replaceAll(_bulletRegex, r'$1$2')
-        .replaceAll(_asteriskRegex, r'$1')
-        .replaceAll(_checkboxUncheckedRegex, r'$1')
-        .replaceAll(_checkboxCheckedRegex, r'$1')
-        .replaceAll(_noteLinkRegex, r'$1')
-        .replaceAll(_linkRegex, r'$1');
+        .replaceAll(RegExp(r'\*\*(.*?)\*\*|__(.*?)__'), r'$1$2')
+        .replaceAll(RegExp(r'\*(.*?)\*|_(.*?)_'), r'$1$2')
+        .replaceAll(RegExp(r'~~(.*?)~~'), r'$1')
+        .replaceAll(RegExp(r'`(.*?)`'), r'$1')
+        .replaceAll(RegExp(r'^#\s+(.+)$', multiLine: true), r'$1')
+        .replaceAll(RegExp(r'^##\s+(.+)$', multiLine: true), r'$1')
+        .replaceAll(RegExp(r'^###\s+(.+)$', multiLine: true), r'$1')
+        .replaceAll(RegExp(r'^####\s+(.+)$', multiLine: true), r'$1')
+        .replaceAll(RegExp(r'^#####\s+(.+)$', multiLine: true), r'$1')
+        .replaceAll(RegExp(r'^\d+\.\s+(.+)$', multiLine: true), r'$1')
+        .replaceAll(RegExp(r'^- \s+(.+)$|^-\s+(.+)$', multiLine: true), r'$1$2')
+        .replaceAll(RegExp(r'^\*\s+(.+)$', multiLine: true), r'$1')
+        .replaceAll(RegExp(r'^-? ?\[ \]\s+(.+)$', multiLine: true), r'$1')
+        .replaceAll(RegExp(r'^-? ?\[x\]\s+(.+)$', multiLine: true), r'$1')
+        .replaceAll(RegExp(r'\[\[([^\[\]]+)\]\]'), r'$1')
+        .replaceAll(RegExp(r'\[([^\]]+)\]\(([^)]+)\)'), r'$1');
   }
 
   /// Gets statistics about formatting in the text
   static Map<String, int> getFormatStatistics(String text) {
-    final stats = <String, int>{
-      'bold': _boldRegex.allMatches(text).length,
-      'italic': _italicRegex.allMatches(text).length,
-      'strikethrough': _strikethroughRegex.allMatches(text).length,
-      'code': _codeRegex.allMatches(text).length,
-      'heading1': _heading1Regex.allMatches(text).length,
-      'heading2': _heading2Regex.allMatches(text).length,
-      'heading3': _heading3Regex.allMatches(text).length,
-      'heading4': _heading4Regex.allMatches(text).length,
-      'heading5': _heading5Regex.allMatches(text).length,
-    };
+    final stats = <String, int>{};
+    int total = 0;
     
-    stats['total'] = stats.values.fold(0, (sum, count) => sum + count);
+    for (final pattern in _patterns) {
+      final count = pattern.regex.allMatches(text).length;
+      stats[pattern.type.toString().split('.').last] = count;
+      total += count;
+    }
+    
+    stats['total'] = total;
     return stats;
   }
 }
+
 
 /// A text field that automatically detects and displays markdown formatting in read mode
 class FormatAwareTextField extends StatefulWidget {
@@ -679,13 +539,13 @@ class FormatUtils {
 
   /// Extracts all formatted text segments
   static List<String> extractFormattedSegments(String text) {
-    final segments = FormatDetector._parseFormatSegments(text);
+    final segments = FormatDetector.parseSegments(text);
     return segments.map((segment) => segment.text).toList();
   }
 
   /// Counts the number of formatted segments in text
   static int countFormattedSegments(String text) {
-    return FormatDetector._parseFormatSegments(text).length;
+    return FormatDetector.parseSegments(text).length;
   }
 
   /// Wraps selected text with markdown formatting
@@ -735,16 +595,19 @@ class FormatUtils {
         wrappedText = '* $selectedText';
         break;
       case FormatType.checkboxUnchecked:
-        wrappedText = '[ ] $selectedText';
+        wrappedText = '-[ ] $selectedText';
         break;
       case FormatType.checkboxChecked:
-        wrappedText = '[x] $selectedText';
+        wrappedText = '-[x] $selectedText';
         break;
       case FormatType.noteLink:
         wrappedText = '[[$selectedText]]';
         break;
       case FormatType.link:
         wrappedText = '[$selectedText]()';
+        break;
+      case FormatType.url:
+        wrappedText = selectedText; // URLs are usually auto-detected, no specific wrapping
         break;
       case FormatType.normal:
         wrappedText = selectedText;
@@ -812,13 +675,15 @@ class FormatUtils {
       case FormatType.asterisk:
         return RegExp(r'^\*\s+.*$').hasMatch(text);
       case FormatType.checkboxUnchecked:
-        return RegExp(r'^\[ \]\s+.*$').hasMatch(text);
+        return RegExp(r'^-?\[ \]\s+.*$').hasMatch(text);
       case FormatType.checkboxChecked:
-        return RegExp(r'^\[x\]\s+.*$').hasMatch(text);
+        return RegExp(r'^-?\[x\]\s+.*$').hasMatch(text);
       case FormatType.noteLink:
         return RegExp(r'^\[\[.*\]\]$').hasMatch(text);
       case FormatType.link:
         return RegExp(r'^\[.*\]\(.*\)$').hasMatch(text);
+      case FormatType.url:
+        return RegExp(r'^(?:https?://|www\.)[^\s<>"{}|\\^`[\]]+$').hasMatch(text);
       case FormatType.normal:
         return false;
     }

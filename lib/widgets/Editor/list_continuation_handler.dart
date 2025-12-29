@@ -40,14 +40,14 @@ class ListContinuationHandler {
     
     // Check if the current list item is empty (only contains the marker)
     if (listItem.content.trim().isEmpty) {
-      // Remove the current list marker and just insert a newline
+      // Remove the current list marker and don't insert a newline
       final lineStart = textBeforeCursor.lastIndexOf('\n') + 1;
       
-      final newText = '${text.substring(0, lineStart)}\n$textAfterCursor';
+      final newText = '${text.substring(0, lineStart)}$textAfterCursor';
       
       controller.text = newText;
       controller.selection = TextSelection.collapsed(
-        offset: lineStart + 1,
+        offset: lineStart,
       );
       
       return true;
