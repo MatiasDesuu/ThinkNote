@@ -94,14 +94,14 @@ class CalendarScreenState extends State<CalendarScreen> {
   void _setupDatabaseListener() {
     _dbSubscription?.cancel();
     _dbHelperSubscription?.cancel();
-    
+
     // Listen to both DatabaseService and DatabaseHelper for maximum compatibility
     _dbSubscription = DatabaseService().onDatabaseChanged.listen((_) {
       if (!_isUpdatingManually && mounted) {
         _loadEvents();
       }
     });
-    
+
     _dbHelperSubscription = DatabaseHelper.onDatabaseChanged.listen((_) {
       if (!_isUpdatingManually && mounted) {
         _loadEvents();
@@ -365,141 +365,156 @@ class CalendarScreenState extends State<CalendarScreen> {
         final bottomPadding = MediaQuery.of(context).padding.bottom;
         final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: keyboardHeight + bottomPadding,
-            left: 16,
-            right: 16,
-            top: 16,
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withAlpha(50),
-                  borderRadius: BorderRadius.circular(2),
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: keyboardHeight + bottomPadding,
+              left: 16,
+              right: 16,
+              top: 16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurface.withAlpha(50),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              SingleChildScrollView(
-                physics: const ClampingScrollPhysics(),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ..._statuses.map(
-                      (status) => Card(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(
-                            color: colorScheme.outlineVariant.withAlpha(127),
-                            width: 0.5,
-                          ),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: () {
-                              _updateEventStatus(event, status.name);
-                              Navigator.pop(context);
-                            },
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
+                Flexible(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ..._statuses.map(
+                          (status) => Card(
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: colorScheme.outlineVariant.withAlpha(
+                                  127,
+                                ),
+                                width: 0.5,
                               ),
-                              leading: Container(
-                                width: 16,
-                                height: 16,
-                                decoration: BoxDecoration(
-                                  color: _parseColor(status.color),
-                                  shape: BoxShape.circle,
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(12),
+                                onTap: () {
+                                  _updateEventStatus(event, status.name);
+                                  Navigator.pop(context);
+                                },
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  leading: Container(
+                                    width: 16,
+                                    height: 16,
+                                    decoration: BoxDecoration(
+                                      color: _parseColor(status.color),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  title: Text(
+                                    status.name,
+                                    style: TextStyle(
+                                      color: colorScheme.onSurface,
+                                    ),
+                                  ),
                                 ),
                               ),
-                              title: Text(
-                                status.name,
-                                style: TextStyle(color: colorScheme.onSurface),
+                            ),
+                          ),
+                        ),
+                        Card(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: colorScheme.outlineVariant.withAlpha(127),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                _updateEventStatus(event, null);
+                                Navigator.pop(context);
+                              },
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                leading: Icon(
+                                  Icons.clear,
+                                  color: colorScheme.outline,
+                                ),
+                                title: Text(
+                                  'No Label',
+                                  style: TextStyle(
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                    Card(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: colorScheme.outlineVariant.withAlpha(127),
-                          width: 0.5,
-                        ),
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () {
-                            _updateEventStatus(event, null);
-                            Navigator.pop(context);
-                          },
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
+                        Card(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: colorScheme.outlineVariant.withAlpha(127),
+                              width: 0.5,
                             ),
-                            leading: Icon(
-                              Icons.clear,
-                              color: colorScheme.outline,
-                            ),
-                            title: Text(
-                              'No Label',
-                              style: TextStyle(color: colorScheme.onSurface),
+                          ),
+                          color: colorScheme.primary,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                Navigator.pop(context);
+                                showStatusManager();
+                              },
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                leading: Icon(
+                                  Icons.label_rounded,
+                                  color: colorScheme.onPrimary,
+                                ),
+                                title: Text(
+                                  'Event Labels',
+                                  style: TextStyle(
+                                    color: colorScheme.onPrimary,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 20),
+                      ],
                     ),
-                    Card(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: colorScheme.outlineVariant.withAlpha(127),
-                          width: 0.5,
-                        ),
-                      ),
-                      color: colorScheme.primary,
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () {
-                            Navigator.pop(context);
-                            showStatusManager();
-                          },
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                            ),
-                            leading: Icon(
-                              Icons.label_rounded,
-                              color: colorScheme.onPrimary,
-                            ),
-                            title: Text(
-                              'Event Labels',
-                              style: TextStyle(color: colorScheme.onPrimary),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
