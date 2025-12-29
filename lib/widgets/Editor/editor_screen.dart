@@ -17,6 +17,7 @@ import '../find_bar.dart';
 import '../context_menu.dart';
 import 'unified_text_handler.dart';
 import 'list_continuation_handler.dart';
+import 'list_handler.dart';
 import 'search_handler.dart';
 import 'editor_bottom_bar.dart';
 import 'format_handler.dart';
@@ -675,6 +676,145 @@ class _NotaEditorState extends State<NotaEditor>
     }
   }
 
+  bool _isLineLevelFormat(FormatType type) {
+    return type == FormatType.heading1 ||
+        type == FormatType.heading2 ||
+        type == FormatType.heading3 ||
+        type == FormatType.heading4 ||
+        type == FormatType.heading5 ||
+        type == FormatType.numbered ||
+        type == FormatType.bullet ||
+        type == FormatType.asterisk ||
+        type == FormatType.checkboxUnchecked ||
+        type == FormatType.checkboxChecked;
+  }
+
+  void _toggleLineFormat(FormatType type) {
+    final controller = widget.noteController;
+    final selection = controller.selection;
+    final text = controller.text;
+    final cursorPosition = selection.baseOffset;
+
+    // Find the start and end of the current line
+    int lineStart = text.lastIndexOf('\n', cursorPosition - 1) + 1;
+    int lineEnd = text.indexOf('\n', cursorPosition);
+    if (lineEnd == -1) lineEnd = text.length;
+
+    final currentLine = text.substring(lineStart, lineEnd);
+
+    // Extract leading whitespace to preserve it
+    final whitespaceMatch = RegExp(r'^(\s*)').firstMatch(currentLine);
+    final leadingWhitespace = whitespaceMatch?.group(1) ?? '';
+    final lineWithoutWhitespace = currentLine.substring(leadingWhitespace.length);
+
+    String prefix = '';
+    bool isList = false;
+    ListType? targetListType;
+
+    switch (type) {
+      case FormatType.heading1:
+        prefix = '# ';
+        break;
+      case FormatType.heading2:
+        prefix = '## ';
+        break;
+      case FormatType.heading3:
+        prefix = '### ';
+        break;
+      case FormatType.heading4:
+        prefix = '#### ';
+        break;
+      case FormatType.heading5:
+        prefix = '##### ';
+        break;
+      case FormatType.numbered:
+        prefix = '1. ';
+        isList = true;
+        targetListType = ListType.numbered;
+        break;
+      case FormatType.bullet:
+        prefix = '- ';
+        isList = true;
+        targetListType = ListType.bullet;
+        break;
+      case FormatType.asterisk:
+        prefix = '* ';
+        isList = true;
+        targetListType = ListType.asterisk;
+        break;
+      case FormatType.checkboxUnchecked:
+        prefix = '-[ ] ';
+        isList = true;
+        targetListType = ListType.checkbox;
+        break;
+      case FormatType.checkboxChecked:
+        prefix = '-[x] ';
+        isList = true;
+        targetListType = ListType.checkbox;
+        break;
+      default:
+        return;
+    }
+
+    String newLine;
+    int newCursorOffset;
+
+    if (isList) {
+      final listItem = ListDetector.detectListItem(currentLine);
+      if (listItem != null) {
+        // It's already a list item
+        if (listItem.type == targetListType) {
+          // Same type, remove it
+          newLine = leadingWhitespace + listItem.content;
+          // Calculate how many characters were removed
+          int removedChars = currentLine.length - newLine.length;
+          newCursorOffset = cursorPosition - removedChars;
+        } else {
+          // Different type, replace it
+          newLine = leadingWhitespace + prefix + listItem.content;
+          // Calculate the difference in prefix length
+          int oldPrefixLength =
+              currentLine.length - leadingWhitespace.length - listItem.content.length;
+          newCursorOffset = cursorPosition + (prefix.length - oldPrefixLength);
+        }
+      } else {
+        // Not a list, add it
+        newLine = leadingWhitespace + prefix + lineWithoutWhitespace;
+        newCursorOffset = cursorPosition + prefix.length;
+      }
+    } else {
+      // Heading
+      final headingMatch =
+          RegExp(r'^(#+)\s+(.*)$').firstMatch(lineWithoutWhitespace);
+      if (headingMatch != null) {
+        final currentPrefix = '${headingMatch.group(1)!} ';
+        if (currentPrefix.trim() == prefix.trim()) {
+          // Same heading level, remove it
+          newLine = leadingWhitespace + headingMatch.group(2)!;
+          newCursorOffset = cursorPosition - currentPrefix.length;
+        } else {
+          // Different heading level, replace it
+          newLine = leadingWhitespace + prefix + headingMatch.group(2)!;
+          newCursorOffset =
+              cursorPosition + (prefix.length - currentPrefix.length);
+        }
+      } else {
+        // Not a heading, add it
+        newLine = leadingWhitespace + prefix + lineWithoutWhitespace;
+        newCursorOffset = cursorPosition + prefix.length;
+      }
+    }
+
+    final newText =
+        text.substring(0, lineStart) + newLine + text.substring(lineEnd);
+    controller.text = newText;
+    controller.selection = TextSelection.collapsed(
+      offset: newCursorOffset.clamp(lineStart, lineStart + newLine.length),
+    );
+    widget.onContentChanged();
+    _editorFocusNode.requestFocus();
+  }
+
   void _handleFormat(FormatType type) {
     final selection = widget.noteController.selection;
     if (!selection.isValid) return;
@@ -696,6 +836,14 @@ class _NotaEditorState extends State<NotaEditor>
       // Restore focus and selection
       _editorFocusNode.requestFocus();
     } else {
+      // No selection
+      
+      // Check if it's a line-level format (list or heading)
+      if (_isLineLevelFormat(type)) {
+        _toggleLineFormat(type);
+        return;
+      }
+
       // No selection, insert empty format markers and place cursor inside
       final text = widget.noteController.text;
       final start = selection.start;

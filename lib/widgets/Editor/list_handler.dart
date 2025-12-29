@@ -196,9 +196,9 @@ class ListItem {
 /// A utility class for detecting lists in text
 class ListDetector {
   // Regex patterns for different list types
-  static final RegExp _numberedListRegex = RegExp(r'^\s*(\d+)\.\s*(.*)$');
-  static final RegExp _bulletListRegex = RegExp(r'^\s*([-•])\s*(.*)$');
-  static final RegExp _asteriskListRegex = RegExp(r'^\s*(\*)\s*(.*)$');
+  static final RegExp _numberedListRegex = RegExp(r'^\s*(\d+)\.\s+(.*)$');
+  static final RegExp _bulletListRegex = RegExp(r'^\s*([-•])\s+(.*)$');
+  static final RegExp _asteriskListRegex = RegExp(r'^\s*(\*)\s+(.*)$');
   static final RegExp _checkboxListRegex = RegExp(r'^\s*-\s?\[\s*([x\s]?)\s*\]\s*(.*)$', caseSensitive: false);
   
   /// Detects if a line is a list item and returns ListItem if found
