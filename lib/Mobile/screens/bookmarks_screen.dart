@@ -1097,10 +1097,12 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                       _handler.searchQuery.isNotEmpty
                           ? IconButton(
                             icon: const Icon(Icons.clear_rounded),
-                            onPressed: () {
+                            onPressed: () async {
+                              _handler.setSearchQuery('');
+                              _searchController.clear();
+                              final bookmarks = await _handler.getFilteredBookmarks();
                               setState(() {
-                                _handler.setSearchQuery('');
-                                _searchController.clear();
+                                _bookmarks = bookmarks;
                               });
                             },
                           )
