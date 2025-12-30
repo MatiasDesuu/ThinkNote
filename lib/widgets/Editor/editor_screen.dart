@@ -1429,12 +1429,7 @@ class _NotaEditorState extends State<NotaEditor>
                               ),
                               onPressed: _toggleReadMode,
                             ),
-                            Tooltip(
-                              message:
-                                  _isEditorCentered
-                                      ? 'Disable centered editor'
-                                      : 'Center editor',
-                              child: IconButton(
+                            IconButton(
                                 icon: Icon(
                                   _isEditorCentered
                                       ? Icons.format_align_justify_rounded
@@ -1443,7 +1438,6 @@ class _NotaEditorState extends State<NotaEditor>
                                 ),
                                 onPressed: _toggleEditorCentered,
                               ),
-                            ),
                             IconButton(
                               icon: Icon(
                                 _showBottomBar
