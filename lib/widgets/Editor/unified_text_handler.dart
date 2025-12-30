@@ -360,6 +360,12 @@ class UnifiedTextHandler extends StatelessWidget {
           child: _InlineCodeWidget(text: segment.text, style: baseStyle),
         );
 
+      case FormatType.taggedCode:
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: _TaggedCodeWidget(text: segment.text, style: baseStyle),
+        );
+
       case FormatType.link:
       case FormatType.url:
         if (!enableLinkDetection) {
@@ -588,66 +594,159 @@ class _InlineCodeWidgetState extends State<_InlineCodeWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit:
-          (_) => setState(() {
-            _isHovered = false;
-            _isCopied = false;
-          }),
-      child: Stack(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.surfaceContainerHighest.withAlpha(128),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withAlpha(40),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit:
+            (_) => setState(() {
+              _isHovered = false;
+              _isCopied = false;
+            }),
+        child: Stack(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest.withAlpha(128),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withAlpha(40),
+                ),
+              ),
+              child: Text(
+                widget.text,
+                style: widget.style.copyWith(
+                  fontFamily: 'monospace',
+                  fontSize: (widget.style.fontSize ?? 16) * 0.9,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
-            child: Text(
-              widget.text,
-              style: widget.style.copyWith(
-                fontFamily: 'monospace',
-                fontSize: (widget.style.fontSize ?? 16) * 0.9,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          if (_isHovered)
-            Positioned(
-              top: 2,
-              right: 2,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () async {
-                    await Clipboard.setData(ClipboardData(text: widget.text));
-                    setState(() => _isCopied = true);
-                    Future.delayed(const Duration(seconds: 2), () {
-                      if (mounted) setState(() => _isCopied = false);
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      _isCopied ? Icons.check_rounded : Icons.copy_rounded,
-                      size: 16,
-                      color:
-                          _isCopied
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.onSurface,
+            if (_isHovered)
+              Positioned(
+                top: 2,
+                right: 2,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () async {
+                      await Clipboard.setData(ClipboardData(text: widget.text));
+                      setState(() => _isCopied = true);
+                      Future.delayed(const Duration(seconds: 2), () {
+                        if (mounted) setState(() => _isCopied = false);
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(4),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        _isCopied ? Icons.check_rounded : Icons.copy_rounded,
+                        size: 16,
+                        color:
+                            _isCopied
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.onSurface,
+                      ),
                     ),
                   ),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TaggedCodeWidget extends StatefulWidget {
+  final String text;
+  final TextStyle style;
+
+  const _TaggedCodeWidget({required this.text, required this.style});
+
+  @override
+  State<_TaggedCodeWidget> createState() => _TaggedCodeWidgetState();
+}
+
+class _TaggedCodeWidgetState extends State<_TaggedCodeWidget> {
+  bool _isHovered = false;
+  bool _isCopied = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit:
+            (_) => setState(() {
+              _isHovered = false;
+              _isCopied = false;
+            }),
+        child: Material(
+          color: Theme.of(
+            context,
+          ).colorScheme.surfaceContainerHighest.withAlpha(128),
+          borderRadius: BorderRadius.circular(4),
+          child: InkWell(
+            onTap: () async {
+              await Clipboard.setData(ClipboardData(text: widget.text));
+              setState(() => _isCopied = true);
+              Future.delayed(const Duration(seconds: 2), () {
+                if (mounted) setState(() => _isCopied = false);
+              });
+            },
+            borderRadius: BorderRadius.circular(4),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withAlpha(40),
+                    ),
+                  ),
+                  child: Text(
+                    widget.text,
+                    style: widget.style.copyWith(
+                      fontFamily: 'monospace',
+                      fontSize: (widget.style.fontSize ?? 16) * 0.9,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                if (_isHovered)
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: IgnorePointer(
+                      child: Icon(
+                        _isCopied ? Icons.check_rounded : Icons.copy_rounded,
+                        size: 14,
+                        color:
+                            _isCopied
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant.withAlpha(180),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-        ],
+          ),
+        ),
       ),
     );
   }

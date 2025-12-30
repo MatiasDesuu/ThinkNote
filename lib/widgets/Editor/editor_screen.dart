@@ -935,6 +935,11 @@ class _NotaEditorState extends State<NotaEditor>
           suffix = '`';
           cursorOffset = 1;
           break;
+        case FormatType.taggedCode:
+          prefix = '[';
+          suffix = ']';
+          cursorOffset = 1;
+          break;
         case FormatType.heading1:
           prefix = '# ';
           cursorOffset = 2;

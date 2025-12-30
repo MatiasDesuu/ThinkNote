@@ -81,6 +81,7 @@ enum FormatType {
   horizontalRule, // * * * (horizontal divider line)
   insertScript, // #script at the top
   convertToScript, // #1 block
+  taggedCode, // [text]
   normal, // regular text
 }
 
@@ -224,6 +225,11 @@ class FormatDetector {
       contentExtractor: (m) => m.group(0)!,
       dataExtractor: (m) => m.group(0)!,
     ),
+    _FormatPattern(
+      type: FormatType.taggedCode,
+      regex: RegExp(r'(?<!\[)\[([^\[\]]+)\](?![(\[])'),
+      contentExtractor: (m) => m.group(1) ?? '',
+    ),
   ];
 
   /// Builds formatted text spans from markdown text
@@ -356,7 +362,9 @@ class FormatDetector {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(128),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withAlpha(128),
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(
                     color: Theme.of(context).colorScheme.outline.withAlpha(40),
@@ -439,6 +447,34 @@ class FormatDetector {
       case FormatType.asterisk:
       case FormatType.checkboxUnchecked:
       case FormatType.checkboxChecked:
+      case FormatType.taggedCode:
+        return TextSpan(
+          children: [
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withAlpha(128),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline.withAlpha(40),
+                  ),
+                ),
+                child: Text(
+                  segment.text,
+                  style: baseStyle.copyWith(
+                    fontFamily: 'monospace',
+                    fontSize: (baseStyle.fontSize ?? 16) * 0.9,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
       case FormatType.normal:
         style = baseStyle;
         break;
@@ -509,7 +545,8 @@ class FormatDetector {
         .replaceAll(RegExp(r'^-? ?\[ \]\s+(.+)$', multiLine: true), r'$1')
         .replaceAll(RegExp(r'^-? ?\[x\]\s+(.+)$', multiLine: true), r'$1')
         .replaceAll(RegExp(r'\[\[([^\[\]]+)\]\]'), r'$1')
-        .replaceAll(RegExp(r'\[([^\]]+)\]\(([^)]+)\)'), r'$1');
+        .replaceAll(RegExp(r'\[([^\]]+)\]\(([^)]+)\)'), r'$1')
+        .replaceAll(RegExp(r'(?<!\[)\[([^\[\]]+)\](?![(\[])'), r'$1');
   }
 
   /// Gets statistics about formatting in the text
@@ -762,6 +799,9 @@ class FormatUtils {
       case FormatType.convertToScript:
         wrappedText = '#1\n$selectedText';
         break;
+      case FormatType.taggedCode:
+        wrappedText = '[$selectedText]';
+        break;
       case FormatType.normal:
         wrappedText = selectedText;
         break;
@@ -851,6 +891,10 @@ class FormatUtils {
         return text.startsWith('#script');
       case FormatType.convertToScript:
         return RegExp(r'^#\d+\n').hasMatch(text);
+      case FormatType.taggedCode:
+        return RegExp(r'^\[.*\]$').hasMatch(text) &&
+            !RegExp(r'^\[\[.*\]\]$').hasMatch(text) &&
+            !RegExp(r'^\[.*\]\(.*\)$').hasMatch(text);
       case FormatType.normal:
         return false;
     }

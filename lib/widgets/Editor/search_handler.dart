@@ -5,22 +5,22 @@ class SearchManager {
   TextEditingController noteController;
   ScrollController scrollController;
   TextStyle textStyle;
-  
+
   // Search state
   int _currentFindIndex = -1;
   List<int> _findMatches = [];
-  
+
   SearchManager({
     required this.noteController,
     required this.scrollController,
     required this.textStyle,
   });
-  
+
   /// Update the text style when it changes
   void updateTextStyle(TextStyle newStyle) {
     textStyle = newStyle;
   }
-  
+
   /// Update controllers when the note changes
   void updateControllers({
     required TextEditingController newNoteController,
@@ -32,18 +32,18 @@ class SearchManager {
     _currentFindIndex = -1;
     _findMatches = [];
   }
-  
+
   /// Reset search state without changing controllers
   void reset() {
     _currentFindIndex = -1;
     _findMatches = [];
   }
-  
+
   // Getters
   int get currentFindIndex => _currentFindIndex;
   List<int> get findMatches => _findMatches;
   bool get hasMatches => _findMatches.isNotEmpty;
-  
+
   /// Performs a search and updates the matches list
   void performFind(String query, VoidCallback onUpdate) {
     if (query.isEmpty) {
@@ -67,14 +67,14 @@ class SearchManager {
 
     _findMatches = matches;
     _currentFindIndex = matches.isNotEmpty ? 0 : -1;
-    
+
     onUpdate();
 
     if (matches.isNotEmpty) {
       selectCurrentMatch();
     }
   }
-  
+
   /// Selects and scrolls to the current match
   void selectCurrentMatch() {
     if (_currentFindIndex >= 0 && _currentFindIndex < _findMatches.length) {
@@ -119,17 +119,17 @@ class SearchManager {
       );
     }
   }
-  
+
   /// Moves to the next match
   void nextMatch(VoidCallback onUpdate) {
     if (_findMatches.isEmpty) return;
 
     _currentFindIndex = (_currentFindIndex + 1) % _findMatches.length;
-    
+
     onUpdate();
     selectCurrentMatch();
   }
-  
+
   /// Moves to the previous match
   void previousMatch(VoidCallback onUpdate) {
     if (_findMatches.isEmpty) return;
@@ -138,18 +138,18 @@ class SearchManager {
         _currentFindIndex <= 0
             ? _findMatches.length - 1
             : _currentFindIndex - 1;
-    
+
     onUpdate();
     selectCurrentMatch();
   }
-  
+
   /// Clears all search state
   void clear(VoidCallback onUpdate) {
     _currentFindIndex = -1;
     _findMatches = [];
     onUpdate();
   }
-  
+
   /// Builds the highlight overlay widget
   Widget buildHighlightOverlay(String query, ColorScheme colorScheme) {
     final text = noteController.text;
@@ -180,7 +180,7 @@ class SearchManager {
 
       // Add highlighted match - only current match gets bold
       final isCurrentMatch = matchIndex == _currentFindIndex;
-      
+
       spans.add(
         TextSpan(
           text: text.substring(index, index + query.length),
@@ -267,9 +267,9 @@ class HighlightedTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // If no search query or no matches, show normal TextField
-    if (searchQuery == null || 
-        searchQuery!.isEmpty || 
-        searchManager == null || 
+    if (searchQuery == null ||
+        searchQuery!.isEmpty ||
+        searchManager == null ||
         !searchManager!.hasMatches) {
       return TextField(
         controller: controller,
