@@ -175,11 +175,6 @@ class HelpFormatsPanel extends StatelessWidget {
                 ),
                 _buildFormatItem(
                   context: context,
-                  label: 'Asterisk list',
-                  syntax: '* item',
-                ),
-                _buildFormatItem(
-                  context: context,
                   label: 'Checkbox (unchecked)',
                   syntax: '-[ ] task',
                 ),
@@ -250,7 +245,10 @@ class HelpFormatsPanel extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.auto_awesome_motion_rounded, color: colorScheme.primary),
+                    Icon(
+                      Icons.auto_awesome_motion_rounded,
+                      color: colorScheme.primary,
+                    ),
                     const SizedBox(width: 8),
                     const Text(
                       'Templates',
@@ -409,7 +407,10 @@ class HelpFormatsPanel extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.auto_awesome_rounded, color: colorScheme.primary),
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      color: colorScheme.primary,
+                    ),
                     const SizedBox(width: 8),
                     const Text(
                       'Template Variables',
@@ -611,7 +612,10 @@ class HelpFormatsPanel extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0,
+                  vertical: 4.0,
+                ),
                 decoration: BoxDecoration(
                   color: colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8.0),

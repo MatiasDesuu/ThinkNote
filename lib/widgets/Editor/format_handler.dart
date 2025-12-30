@@ -72,7 +72,6 @@ enum FormatType {
   heading5, // ##### text
   numbered, // 1. text
   bullet, // - text
-  asterisk, // * text
   checkboxUnchecked, // [ ] text
   checkboxChecked, // [x] text
   noteLink, // [[text]]
@@ -152,7 +151,7 @@ class FormatDetector {
       regex: RegExp(r'^#####\s+(.+)$', multiLine: true),
       contentExtractor: (m) => m.group(1) ?? '',
     ),
-    // Horizontal Rule (must be before asterisk list)
+    // Horizontal Rule
     _FormatPattern(
       type: FormatType.horizontalRule,
       regex: RegExp(r'^\* \* \*$', multiLine: true),
@@ -167,11 +166,6 @@ class FormatDetector {
     _FormatPattern(
       type: FormatType.bullet,
       regex: RegExp(r'^\s*[-•]\s+(.+)$', multiLine: true),
-      contentExtractor: (m) => m.group(0)!,
-    ),
-    _FormatPattern(
-      type: FormatType.asterisk,
-      regex: RegExp(r'^\s*\*\s+(.+)$', multiLine: true),
       contentExtractor: (m) => m.group(0)!,
     ),
     _FormatPattern(
@@ -444,7 +438,6 @@ class FormatDetector {
       case FormatType.convertToScript:
       case FormatType.numbered:
       case FormatType.bullet:
-      case FormatType.asterisk:
       case FormatType.checkboxUnchecked:
       case FormatType.checkboxChecked:
       case FormatType.taggedCode:
@@ -776,9 +769,6 @@ class FormatUtils {
       case FormatType.bullet:
         wrappedText = '- $selectedText';
         break;
-      case FormatType.asterisk:
-        wrappedText = '* $selectedText';
-        break;
       case FormatType.checkboxUnchecked:
         wrappedText = '-[ ] $selectedText';
         break;
@@ -876,8 +866,6 @@ class FormatUtils {
         return RegExp(r'^\d+\.\s+.*$').hasMatch(text);
       case FormatType.bullet:
         return RegExp(r'^- \s+.*$|^-\s+.*$').hasMatch(text);
-      case FormatType.asterisk:
-        return RegExp(r'^\*\s+.*$').hasMatch(text);
       case FormatType.checkboxUnchecked:
         return RegExp(r'^-?\[ \]\s+.*$').hasMatch(text);
       case FormatType.checkboxChecked:

@@ -722,7 +722,6 @@ class _NotaEditorState extends State<NotaEditor>
         type == FormatType.heading5 ||
         type == FormatType.numbered ||
         type == FormatType.bullet ||
-        type == FormatType.asterisk ||
         type == FormatType.checkboxUnchecked ||
         type == FormatType.checkboxChecked;
   }
@@ -776,11 +775,6 @@ class _NotaEditorState extends State<NotaEditor>
         prefix = '- ';
         isList = true;
         targetListType = ListType.bullet;
-        break;
-      case FormatType.asterisk:
-        prefix = '* ';
-        isList = true;
-        targetListType = ListType.asterisk;
         break;
       case FormatType.checkboxUnchecked:
         prefix = '-[ ] ';
@@ -966,10 +960,6 @@ class _NotaEditorState extends State<NotaEditor>
           break;
         case FormatType.bullet:
           prefix = '- ';
-          cursorOffset = 2;
-          break;
-        case FormatType.asterisk:
-          prefix = '* ';
           cursorOffset = 2;
           break;
         case FormatType.checkboxUnchecked:

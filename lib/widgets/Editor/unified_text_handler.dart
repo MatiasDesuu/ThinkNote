@@ -260,7 +260,6 @@ class UnifiedTextHandler extends StatelessWidget {
         );
 
       case FormatType.bullet:
-      case FormatType.asterisk:
         if (!enableListDetection) {
           return TextSpan(text: segment.originalText, style: baseStyle);
         }

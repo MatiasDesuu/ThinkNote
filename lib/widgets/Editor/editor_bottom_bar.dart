@@ -205,26 +205,10 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                 ),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Symbols.asterisk_rounded, size: 20),
-                  onPressed: () => widget.onFormatTap(FormatType.asterisk),
-                  tooltipMessage: 'Asterisk List',
-                ),
-                _buildTooltipIconButton(
-                  context,
-                  icon: const Icon(
-                    Icons.check_box_outline_blank_rounded,
-                    size: 20,
-                  ),
+                  icon: const Icon(Icons.checklist_rounded, size: 20),
                   onPressed:
                       () => widget.onFormatTap(FormatType.checkboxUnchecked),
-                  tooltipMessage: 'Checkbox Unchecked',
-                ),
-                _buildTooltipIconButton(
-                  context,
-                  icon: const Icon(Icons.check_box_rounded, size: 20),
-                  onPressed:
-                      () => widget.onFormatTap(FormatType.checkboxChecked),
-                  tooltipMessage: 'Checkbox Checked',
+                  tooltipMessage: 'Checkbox List',
                 ),
                 const VerticalDivider(width: 16, indent: 8, endIndent: 8),
                 _buildTooltipIconButton(
