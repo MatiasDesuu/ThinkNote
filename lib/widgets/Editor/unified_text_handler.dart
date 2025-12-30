@@ -6,7 +6,6 @@ import '../../database/database_helper.dart';
 import '../../database/repositories/note_repository.dart';
 import '../../database/repositories/notebook_repository.dart';
 import '../../database/models/notebook_icons.dart';
-import 'note_link_handler.dart';
 import 'link_handler.dart';
 import 'format_handler.dart';
 import '../context_menu.dart';
@@ -51,58 +50,35 @@ class UnifiedTextHandler extends StatelessWidget {
       return Text(text, style: textStyle);
     }
 
-    // Check if text contains horizontal rules - if so, use the line-by-line approach
     final lines = text.split('\n');
     final hasHorizontalRule = lines.any(
       (line) => _horizontalRuleRegex.hasMatch(line.trim()),
     );
 
     if (hasHorizontalRule) {
-      return FutureBuilder<List<Widget>>(
-        future: _buildWidgetsWithHorizontalRules(context, lines),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: snapshot.data!,
-            );
-          }
-          return Text(text, style: textStyle);
-        },
+      final widgets = _buildWidgetsWithHorizontalRules(context, lines);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: widgets,
       );
     }
 
-    return FutureBuilder<List<InlineSpan>>(
-      future: _buildUnifiedTextSpans(context),
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          return RichText(
-            text: TextSpan(children: snapshot.data!),
-            textAlign: TextAlign.start,
-          );
-        }
-        // While loading, show basic text
-        return Text(text, style: textStyle);
-      },
+    final spans = _buildUnifiedTextSpans(context);
+    return RichText(
+      text: TextSpan(children: spans),
+      textAlign: TextAlign.start,
     );
   }
 
   /// Builds widgets with horizontal rules as Dividers
-  Future<List<Widget>> _buildWidgetsWithHorizontalRules(
+  List<Widget> _buildWidgetsWithHorizontalRules(
     BuildContext context,
     List<String> lines,
-  ) async {
+  ) {
     final List<Widget> widgets = [];
     final StringBuffer currentTextBuffer = StringBuffer();
     final colorScheme = Theme.of(context).colorScheme;
-
-    // 1. Fetch notes if needed (only once)
-    List<Note> allNotes = [];
-    if (enableNoteLinkDetection && NoteLinkDetector.hasNoteLinks(text)) {
-      final dbHelper = DatabaseHelper();
-      final noteRepository = NoteRepository(dbHelper);
-      allNotes = await noteRepository.getAllNotes();
-    }
+    bool isAfterDivider = false;
 
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
@@ -113,7 +89,6 @@ class UnifiedTextHandler extends StatelessWidget {
           final spans = _buildNestedSpans(
             context,
             currentTextBuffer.toString(),
-            allNotes,
             textStyle,
           );
           widgets.add(
@@ -127,21 +102,28 @@ class UnifiedTextHandler extends StatelessWidget {
 
         // Add the horizontal rule divider
         widgets.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12.0),
-            child: Divider(
-              height: 1,
-              thickness: 1,
-              color: colorScheme.outline.withAlpha(100),
-            ),
+          Divider(
+            height: 12,
+            thickness: 2,
+            color: colorScheme.outline.withAlpha(100),
           ),
         );
+        isAfterDivider = true;
       } else {
         // Accumulate text lines
-        if (currentTextBuffer.isNotEmpty) {
-          currentTextBuffer.write('\n');
+        if (isAfterDivider && line.isEmpty) {
+          if (currentTextBuffer.isNotEmpty) {
+            currentTextBuffer.write('\n');
+          }
+          currentTextBuffer.write(' ');
+          isAfterDivider = false;
+        } else {
+          if (currentTextBuffer.isNotEmpty) {
+            currentTextBuffer.write('\n');
+          }
+          currentTextBuffer.write(line);
+          isAfterDivider = false;
         }
-        currentTextBuffer.write(line);
       }
     }
 
@@ -150,7 +132,6 @@ class UnifiedTextHandler extends StatelessWidget {
       final spans = _buildNestedSpans(
         context,
         currentTextBuffer.toString(),
-        allNotes,
         textStyle,
       );
       widgets.add(
@@ -161,22 +142,13 @@ class UnifiedTextHandler extends StatelessWidget {
     return widgets;
   }
 
-  Future<List<InlineSpan>> _buildUnifiedTextSpans(BuildContext context) async {
-    // 1. Fetch notes if needed (only once)
-    List<Note> allNotes = [];
-    if (enableNoteLinkDetection && NoteLinkDetector.hasNoteLinks(text)) {
-      final dbHelper = DatabaseHelper();
-      final noteRepository = NoteRepository(dbHelper);
-      allNotes = await noteRepository.getAllNotes();
-    }
-
-    return _buildNestedSpans(context, text, allNotes, textStyle);
+  List<InlineSpan> _buildUnifiedTextSpans(BuildContext context) {
+    return _buildNestedSpans(context, text, textStyle);
   }
 
   List<InlineSpan> _buildNestedSpans(
     BuildContext context,
     String text,
-    List<Note> allNotes,
     TextStyle style,
   ) {
     if (text.isEmpty) return [];
@@ -197,7 +169,7 @@ class UnifiedTextHandler extends StatelessWidget {
       }
 
       // Process segment
-      spans.add(_buildSegmentSpan(context, segment, allNotes, style));
+      spans.add(_buildSegmentSpan(context, segment, style));
       lastIndex = segment.end;
     }
 
@@ -212,7 +184,6 @@ class UnifiedTextHandler extends StatelessWidget {
   InlineSpan _buildSegmentSpan(
     BuildContext context,
     FormatSegment segment,
-    List<Note> allNotes,
     TextStyle baseStyle,
   ) {
     switch (segment.type) {
@@ -223,72 +194,24 @@ class UnifiedTextHandler extends StatelessWidget {
 
         // Extract title from [[Title]]
         final title = segment.text.substring(2, segment.text.length - 2).trim();
-        final matchingNotes =
-            allNotes
-                .where(
-                  (note) =>
-                      note.title.toLowerCase().trim() == title.toLowerCase(),
-                )
-                .toList();
 
-        if (matchingNotes.isNotEmpty) {
-          return WidgetSpan(
-            alignment: PlaceholderAlignment.middle,
-            child: _NoteLinkWidget(
-              text: showNoteLinkBrackets ? segment.originalText : title,
-              textStyle: baseStyle.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                decoration: TextDecoration.underline,
-                fontWeight: FontWeight.w500,
-              ),
-              onTap:
-                  (position) => _handleNoteLinkSelection(
-                    matchingNotes,
-                    title,
-                    context,
-                    false,
-                    position,
-                  ),
-              onMiddleClick:
-                  (position) => _handleNoteLinkSelection(
-                    matchingNotes,
-                    title,
-                    context,
-                    true,
-                    position,
-                  ),
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: _NoteLinkWidget(
+            text: showNoteLinkBrackets ? segment.originalText : title,
+            textStyle: baseStyle.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              decoration: TextDecoration.underline,
+              fontWeight: FontWeight.w500,
             ),
-          );
-        } else {
-          // Note doesn't exist, but make it clickable to allow creation
-          return WidgetSpan(
-            alignment: PlaceholderAlignment.middle,
-            child: _NoteLinkWidget(
-              text: showNoteLinkBrackets ? segment.originalText : title,
-              textStyle: baseStyle.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                decoration: TextDecoration.underline,
-                fontWeight: FontWeight.w500,
-              ),
-              onTap:
-                  (position) => _handleNoteLinkSelection(
-                    matchingNotes,
-                    title,
-                    context,
-                    false,
-                    position,
-                  ),
-              onMiddleClick:
-                  (position) => _handleNoteLinkSelection(
-                    matchingNotes,
-                    title,
-                    context,
-                    true,
-                    position,
-                  ),
-            ),
-          );
-        }
+            onTap:
+                (position) =>
+                    _handleNoteLinkTapAsync(title, context, false, position),
+            onMiddleClick:
+                (position) =>
+                    _handleNoteLinkTapAsync(title, context, true, position),
+          ),
+        );
 
       case FormatType.checkboxUnchecked:
       case FormatType.checkboxChecked:
@@ -298,16 +221,11 @@ class UnifiedTextHandler extends StatelessWidget {
 
         final isChecked = segment.type == FormatType.checkboxChecked;
         // Extract content: "- [ ] Content" -> "Content"
-        // Regex to split: ^\s*-\s?\[\s*[xX\s]?\s*\]\s*(.+)$
         final match = RegExp(
           r'^\s*-\s?\[\s*[xX\s]?\s*\]\s*(.+)$',
           multiLine: true,
         ).firstMatch(segment.originalText);
         final content = match?.group(1) ?? '';
-        segment.originalText.substring(
-          0,
-          segment.originalText.length - content.length,
-        );
 
         return TextSpan(
           children: [
@@ -324,7 +242,6 @@ class UnifiedTextHandler extends StatelessWidget {
             ..._buildNestedSpans(
               context,
               content,
-              allNotes,
               baseStyle.copyWith(
                 color: isChecked ? Colors.grey : baseStyle.color,
                 decoration: isChecked ? TextDecoration.lineThrough : null,
@@ -348,7 +265,7 @@ class UnifiedTextHandler extends StatelessWidget {
         return TextSpan(
           children: [
             TextSpan(text: '• ', style: baseStyle), // Standardize bullet
-            ..._buildNestedSpans(context, content, allNotes, baseStyle),
+            ..._buildNestedSpans(context, content, baseStyle),
           ],
         );
 
@@ -367,7 +284,7 @@ class UnifiedTextHandler extends StatelessWidget {
         return TextSpan(
           children: [
             TextSpan(text: '$marker ', style: baseStyle),
-            ..._buildNestedSpans(context, content, allNotes, baseStyle),
+            ..._buildNestedSpans(context, content, baseStyle),
           ],
         );
 
@@ -407,12 +324,7 @@ class UnifiedTextHandler extends StatelessWidget {
         );
 
         return TextSpan(
-          children: _buildNestedSpans(
-            context,
-            segment.text,
-            allNotes,
-            headingStyle,
-          ),
+          children: _buildNestedSpans(context, segment.text, headingStyle),
         );
 
       case FormatType.bold:
@@ -420,7 +332,6 @@ class UnifiedTextHandler extends StatelessWidget {
           children: _buildNestedSpans(
             context,
             segment.text,
-            allNotes,
             baseStyle.copyWith(fontWeight: FontWeight.bold),
           ),
         );
@@ -430,7 +341,6 @@ class UnifiedTextHandler extends StatelessWidget {
           children: _buildNestedSpans(
             context,
             segment.text,
-            allNotes,
             baseStyle.copyWith(fontStyle: FontStyle.italic),
           ),
         );
@@ -440,7 +350,6 @@ class UnifiedTextHandler extends StatelessWidget {
           children: _buildNestedSpans(
             context,
             segment.text,
-            allNotes,
             baseStyle.copyWith(decoration: TextDecoration.lineThrough),
           ),
         );
@@ -448,10 +357,7 @@ class UnifiedTextHandler extends StatelessWidget {
       case FormatType.code:
         return WidgetSpan(
           alignment: PlaceholderAlignment.middle,
-          child: _InlineCodeWidget(
-            text: segment.text,
-            style: baseStyle,
-          ),
+          child: _InlineCodeWidget(text: segment.text, style: baseStyle),
         );
 
       case FormatType.link:
@@ -479,13 +385,6 @@ class UnifiedTextHandler extends StatelessWidget {
   void _toggleCheckbox(FormatSegment segment, bool isChecked) {
     if (onTextChanged == null) return;
 
-    // We have the exact range of the segment!
-    // But we need to be careful: segment.start/end are relative to the text passed to parseSegments.
-    // If text hasn't changed, they are valid.
-
-    // Replace [ ] with [x] or vice versa in the segment text
-    // The segment text is the whole line "  - [ ] Content"
-
     final newText = text.replaceRange(
       segment.start,
       segment.end,
@@ -498,14 +397,23 @@ class UnifiedTextHandler extends StatelessWidget {
     onTextChanged!(newText);
   }
 
-  void _handleNoteLinkSelection(
-    List<Note> matchingNotes,
+  void _handleNoteLinkTapAsync(
     String title,
     BuildContext context,
     bool isMiddleClick,
     Offset position,
-  ) {
-    // If no matching notes exist, simply do nothing
+  ) async {
+    final dbHelper = DatabaseHelper();
+    final noteRepository = NoteRepository(dbHelper);
+    final allNotes = await noteRepository.getAllNotes();
+
+    final matchingNotes =
+        allNotes
+            .where(
+              (note) => note.title.toLowerCase().trim() == title.toLowerCase(),
+            )
+            .toList();
+
     if (matchingNotes.isEmpty) {
       return;
     }
@@ -625,7 +533,6 @@ class UnifiedTextHandler extends StatelessWidget {
   }
 }
 
-/// Widget for clickable note links with middle-click support
 class _NoteLinkWidget extends StatelessWidget {
   final String text;
   final TextStyle textStyle;
@@ -669,10 +576,7 @@ class _InlineCodeWidget extends StatefulWidget {
   final String text;
   final TextStyle style;
 
-  const _InlineCodeWidget({
-    required this.text,
-    required this.style,
-  });
+  const _InlineCodeWidget({required this.text, required this.style});
 
   @override
   State<_InlineCodeWidget> createState() => _InlineCodeWidgetState();
@@ -686,17 +590,20 @@ class _InlineCodeWidgetState extends State<_InlineCodeWidget> {
   Widget build(BuildContext context) {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() {
-        _isHovered = false;
-        _isCopied = false;
-      }),
+      onExit:
+          (_) => setState(() {
+            _isHovered = false;
+            _isCopied = false;
+          }),
       child: Stack(
         children: [
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(128),
+              color: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withAlpha(128),
               borderRadius: BorderRadius.circular(4),
               border: Border.all(
                 color: Theme.of(context).colorScheme.outline.withAlpha(40),
@@ -731,7 +638,10 @@ class _InlineCodeWidgetState extends State<_InlineCodeWidget> {
                     child: Icon(
                       _isCopied ? Icons.check_rounded : Icons.copy_rounded,
                       size: 16,
-                      color: _isCopied ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+                      color:
+                          _isCopied
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),

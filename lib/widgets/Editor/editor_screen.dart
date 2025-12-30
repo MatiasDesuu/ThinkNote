@@ -1437,14 +1437,14 @@ class _NotaEditorState extends State<NotaEditor>
                               onPressed: _toggleReadMode,
                             ),
                             IconButton(
-                                icon: Icon(
-                                  _isEditorCentered
-                                      ? Icons.format_align_justify_rounded
-                                      : Icons.format_align_center_rounded,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                onPressed: _toggleEditorCentered,
+                              icon: Icon(
+                                _isEditorCentered
+                                    ? Icons.format_align_justify_rounded
+                                    : Icons.format_align_center_rounded,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
+                              onPressed: _toggleEditorCentered,
+                            ),
                             IconButton(
                               icon: Icon(
                                 _showBottomBar

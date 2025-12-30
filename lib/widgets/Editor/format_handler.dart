@@ -599,6 +599,7 @@ class _FormatAwareTextFieldState extends State<FormatAwareTextField> {
 
     final List<Widget> widgets = [];
     final StringBuffer currentTextBuffer = StringBuffer();
+    bool isAfterDivider = false;
 
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
@@ -618,21 +619,28 @@ class _FormatAwareTextFieldState extends State<FormatAwareTextField> {
 
         // Add the horizontal rule divider
         widgets.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12.0),
-            child: Divider(
-              height: 1,
-              thickness: 1,
-              color: colorScheme.outline.withAlpha(100),
-            ),
+          Divider(
+            height: 12,
+            thickness: 2,
+            color: colorScheme.outline.withAlpha(100),
           ),
         );
+        isAfterDivider = true;
       } else {
         // Accumulate text lines
-        if (currentTextBuffer.isNotEmpty) {
-          currentTextBuffer.write('\n');
+        if (isAfterDivider && line.isEmpty) {
+          if (currentTextBuffer.isNotEmpty) {
+            currentTextBuffer.write('\n');
+          }
+          currentTextBuffer.write(' ');
+          isAfterDivider = false;
+        } else {
+          if (currentTextBuffer.isNotEmpty) {
+            currentTextBuffer.write('\n');
+          }
+          currentTextBuffer.write(line);
+          isAfterDivider = false;
         }
-        currentTextBuffer.write(line);
       }
     }
 

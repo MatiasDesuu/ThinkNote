@@ -80,8 +80,8 @@ class ScriptModeHandlerDesktop {
   }
 
   static Widget _buildEnhancedScriptText(
-    BuildContext context, 
-    String text, 
+    BuildContext context,
+    String text,
     TextStyle textStyle, {
     Function(Note, bool)? onNoteLinkTap,
   }) {
