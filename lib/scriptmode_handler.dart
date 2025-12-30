@@ -93,6 +93,7 @@ class ScriptModeHandlerDesktop {
       enableLinkDetection: true,
       enableListDetection: true,
       enableFormatDetection: true,
+      showNoteLinkBrackets: false,
       onNoteLinkTap: onNoteLinkTap,
     );
   }

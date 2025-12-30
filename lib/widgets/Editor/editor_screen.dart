@@ -1699,28 +1699,19 @@ class _NotaEditorState extends State<NotaEditor>
                   style: _textStyle,
                   textAlign: TextAlign.start,
                 )
-                : _buildEnhancedTextView(text),
+                : UnifiedTextHandler(
+                  text: text,
+                  textStyle: _textStyle,
+                  enableNoteLinkDetection: true,
+                  enableLinkDetection: true,
+                  enableListDetection: true,
+                  enableFormatDetection: true,
+                  showNoteLinkBrackets: false,
+                  onNoteLinkTap: (note, isMiddleClick) {
+                    _handleNoteLinkTap(note, isMiddleClick);
+                  },
+                ),
       ),
-    );
-  }
-
-  Widget _buildEnhancedTextView(String text) {
-    // Use the new UnifiedTextHandler that handles ALL formatting types
-    return UnifiedTextHandler(
-      text: text,
-      textStyle: _textStyle,
-      enableNoteLinkDetection: true,
-      enableLinkDetection: true,
-      enableListDetection: true,
-      enableFormatDetection: true,
-      onNoteLinkTap: (note, isMiddleClick) {
-        _handleNoteLinkTap(note, isMiddleClick);
-      },
-      controller: widget.noteController,
-      onTextChanged: (newText) {
-        widget.noteController.text = newText;
-        widget.onContentChanged();
-      },
     );
   }
 

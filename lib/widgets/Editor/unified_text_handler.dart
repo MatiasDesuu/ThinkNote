@@ -26,6 +26,7 @@ class UnifiedTextHandler extends StatelessWidget {
   final bool enableLinkDetection;
   final bool enableListDetection;
   final bool enableFormatDetection;
+  final bool showNoteLinkBrackets;
 
   const UnifiedTextHandler({
     super.key,
@@ -38,6 +39,7 @@ class UnifiedTextHandler extends StatelessWidget {
     this.enableLinkDetection = true,
     this.enableListDetection = true,
     this.enableFormatDetection = true,
+    this.showNoteLinkBrackets = true,
   });
 
   // Regex to match horizontal rule pattern
@@ -233,7 +235,7 @@ class UnifiedTextHandler extends StatelessWidget {
           return WidgetSpan(
             alignment: PlaceholderAlignment.middle,
             child: _NoteLinkWidget(
-              text: segment.originalText,
+              text: showNoteLinkBrackets ? segment.originalText : title,
               textStyle: baseStyle.copyWith(
                 color: Theme.of(context).colorScheme.primary,
                 decoration: TextDecoration.underline,
@@ -262,7 +264,7 @@ class UnifiedTextHandler extends StatelessWidget {
           return WidgetSpan(
             alignment: PlaceholderAlignment.middle,
             child: _NoteLinkWidget(
-              text: segment.originalText,
+              text: showNoteLinkBrackets ? segment.originalText : title,
               textStyle: baseStyle.copyWith(
                 color: Theme.of(context).colorScheme.primary,
                 decoration: TextDecoration.underline,
