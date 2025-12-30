@@ -18,6 +18,7 @@ import 'bookmarks_tags_handler.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html;
 import '../widgets/custom_snackbar.dart';
+import '../widgets/custom_tooltip.dart';
 import '../widgets/context_menu.dart';
 import '../widgets/confirmation_dialogue.dart';
 
@@ -291,9 +292,9 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                             ),
                             // Botón de ordenamiento
                             IconButton(
-                              icon: Tooltip(
-                                message: _linksHandler.isOldestFirst ? '' : '',
-                                child: RotatedBox(
+                              icon: CustomTooltip(
+                                message: _linksHandler.isOldestFirst ? 'Sort by oldest first' : 'Sort by newest first',
+                                builder: (context, isHovering) => RotatedBox(
                                   quarterTurns:
                                       _linksHandler.isOldestFirst ? 2 : 0,
                                   child: Icon(

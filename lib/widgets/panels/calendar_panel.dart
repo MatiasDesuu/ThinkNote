@@ -14,6 +14,7 @@ import '../../services/notification_service.dart';
 import '../custom_snackbar.dart';
 import '../calendar_event_status_manager.dart';
 import '../context_menu.dart';
+import '../custom_tooltip.dart';
 
 class CalendarPanel extends StatefulWidget {
   final Function(Note) onNoteSelected;
@@ -762,9 +763,10 @@ class CalendarPanelState extends State<CalendarPanel>
                                   ),
                                 ),
                               ),
-                              child: MouseRegionHoverItem(
+                              child: CustomTooltip(
+                                message: event.note!.title,
                                 builder: (context, isHovering) {
-                                  final card = Card(
+                                  return Card(
                                     margin: const EdgeInsets.only(bottom: 8),
                                     color: colorScheme.surfaceContainerHighest,
                                     shape: RoundedRectangleBorder(
@@ -971,26 +973,6 @@ class CalendarPanelState extends State<CalendarPanel>
                                       ),
                                     ),
                                   );
-
-                                  if (isHovering) {
-                                    return Tooltip(
-                                      message: event.note!.title,
-                                      waitDuration: const Duration(
-                                        milliseconds: 500,
-                                      ),
-                                      textStyle: TextStyle(
-                                        color: colorScheme.onSurface,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.surfaceContainerHigh
-                                            .withAlpha(255),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: card,
-                                    );
-                                  }
-
-                                  return card;
                                 },
                               ),
                             );
@@ -1506,27 +1488,5 @@ class CalendarPanelState extends State<CalendarPanel>
           ),
     );
     return _parseColor(status.color);
-  }
-}
-
-class MouseRegionHoverItem extends StatefulWidget {
-  final Widget Function(BuildContext, bool) builder;
-
-  const MouseRegionHoverItem({super.key, required this.builder});
-
-  @override
-  State<MouseRegionHoverItem> createState() => _MouseRegionHoverItemState();
-}
-
-class _MouseRegionHoverItemState extends State<MouseRegionHoverItem> {
-  bool _isHovering = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      child: widget.builder(context, _isHovering),
-    );
   }
 }

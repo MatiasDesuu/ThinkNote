@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import '../context_menu.dart';
 import '../../services/tags_service.dart';
+import '../custom_tooltip.dart';
 
 enum SortMode { order, date, completion }
 
@@ -111,67 +112,87 @@ class NotesPanelState extends State<NotesPanel> {
     }
   }
 
+  String _getSortTooltip() {
+    switch (_sortMode) {
+      case SortMode.order:
+        return 'Sort by order';
+      case SortMode.date:
+        return 'Sort by date';
+      case SortMode.completion:
+        return 'Sort by completion';
+    }
+  }
+
   Widget buildTrailingButton() {
     if (_sortMode == SortMode.completion) {
       return Row(
         key: ValueKey<bool>(_completionSubSortByDate),
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            icon: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return ScaleTransition(
-                  scale: animation,
-                  child: FadeTransition(opacity: animation, child: child),
-                );
-              },
-              child: Icon(
-                _completionSubSortByDate
-                    ? Icons.access_time
-                    : Icons.sort_by_alpha,
-                size: 16,
-                key: ValueKey<bool>(_completionSubSortByDate),
+          CustomTooltip(
+            message: _completionSubSortByDate ? 'Sort completed by title' : 'Sort completed by date',
+            builder: (context, isHovering) => IconButton(
+              icon: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return ScaleTransition(
+                    scale: animation,
+                    child: FadeTransition(opacity: animation, child: child),
+                  );
+                },
+                child: Icon(
+                  _completionSubSortByDate
+                      ? Icons.access_time
+                      : Icons.sort_by_alpha,
+                  size: 16,
+                  key: ValueKey<bool>(_completionSubSortByDate),
+                ),
               ),
+              onPressed: toggleCompletionSubSort,
             ),
-            onPressed: toggleCompletionSubSort,
           ),
-          IconButton(
-            icon: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return ScaleTransition(
-                  scale: animation,
-                  child: FadeTransition(opacity: animation, child: child),
-                );
-              },
-              child: Icon(
-                _getSortIcon(),
-                size: 16,
-                key: ValueKey<SortMode>(_sortMode),
+          CustomTooltip(
+            message: _getSortTooltip(),
+            builder: (context, isHovering) => IconButton(
+              icon: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return ScaleTransition(
+                    scale: animation,
+                    child: FadeTransition(opacity: animation, child: child),
+                  );
+                },
+                child: Icon(
+                  _getSortIcon(),
+                  size: 16,
+                  key: ValueKey<SortMode>(_sortMode),
+                ),
               ),
+              onPressed: toggleSortOrder,
             ),
-            onPressed: toggleSortOrder,
           ),
         ],
       );
     } else {
-      return IconButton(
-        icon: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          transitionBuilder: (Widget child, Animation<double> animation) {
-            return ScaleTransition(
-              scale: animation,
-              child: FadeTransition(opacity: animation, child: child),
-            );
-          },
-          child: Icon(
-            _getSortIcon(),
-            size: 16,
-            key: ValueKey<SortMode>(_sortMode),
+      return CustomTooltip(
+        message: _getSortTooltip(),
+        builder: (context, isHovering) => IconButton(
+          icon: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return ScaleTransition(
+                scale: animation,
+                child: FadeTransition(opacity: animation, child: child),
+              );
+            },
+            child: Icon(
+              _getSortIcon(),
+              size: 16,
+              key: ValueKey<SortMode>(_sortMode),
+            ),
           ),
+          onPressed: toggleSortOrder,
         ),
-        onPressed: toggleSortOrder,
       );
     }
   }

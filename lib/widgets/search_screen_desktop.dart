@@ -7,6 +7,7 @@ import '../database/database_helper.dart';
 import '../database/repositories/note_repository.dart';
 import '../database/repositories/notebook_repository.dart';
 import 'custom_snackbar.dart';
+import 'custom_tooltip.dart';
 
 class SearchScreenDesktop extends StatefulWidget {
   final Function(Note)? onNoteSelected;
@@ -238,12 +239,12 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
                           ),
                           const SizedBox(width: 12),
                           // Advanced search toggle button
-                          Tooltip(
+                          CustomTooltip(
                             message:
                                 _isAdvancedSearchEnabled
                                     ? 'Disable advanced search (title only)'
                                     : 'Enable advanced search (title + content)',
-                            child: IconButton(
+                            builder: (context, isHovering) => IconButton(
                               icon: Icon(
                                 _isAdvancedSearchEnabled
                                     ? Icons.insights_rounded

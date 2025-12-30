@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
+import '../custom_tooltip.dart';
 import 'format_handler.dart';
 
 class EditorBottomBar extends StatefulWidget {
@@ -36,28 +37,13 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
     required VoidCallback onPressed,
     required String tooltipMessage,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return MouseRegionHoverItem(
-      builder: (context, isHovering) {
-        final button = IconButton(
-          icon: icon,
-          onPressed: onPressed,
-          visualDensity: VisualDensity.compact,
-        );
-        if (isHovering) {
-          return Tooltip(
-            message: tooltipMessage,
-            waitDuration: const Duration(milliseconds: 500),
-            textStyle: TextStyle(color: colorScheme.onSurface),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withAlpha(255),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: button,
-          );
-        }
-        return button;
-      },
+    return CustomTooltip(
+      message: tooltipMessage,
+      builder: (context, isHovering) => IconButton(
+        icon: icon,
+        onPressed: onPressed,
+        visualDensity: VisualDensity.compact,
+      ),
     );
   }
 
@@ -229,28 +215,6 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class MouseRegionHoverItem extends StatefulWidget {
-  final Widget Function(BuildContext, bool) builder;
-
-  const MouseRegionHoverItem({super.key, required this.builder});
-
-  @override
-  State<MouseRegionHoverItem> createState() => _MouseRegionHoverItemState();
-}
-
-class _MouseRegionHoverItemState extends State<MouseRegionHoverItem> {
-  bool _isHovering = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      child: widget.builder(context, _isHovering),
     );
   }
 }

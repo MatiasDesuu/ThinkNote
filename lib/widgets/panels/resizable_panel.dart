@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import '../draggable_header.dart';
+import '../custom_tooltip.dart';
 
 class ResizablePanel extends StatefulWidget {
   final Widget child;
@@ -274,12 +275,15 @@ class ResizablePanelState extends State<ResizablePanel>
                                   ),
                                   const Spacer(),
                                   if (_isHovered && widget.onTitleTap != null)
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.home_rounded,
-                                        size: 16,
+                                    CustomTooltip(
+                                      message: 'Go to root notebook',
+                                      builder: (context, isHovering) => IconButton(
+                                        icon: Icon(
+                                          Icons.home_rounded,
+                                          size: 16,
+                                        ),
+                                        onPressed: widget.onTitleTap,
                                       ),
-                                      onPressed: widget.onTitleTap,
                                     ),
                                   if (widget.trailing != null) widget.trailing!,
                                 ],

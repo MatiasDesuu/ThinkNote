@@ -23,6 +23,7 @@ import 'editor_bottom_bar.dart';
 import 'format_handler.dart';
 import '../../services/tab_manager.dart';
 import 'note_statistics_dialog.dart';
+import '../custom_tooltip.dart';
 
 // Global reference to the current active editor's toggle read mode function
 VoidCallback? _currentActiveEditorToggleReadMode;
@@ -1403,78 +1404,96 @@ class _NotaEditorState extends State<NotaEditor>
                                   content: widget.noteController.text,
                                 ),
                               ),
-                            SaveButton(
-                              controller: _saveController,
-                              onPressed: () {
-                                // Preservar foco antes del guardado
-                                final hadFocus = _editorFocusNode.hasFocus;
-                                final currentSelection =
-                                    widget.noteController.selection;
+                            CustomTooltip(
+                              message: 'Save note',
+                              builder: (context, isHovering) => SaveButton(
+                                controller: _saveController,
+                                onPressed: () {
+                                  // Preservar foco antes del guardado
+                                  final hadFocus = _editorFocusNode.hasFocus;
+                                  final currentSelection =
+                                      widget.noteController.selection;
 
-                                _handleSave().then((_) {
-                                  // Restaurar foco después del guardado si se perdió
-                                  if (hadFocus && !_editorFocusNode.hasFocus) {
-                                    WidgetsBinding.instance
-                                        .addPostFrameCallback((_) {
-                                          if (mounted) {
-                                            _editorFocusNode.requestFocus();
-                                            widget.noteController.selection =
-                                                currentSelection;
-                                          }
-                                        });
-                                  }
-                                });
-                              },
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                _isReadMode
-                                    ? Icons.edit_rounded
-                                    : Icons.visibility_rounded,
-                                color: Theme.of(context).colorScheme.primary,
+                                  _handleSave().then((_) {
+                                    // Restaurar foco después del guardado si se perdió
+                                    if (hadFocus && !_editorFocusNode.hasFocus) {
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback((_) {
+                                            if (mounted) {
+                                              _editorFocusNode.requestFocus();
+                                              widget.noteController.selection =
+                                                  currentSelection;
+                                            }
+                                          });
+                                    }
+                                  });
+                                },
                               ),
-                              onPressed: _toggleReadMode,
                             ),
-                            IconButton(
-                              icon: Icon(
-                                _isEditorCentered
-                                    ? Icons.format_align_justify_rounded
-                                    : Icons.format_align_center_rounded,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              onPressed: _toggleEditorCentered,
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                _showBottomBar
-                                    ? Icons.keyboard_arrow_up_rounded
-                                    : Icons.keyboard_arrow_down_rounded,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              onPressed: () {
-                                EditorSettings.setShowBottomBar(
-                                  !_showBottomBar,
-                                );
-                              },
-                            ),
-                            if (_immersiveModeService.isImmersiveMode)
-                              IconButton(
+                            CustomTooltip(
+                              message: _isReadMode ? 'Edit mode' : 'Read mode',
+                              builder: (context, isHovering) => IconButton(
                                 icon: Icon(
-                                  Icons.fullscreen_exit_rounded,
+                                  _isReadMode
+                                      ? Icons.edit_rounded
+                                      : Icons.visibility_rounded,
                                   color: Theme.of(context).colorScheme.primary,
                                 ),
-                                onPressed:
-                                    () =>
-                                        _immersiveModeService
-                                            .exitImmersiveMode(),
+                                onPressed: _toggleReadMode,
                               ),
-                            IconButton(
-                              key: _exportButtonKey,
-                              icon: Icon(
-                                Icons.more_vert_rounded,
-                                color: Theme.of(context).colorScheme.primary,
+                            ),
+                            CustomTooltip(
+                              message: _isEditorCentered ? 'Disable centered layout' : 'Enable centered layout',
+                              builder: (context, isHovering) => IconButton(
+                                icon: Icon(
+                                  _isEditorCentered
+                                      ? Icons.format_align_justify_rounded
+                                      : Icons.format_align_center_rounded,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                onPressed: _toggleEditorCentered,
                               ),
-                              onPressed: _showExportMenu,
+                            ),
+                            CustomTooltip(
+                              message: _showBottomBar ? 'Hide formatting bar' : 'Show formatting bar',
+                              builder: (context, isHovering) => IconButton(
+                                icon: Icon(
+                                  _showBottomBar
+                                      ? Icons.keyboard_arrow_up_rounded
+                                      : Icons.keyboard_arrow_down_rounded,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                onPressed: () {
+                                  EditorSettings.setShowBottomBar(
+                                    !_showBottomBar,
+                                  );
+                                },
+                              ),
+                            ),
+                            if (_immersiveModeService.isImmersiveMode)
+                              CustomTooltip(
+                                message: 'Exit immersive mode',
+                                builder: (context, isHovering) => IconButton(
+                                  icon: Icon(
+                                    Icons.fullscreen_exit_rounded,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                  onPressed:
+                                      () =>
+                                          _immersiveModeService
+                                              .exitImmersiveMode(),
+                                ),
+                              ),
+                            CustomTooltip(
+                              message: 'Note options',
+                              builder: (context, isHovering) => IconButton(
+                                key: _exportButtonKey,
+                                icon: Icon(
+                                  Icons.more_vert_rounded,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                onPressed: _showExportMenu,
+                              ),
                             ),
                           ],
                         ),

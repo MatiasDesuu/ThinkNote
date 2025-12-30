@@ -8,6 +8,7 @@ import '../widgets/custom_snackbar.dart';
 import '../widgets/confirmation_dialogue.dart';
 import '../widgets/custom_dialog.dart';
 import '../widgets/custom_date_picker_dialog.dart';
+import '../widgets/custom_tooltip.dart';
 
 /// Panel de detalles de una tarea seleccionada
 class TaskDetailsPanel extends StatefulWidget {
@@ -252,9 +253,9 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
     required ColorScheme colorScheme,
     String? tooltip,
   }) {
-    return Tooltip(
+    return CustomTooltip(
       message: tooltip ?? '',
-      child: Material(
+      builder: (context, isHovering) => Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
@@ -380,9 +381,9 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
           ),
 
           // Sort toggle button
-          Tooltip(
+          CustomTooltip(
             message: ordenarPorPrioridad ? 'Sort manually' : 'Sort by priority',
-            child: Material(
+            builder: (context, isHovering) => Material(
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(8),
               child: InkWell(

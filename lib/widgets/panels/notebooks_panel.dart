@@ -14,6 +14,7 @@ import '../context_menu.dart';
 import '../icon_selector_dialog.dart';
 import '../tags_panel.dart';
 import '../custom_dialog.dart';
+import '../custom_tooltip.dart';
 
 const double kChevronWidth = 40.0;
 const double kIndentPerLevel = 4.0;
@@ -85,24 +86,27 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
   }
 
   Widget buildTrailingButton() {
-    return IconButton(
-      icon: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 200),
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          return ScaleTransition(
-            scale: animation,
-            child: FadeTransition(opacity: animation, child: child),
-          );
-        },
-        child: Icon(
-          areAllNotebooksExpanded
-              ? Icons.unfold_less_rounded
-              : Icons.unfold_more_rounded,
-          size: 16,
-          key: ValueKey<bool>(areAllNotebooksExpanded),
+    return CustomTooltip(
+      message: areAllNotebooksExpanded ? 'Collapse all notebooks' : 'Expand all notebooks',
+      builder: (context, isHovering) => IconButton(
+        icon: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return ScaleTransition(
+              scale: animation,
+              child: FadeTransition(opacity: animation, child: child),
+            );
+          },
+          child: Icon(
+            areAllNotebooksExpanded
+                ? Icons.unfold_less_rounded
+                : Icons.unfold_more_rounded,
+            size: 16,
+            key: ValueKey<bool>(areAllNotebooksExpanded),
+          ),
         ),
+        onPressed: toggleAllNotebooks,
       ),
-      onPressed: toggleAllNotebooks,
     );
   }
 
