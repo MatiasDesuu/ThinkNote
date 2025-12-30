@@ -102,16 +102,25 @@ class UnifiedTextHandler extends StatelessWidget {
 
         // Add the horizontal rule divider
         widgets.add(
-          Divider(
-            height: 12,
-            thickness: 2,
-            color: colorScheme.outline.withAlpha(100),
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 4),
+            child: Container(
+              height: 2,
+              decoration: BoxDecoration(
+                color: colorScheme.outline.withAlpha(150),
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
           ),
         );
         isAfterDivider = true;
       } else {
         // Accumulate text lines
-        if (isAfterDivider && line.isEmpty) {
+        final bool isNextLineDivider =
+            i + 1 < lines.length &&
+            _horizontalRuleRegex.hasMatch(lines[i + 1].trim());
+
+        if ((isAfterDivider || isNextLineDivider) && line.isEmpty) {
           if (currentTextBuffer.isNotEmpty) {
             currentTextBuffer.write('\n');
           }
