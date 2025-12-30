@@ -21,20 +21,16 @@ class CustomTooltip extends StatelessWidget {
     
     return MouseRegionHoverItem(
       builder: (context, isHovering) {
-        final child = builder(context, isHovering);
-        if (isHovering) {
-          return Tooltip(
-            message: message,
-            waitDuration: waitDuration,
-            textStyle: TextStyle(color: colorScheme.onSurface),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHigh.withAlpha(255),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: child,
-          );
-        }
-        return child;
+        return Tooltip(
+          message: message,
+          waitDuration: waitDuration,
+          textStyle: TextStyle(color: colorScheme.onSurface),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHigh.withAlpha(255),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: builder(context, isHovering),
+        );
       },
     );
   }
