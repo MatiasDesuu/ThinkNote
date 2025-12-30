@@ -220,41 +220,48 @@ class _NotaEditorState extends State<NotaEditor>
   void didUpdateWidget(NotaEditor oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Si cambió la nota (por ID), reconfigurar los listeners para los nuevos controladores
-    // Usamos el ID en lugar de comparar objetos porque Note no tiene operator ==
+    // If changed note (by ID), reconfigure listeners for new controllers
+    // We use the ID instead of comparing objects because Note does not have operator ==
     final noteChanged = oldWidget.selectedNote.id != widget.selectedNote.id;
 
     if (noteChanged) {
       _reconfigureListeners(oldWidget);
       _detectScriptMode();
 
-      // Siempre actualizar el SearchManager con los nuevos controladores
+      // Update the SearchManager with the new controllers
       _searchManager.updateControllers(
         newNoteController: widget.noteController,
         newScrollController: _scrollController,
       );
 
-      // Sincronizar el modo lectura con el estado del nuevo tab
+      // Sync read mode with the new tab's state
       if (_isReadMode != widget.initialReadMode) {
         setState(() {
           _isReadMode = widget.initialReadMode;
         });
       }
 
-      // Sincronizar el centrado con el estado del nuevo tab
-      if (_isEditorCentered != widget.initialEditorCentered) {
-        setState(() {
-          _isEditorCentered = widget.initialEditorCentered;
-        });
-      }
-
-      // Cerrar el find bar y limpiar el texto de búsqueda cuando cambia la nota
+      // Close the find bar and clear the search text when the note changes
       if (_showFindBar) {
         _findController.clear();
         setState(() {
           _showFindBar = false;
         });
       }
+    }
+
+    // Sync editor centering with the new tab's state (always, not just when the note changes)
+    if (_isEditorCentered != widget.initialEditorCentered) {
+      setState(() {
+        _isEditorCentered = widget.initialEditorCentered;
+      });
+    }
+
+    // Sync read mode with the new tab's state (always, not just when the note changes)
+    if (_isReadMode != widget.initialReadMode) {
+      setState(() {
+        _isReadMode = widget.initialReadMode;
+      });
     }
 
     if (oldWidget.searchQuery != widget.searchQuery ||
@@ -265,12 +272,12 @@ class _NotaEditorState extends State<NotaEditor>
       });
     }
 
-    // Solo recargar configuraciones si no están cargadas
+    // Only reload settings if they are not loaded
     if (!_isEditorSettingsLoaded) {
       _loadEditorSettings();
     }
 
-    // Forzar actualización de configuraciones cuando el widget se vuelve a mostrar
+    // Force refresh settings when the widget is shown again
     _refreshEditorSettings();
   }
 
