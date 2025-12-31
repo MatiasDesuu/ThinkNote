@@ -1484,9 +1484,7 @@ class _NotaEditorState extends State<NotaEditor>
                                               .exitImmersiveMode(),
                                 ),
                               ),
-                            CustomTooltip(
-                              message: 'Note options',
-                              builder: (context, isHovering) => IconButton(
+                              IconButton(
                                 key: _exportButtonKey,
                                 icon: Icon(
                                   Icons.more_vert_rounded,
@@ -1494,7 +1492,6 @@ class _NotaEditorState extends State<NotaEditor>
                                 ),
                                 onPressed: _showExportMenu,
                               ),
-                            ),
                           ],
                         ),
                       ),
