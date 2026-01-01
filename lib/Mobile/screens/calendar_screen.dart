@@ -120,9 +120,26 @@ class CalendarScreenState extends State<CalendarScreen> {
       final events = await _calendarEventRepository.getCalendarEventsByMonth(
         _selectedMonth,
       );
+      final previousMonth = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month - 1,
+        1,
+      );
+      final nextMonth = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month + 1,
+        1,
+      );
+      final previousEvents =
+          await _calendarEventRepository.getCalendarEventsByMonth(
+            previousMonth,
+          );
+      final nextEvents = await _calendarEventRepository.getCalendarEventsByMonth(
+        nextMonth,
+      );
       if (mounted) {
         setState(() {
-          _events = events;
+          _events = [...previousEvents, ...events, ...nextEvents];
           _isLoading = false;
         });
       }
@@ -660,7 +677,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.chevron_left_rounded),
-                    onPressed: _goToPreviousMonth,
+                    onPressed: _isExpanded ? _goToPreviousMonth : null,
                     constraints: const BoxConstraints(
                       minWidth: 32,
                       minHeight: 32,
@@ -677,7 +694,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.chevron_right_rounded),
-                    onPressed: _goToNextMonth,
+                    onPressed: _isExpanded ? _goToNextMonth : null,
                     constraints: const BoxConstraints(
                       minWidth: 32,
                       minHeight: 32,
@@ -748,7 +765,12 @@ class CalendarScreenState extends State<CalendarScreen> {
                             onTap: () {
                               setState(() {
                                 _selectedDate = date;
+                                if (date.month != _selectedMonth.month ||
+                                    date.year != _selectedMonth.year) {
+                                  _selectedMonth = DateTime(date.year, date.month, 1);
+                                }
                               });
+                              _loadEvents();
                             },
                             borderRadius: BorderRadius.circular(12),
                             child: Container(
