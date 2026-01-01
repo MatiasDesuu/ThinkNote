@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 import '../../database/models/calendar_event.dart';
 import '../../database/models/calendar_event_status.dart';
 import '../../database/models/note.dart';
@@ -14,6 +15,7 @@ import '../../widgets/custom_snackbar.dart';
 import '../widgets/note_editor.dart';
 import 'calendar_event_status_screen.dart';
 import '../../database/database_service.dart';
+import '../../widgets/custom_date_picker_dialog.dart';
 
 class CalendarScreen extends StatefulWidget {
   final Function(Note) onNoteSelected;
@@ -368,6 +370,134 @@ class CalendarScreenState extends State<CalendarScreen> {
           message: 'Error updating event label: $e',
           type: CustomSnackbarType.error,
         );
+      }
+    }
+  }
+
+  void _showEventContextMenu(CalendarEvent event) {
+    final colorScheme = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colorScheme.surface,
+      isScrollControlled: true,
+      builder:
+          (context) => Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).padding.bottom,
+            ),
+            child: Container(
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.onSurface.withAlpha(50),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showStatusMenu(event);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.label_outline_rounded,
+                              size: 20,
+                              color: colorScheme.primary,
+                            ),
+                            const SizedBox(width: 12),
+                            const Text('Assign labels'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        _moveEventToDate(event);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today_rounded,
+                              size: 20,
+                              color: colorScheme.primary,
+                            ),
+                            const SizedBox(width: 12),
+                            const Text('Move event'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  Future<void> _moveEventToDate(CalendarEvent event) async {
+    final eventDates = _events.map((e) => e.date).toList();
+    final selectedDate = await showDialog<DateTime>(
+      context: context,
+      builder:
+          (context) => CustomDatePickerDialog(
+            initialDate: event.date,
+            eventDates: eventDates,
+          ),
+    );
+
+    if (selectedDate != null && !selectedDate.isAtSameMomentAs(event.date)) {
+      try {
+        _isUpdatingManually = true;
+        final updatedEvent = event.copyWith(date: selectedDate);
+        await _calendarEventRepository.updateCalendarEvent(updatedEvent);
+        DatabaseService().notifyDatabaseChanged();
+        
+        await _loadEvents();
+        _isUpdatingManually = false;
+
+        if (mounted) {
+          CustomSnackbar.show(
+            context: context,
+            message: 'Event moved to ${DateFormat('MMMM d, y').format(selectedDate)}',
+            type: CustomSnackbarType.success,
+          );
+        }
+      } catch (e) {
+        _isUpdatingManually = false;
+        print('Error moving event: $e');
+        if (mounted) {
+          CustomSnackbar.show(
+            context: context,
+            message: 'Error moving event',
+            type: CustomSnackbarType.error,
+          );
+        }
       }
     }
   }
@@ -1178,7 +1308,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                               _openNoteEditor(event.note!);
                             },
                             onLongPress: () {
-                              _showStatusMenu(event);
+                              _showEventContextMenu(event);
                             },
                             child: Padding(
                               padding: const EdgeInsets.only(
