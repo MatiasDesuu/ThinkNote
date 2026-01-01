@@ -102,6 +102,17 @@ class TaskRepository {
     return result.map((row) => Task.fromMap(row)).toList();
   }
 
+  Future<List<Task>> getTasksWithDeadlines() async {
+    final db = await _dbHelper.database;
+    final result = db.select('''
+      SELECT * FROM ${config.DatabaseConfig.tableTasks}
+      WHERE ${config.DatabaseConfig.columnTaskDate} IS NOT NULL
+      AND ${config.DatabaseConfig.columnDeletedAt} IS NULL
+      ORDER BY ${config.DatabaseConfig.columnTaskDate} ASC
+      ''');
+    return result.map((row) => Task.fromMap(row)).toList();
+  }
+
   Future<int> updateTask(Task task) async {
     final db = await _dbHelper.database;
     final stmt = db.prepare('''

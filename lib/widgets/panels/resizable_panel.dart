@@ -76,6 +76,7 @@ class ResizablePanelState extends State<ResizablePanel>
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
+      value: 1.0, // Start expanded to avoid jump
     );
     _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
@@ -355,6 +356,7 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
+      value: 1.0, // Start expanded to avoid jump
     );
     _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),

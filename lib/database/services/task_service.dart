@@ -40,6 +40,10 @@ class TaskService {
     return await _taskRepository.getCompletedTasks();
   }
 
+  Future<List<Task>> getTasksWithDeadlines() async {
+    return await _taskRepository.getTasksWithDeadlines();
+  }
+
   Future<void> updateTask(Task task) async {
     // Crear una nueva tarea con todos los campos explícitamente
     final updatedTask = Task(

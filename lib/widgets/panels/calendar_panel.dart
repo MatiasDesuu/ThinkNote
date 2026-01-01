@@ -5,6 +5,7 @@ import '../../database/models/calendar_event_status.dart';
 import '../../database/models/note.dart';
 import '../../database/models/notebook.dart';
 import '../../database/models/notebook_icons.dart';
+import '../../database/models/task.dart';
 import '../../database/repositories/calendar_event_repository.dart';
 import '../../database/repositories/calendar_event_status_repository.dart';
 import '../../database/repositories/notebook_repository.dart';
@@ -15,23 +16,34 @@ import '../custom_snackbar.dart';
 import '../calendar_event_status_manager.dart';
 import '../context_menu.dart';
 import '../custom_tooltip.dart';
+import '../../Tasks/tasks_screen_details.dart';
+
+/// Mode for the calendar panel - determines what type of items to display
+enum CalendarPanelMode {
+  notes, // Default mode - shows notes assigned to calendar
+  tasks, // Tasks mode - shows tasks with deadlines
+}
 
 class CalendarPanel extends StatefulWidget {
-  final Function(Note) onNoteSelected;
+  final Function(Note)? onNoteSelected;
   final Function(Note)? onNoteSelectedFromPanel;
   final Function(Note)? onNoteOpenInNewTab;
   final Function(Notebook)? onNotebookSelected;
   final Function(Notebook)? onNotebookSelectedFromFavorite;
+  final Function(Task)? onTaskSelected;
   final FocusNode appFocusNode;
+  final CalendarPanelMode mode;
 
   const CalendarPanel({
     super.key,
-    required this.onNoteSelected,
+    this.onNoteSelected,
     required this.appFocusNode,
     this.onNoteSelectedFromPanel,
     this.onNoteOpenInNewTab,
     this.onNotebookSelected,
     this.onNotebookSelectedFromFavorite,
+    this.onTaskSelected,
+    this.mode = CalendarPanelMode.notes,
   });
 
   @override
@@ -45,11 +57,13 @@ class CalendarPanelState extends State<CalendarPanel>
   bool _isPanelVisible = true;
   late CalendarEventRepository _calendarEventRepository;
   late CalendarEventStatusRepository _statusRepository;
+  late DatabaseService _databaseService;
   late DateTime _selectedMonth;
   late DateTime _selectedDate;
   List<CalendarEvent> _events = [];
   List<CalendarEventStatus> _statuses = [];
   List<Notebook> _favoriteNotebooks = [];
+  List<Task> _tasksWithDeadlines = [];
   bool _isLoading = true;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -63,6 +77,7 @@ class CalendarPanelState extends State<CalendarPanel>
     super.initState();
     _calendarEventRepository = CalendarEventRepository(DatabaseHelper());
     _statusRepository = CalendarEventStatusRepository(DatabaseHelper());
+    _databaseService = DatabaseService();
     _selectedMonth = DateTime.now();
     _selectedDate = DateTime.now();
 
@@ -81,12 +96,25 @@ class CalendarPanelState extends State<CalendarPanel>
     _databaseChangeSubscription = DatabaseService().onDatabaseChanged.listen((
       _,
     ) {
-      _loadFavoriteNotebooks();
+      if (widget.mode == CalendarPanelMode.notes) {
+        _loadFavoriteNotebooks();
+      } else {
+        _loadTasksWithDeadlines();
+      }
     });
     _eventsController = StreamController<List<CalendarEvent>>.broadcast();
-    _loadEvents();
-    _loadStatuses();
-    _loadFavoriteNotebooks();
+
+    if (widget.mode == CalendarPanelMode.notes) {
+      _loadEvents();
+      _loadStatuses();
+      _loadFavoriteNotebooks();
+    } else {
+      _loadTasksWithDeadlines();
+      _animationController.forward();
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -127,9 +155,49 @@ class CalendarPanelState extends State<CalendarPanel>
   /// Reloads all calendar data (events, statuses, and favorite notebooks)
   /// Used for refreshing after sync operations
   void reloadCalendar() {
-    _loadEvents();
-    _loadStatuses();
-    _loadFavoriteNotebooks();
+    if (widget.mode == CalendarPanelMode.notes) {
+      _loadEvents();
+      _loadStatuses();
+      _loadFavoriteNotebooks();
+    } else {
+      _loadTasksWithDeadlines();
+    }
+  }
+
+  /// Load all tasks that have a deadline date assigned
+  Future<void> _loadTasksWithDeadlines() async {
+    if (!mounted) return;
+
+    try {
+      final tasksWithDates =
+          await _databaseService.taskService.getTasksWithDeadlines();
+
+      if (mounted) {
+        setState(() {
+          _tasksWithDeadlines = tasksWithDates;
+        });
+      }
+    } catch (e) {
+      print('Error loading tasks with deadlines: $e');
+    }
+  }
+
+  Future<void> _clearTaskDate(Task task) async {
+    try {
+      await _databaseService.taskService.updateTaskDate(task.id!, null);
+      _databaseService.notifyDatabaseChanged();
+    } catch (e) {
+      print('Error clearing task date: $e');
+    }
+  }
+
+  Future<void> _handleTaskDropWithDate(Task task, DateTime date) async {
+    try {
+      await _databaseService.taskService.updateTaskDate(task.id!, date);
+      _databaseService.notifyDatabaseChanged();
+    } catch (e) {
+      print('Error updating task date on drop: $e');
+    }
   }
 
   void _handleNoteUpdate(Note updatedNote) {
@@ -418,7 +486,7 @@ class CalendarPanelState extends State<CalendarPanel>
       );
 
       await _calendarEventRepository.createCalendarEvent(event);
-      DatabaseHelper.notifyDatabaseChanged();
+      _databaseService.notifyDatabaseChanged();
       await _loadEvents();
     } catch (e) {
       if (mounted) {
@@ -457,7 +525,7 @@ class CalendarPanelState extends State<CalendarPanel>
       // Actualizar la fecha del evento
       final updatedEvent = event.copyWith(date: newDate);
       await _calendarEventRepository.updateCalendarEvent(updatedEvent);
-      DatabaseHelper.notifyDatabaseChanged();
+      _databaseService.notifyDatabaseChanged();
       await _loadEvents();
     } catch (e) {
       if (mounted) {
@@ -578,14 +646,17 @@ class CalendarPanelState extends State<CalendarPanel>
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainer,
                   ),
-                  child: StreamBuilder<List<CalendarEvent>>(
-                    stream: _eventsController.stream,
-                    initialData: _events,
-                    builder: (context, snapshot) {
-                      final eventsSnapshot = snapshot.data ?? _events;
-                      return _buildEventsPanel(eventsSnapshot);
-                    },
-                  ),
+                  child:
+                      widget.mode == CalendarPanelMode.tasks
+                          ? _buildTasksPanel()
+                          : StreamBuilder<List<CalendarEvent>>(
+                            stream: _eventsController.stream,
+                            initialData: _events,
+                            builder: (context, snapshot) {
+                              final eventsSnapshot = snapshot.data ?? _events;
+                              return _buildEventsPanel(eventsSnapshot);
+                            },
+                          ),
                 ),
               ),
             ],
@@ -785,7 +856,9 @@ class CalendarPanelState extends State<CalendarPanel>
                                               event.note!,
                                             );
                                           }
-                                          widget.onNoteSelected(event.note!);
+                                          widget.onNoteSelected?.call(
+                                            event.note!,
+                                          );
                                         },
                                         onSecondaryTapDown:
                                             (details) =>
@@ -1080,6 +1153,307 @@ class CalendarPanelState extends State<CalendarPanel>
     );
   }
 
+  /// Build the tasks panel for tasks mode - shows tasks with deadlines on the selected day
+  Widget _buildTasksPanel() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tasksForSelectedDay =
+            _tasksWithDeadlines.where((task) {
+              if (task.date == null) return false;
+              return task.date!.year == _selectedDate.year &&
+                  task.date!.month == _selectedDate.month &&
+                  task.date!.day == _selectedDate.day;
+            }).toList();
+
+        // Sort tasks: pending first, then by state
+        tasksForSelectedDay.sort((a, b) {
+          // Completed tasks go to the end
+          if (a.completed && !b.completed) return 1;
+          if (!a.completed && b.completed) return -1;
+          // Then sort by state (inProgress first, then pending)
+          if (a.state == TaskState.inProgress &&
+              b.state != TaskState.inProgress) {
+            return -1;
+          }
+          if (a.state != TaskState.inProgress &&
+              b.state == TaskState.inProgress) {
+            return 1;
+          }
+          // Finally by order index
+          return a.orderIndex.compareTo(b.orderIndex);
+        });
+
+        return Container(
+          width: constraints.maxWidth,
+          decoration: BoxDecoration(color: colorScheme.surfaceContainerLow),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.task_alt_rounded,
+                      size: 20,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Tasks for ${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.label_rounded,
+                        color: colorScheme.primary,
+                      ),
+                      onPressed: _showTagsManager,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child:
+                    tasksForSelectedDay.isEmpty
+                        ? Center(
+                          child: Text(
+                            'No tasks for this day',
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        )
+                        : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: tasksForSelectedDay.length,
+                          itemBuilder: (context, index) {
+                            final task = tasksForSelectedDay[index];
+                            return _buildTaskItem(task);
+                          },
+                        ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Build a single task item for the tasks panel
+  Widget _buildTaskItem(Task task) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isCompleted = task.completed || task.state == TaskState.completed;
+
+    return Draggable<Task>(
+      data: task,
+      dragAnchorStrategy: pointerDragAnchorStrategy,
+      feedback: Material(
+        color: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(51),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.task_alt_rounded,
+                color: colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                task.name,
+                style: TextStyle(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      child: CustomTooltip(
+        message: task.name,
+        builder: (context, isHovering) {
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            color: colorScheme.surfaceContainerHighest,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  widget.onTaskSelected?.call(task);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.task_alt_rounded,
+                        color:
+                            isCompleted
+                                ? colorScheme.primary
+                                : task.state == TaskState.inProgress
+                                ? const Color(0xFFE67E22)
+                                : colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              task.name,
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium?.copyWith(
+                                color:
+                                    isCompleted
+                                        ? colorScheme.onSurfaceVariant
+                                            .withAlpha(150)
+                                        : colorScheme.onSurface,
+                                fontWeight: FontWeight.w500,
+                                decoration:
+                                    isCompleted
+                                        ? TextDecoration.lineThrough
+                                        : null,
+                                decorationColor: colorScheme.onSurfaceVariant
+                                    .withAlpha(150),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (!isCompleted &&
+                                task.state != TaskState.none) ...[
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: _getTaskStateColor(
+                                        task.state,
+                                        colorScheme,
+                                      ),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Baseline(
+                                    baseline: 8,
+                                    baselineType: TextBaseline.alphabetic,
+                                    child: Text(
+                                      _getTaskStateText(task.state),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall?.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      // Delete button (only visible on hover)
+                      Opacity(
+                        opacity: isHovering ? 1.0 : 0.0,
+                        child: IgnorePointer(
+                          ignoring: !isHovering,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: GestureDetector(
+                                onTap: () => _clearTaskDate(task),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.error.withAlpha(20),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Icon(
+                                    Icons.close_rounded,
+                                    size: 14,
+                                    color: colorScheme.error,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Color _getTaskStateColor(TaskState state, ColorScheme colorScheme) {
+    switch (state) {
+      case TaskState.pending:
+        return colorScheme.onSurfaceVariant;
+      case TaskState.inProgress:
+        return const Color(0xFFE67E22);
+      case TaskState.completed:
+        return colorScheme.primary;
+      case TaskState.none:
+        return colorScheme.onSurfaceVariant;
+    }
+  }
+
+  String _getTaskStateText(TaskState state) {
+    switch (state) {
+      case TaskState.pending:
+        return 'Pending';
+      case TaskState.inProgress:
+        return 'In Progress';
+      case TaskState.completed:
+        return 'Completed';
+      case TaskState.none:
+        return '';
+    }
+  }
+
   Widget _buildCalendar() {
     final colorScheme = Theme.of(context).colorScheme;
     return LayoutBuilder(
@@ -1153,18 +1527,34 @@ class CalendarPanelState extends State<CalendarPanel>
                 _selectedDate.month == date.month &&
                 _selectedDate.day == date.day;
 
-            final hasEvents = _events.any(
-              (event) =>
-                  event.date.year == date.year &&
-                  event.date.month == date.month &&
-                  event.date.day == date.day,
-            );
+            final bool hasEvents;
+            if (widget.mode == CalendarPanelMode.tasks) {
+              hasEvents = _tasksWithDeadlines.any(
+                (task) =>
+                    task.date != null &&
+                    task.date!.year == date.year &&
+                    task.date!.month == date.month &&
+                    task.date!.day == date.day,
+              );
+            } else {
+              hasEvents = _events.any(
+                (event) =>
+                    event.date.year == date.year &&
+                    event.date.month == date.month &&
+                    event.date.day == date.day,
+              );
+            }
 
             rowChildren.add(
               Expanded(
                 child: DragTarget<Object>(
                   onWillAcceptWithDetails: (details) {
                     final data = details.data;
+
+                    if (widget.mode == CalendarPanelMode.tasks) {
+                      return data is Task;
+                    }
+
                     if (data is Map<String, dynamic>) {
                       if (data['type'] == 'note') {
                         if (data['isMultiDrag'] == true) {
@@ -1182,6 +1572,14 @@ class CalendarPanelState extends State<CalendarPanel>
                   },
                   onAcceptWithDetails: (details) async {
                     final data = details.data;
+
+                    if (widget.mode == CalendarPanelMode.tasks) {
+                      if (data is Task) {
+                        await _handleTaskDropWithDate(data, date);
+                      }
+                      return;
+                    }
+
                     if (data is Map<String, dynamic> &&
                         data['type'] == 'note') {
                       if (data['isMultiDrag'] == true) {
@@ -1219,12 +1617,17 @@ class CalendarPanelState extends State<CalendarPanel>
                           child: InkWell(
                             onTap: () async {
                               // Always select the tapped date but do not change the displayed month.
-                              // If the tapped date belongs to a different month, fetch events for that
-                              // month as well so indicators and the events list update correctly.
                               setState(() {
                                 _selectedDate = date;
                               });
 
+                              // In tasks mode, just select the date - no need to fetch events
+                              if (widget.mode == CalendarPanelMode.tasks) {
+                                return;
+                              }
+
+                              // If the tapped date belongs to a different month, fetch events for that
+                              // month as well so indicators and the events list update correctly.
                               final tappedMonthStart = DateTime(
                                 date.year,
                                 date.month,
@@ -1363,7 +1766,7 @@ class CalendarPanelState extends State<CalendarPanel>
   Future<void> _deleteEvent(CalendarEvent event) async {
     try {
       await _calendarEventRepository.deleteCalendarEvent(event.id);
-      DatabaseHelper.notifyDatabaseChanged();
+      _databaseService.notifyDatabaseChanged();
       await _loadEvents();
     } catch (e) {
       if (mounted) {
@@ -1436,6 +1839,19 @@ class CalendarPanelState extends State<CalendarPanel>
     await _loadStatuses();
   }
 
+  void _showTagsManager() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => TagsManagerDialog(
+            databaseService: _databaseService,
+            onTagsChanged: () {
+              _loadTasksWithDeadlines();
+            },
+          ),
+    );
+  }
+
   Future<void> _updateEventStatus(
     CalendarEvent event,
     String? statusName,
@@ -1450,7 +1866,7 @@ class CalendarPanelState extends State<CalendarPanel>
         updatedEvent = event.copyWith(status: statusName);
       }
       await _calendarEventRepository.updateCalendarEvent(updatedEvent);
-      DatabaseHelper.notifyDatabaseChanged();
+      _databaseService.notifyDatabaseChanged();
       await _loadEvents();
     } catch (e) {
       if (mounted) {

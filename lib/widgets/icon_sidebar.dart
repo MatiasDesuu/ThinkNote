@@ -733,13 +733,21 @@ class _IconSidebarState extends State<IconSidebar>
             onPressed: widget.onManageTags!,
             showInBookmarks: true,
           ),
-        if (!isBookmarksScreen &&
-            !widget.isTasksScreen &&
+        // Calendar toggle button - show in main screen and tasks screen when callback is provided
+        if ((!isBookmarksScreen &&
             !widget.isThinksScreen &&
-            !widget.isSettingsScreen)
+            !widget.isSettingsScreen) &&
+            (!widget.isTasksScreen || widget.onToggleCalendar != null))
           IconSidebarButton(
             icon: Icons.calendar_month_rounded,
             onPressed: () {
+              // If onToggleCalendar is provided (tasks screen), use it
+              if (widget.onToggleCalendar != null) {
+                widget.onToggleCalendar!();
+                return;
+              }
+              
+              // Otherwise, use the calendarPanelKey (main screen)
               final state = widget.calendarPanelKey?.currentState;
               if (state != null) {
                 // Try calling known API methods if available. Use `togglePanel`

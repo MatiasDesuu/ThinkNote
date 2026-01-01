@@ -13,6 +13,8 @@ import '../widgets/custom_snackbar.dart';
 import '../widgets/context_menu.dart';
 import '../widgets/confirmation_dialogue.dart';
 import '../widgets/resizable_icon_sidebar.dart';
+import '../widgets/panels/calendar_panel.dart';
+import '../widgets/panels/resizable_panel.dart';
 import '../Settings/settings_screen.dart';
 import 'package:flutter/gestures.dart';
 import 'tasks_screen_details.dart';
@@ -73,6 +75,12 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   String? _editingSubtaskId;
   Timer? _debounceTimer;
   bool _isUpdatingManually = false;
+
+  // Calendar panel
+  final GlobalKey<ResizablePanelLeftState> _calendarPanelKey =
+      GlobalKey<ResizablePanelLeftState>();
+  final GlobalKey<CalendarPanelState> _calendarPanelStateKey =
+      GlobalKey<CalendarPanelState>();
 
   // Servicios
   final DatabaseService _databaseService = DatabaseService();
@@ -308,6 +316,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
         });
         // Aplicar filtro actual si existe
         await _filterTasksByTag(_selectedTag);
+        // Reload calendar panel to show updated tasks
+        _reloadCalendarPanel();
       }
     } catch (e) {
       print('Error loading tasks: $e');
@@ -444,6 +454,9 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     for (final updatedTask in tasksToUpdate) {
       await _databaseService.taskService.updateTask(updatedTask);
     }
+
+    // Reload calendar panel to show updated order
+    _reloadCalendarPanel();
   }
 
   Future<void> _onDateChanged(DateTime? fecha) async {
@@ -488,6 +501,9 @@ class _TodoScreenDBState extends State<TodoScreenDB>
 
     // Recargar la lista de tareas para actualizar la UI
     await _updateTaskListsOnly();
+
+    // Reload calendar panel to show updated tasks
+    _reloadCalendarPanel();
 
     // Desmarcar la actualización manual
     _isUpdatingManually = false;
@@ -706,6 +722,16 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     }
   }
 
+  void _toggleCalendarPanel() {
+    if (_calendarPanelKey.currentState != null) {
+      _calendarPanelKey.currentState!.togglePanel();
+    }
+  }
+
+  void _reloadCalendarPanel() {
+    _calendarPanelStateKey.currentState?.reloadCalendar();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -764,6 +790,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                       isSettingsScreen: false,
                       isBookmarksScreen: false,
                       onToggleSidebar: _toggleSidebar,
+                      onToggleCalendar: _toggleCalendarPanel,
                       appFocusNode: _appFocusNode,
                     ),
 
@@ -825,7 +852,9 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                             // Al cambiar de tab, resetear el filtro de tag y mostrar todas las tareas
                                             setState(() {
                                               _selectedTag = null;
-                                              _tasks = List.from(_allPendingTasks);
+                                              _tasks = List.from(
+                                                _allPendingTasks,
+                                              );
                                               _completedTasks = List.from(
                                                 _allCompletedTasks,
                                               );
@@ -840,13 +869,18 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                           },
                                           tabAlignment: TabAlignment.fill,
                                           labelPadding: EdgeInsets.zero,
-                                          indicatorSize: TabBarIndicatorSize.tab,
+                                          indicatorSize:
+                                              TabBarIndicatorSize.tab,
                                           dividerColor: Colors.transparent,
                                           splashFactory: NoSplash.splashFactory,
-                                          overlayColor: WidgetStateProperty.all(Colors.transparent),
+                                          overlayColor: WidgetStateProperty.all(
+                                            Colors.transparent,
+                                          ),
                                           indicator: BoxDecoration(
                                             color: colorScheme.surface,
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                           tabs: [
                                             Tab(
@@ -856,24 +890,28 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
                                                   Icon(
-                                                    Icons.pending_actions_rounded,
+                                                    Icons
+                                                        .pending_actions_rounded,
                                                     size: 16,
                                                   ),
                                                   const SizedBox(width: 6),
                                                   Text(
                                                     'Pending',
-                                                    overflow: TextOverflow.ellipsis,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                   const SizedBox(width: 4),
                                                   Text(
                                                     '(${_tasks.length})',
                                                     style: TextStyle(
-                                                      fontWeight: FontWeight.w600,
+                                                      fontWeight:
+                                                          FontWeight.w600,
                                                       color:
                                                           _tasksTabController
                                                                       .index ==
                                                                   0
-                                                              ? colorScheme.primary
+                                                              ? colorScheme
+                                                                  .primary
                                                               : colorScheme
                                                                   .onSurfaceVariant,
                                                     ),
@@ -894,7 +932,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                                   const SizedBox(width: 6),
                                                   Text(
                                                     'Completed',
-                                                    overflow: TextOverflow.ellipsis,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                 ],
                                               ),
@@ -904,7 +943,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                       ),
                                     ),
                                     // Tag filters (filtered by current tab)
-                                    if (_filteredTagsForCurrentTab.isNotEmpty) ...[
+                                    if (_filteredTagsForCurrentTab
+                                        .isNotEmpty) ...[
                                       const SizedBox(height: 4),
                                       SizedBox(
                                         height: 36,
@@ -936,8 +976,10 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                             children: [
                                               _buildTagChip(
                                                 label: 'All',
-                                                isSelected: _selectedTag == null,
-                                                onTap: () => _setTagFilter(null),
+                                                isSelected:
+                                                    _selectedTag == null,
+                                                onTap:
+                                                    () => _setTagFilter(null),
                                                 colorScheme: colorScheme,
                                               ),
                                               ..._filteredTagsForCurrentTab.map(
@@ -950,8 +992,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                                     label: tag,
                                                     isSelected:
                                                         _selectedTag == tag,
-                                                    onTap: () =>
-                                                        _setTagFilter(
+                                                    onTap:
+                                                        () => _setTagFilter(
                                                           _selectedTag == tag
                                                               ? null
                                                               : tag,
@@ -1101,7 +1143,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                         padding: const EdgeInsets.only(
                           left: 16.0,
                           right: 16.0,
-                          top: 44.0,
+                          top: 40.0,
                         ),
                         child: TaskDetailsPanel(
                           selectedTask: _selectedTask,
@@ -1139,6 +1181,27 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                         ),
                       ),
                     ),
+
+                    // Calendar Panel (right side)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 1.0),
+                      child: ResizablePanelLeft(
+                        key: _calendarPanelKey,
+                        minWidth: 300,
+                        maxWidth: 400,
+                        appFocusNode: _appFocusNode,
+                        title: '',
+                        preferencesKey: 'calendar_panel',
+                        child: CalendarPanel(
+                          key: _calendarPanelStateKey,
+                          mode: CalendarPanelMode.tasks,
+                          appFocusNode: _appFocusNode,
+                          onTaskSelected: (task) {
+                            _selectTask(task);
+                          },
+                        ),
+                      ),
+                    ),
                   ],
                 ),
 
@@ -1148,7 +1211,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                   right: 0,
                   height: 40,
                   child: Container(
-                    color: colorScheme.surface,
+                    color: Colors.transparent,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -1232,7 +1295,10 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     required ColorScheme colorScheme,
   }) {
     return Material(
-      color: isSelected ? colorScheme.primary.withAlpha(25) : colorScheme.surfaceContainerHighest,
+      color:
+          isSelected
+              ? colorScheme.primary.withAlpha(25)
+              : colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
@@ -1253,7 +1319,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                 label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   height: 1.0,
-                  color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+                  color:
+                      isSelected ? colorScheme.primary : colorScheme.onSurface,
                 ),
               ),
             ],
@@ -1275,9 +1342,10 @@ class _TodoScreenDBState extends State<TodoScreenDB>
           return Container(
             margin: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? colorScheme.primary.withAlpha(25)
-                  : isHovering
+              color:
+                  isSelected
+                      ? colorScheme.primary.withAlpha(25)
+                      : isHovering
                       ? colorScheme.surfaceContainerHighest
                       : colorScheme.surface,
               borderRadius: BorderRadius.circular(10),
@@ -1302,16 +1370,22 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                       MouseRegion(
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
-                          onTap: () => _updateTaskState(
-                            task,
-                            task.state == TaskState.completed
-                                ? TaskState.pending
-                                : TaskState.completed,
-                          ),
+                          onTap:
+                              () => _updateTaskState(
+                                task,
+                                task.state == TaskState.completed
+                                    ? TaskState.pending
+                                    : TaskState.completed,
+                              ),
                           child: Icon(
-                            task.state == TaskState.completed ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                            task.state == TaskState.completed
+                                ? Icons.check_box_rounded
+                                : Icons.check_box_outline_blank_rounded,
                             size: 20,
-                            color: task.state == TaskState.completed ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                            color:
+                                task.state == TaskState.completed
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -1324,7 +1398,10 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                           ),
                           builder: (context, snapshot) {
                             final tags = snapshot.data ?? <String>[];
-                            final hasMetadata = task.date != null || tags.isNotEmpty || task.isPinned;
+                            final hasMetadata =
+                                task.date != null ||
+                                tags.isNotEmpty ||
+                                task.isPinned;
 
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1337,14 +1414,19 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontWeight: FontWeight.w500,
-                                    color: task.state == TaskState.completed
-                                        ? colorScheme.onSurfaceVariant.withAlpha(150)
-                                        : colorScheme.onSurface,
+                                    color:
+                                        task.state == TaskState.completed
+                                            ? colorScheme.onSurfaceVariant
+                                                .withAlpha(150)
+                                            : colorScheme.onSurface,
                                     fontSize: 14,
-                                    decoration: task.state == TaskState.completed
-                                        ? TextDecoration.lineThrough
-                                        : null,
-                                    decorationColor: colorScheme.onSurfaceVariant.withAlpha(150),
+                                    decoration:
+                                        task.state == TaskState.completed
+                                            ? TextDecoration.lineThrough
+                                            : null,
+                                    decorationColor: colorScheme
+                                        .onSurfaceVariant
+                                        .withAlpha(150),
                                   ),
                                 ),
                                 // Metadata row (date, tags, pin)
@@ -1366,53 +1448,66 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                         Icon(
                                           Icons.schedule_rounded,
                                           size: 12,
-                                          color: _isDateOverdue(task.date!)
-                                              ? colorScheme.error
-                                              : colorScheme.onSurfaceVariant.withAlpha(180),
+                                          color:
+                                              _isDateOverdue(task.date!)
+                                                  ? colorScheme.error
+                                                  : colorScheme.onSurfaceVariant
+                                                      .withAlpha(180),
                                         ),
                                         const SizedBox(width: 3),
                                         Text(
                                           _formatTaskDate(task.date!),
                                           style: TextStyle(
                                             fontSize: 11,
-                                            color: _isDateOverdue(task.date!)
-                                                ? colorScheme.error
-                                                : colorScheme.onSurfaceVariant.withAlpha(180),
+                                            color:
+                                                _isDateOverdue(task.date!)
+                                                    ? colorScheme.error
+                                                    : colorScheme
+                                                        .onSurfaceVariant
+                                                        .withAlpha(180),
                                           ),
                                         ),
                                         if (tags.isNotEmpty)
                                           const SizedBox(width: 8),
                                       ],
                                       // Tags (show first 2 max)
-                                      ...tags.take(2).map(
-                                        (tag) => Padding(
-                                          padding: const EdgeInsets.only(right: 4),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 1,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: colorScheme.primary.withAlpha(20),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              tag,
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                color: colorScheme.primary,
-                                                fontWeight: FontWeight.w500,
+                                      ...tags
+                                          .take(2)
+                                          .map(
+                                            (tag) => Padding(
+                                              padding: const EdgeInsets.only(
+                                                right: 4,
+                                              ),
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 1,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: colorScheme.primary
+                                                      .withAlpha(20),
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
+                                                child: Text(
+                                                  tag,
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    color: colorScheme.primary,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      ),
                                       if (tags.length > 2)
                                         Text(
                                           '+${tags.length - 2}',
                                           style: TextStyle(
                                             fontSize: 10,
-                                            color: colorScheme.onSurfaceVariant.withAlpha(150),
+                                            color: colorScheme.onSurfaceVariant
+                                                .withAlpha(150),
                                           ),
                                         ),
                                     ],
@@ -1424,18 +1519,24 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                         ),
                       ),
                       // Estado (solo si no es none y no completed)
-                      if (task.state != TaskState.none && 
+                      if (task.state != TaskState.none &&
                           task.state != TaskState.completed)
                         FutureBuilder<List<String>>(
-                          future: _databaseService.taskService.getTagsByTaskId(task.id!),
+                          future: _databaseService.taskService.getTagsByTaskId(
+                            task.id!,
+                          ),
                           builder: (context, snapshot) {
-                            final hasHabitsTag = snapshot.data?.contains('Habits') ?? false;
+                            final hasHabitsTag =
+                                snapshot.data?.contains('Habits') ?? false;
                             if (hasHabitsTag) return const SizedBox.shrink();
                             return Opacity(
                               opacity: (isHovering || isSelected) ? 1.0 : 0.0,
                               child: Padding(
                                 padding: const EdgeInsets.only(left: 8),
-                                child: _buildStateIndicator(task.state, colorScheme),
+                                child: _buildStateIndicator(
+                                  task.state,
+                                  colorScheme,
+                                ),
                               ),
                             );
                           },
@@ -1482,16 +1583,13 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   Widget _buildStateIndicator(TaskState state, ColorScheme colorScheme) {
     final color = _getStateIndicatorColor(state, colorScheme);
     final icon = _getStateIndicatorIcon(state);
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: color.withAlpha(25),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: color.withAlpha(60),
-          width: 1,
-        ),
+        border: Border.all(color: color.withAlpha(60), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
