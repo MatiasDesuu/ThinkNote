@@ -489,42 +489,6 @@ class CalendarScreenState extends State<CalendarScreen> {
                             ),
                           ),
                         ),
-                        Card(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: colorScheme.outlineVariant.withAlpha(127),
-                              width: 0.5,
-                            ),
-                          ),
-                          color: colorScheme.primary,
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () {
-                                Navigator.pop(context);
-                                showStatusManager();
-                              },
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                ),
-                                leading: Icon(
-                                  Icons.label_rounded,
-                                  color: colorScheme.onPrimary,
-                                ),
-                                title: Text(
-                                  'Event Labels',
-                                  style: TextStyle(
-                                    color: colorScheme.onPrimary,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
                         const SizedBox(height: 20),
                       ],
                     ),
