@@ -1018,7 +1018,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                     tooltip:
                         _showSearchField
                             ? 'Hide search'
-                            : 'Search (hold to search quickly)',
+                            : 'Show search',
                   ),
                 ),
                 IconButton(
