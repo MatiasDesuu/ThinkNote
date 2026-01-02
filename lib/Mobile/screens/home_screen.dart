@@ -22,6 +22,7 @@ import '../../animations/animations_handler.dart';
 import '../../services/tags_service.dart';
 import '../../widgets/custom_date_picker_dialog.dart';
 import '../../database/database_service.dart';
+import '../../services/template_service.dart';
 
 enum SortMode { order, date, completion }
 
@@ -620,6 +621,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _openTemplatesScreen() async {
     // Pre-fetch templates for instant display
     Map<Notebook, List<Note>> preloadedTemplates = {};
+    List<Notebook> preloadedNotebookTemplates = [];
     try {
       final dbHelper = DatabaseHelper();
       final notebookRepository = NotebookRepository(dbHelper);
@@ -628,7 +630,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       final allNotebooks = await notebookRepository.getAllNotebooks();
       final templateNotebooks =
           allNotebooks
-              .where((n) => n.name.toLowerCase().startsWith('#templates'))
+              .where((n) {
+                final name = n.name.toLowerCase();
+                return name.startsWith('#templates') ||
+                    name.startsWith('#category');
+              })
+              .toList();
+
+      preloadedNotebookTemplates =
+          allNotebooks
+              .where((n) => n.name.toLowerCase().startsWith('#template_'))
               .toList();
 
       for (final notebook in templateNotebooks) {
@@ -649,12 +660,54 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         builder:
             (context) => TemplatesScreen(
               initialTemplates: preloadedTemplates,
+              initialNotebookTemplates: preloadedNotebookTemplates,
               onTemplateApplied: (Note template) async {
                 await _createNewNoteFromTemplate(template);
+              },
+              onNotebookTemplateApplied: (Notebook template) async {
+                await _applyNotebookTemplate(template);
               },
             ),
       ),
     );
+  }
+
+  Future<void> _applyNotebookTemplate(Notebook template) async {
+    if (widget.selectedNotebook == null) {
+      CustomSnackbar.show(
+        context: context,
+        message: 'Please select a notebook first',
+        type: CustomSnackbarType.error,
+      );
+      return;
+    }
+
+    try {
+      final dbHelper = DatabaseHelper();
+      final templateService = TemplateService(
+        notebookRepository: NotebookRepository(dbHelper),
+        noteRepository: NoteRepository(dbHelper),
+      );
+
+      await templateService.applyNotebookTemplate(
+        template: template,
+        targetParentId: widget.selectedNotebook!.id!,
+        targetNotebookName: widget.selectedNotebook!.name,
+      );
+
+      if (mounted) {
+        DatabaseHelper.notifyDatabaseChanged();
+      }
+    } catch (e) {
+      debugPrint('Error applying notebook template: $e');
+      if (mounted) {
+        CustomSnackbar.show(
+          context: context,
+          message: 'Error applying notebook template: ${e.toString()}',
+          type: CustomSnackbarType.error,
+        );
+      }
+    }
   }
 
   Future<void> _updateNote(Note note, Note updatedNote) async {

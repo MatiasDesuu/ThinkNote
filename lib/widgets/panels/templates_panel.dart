@@ -7,6 +7,7 @@ import '../../database/repositories/note_repository.dart';
 import '../../database/database_helper.dart';
 import '../../database/database_service.dart';
 import '../../services/template_variable_processor.dart';
+import '../../services/template_service.dart';
 import '../custom_snackbar.dart';
 
 class TemplatesPanel extends StatefulWidget {
@@ -32,6 +33,7 @@ class TemplatesPanelState extends State<TemplatesPanel> {
   late final NotebookRepository _notebookRepository;
   bool _isLoading = true;
   Map<Notebook, List<Note>> _groupedTemplates = {};
+  List<Notebook> _notebookTemplates = [];
   late StreamSubscription<void> _databaseChangeSubscription;
 
   @override
@@ -68,7 +70,16 @@ class TemplatesPanelState extends State<TemplatesPanel> {
       final allNotebooks = await _notebookRepository.getAllNotebooks();
       final templateNotebooks =
           allNotebooks
-              .where((n) => n.name.toLowerCase().startsWith('#templates'))
+              .where((n) {
+                final name = n.name.toLowerCase();
+                return name.startsWith('#templates') ||
+                    name.startsWith('#category');
+              })
+              .toList();
+
+      final notebookTemplates =
+          allNotebooks
+              .where((n) => n.name.toLowerCase().startsWith('#template_'))
               .toList();
 
       Map<Notebook, List<Note>> grouped = {};
@@ -83,6 +94,7 @@ class TemplatesPanelState extends State<TemplatesPanel> {
       if (mounted) {
         setState(() {
           _groupedTemplates = grouped;
+          _notebookTemplates = notebookTemplates;
           _isLoading = false;
         });
       }
@@ -247,6 +259,56 @@ class TemplatesPanelState extends State<TemplatesPanel> {
     }
   }
 
+  Future<void> _applyNotebookTemplate(Notebook template) async {
+    if (widget.selectedNotebookId == null) {
+      CustomSnackbar.show(
+        context: context,
+        message:
+            'Please select a notebook first to create a notebook from a template',
+        type: CustomSnackbarType.error,
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Get target notebook info for variable processing
+      final targetNotebook = await _notebookRepository.getNotebook(
+        widget.selectedNotebookId!,
+      );
+      final notebookName = targetNotebook?.name;
+
+      final templateService = TemplateService(
+        notebookRepository: _notebookRepository,
+        noteRepository: _noteRepository,
+      );
+
+      await templateService.applyNotebookTemplate(
+        template: template,
+        targetParentId: widget.selectedNotebookId!,
+        targetNotebookName: notebookName,
+      );
+
+      if (mounted) {
+        widget.onClose?.call();
+      }
+    } catch (e) {
+      debugPrint('Error applying notebook template: $e');
+      if (mounted) {
+        CustomSnackbar.show(
+          context: context,
+          message: 'Error applying notebook template: ${e.toString()}',
+          type: CustomSnackbarType.error,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -310,30 +372,124 @@ class TemplatesPanelState extends State<TemplatesPanel> {
   }
 
   Widget _buildContent() {
-    if (_groupedTemplates.isEmpty) {
+    if (_groupedTemplates.isEmpty && _notebookTemplates.isEmpty) {
       return _buildEmptyState();
     }
 
     return ListView(
       padding: const EdgeInsets.all(16),
-      children:
-          _groupedTemplates.entries.map((entry) {
-            final notebook = entry.key;
-            final notes = entry.value;
-            return _buildGroup(notebook, notes);
-          }).toList(),
+      children: [
+        if (_notebookTemplates.isNotEmpty) ...[
+          _buildNotebookTemplatesSection(),
+          const SizedBox(height: 16),
+        ],
+        ..._groupedTemplates.entries.map((entry) {
+          final notebook = entry.key;
+          final notes = entry.value;
+          return _buildGroup(notebook, notes);
+        }),
+      ],
+    );
+  }
+
+  Widget _buildNotebookTemplatesSection() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            'Notebook Templates',
+            style: TextStyle(
+              color: colorScheme.primary,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        ..._notebookTemplates.map((notebook) => _buildNotebookTemplateItem(notebook)),
+      ],
+    );
+  }
+
+  Widget _buildNotebookTemplateItem(Notebook notebook) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // Clean up name for display
+    String displayName = notebook.name;
+    if (displayName.toLowerCase().startsWith('#template_')) {
+      displayName = displayName.substring(10).replaceAll('_', ' ');
+    }
+
+    return MouseRegionHoverItem(
+      builder: (context, isHovering) {
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          color: colorScheme.surfaceContainerHighest,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _applyNotebookTemplate(notebook),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.folder_copy_rounded,
+                      color: colorScheme.primary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        displayName,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isHovering)
+                      Icon(
+                        Icons.add_rounded,
+                        size: 18,
+                        color: colorScheme.primary,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildGroup(Notebook notebook, List<Note> notes) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Clean up notebook name for display (remove #templates or #templates_)
+    // Clean up notebook name for display (remove #templates or #category prefixes)
     String displayName = notebook.name;
-    if (displayName.toLowerCase() == '#templates') {
+    final lowerName = displayName.toLowerCase();
+
+    if (lowerName == '#templates' || lowerName == '#category') {
       displayName = 'General Templates';
-    } else if (displayName.toLowerCase().startsWith('#templates_')) {
+    } else if (lowerName.startsWith('#templates_')) {
       displayName = notebook.name.substring(11).replaceAll('_', ' ');
+    } else if (lowerName.startsWith('#category_')) {
+      displayName = notebook.name.substring(10).replaceAll('_', ' ');
     }
 
     return Column(
@@ -440,7 +596,7 @@ class TemplatesPanelState extends State<TemplatesPanel> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Create a notebook named "#templates" and add notes to use them as templates.',
+              'Create a notebook named "#templates", "#category" or starting with "#template_" to use them as templates.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: colorScheme.onSurfaceVariant.withAlpha(179),

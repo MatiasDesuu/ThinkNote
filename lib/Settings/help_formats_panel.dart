@@ -274,7 +274,7 @@ class HelpFormatsPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '1. Create a notebook named "#templates" (you can also create sub-notebooks for organized groups like #templates_meetings).',
+                  '1. Create a notebook named "#templates" or "#category" (you can also create sub-notebooks for organized groups like #templates_meetings or #category_work).',
                   style: TextStyle(
                     color: colorScheme.onSurface,
                     fontSize: 14,
@@ -283,7 +283,7 @@ class HelpFormatsPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '2. Add notes to this notebook (or sub-notebooks) - these become your templates.',
+                  '2. Create a notebook starting with "#template_" (e.g., #template_Project) to use the entire notebook structure as a template.',
                   style: TextStyle(
                     color: colorScheme.onSurface,
                     fontSize: 14,
@@ -292,7 +292,16 @@ class HelpFormatsPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '3. Use template variables like {{date}} or {{notebook}} in your template content.',
+                  '3. Add notes to these notebooks - they will be copied when the template is applied.',
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '4. Use template variables like {{date}} or {{notebook}} in titles and content.',
                   style: TextStyle(
                     color: colorScheme.onSurface,
                     fontSize: 14,
