@@ -1088,7 +1088,7 @@ class _TagsManagerDialogState extends State<TagsManagerDialog> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
             child: Form(
               key: _formKey,
               child: Row(
@@ -1144,32 +1144,81 @@ class _TagsManagerDialogState extends State<TagsManagerDialog> {
                       itemCount: _tags.length,
                       itemBuilder: (context, index) {
                         final tag = _tags[index];
-                        return Card(
-                          elevation: 0,
-                          margin: const EdgeInsets.only(bottom: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(
-                              color: colorScheme.outlineVariant.withAlpha(127),
-                              width: 0.5,
-                            ),
-                          ),
-                          child: ListTile(
-                            leading: Icon(
-                              Icons.label_rounded,
-                              color: colorScheme.primary,
-                              size: 20,
-                            ),
-                            title: Text(tag),
-                            trailing: IconButton(
-                              icon: Icon(
-                                Icons.delete_forever_rounded,
-                                color: colorScheme.error,
-                                size: 20,
+                        return MouseRegionHoverItem(
+                          builder: (context, isHovering) {
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              color: colorScheme.surfaceContainerHighest,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              onPressed: () => _deleteTag(tag),
-                            ),
-                          ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () {},
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.label_rounded,
+                                          color: colorScheme.primary,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            tag,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                  color: colorScheme.onSurface,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                          ),
+                                        ),
+                                        // Delete button (only visible on hover)
+                                        Opacity(
+                                          opacity: isHovering ? 1.0 : 0.0,
+                                          child: IgnorePointer(
+                                            ignoring: !isHovering,
+                                            child: MouseRegion(
+                                              cursor: SystemMouseCursors.click,
+                                              child: GestureDetector(
+                                                onTap: () => _deleteTag(tag),
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.all(4),
+                                                  decoration: BoxDecoration(
+                                                    color: colorScheme.error
+                                                        .withAlpha(20),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                      6,
+                                                    ),
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.close_rounded,
+                                                    size: 14,
+                                                    color: colorScheme.error,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
@@ -1316,7 +1365,7 @@ class _TagSelectorDialogState extends State<TagSelectorDialog> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
             child: Form(
               key: _formKey,
               child: Row(
@@ -1374,51 +1423,62 @@ class _TagSelectorDialogState extends State<TagSelectorDialog> {
                         final tag = _allTags[index];
                         final isSelected = _selectedTags.contains(tag);
                         return Card(
-                          elevation: 0,
                           margin: const EdgeInsets.only(bottom: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(
-                              color:
-                                  isSelected
-                                      ? colorScheme.primary.withAlpha(127)
-                                      : colorScheme.outlineVariant.withAlpha(
-                                        127,
-                                      ),
-                              width: isSelected ? 1.5 : 0.5,
-                            ),
-                          ),
                           color:
                               isSelected
-                                  ? colorScheme.primaryContainer.withAlpha(76)
-                                  : null,
-                          child: InkWell(
-                            onTap: () => _toggleTag(tag),
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isSelected
-                                        ? Icons.check_circle_rounded
-                                        : Icons.circle_outlined,
-                                    color:
-                                        isSelected
-                                            ? colorScheme.primary
-                                            : colorScheme.onSurfaceVariant,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Text(
-                                    tag,
-                                    style:
-                                        Theme.of(context).textTheme.bodyLarge,
-                                  ),
-                                ],
+                                  ? colorScheme.primary.withAlpha(25)
+                                  : colorScheme.surfaceContainerHighest,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side:
+                                isSelected
+                                    ? BorderSide(
+                                      color: colorScheme.primary.withAlpha(100),
+                                      width: 1,
+                                    )
+                                    : BorderSide.none,
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _toggleTag(tag),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      isSelected
+                                          ? Icons.check_circle_rounded
+                                          : Icons.circle_outlined,
+                                      color:
+                                          isSelected
+                                              ? colorScheme.primary
+                                              : colorScheme.onSurfaceVariant,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Text(
+                                      tag,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.copyWith(
+                                            color:
+                                                isSelected
+                                                    ? colorScheme.primary
+                                                    : colorScheme.onSurface,
+                                            fontWeight:
+                                                isSelected
+                                                    ? FontWeight.w600
+                                                    : FontWeight.normal,
+                                          ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),

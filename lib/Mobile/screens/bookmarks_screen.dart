@@ -986,7 +986,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
       body: Column(
         children: [
           Container(
-            height: 50,
+            height: 44,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               children: [

@@ -121,12 +121,11 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
                         },
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 0),
-                          minimumSize: const Size(40, 32),
                         ),
                         child: const Text('Today'),
                       ),
                     Padding(
-                      padding: EdgeInsets.only(right: 0),
+                      padding: EdgeInsets.only(right: 16),
                       child: IconButton(
                         icon: const Icon(Icons.chevron_right_rounded),
                         onPressed: () {

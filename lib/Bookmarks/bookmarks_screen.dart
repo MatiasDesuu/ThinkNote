@@ -1339,7 +1339,6 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                       ),
                       Expanded(
                         child: FutureBuilder<List<TagUrlPattern>>(
-                          // Usar FutureBuilder para tener los datos más actualizados
                           future: Future.value(_tagsHandler.allPatterns),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
@@ -1364,86 +1363,209 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                                   ),
                                 )
                                 : ListView.builder(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
                                   itemCount: patterns.length,
                                   itemBuilder: (context, index) {
                                     final pattern = patterns[index];
-                                    return ListTile(
-                                      title: Row(
-                                        children: [
-                                          // URL Pattern (primera columna)
-                                          Expanded(
-                                            child: Text(
-                                              pattern.urlPattern,
-                                              style: TextStyle(
-                                                color:
-                                                    Theme.of(
-                                                      context,
-                                                    ).colorScheme.onSurface,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
+                                    return CustomTooltip(
+                                      message:
+                                          'URL: ${pattern.urlPattern}\nTag: ${pattern.tag}',
+                                      builder: (context, isHovering) {
+                                        return Card(
+                                          margin: const EdgeInsets.only(
+                                            bottom: 8,
                                           ),
-                                          // Flecha (columna central)
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                            ),
-                                            child: Icon(
-                                              Icons.arrow_forward_rounded,
-                                              color:
-                                                  Theme.of(
-                                                    context,
-                                                  ).colorScheme.primary,
-                                            ),
-                                          ),
-                                          // Tag (tercera columna)
-                                          Expanded(
-                                            child: Text(
-                                              pattern.tag,
-                                              style: TextStyle(
-                                                color:
-                                                    Theme.of(
-                                                      context,
-                                                    ).colorScheme.primary,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      trailing: IconButton(
-                                        icon: Icon(
-                                          Icons.delete_forever_rounded,
                                           color:
                                               Theme.of(
                                                 context,
-                                              ).colorScheme.error,
-                                        ),
-                                        onPressed: () async {
-                                          final confirmed =
-                                              await showDeleteConfirmationDialog(
-                                                context: context,
-                                                title: 'Delete Tag Mapping',
-                                                message:
-                                                    'Are you sure you want to delete this tag mapping?\n\nURL Pattern: ${pattern.urlPattern}\nTag: ${pattern.tag}',
-                                                confirmText: 'Delete',
-                                                confirmColor:
-                                                    Theme.of(
-                                                      context,
-                                                    ).colorScheme.error,
-                                              );
+                                              ).colorScheme.surfaceContainerHighest,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              onTap: () {},
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 8,
+                                                    ),
+                                                child: Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.label_rounded,
+                                                      color:
+                                                          Theme.of(
+                                                            context,
+                                                          ).colorScheme.primary,
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Text(
+                                                            pattern.urlPattern,
+                                                            style: Theme.of(
+                                                                  context,
+                                                                )
+                                                                .textTheme
+                                                                .bodyMedium
+                                                                ?.copyWith(
+                                                                  color:
+                                                                      Theme.of(
+                                                                            context,
+                                                                          )
+                                                                          .colorScheme
+                                                                          .onSurface,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w500,
+                                                                ),
+                                                            maxLines: 1,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                          Row(
+                                                            children: [
+                                                              Icon(
+                                                                Icons
+                                                                    .arrow_forward_rounded,
+                                                                size: 12,
+                                                                color:
+                                                                    Theme.of(
+                                                                          context,
+                                                                        )
+                                                                        .colorScheme
+                                                                        .onSurfaceVariant,
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 4,
+                                                              ),
+                                                              Text(
+                                                                pattern.tag,
+                                                                style: Theme.of(
+                                                                      context,
+                                                                    )
+                                                                    .textTheme
+                                                                    .bodySmall
+                                                                    ?.copyWith(
+                                                                      color:
+                                                                          Theme.of(
+                                                                                context,
+                                                                              )
+                                                                              .colorScheme
+                                                                              .primary,
+                                                                      fontSize:
+                                                                          11,
+                                                                    ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    // Delete button (only visible on hover)
+                                                    Opacity(
+                                                      opacity:
+                                                          isHovering
+                                                              ? 1.0
+                                                              : 0.0,
+                                                      child: IgnorePointer(
+                                                        ignoring: !isHovering,
+                                                        child: MouseRegion(
+                                                          cursor:
+                                                              SystemMouseCursors
+                                                                  .click,
+                                                          child: GestureDetector(
+                                                            onTap: () async {
+                                                              final confirmed =
+                                                                  await showDeleteConfirmationDialog(
+                                                                    context:
+                                                                        context,
+                                                                    title:
+                                                                        'Delete Tag Mapping',
+                                                                    message:
+                                                                        'Are you sure you want to delete this tag mapping?\n\nURL Pattern: ${pattern.urlPattern}\nTag: ${pattern.tag}',
+                                                                    confirmText:
+                                                                        'Delete',
+                                                                    confirmColor:
+                                                                        Theme.of(
+                                                                              context,
+                                                                            )
+                                                                            .colorScheme
+                                                                            .error,
+                                                                  );
 
-                                          if (confirmed == true) {
-                                            await _tagsHandler.removeTagMapping(
-                                              pattern.urlPattern,
-                                              pattern.tag,
-                                            );
-                                            // Actualizar el estado después de eliminar un tag
-                                            setState(() {});
-                                          }
-                                        },
-                                      ),
+                                                              if (confirmed ==
+                                                                  true) {
+                                                                await _tagsHandler
+                                                                    .removeTagMapping(
+                                                                      pattern
+                                                                          .urlPattern,
+                                                                      pattern
+                                                                          .tag,
+                                                                    );
+                                                                setState(() {});
+                                                              }
+                                                            },
+                                                            child: Container(
+                                                              padding:
+                                                                  const EdgeInsets.all(
+                                                                    4,
+                                                                  ),
+                                                              decoration:
+                                                                  BoxDecoration(
+                                                                    color:
+                                                                        Theme.of(
+                                                                              context,
+                                                                            )
+                                                                            .colorScheme
+                                                                            .error
+                                                                            .withAlpha(
+                                                                              20,
+                                                                            ),
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                          6,
+                                                                        ),
+                                                                  ),
+                                                              child: Icon(
+                                                                Icons
+                                                                    .close_rounded,
+                                                                size: 14,
+                                                                color:
+                                                                    Theme.of(
+                                                                          context,
+                                                                        )
+                                                                        .colorScheme
+                                                                        .error,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     );
                                   },
                                 );

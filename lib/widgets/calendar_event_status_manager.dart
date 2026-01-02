@@ -376,72 +376,97 @@ class _CalendarEventStatusManagerState
                     return ReorderableDragStartListener(
                       key: ValueKey(status.id),
                       index: index,
-                      child: Card(
-                        elevation: 0,
-                        margin: const EdgeInsets.only(bottom: 4),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(
-                            color: colorScheme.outlineVariant.withAlpha(127),
-                            width: 0.5,
-                          ),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              widget.onStatusSelected(status);
-                              Navigator.of(context).pop();
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              height: 48,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 16,
-                                    height: 16,
-                                    decoration: BoxDecoration(
-                                      color: _parseColor(status.color),
-                                      shape: BoxShape.circle,
-                                    ),
+                      child: MouseRegionHoverItem(
+                        builder: (context, isHovering) {
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            color: colorScheme.surfaceContainerHighest,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  widget.onStatusSelected(status);
+                                  Navigator.of(context).pop();
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
                                   ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Text(
-                                      status.name,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodyLarge?.copyWith(
-                                        color:
-                                            isSelected
-                                                ? colorScheme.primary
-                                                : colorScheme.onSurface,
-                                        fontWeight: FontWeight.w500,
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 12,
+                                        height: 12,
+                                        decoration: BoxDecoration(
+                                          color: _parseColor(status.color),
+                                          shape: BoxShape.circle,
+                                        ),
                                       ),
-                                    ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          status.name,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodyMedium?.copyWith(
+                                            color:
+                                                isSelected
+                                                    ? colorScheme.primary
+                                                    : colorScheme.onSurface,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                      if (isSelected)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 8,
+                                          ),
+                                          child: Icon(
+                                            Icons.check_rounded,
+                                            color: colorScheme.primary,
+                                            size: 18,
+                                          ),
+                                        ),
+                                      // Delete button (only visible on hover)
+                                      Opacity(
+                                        opacity: isHovering ? 1.0 : 0.0,
+                                        child: IgnorePointer(
+                                          ignoring: !isHovering,
+                                          child: MouseRegion(
+                                            cursor: SystemMouseCursors.click,
+                                            child: GestureDetector(
+                                              onTap: () => _deleteStatus(status),
+                                              child: Container(
+                                                padding: const EdgeInsets.all(4),
+                                                decoration: BoxDecoration(
+                                                  color: colorScheme.error
+                                                      .withAlpha(20),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                ),
+                                                child: Icon(
+                                                  Icons.close_rounded,
+                                                  size: 14,
+                                                  color: colorScheme.error,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  if (isSelected)
-                                    Icon(
-                                      Icons.check_rounded,
-                                      color: colorScheme.primary,
-                                      size: 20,
-                                    ),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.delete_forever_rounded,
-                                      color: colorScheme.error,
-                                    ),
-                                    onPressed: () => _deleteStatus(status),
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     );
                   },
@@ -463,3 +488,26 @@ class _CalendarEventStatusManagerState
     }
   }
 }
+
+class MouseRegionHoverItem extends StatefulWidget {
+  final Widget Function(BuildContext, bool) builder;
+
+  const MouseRegionHoverItem({super.key, required this.builder});
+
+  @override
+  State<MouseRegionHoverItem> createState() => _MouseRegionHoverItemState();
+}
+
+class _MouseRegionHoverItemState extends State<MouseRegionHoverItem> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: widget.builder(context, _isHovering),
+    );
+  }
+}
+
