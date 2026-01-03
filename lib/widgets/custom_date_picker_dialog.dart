@@ -336,7 +336,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
                         ),
                         if (hasEvents)
                           Positioned(
-                            bottom: 2,
+                            bottom: 3,
                             left: 0,
                             right: 0,
                             child: Center(
@@ -346,7 +346,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
                                 decoration: BoxDecoration(
                                   color:
                                       isSelected
-                                          ? colorScheme.primary
+                                          ? colorScheme.onPrimaryContainer
                                           : colorScheme.primary,
                                   shape: BoxShape.circle,
                                 ),

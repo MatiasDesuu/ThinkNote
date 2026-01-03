@@ -1701,7 +1701,7 @@ class CalendarPanelState extends State<CalendarPanel>
                                 ),
                                 if (hasEvents)
                                   Positioned(
-                                    bottom: 2,
+                                    bottom: 3,
                                     left: 0,
                                     right: 0,
                                     child: Center(
