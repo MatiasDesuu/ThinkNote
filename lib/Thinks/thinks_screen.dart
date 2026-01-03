@@ -73,6 +73,7 @@ class _ThinksScreenState extends State<ThinksScreen>
   // Services
   late ThinkService _thinkService;
   StreamSubscription? _thinkChangesSubscription;
+  StreamSubscription? _dbSubscription;
 
   @override
   void initState() {
@@ -96,6 +97,13 @@ class _ThinksScreenState extends State<ThinksScreen>
     // Subscribe to changes in thinks
     _thinkChangesSubscription = _thinkService.onThinkChanged.listen((_) {
       _loadThinks();
+    });
+
+    // Listen to database changes for background sync updates
+    _dbSubscription = DatabaseHelper.onDatabaseChanged.listen((_) {
+      if (mounted) {
+        _loadThinks();
+      }
     });
 
     // Initialize everything in parallel and then update state once
@@ -144,6 +152,7 @@ class _ThinksScreenState extends State<ThinksScreen>
     _scrollController.dispose();
     _debounceNote?.cancel();
     _thinkChangesSubscription?.cancel();
+    _dbSubscription?.cancel();
     _appFocusNode.dispose();
     _sidebarAnimController.dispose();
     super.dispose();

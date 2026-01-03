@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:async';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
@@ -11,6 +12,7 @@ import 'package:flutter/services.dart';
 import '../widgets/resizable_icon_sidebar.dart';
 import '../Settings/settings_screen.dart';
 import '../database/database_service.dart';
+import '../database/database_helper.dart';
 import '../database/models/bookmark.dart';
 import '../database/models/bookmark_tag.dart';
 import 'bookmarks_handler.dart';
@@ -33,10 +35,10 @@ class LinksScreenDesktopDB extends StatefulWidget {
   });
 
   @override
-  State<LinksScreenDesktopDB> createState() => _LinksScreenDesktopDBState();
+  State<LinksScreenDesktopDB> createState() => LinksScreenDesktopDBState();
 }
 
-class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
+class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final LinksHandlerDB _linksHandler = LinksHandlerDB();
@@ -47,6 +49,11 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
   Directory? _rootDir;
   bool _isLoading = true;
   List<Bookmark> _filteredBookmarks = [];
+  StreamSubscription? _dbSubscription;
+
+  void refresh() {
+    _loadBookmarks();
+  }
 
   @override
   void initState() {
@@ -55,10 +62,18 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     _initializeBookmarks();
     _loadViewPreference();
     _loadRootDir();
+
+    // Listen to database changes for background sync updates
+    _dbSubscription = DatabaseHelper.onDatabaseChanged.listen((_) {
+      if (mounted) {
+        _loadBookmarks();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _dbSubscription?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     _appFocusNode.dispose();

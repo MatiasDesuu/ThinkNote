@@ -36,6 +36,11 @@ class DatabaseService {
     _bookmarkService = BookmarkService(dbHelper);
     _thinkRepository = ThinkRepository(dbHelper);
     _thinkService = ThinkService(_thinkRepository);
+
+    // Listen to DatabaseHelper changes and propagate them
+    DatabaseHelper.onDatabaseChanged.listen((_) {
+      _databaseChangeController.add(null);
+    });
   }
 
   // Stream controller para notificar cambios en la base de datos

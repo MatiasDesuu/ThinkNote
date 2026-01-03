@@ -301,6 +301,34 @@ class _IconSidebarState extends State<IconSidebar>
     });
   }
 
+  void _performBackgroundSync() async {
+    // Mostrar indicador de sincronización
+    if (mounted) {
+      setState(() {
+        _syncController.start();
+      });
+    }
+
+    try {
+      final syncService = SyncService();
+      await syncService.forceSync();
+    } catch (e) {
+      if (mounted) {
+        CustomSnackbar.show(
+          context: context,
+          message: 'Error synchronizing: ${e.toString()}',
+          type: CustomSnackbarType.error,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _syncController.stop();
+        });
+      }
+    }
+  }
+
   void _forceSync() async {
     setState(() {
       _syncController.start();
@@ -337,37 +365,8 @@ class _IconSidebarState extends State<IconSidebar>
     }
   }
 
-  void _openToDoScreen() async {
+  void _openToDoScreen() {
     if (widget.rootDir == null) return;
-
-    // Mostrar indicador de sincronización
-    setState(() {
-      _syncController.start();
-    });
-
-    // Force synchronization before opening the screen
-    try {
-      final syncService = SyncService();
-      await syncService.forceSync();
-
-      if (!mounted) return;
-    } catch (e) {
-      if (mounted) {
-        CustomSnackbar.show(
-          context: context,
-          message: 'Error synchronizing: ${e.toString()}',
-          type: CustomSnackbarType.error,
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _syncController.stop();
-        });
-      }
-    }
-
-    if (!mounted) return;
 
     showDialog(
       context: context,
@@ -381,6 +380,8 @@ class _IconSidebarState extends State<IconSidebar>
             ),
           ),
     );
+
+    _performBackgroundSync();
   }
 
   void _openSettings() {
@@ -391,37 +392,8 @@ class _IconSidebarState extends State<IconSidebar>
     );
   }
 
-  void _openBookmarksScreen() async {
+  void _openBookmarksScreen() {
     if (widget.rootDir == null) return;
-
-    // Mostrar indicador de sincronización
-    setState(() {
-      _syncController.start();
-    });
-
-    // Force synchronization before opening the screen
-    try {
-      final syncService = SyncService();
-      await syncService.forceSync();
-
-      if (!mounted) return;
-    } catch (e) {
-      if (mounted) {
-        CustomSnackbar.show(
-          context: context,
-          message: 'Error synchronizing: ${e.toString()}',
-          type: CustomSnackbarType.error,
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _syncController.stop();
-        });
-      }
-    }
-
-    if (!mounted) return;
 
     showDialog(
       context: context,
@@ -434,39 +406,12 @@ class _IconSidebarState extends State<IconSidebar>
             ),
           ),
     );
+
+    _performBackgroundSync();
   }
 
-  void _openThinksScreen() async {
+  void _openThinksScreen() {
     if (widget.rootDir == null) return;
-
-    // Mostrar indicador de sincronización
-    setState(() {
-      _syncController.start();
-    });
-
-    // Force synchronization before opening the screen
-    try {
-      final syncService = SyncService();
-      await syncService.forceSync();
-
-      if (!mounted) return;
-    } catch (e) {
-      if (mounted) {
-        CustomSnackbar.show(
-          context: context,
-          message: 'Error synchronizing: ${e.toString()}',
-          type: CustomSnackbarType.error,
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _syncController.stop();
-        });
-      }
-    }
-
-    if (!mounted) return;
 
     showDialog(
       context: context,
@@ -480,6 +425,8 @@ class _IconSidebarState extends State<IconSidebar>
             ),
           ),
     );
+
+    _performBackgroundSync();
   }
 
   void _openSearchScreen() {
