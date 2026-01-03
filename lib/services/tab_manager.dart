@@ -359,7 +359,27 @@ class TabManager extends ChangeNotifier {
       });
     }
   }
+  void setTabSearchQuery(EditorTab tab, String? query, {bool isAdvanced = false}) {
+    final index = _tabs.indexOf(tab);
+    if (index != -1) {
+      // Only update if different to avoid unnecessary notifications
+      if (_tabs[index].searchQuery == query &&
+          _tabs[index].isAdvancedSearch == isAdvanced) {
+        return;
+      }
 
+      final updatedTab = _tabs[index].copyWith(
+        searchQuery: query,
+        isAdvancedSearch: isAdvanced,
+      );
+      _tabs[index] = updatedTab;
+      if (_activeTab == tab) {
+        _activeTab = updatedTab;
+      }
+      _saveTabsToStorage();
+      notifyListeners();
+    }
+  }
   void markTabAsSaved(EditorTab tab) {
     final index = _tabs.indexOf(tab);
     if (index != -1) {

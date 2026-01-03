@@ -93,7 +93,7 @@ class SearchManager {
       final matchPosition = _findMatches[_currentFindIndex];
       final text = noteController.text;
 
-      // Calculate scroll position more accurately
+      // Calculate scroll position
       final textBeforeMatch = text.substring(0, matchPosition);
       final lines = textBeforeMatch.split('\n');
       final lineNumber = lines.length - 1;
@@ -158,68 +158,6 @@ class SearchManager {
       return const SizedBox.shrink();
     }
 
-    final lowerText = text.toLowerCase();
-    final lowerQuery = query.toLowerCase();
-
-    List<TextSpan> spans = [];
-    int lastIndex = 0;
-
-    // Find all matches and build text spans
-    int index = 0;
-    int matchIndex = 0;
-    while ((index = lowerText.indexOf(lowerQuery, index)) != -1) {
-      // Add text before match
-      if (index > lastIndex) {
-        spans.add(
-          TextSpan(
-            text: text.substring(lastIndex, index),
-            style: textStyle.copyWith(color: Colors.transparent),
-          ),
-        );
-      }
-
-      // Add highlighted match - only current match gets bold
-      final isCurrentMatch = matchIndex == _currentFindIndex;
-
-      spans.add(
-        TextSpan(
-          text: text.substring(index, index + query.length),
-          style: textStyle.copyWith(
-            backgroundColor:
-                isCurrentMatch
-                    ? colorScheme.primary.withAlpha(120)
-                    : colorScheme.primary.withAlpha(50),
-            fontWeight: isCurrentMatch ? FontWeight.w600 : FontWeight.normal,
-            color: Colors.transparent,
-          ),
-        ),
-      );
-
-      lastIndex = index + query.length;
-      index = lastIndex;
-      matchIndex++;
-    }
-
-    // Add remaining text
-    if (lastIndex < text.length) {
-      spans.add(
-        TextSpan(
-          text: text.substring(lastIndex),
-          style: textStyle.copyWith(color: Colors.transparent),
-        ),
-      );
-    }
-
-    // If no spans were created, use original text
-    if (spans.isEmpty) {
-      spans.add(
-        TextSpan(
-          text: text,
-          style: textStyle.copyWith(color: Colors.transparent),
-        ),
-      );
-    }
-
     return Container(
       padding: const EdgeInsets.only(
         top: 4.0, // Match TextField's default padding
@@ -228,15 +166,78 @@ class SearchManager {
         right: 0.0,
       ),
       alignment: Alignment.topLeft,
-      child: RichText(
-        text: TextSpan(children: spans),
-        textAlign: TextAlign.start,
-        textHeightBehavior: const TextHeightBehavior(
-          leadingDistribution: TextLeadingDistribution.even,
+      child: CustomPaint(
+        painter: HighlightPainter(
+          text: text,
+          textStyle: textStyle,
+          matches: _findMatches,
+          currentFindIndex: _currentFindIndex,
+          query: query,
+          colorScheme: colorScheme,
+        ),
+        child: Text(
+          text,
+          style: textStyle.copyWith(color: Colors.transparent),
+          textAlign: TextAlign.start,
+          textHeightBehavior: const TextHeightBehavior(
+            leadingDistribution: TextLeadingDistribution.even,
+          ),
         ),
       ),
     );
   }
+}
+
+/// Custom painter for drawing rounded highlight rectangles
+class HighlightPainter extends CustomPainter {
+  final String text;
+  final TextStyle textStyle;
+  final List<int> matches;
+  final int currentFindIndex;
+  final String query;
+  final ColorScheme colorScheme;
+
+  HighlightPainter({
+    required this.text,
+    required this.textStyle,
+    required this.matches,
+    required this.currentFindIndex,
+    required this.query,
+    required this.colorScheme,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final textPainter = TextPainter(
+      text: TextSpan(text: text, style: textStyle),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout(maxWidth: size.width);
+
+    for (int i = 0; i < matches.length; i++) {
+      final start = matches[i];
+      final end = start + query.length;
+      final selection = TextSelection(baseOffset: start, extentOffset: end);
+      final boxes = textPainter.getBoxesForSelection(selection);
+      final isCurrent = i == currentFindIndex;
+      final color = isCurrent
+          ? colorScheme.primary.withAlpha(140)
+          : colorScheme.primary.withAlpha(40);
+      final fillPaint = Paint()..color = color;
+      final strokePaint = Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0;
+      for (final box in boxes) {
+        final rect = RRect.fromRectAndRadius(box.toRect(), const Radius.circular(0.0));
+        canvas.drawRRect(rect, fillPaint);
+        canvas.drawRRect(rect, strokePaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 /// Widget that provides highlighted text field with search functionality
@@ -314,7 +315,7 @@ class HighlightedTextField extends StatelessWidget {
             ),
             onChanged: (_) => onChanged(),
           ),
-          // Overlay for highlighting (non-interactive)
+          // Overlay for highlighting
           Positioned.fill(
             child: IgnorePointer(
               child: searchManager!.buildHighlightOverlay(

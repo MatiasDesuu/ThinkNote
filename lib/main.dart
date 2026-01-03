@@ -752,7 +752,19 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     // Los listeners se manejan en cada pestaña individualmente
     _tabManager = TabManager();
     _tabManager.addListener(() {
-      if (mounted) setState(() {});
+      if (mounted) {
+        final activeTab = _tabManager.activeTab;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              if (activeTab != null) {
+                _searchQuery = activeTab.searchQuery ?? '';
+                _isAdvancedSearch = activeTab.isAdvancedSearch;
+              }
+            });
+          }
+        });
+      }
     });
 
     // Configure notebook change callback for note links

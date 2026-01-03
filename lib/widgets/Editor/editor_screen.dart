@@ -79,6 +79,7 @@ class _NotaEditorState extends State<NotaEditor>
   bool _isReadMode = false;
   bool _isEditorCentered = false; // Estado individual de centrado por tab
   bool _showFindBar = false;
+  bool _isRestoringSearch = false;
   bool _isEditorSettingsLoaded = false;
   Timer? _scriptDetectionDebouncer;
   Timer? _autoSaveDebounce;
@@ -173,8 +174,21 @@ class _NotaEditorState extends State<NotaEditor>
     widget.noteController.addListener(_onContentChanged);
     widget.titleController.addListener(_onTitleChanged);
     _findController.addListener(() {
-      _searchManager.performFind(_findController.text, () {
-        if (mounted) setState(() {});
+      if (_isRestoringSearch) return;
+      final query = _findController.text;
+      _searchManager.performFind(query, () {
+        if (mounted) {
+          setState(() {});
+          // Update TabManager with the current search query to persist it across tab switches
+          final activeTab = widget.tabManager?.activeTab;
+          if (activeTab != null) {
+            widget.tabManager!.setTabSearchQuery(
+              activeTab,
+              query,
+              isAdvanced: widget.isAdvancedSearch,
+            );
+          }
+        }
       });
     });
     _detectScriptMode();
@@ -224,6 +238,7 @@ class _NotaEditorState extends State<NotaEditor>
     // If changed note (by ID), reconfigure listeners for new controllers
     // We use the ID instead of comparing objects because Note does not have operator ==
     final noteChanged = oldWidget.selectedNote.id != widget.selectedNote.id;
+    final findBarHadFocus = _findBarFocusNode.hasFocus;
 
     if (noteChanged) {
       _reconfigureListeners(oldWidget);
@@ -242,11 +257,24 @@ class _NotaEditorState extends State<NotaEditor>
         });
       }
 
-      // Close the find bar and clear the search text when the note changes
+      // Restore search text and re-run search for the new note
       if (_showFindBar) {
-        _findController.clear();
-        setState(() {
-          _showFindBar = false;
+        final newQuery = widget.searchQuery ?? '';
+        _isRestoringSearch = true;
+        _findController.text = newQuery;
+        _isRestoringSearch = false;
+
+        // Re-run search on the new note content and restore focus if needed
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _showFindBar) {
+            _searchManager.performFind(_findController.text, () {
+              if (mounted) setState(() {});
+            });
+
+            if (findBarHadFocus) {
+              _findBarFocusNode.requestFocus();
+            }
+          }
         });
       }
     }
@@ -1045,6 +1073,12 @@ class _NotaEditorState extends State<NotaEditor>
         setState(() {
           _showFindBar = false;
         });
+
+        // Clear search query in TabManager when closing the find bar
+        final activeTab = widget.tabManager?.activeTab;
+        if (activeTab != null) {
+          widget.tabManager!.setTabSearchQuery(activeTab, null);
+        }
       }
     });
     _findController.clear();
