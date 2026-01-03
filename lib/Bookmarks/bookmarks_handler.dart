@@ -99,11 +99,7 @@ class LinksHandlerDB {
       // Obtener todos los tags únicos de los bookmarks
       final Set<String> activeTags = {};
       for (final bookmark in _bookmarks) {
-        if (bookmark.id != null) {
-          final tags = await _databaseService.bookmarkService
-              .getTagsByBookmarkId(bookmark.id!);
-          activeTags.addAll(tags);
-        }
+        activeTags.addAll(bookmark.tags);
       }
 
       // Convertir el Set a List y ordenar
@@ -214,20 +210,17 @@ class LinksHandlerDB {
       final List<Bookmark> tagFiltered = [];
 
       for (final bookmark in filtered) {
-        if (bookmark.id != null) {
-          final tags = await _databaseService.bookmarkService
-              .getTagsByBookmarkId(bookmark.id!);
+        final tags = bookmark.tags;
 
-          // Si estamos en el filtro "hidden", mostrar solo los que tienen ese tag
-          if (_selectedTag == hiddenTag) {
-            if (tags.contains(_selectedTag)) {
-              tagFiltered.add(bookmark);
-            }
-          } else {
-            // Para otros tags, mostrar los que tienen el tag y NO tienen el tag hidden
-            if (tags.contains(_selectedTag) && !tags.contains(hiddenTag)) {
-              tagFiltered.add(bookmark);
-            }
+        // Si estamos en el filtro "hidden", mostrar solo los que tienen ese tag
+        if (_selectedTag == hiddenTag) {
+          if (tags.contains(_selectedTag)) {
+            tagFiltered.add(bookmark);
+          }
+        } else {
+          // Para otros tags, mostrar los que tienen el tag y NO tienen el tag hidden
+          if (tags.contains(_selectedTag) && !tags.contains(hiddenTag)) {
+            tagFiltered.add(bookmark);
           }
         }
       }
@@ -238,12 +231,9 @@ class LinksHandlerDB {
       final List<Bookmark> nonHiddenBookmarks = [];
 
       for (final bookmark in filtered) {
-        if (bookmark.id != null) {
-          final tags = await _databaseService.bookmarkService
-              .getTagsByBookmarkId(bookmark.id!);
-          if (!tags.contains(hiddenTag)) {
-            nonHiddenBookmarks.add(bookmark);
-          }
+        final tags = bookmark.tags;
+        if (!tags.contains(hiddenTag)) {
+          nonHiddenBookmarks.add(bookmark);
         }
       }
 
@@ -256,18 +246,15 @@ class LinksHandlerDB {
       final List<Bookmark> searchTagFiltered = [];
 
       for (final bookmark in _bookmarks) {
-        if (bookmark.id != null) {
-          final tags = await _databaseService.bookmarkService
-              .getTagsByBookmarkId(bookmark.id!);
+        final tags = bookmark.tags;
 
-          // Si encuentra tags que coinciden con la búsqueda
-          if (tags.any((tag) => tag.toLowerCase().contains(query))) {
-            // Si estamos mostrando hidden, o el bookmark no es hidden
-            if (_selectedTag == hiddenTag || !tags.contains(hiddenTag)) {
-              // Si no está ya en la lista filtrada
-              if (!filtered.any((b) => b.id == bookmark.id)) {
-                searchTagFiltered.add(bookmark);
-              }
+        // Si encuentra tags que coinciden con la búsqueda
+        if (tags.any((tag) => tag.toLowerCase().contains(query))) {
+          // Si estamos mostrando hidden, o el bookmark no es hidden
+          if (_selectedTag == hiddenTag || !tags.contains(hiddenTag)) {
+            // Si no está ya en la lista filtrada
+            if (!filtered.any((b) => b.id == bookmark.id)) {
+              searchTagFiltered.add(bookmark);
             }
           }
         }

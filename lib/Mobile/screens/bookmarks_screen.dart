@@ -105,11 +105,7 @@ class BookmarksHandler {
       // Obtener todos los tags únicos de los bookmarks
       final Set<String> activeTags = {};
       for (final bookmark in _bookmarks) {
-        if (bookmark.id != null) {
-          final tags = await DatabaseService().bookmarkService
-              .getTagsByBookmarkId(bookmark.id!);
-          activeTags.addAll(tags);
-        }
+        activeTags.addAll(bookmark.tags);
       }
 
       // Convertir el Set a List y ordenar
@@ -230,20 +226,17 @@ class BookmarksHandler {
       final List<Bookmark> tagFiltered = [];
 
       for (final bookmark in filtered) {
-        if (bookmark.id != null) {
-          final tags = await DatabaseService().bookmarkService
-              .getTagsByBookmarkId(bookmark.id!);
+        final tags = bookmark.tags;
 
-          // Si estamos en el filtro "hidden", mostrar solo los que tienen ese tag
-          if (_selectedTag == hiddenTag) {
-            if (tags.contains(_selectedTag)) {
-              tagFiltered.add(bookmark);
-            }
-          } else {
-            // Para otros tags, mostrar los que tienen el tag y NO tienen el tag hidden
-            if (tags.contains(_selectedTag) && !tags.contains(hiddenTag)) {
-              tagFiltered.add(bookmark);
-            }
+        // Si estamos en el filtro "hidden", mostrar solo los que tienen ese tag
+        if (_selectedTag == hiddenTag) {
+          if (tags.contains(_selectedTag)) {
+            tagFiltered.add(bookmark);
+          }
+        } else {
+          // Para otros tags, mostrar los que tienen el tag y NO tienen el tag hidden
+          if (tags.contains(_selectedTag) && !tags.contains(hiddenTag)) {
+            tagFiltered.add(bookmark);
           }
         }
       }
@@ -254,12 +247,9 @@ class BookmarksHandler {
       final List<Bookmark> nonHiddenBookmarks = [];
 
       for (final bookmark in filtered) {
-        if (bookmark.id != null) {
-          final tags = await DatabaseService().bookmarkService
-              .getTagsByBookmarkId(bookmark.id!);
-          if (!tags.contains(hiddenTag)) {
-            nonHiddenBookmarks.add(bookmark);
-          }
+        final tags = bookmark.tags;
+        if (!tags.contains(hiddenTag)) {
+          nonHiddenBookmarks.add(bookmark);
         }
       }
 
@@ -1264,56 +1254,42 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                     ).colorScheme.onSurface.withAlpha(150),
                   ),
                 ),
-                FutureBuilder<List<String>>(
-                  future: DatabaseService().bookmarkService.getTagsByBookmarkId(
-                    bookmark.id!,
+                if (bookmark.tags.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      '|',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return const SizedBox.shrink();
-                    }
-
-                    final tags = snapshot.data!;
-                    return Row(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            '|',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          height: 18,
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children:
-                                  tags.map((tag) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 4),
-                                      child: Text(
-                                        '#$tag',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
+                  SizedBox(
+                    height: 18,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children:
+                            bookmark.tags.map((tag) {
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 4),
+                                child: Text(
+                                  '#$tag',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ],

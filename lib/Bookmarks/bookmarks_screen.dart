@@ -710,19 +710,8 @@ class _LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     final titleController = TextEditingController(text: bookmark.title);
     final urlController = TextEditingController(text: bookmark.url);
     final descController = TextEditingController(text: bookmark.description);
-    final tagsFuture = DatabaseService().bookmarkService.getTagsByBookmarkId(
-      bookmark.id!,
-    );
-
-    String tagsText = '';
-
-    await tagsFuture.then((tags) {
-      if (!mounted) return;
-      // No excluir el tag hidden al editar, para que pueda ser gestionado
-      tagsText = tags.join(', ');
-    });
-
-    if (!mounted) return;
+    
+    String tagsText = bookmark.tags.join(', ');
 
     final tagsController = TextEditingController(text: tagsText);
 
@@ -1979,70 +1968,51 @@ class _BookmarkCardState extends State<_BookmarkCard> {
                                     ),
                                   ),
                                 ),
-                                FutureBuilder<List<String>>(
-                                  future: DatabaseService().bookmarkService
-                                      .getTagsByBookmarkId(widget.bookmark.id!),
-                                  builder: (context, snapshot) {
-                                    if (!snapshot.hasData ||
-                                        snapshot.data!.isEmpty) {
-                                      return const SizedBox.shrink();
-                                    }
-
-                                    final tags = snapshot.data!;
-                                    // Mostrar todos los tags, incluyendo hidden
-                                    final visibleTags = tags.toList();
-
-                                    return Row(
-                                      children: [
-                                        if (visibleTags.isNotEmpty) ...[
-                                          const Padding(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 4,
-                                            ),
-                                            child: Text(
-                                              '|',
-                                              style: TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 10,
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            height: 18,
-                                            child: SingleChildScrollView(
-                                              scrollDirection: Axis.horizontal,
-                                              child: Row(
-                                                children:
-                                                    visibleTags
-                                                        .map(
-                                                          (tag) => Padding(
-                                                            padding:
-                                                                const EdgeInsets.only(
-                                                                  right: 4,
-                                                                ),
-                                                            child: Text(
-                                                              '#$tag',
-                                                              style: TextStyle(
-                                                                fontSize: 11,
-                                                                color:
-                                                                    widget
-                                                                        .colorScheme
-                                                                        .primary,
-                                                                fontWeight:
-                                                                    FontWeight.w500,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        )
-                                                        .toList(),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    );
-                                  },
-                                ),
+                                if (widget.bookmark.tags.isNotEmpty) ...[
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                    ),
+                                    child: Text(
+                                      '|',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: 18,
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: Row(
+                                        children:
+                                            widget.bookmark.tags
+                                                .map(
+                                                  (tag) => Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          right: 4,
+                                                        ),
+                                                    child: Text(
+                                                      '#$tag',
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        color:
+                                                            widget
+                                                                .colorScheme
+                                                                .primary,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                )
+                                                .toList(),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ],
@@ -2226,55 +2196,39 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
                                 fontSize: 12,
                               ),
                             ),
-                            FutureBuilder<List<String>>(
-                              future: DatabaseService().bookmarkService.getTagsByBookmarkId(widget.bookmark.id!),
-                              builder: (context, snapshot) {
-                                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                                  return const SizedBox.shrink();
-                                }
-
-                                final tags = snapshot.data!;
-                                final visibleTags = tags.toList();
-
-                                return Row(
-                                  children: [
-                                    if (visibleTags.isNotEmpty) ...[
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                            if (widget.bookmark.tags.isNotEmpty) ...[
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: Text(
+                                  '|',
+                                  style: TextStyle(
+                                    color: widget.colorScheme.onSurface.withAlpha(150),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(
+                                height: 18,
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: widget.bookmark.tags.map(
+                                      (tag) => Padding(
+                                        padding: const EdgeInsets.only(right: 4),
                                         child: Text(
-                                          '|',
+                                          '#$tag',
                                           style: TextStyle(
-                                            color: widget.colorScheme.onSurface.withAlpha(150),
                                             fontSize: 12,
+                                            color: widget.colorScheme.primary,
+                                            fontWeight: FontWeight.w500,
                                           ),
                                         ),
                                       ),
-                                      SizedBox(
-                                        height: 18,
-                                        child: SingleChildScrollView(
-                                          scrollDirection: Axis.horizontal,
-                                          child: Row(
-                                            children: visibleTags.map(
-                                              (tag) => Padding(
-                                                padding: const EdgeInsets.only(right: 4),
-                                                child: Text(
-                                                  '#$tag',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: widget.colorScheme.primary,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                              ),
-                                            ).toList(),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                );
-                              },
-                            ),
+                                    ).toList(),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ],

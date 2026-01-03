@@ -537,6 +537,7 @@ class BookmarkService {
         'timestamp': map['timestamp'],
         'hidden': map['hidden'],
         'tag_ids': tagIds,
+        'tags': map['tags'],
       });
     }).toList();
   }

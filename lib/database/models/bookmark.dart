@@ -6,6 +6,7 @@ class Bookmark {
   final String timestamp;
   final bool hidden;
   final List<int> tagIds;
+  final List<String> tags;
 
   Bookmark({
     this.id,
@@ -15,6 +16,7 @@ class Bookmark {
     required this.timestamp,
     this.hidden = false,
     this.tagIds = const [],
+    this.tags = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -30,6 +32,7 @@ class Bookmark {
   }
 
   factory Bookmark.fromMap(Map<String, dynamic> map) {
+    final tagsString = map['tags'] as String?;
     return Bookmark(
       id: map['id'],
       title: map['title'] ?? '',
@@ -38,6 +41,9 @@ class Bookmark {
       timestamp: map['timestamp'] ?? DateTime.now().toIso8601String(),
       hidden: map['hidden'] == 1,
       tagIds: List<int>.from(map['tag_ids'] ?? []),
+      tags: (tagsString != null && tagsString.isNotEmpty)
+          ? tagsString.split(',')
+          : [],
     );
   }
 
@@ -49,6 +55,7 @@ class Bookmark {
     String? timestamp,
     bool? hidden,
     List<int>? tagIds,
+    List<String>? tags,
   }) {
     return Bookmark(
       id: id ?? this.id,
@@ -58,6 +65,7 @@ class Bookmark {
       timestamp: timestamp ?? this.timestamp,
       hidden: hidden ?? this.hidden,
       tagIds: tagIds ?? this.tagIds,
+      tags: tags ?? this.tags,
     );
   }
 }
