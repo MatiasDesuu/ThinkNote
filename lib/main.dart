@@ -32,6 +32,7 @@ import 'widgets/custom_snackbar.dart';
 import 'widgets/panels/calendar_panel.dart';
 import 'widgets/search_screen_desktop.dart';
 import 'widgets/Editor/editor_tabs.dart';
+import 'widgets/Editor/search_handler.dart';
 import 'database/models/notebook_icons.dart';
 import 'widgets/resizable_icon_sidebar.dart';
 import 'services/immersive_mode_service.dart';
@@ -691,7 +692,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   Note? _selectedNote;
   Notebook? _selectedNotebook;
   String? _selectedTag;
-  late TextEditingController _noteController;
+  late SearchTextEditingController _noteController;
   late TextEditingController _titleController;
   bool isEditing = false;
   bool isSaving = false;
@@ -747,7 +748,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   void initState() {
     super.initState();
     _syncController = SyncAnimationController(vsync: this);
-    _noteController = TextEditingController();
+    _noteController = SearchTextEditingController();
     _titleController = TextEditingController();
     // Los listeners se manejan en cada pestaña individualmente
     _tabManager = TabManager();
@@ -1388,7 +1389,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       orElse:
           () => EditorTab(
             note: null,
-            noteController: TextEditingController(),
+            noteController: SearchTextEditingController(),
             titleController: TextEditingController(),
             lastAccessed: DateTime.now(),
           ),
@@ -1484,7 +1485,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       orElse:
           () => EditorTab(
             note: null,
-            noteController: TextEditingController(),
+            noteController: SearchTextEditingController(),
             titleController: TextEditingController(),
             lastAccessed: DateTime.now(),
           ),
@@ -2495,7 +2496,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       orElse:
           () => EditorTab(
             note: null,
-            noteController: TextEditingController(),
+            noteController: SearchTextEditingController(),
             titleController: TextEditingController(),
             lastAccessed: DateTime.now(),
           ),

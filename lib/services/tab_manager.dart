@@ -5,6 +5,7 @@ import '../database/models/editor_tab.dart';
 import '../database/models/note.dart';
 import '../database/repositories/note_repository.dart';
 import '../database/database_helper.dart';
+import '../widgets/Editor/search_handler.dart';
 
 class TabManager extends ChangeNotifier {
   final List<EditorTab> _tabs = [];
@@ -44,7 +45,7 @@ class TabManager extends ChangeNotifier {
       // Create new tab
       final newTab = EditorTab(
         note: note,
-        noteController: TextEditingController(text: note.content),
+        noteController: SearchTextEditingController(text: note.content),
         titleController: TextEditingController(text: note.title),
         searchQuery: searchQuery,
         isAdvancedSearch: isAdvancedSearch,
@@ -72,7 +73,7 @@ class TabManager extends ChangeNotifier {
       final emptyTabId = 'empty_${++_emptyTabCounter}';
       final newTab = EditorTab(
         note: null,
-        noteController: TextEditingController(),
+        noteController: SearchTextEditingController(),
         titleController: TextEditingController(),
         lastAccessed: DateTime.now(),
         tabId: emptyTabId,
@@ -100,7 +101,7 @@ class TabManager extends ChangeNotifier {
 
     final updatedTab = _activeTab!.copyWith(
       note: note,
-      noteController: TextEditingController(text: note.content),
+      noteController: SearchTextEditingController(text: note.content),
       titleController: TextEditingController(text: note.title),
       lastAccessed: DateTime.now(),
     );
@@ -136,7 +137,7 @@ class TabManager extends ChangeNotifier {
 
     final updatedTab = _activeTab!.copyWith(
       note: note,
-      noteController: TextEditingController(text: note.content),
+      noteController: SearchTextEditingController(text: note.content),
       titleController: TextEditingController(text: note.title),
       lastAccessed: DateTime.now(),
       isDirty: false, // Reset dirty state for new note
@@ -333,7 +334,7 @@ class TabManager extends ChangeNotifier {
 
       // Crear nuevos controladores con el contenido actualizado
       final updatedTab = tab.copyWith(
-        noteController: TextEditingController(text: content),
+        noteController: SearchTextEditingController(text: content),
         titleController: TextEditingController(text: title),
         note: tab.note?.copyWith(
           content: content,
@@ -377,7 +378,9 @@ class TabManager extends ChangeNotifier {
         _activeTab = updatedTab;
       }
       _saveTabsToStorage();
-      notifyListeners();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
     }
   }
   void markTabAsSaved(EditorTab tab) {
@@ -459,7 +462,7 @@ class TabManager extends ChangeNotifier {
 
       final updatedTab = tab.copyWith(
         note: updatedNote,
-        noteController: TextEditingController(text: updatedNote.content),
+        noteController: SearchTextEditingController(text: updatedNote.content),
         titleController: TextEditingController(text: updatedNote.title),
       );
 
@@ -662,7 +665,7 @@ class TabManager extends ChangeNotifier {
           if (note != null || tabId != null) {
             final tab = EditorTab(
               note: note,
-              noteController: TextEditingController(text: note?.content ?? ''),
+              noteController: SearchTextEditingController(text: note?.content ?? ''),
               titleController: TextEditingController(text: note?.title ?? ''),
               searchQuery: searchQuery,
               isAdvancedSearch: isAdvancedSearch,

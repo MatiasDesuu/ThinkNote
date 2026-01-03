@@ -15,6 +15,7 @@ import '../database/database_helper.dart';
 import '../database/repositories/think_repository.dart';
 import '../Settings/settings_screen.dart';
 import '../widgets/Editor/editor_screen.dart';
+import '../widgets/Editor/search_handler.dart';
 import '../database/models/note.dart';
 import '../widgets/custom_snackbar.dart';
 import '../widgets/context_menu.dart';
@@ -54,7 +55,7 @@ class _ThinksScreenState extends State<ThinksScreen>
   List<Think> _thinks = [];
   final ScrollController _scrollController = ScrollController();
   Think? _selectedThink;
-  final TextEditingController _noteController = TextEditingController();
+  final SearchTextEditingController _noteController = SearchTextEditingController();
   final TextEditingController _titleController = TextEditingController();
   Timer? _debounceNote;
   bool _isEditorCentered = false;

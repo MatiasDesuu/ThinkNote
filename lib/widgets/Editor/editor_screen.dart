@@ -35,7 +35,7 @@ void toggleActiveEditorReadMode() {
 
 class NotaEditor extends StatefulWidget {
   final Note selectedNote;
-  final TextEditingController noteController;
+  final SearchTextEditingController noteController;
   final TextEditingController titleController;
   final VoidCallback onSave;
   final VoidCallback onTitleChanged;
@@ -178,16 +178,20 @@ class _NotaEditorState extends State<NotaEditor>
       final query = _findController.text;
       _searchManager.performFind(query, () {
         if (mounted) {
-          setState(() {});
-          // Update TabManager with the current search query to persist it across tab switches
-          final activeTab = widget.tabManager?.activeTab;
-          if (activeTab != null) {
-            widget.tabManager!.setTabSearchQuery(
-              activeTab,
-              query,
-              isAdvanced: widget.isAdvancedSearch,
-            );
-          }
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {});
+              // Update TabManager with the current search query to persist it across tab switches
+              final activeTab = widget.tabManager?.activeTab;
+              if (activeTab != null) {
+                widget.tabManager!.setTabSearchQuery(
+                  activeTab,
+                  query,
+                  isAdvanced: widget.isAdvancedSearch,
+                );
+              }
+            }
+          });
         }
       });
     });

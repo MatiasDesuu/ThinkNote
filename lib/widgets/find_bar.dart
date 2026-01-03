@@ -35,186 +35,118 @@ class _FindBarState extends State<FindBar> {
     const buttonHeight = 36.0; // Height for all elements
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainer,
+        color: colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outline.withAlpha(76), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(20),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(
+                    color: colorScheme.outline.withAlpha(50),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
           Expanded(
             child: SizedBox(
               height: buttonHeight,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withAlpha(76),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: colorScheme.outline.withAlpha(76),
-                    width: 1,
+              child: TextField(
+                controller: widget.textController,
+                focusNode: widget.focusNode,
+                decoration: InputDecoration(
+                  hintText: 'Find in note...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
                   ),
-                ),
-                child: TextField(
-                  controller: widget.textController,
-                  focusNode: widget.focusNode,
-                  decoration: InputDecoration(
-                    hintText: 'Find in note...',
-                    border: InputBorder.none,
-                    filled: false,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    prefixIcon: Icon(
-                      Icons.search_rounded,
-                      size: 18,
-                      color: colorScheme.primary,
-                    ),
-                    suffixIcon:
-                        widget.textController.text.isNotEmpty
-                            ? IconButton(
-                              icon: Icon(
-                                Icons.clear_rounded,
-                                size: 16,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                              onPressed: () {
-                                widget.textController.clear();
-                                widget.onFind('');
-                              },
-                              style: IconButton.styleFrom(
-                                padding: const EdgeInsets.all(6),
-                                minimumSize: const Size(28, 28),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                              ),
-                            )
-                            : null,
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest.withAlpha(76),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 0,
                   ),
-                  style: TextStyle(fontSize: 13, color: colorScheme.onSurface),
-                  onChanged: widget.onFind,
-                  onSubmitted: (_) => widget.onNext(),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    size: 18,
+                    color: colorScheme.primary,
+                  ),
+                  suffixIconConstraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  suffixIcon:
+                      widget.textController.text.isNotEmpty
+                          ? IconButton(
+                            icon: const Icon(Icons.clear_rounded, size: 14),
+                            onPressed: () {
+                              widget.textController.clear();
+                              widget.onFind('');
+                            },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints.tightFor(
+                              width: 28,
+                              height: 28,
+                            ),
+                            color: colorScheme.onSurfaceVariant,
+                          )
+                          : null,
                 ),
+                style: TextStyle(fontSize: 13, color: colorScheme.onSurface),
+                onChanged: widget.onFind,
+                onSubmitted: (_) => widget.onNext(),
               ),
             ),
           ),
+          SizedBox(width: 6),
           if (widget.hasMatches) ...[
-            const SizedBox(width: 12),
             SizedBox(
               height: buttonHeight,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 0,
+                  horizontal: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
+                  color: colorScheme.primary.withAlpha(20),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: colorScheme.primary.withAlpha(76),
+                    color: colorScheme.primary.withAlpha(40),
                     width: 1,
                   ),
                 ),
                 child: Center(
                   child: Text(
-                    '${widget.currentIndex + 1}/${widget.totalMatches}',
+                    '${widget.currentIndex + 1} of ${widget.totalMatches}',
                     style: TextStyle(
                       fontSize: 11,
-                      color: colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.w600,
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            SizedBox(
-              height: buttonHeight,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: colorScheme.outline.withAlpha(76),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.keyboard_arrow_up_rounded,
-                        size: 16,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      onPressed: widget.onPrevious,
-                      style: IconButton.styleFrom(
-                        padding: const EdgeInsets.all(8),
-                        minimumSize: const Size(28, 28),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 16,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      onPressed: widget.onNext,
-                      style: IconButton.styleFrom(
-                        padding: const EdgeInsets.all(8),
-                        minimumSize: const Size(28, 28),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            const SizedBox(width: 6),
+            IconButton(
+              icon: const Icon(Icons.keyboard_arrow_up_rounded, size: 22),
+              onPressed: widget.onPrevious,
+              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+              padding: EdgeInsets.zero,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            IconButton(
+              icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 22),
+              onPressed: widget.onNext,
+              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+              padding: EdgeInsets.zero,
+              color: colorScheme.onSurfaceVariant,
             ),
           ],
-          const SizedBox(width: 8),
-          SizedBox(
-            height: buttonHeight,
-            child: Container(
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: colorScheme.outline.withAlpha(76),
-                  width: 1,
-                ),
-              ),
-              child: IconButton(
-                icon: Icon(
-                  Icons.close_rounded,
-                  size: 16,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                onPressed: widget.onClose,
-                style: IconButton.styleFrom(
-                  padding: const EdgeInsets.all(8),
-                  minimumSize: const Size(28, 28),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ),
-            ),
+          IconButton(
+            icon: const Icon(Icons.close_rounded, size: 22),
+            onPressed: widget.onClose,
+            constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+            padding: EdgeInsets.zero,
+            color: colorScheme.onSurfaceVariant,
           ),
         ],
       ),

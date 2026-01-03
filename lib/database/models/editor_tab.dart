@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'note.dart';
+import '../../widgets/Editor/search_handler.dart';
 
 class EditorTab {
   final Note? note;
-  final TextEditingController noteController;
+  final SearchTextEditingController noteController;
   final TextEditingController titleController;
   final String? searchQuery;
   final bool isAdvancedSearch;
@@ -30,7 +31,7 @@ class EditorTab {
 
   EditorTab copyWith({
     Note? note,
-    TextEditingController? noteController,
+    SearchTextEditingController? noteController,
     TextEditingController? titleController,
     String? searchQuery,
     bool? isAdvancedSearch,

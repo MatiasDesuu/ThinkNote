@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Manager class that handles all search-related functionality in the editor
 class SearchManager {
-  TextEditingController noteController;
+  SearchTextEditingController? noteController;
   ScrollController scrollController;
   TextStyle textStyle;
 
@@ -11,7 +11,7 @@ class SearchManager {
   List<int> _findMatches = [];
 
   SearchManager({
-    required this.noteController,
+    this.noteController,
     required this.scrollController,
     required this.textStyle,
   });
@@ -26,17 +26,21 @@ class SearchManager {
     required TextEditingController newNoteController,
     required ScrollController newScrollController,
   }) {
-    noteController = newNoteController;
+    if (newNoteController is SearchTextEditingController) {
+      noteController = newNoteController;
+    }
     scrollController = newScrollController;
     // Reset search state when note changes
     _currentFindIndex = -1;
     _findMatches = [];
+    noteController?.updateSearchData('', [], -1);
   }
 
   /// Reset search state without changing controllers
   void reset() {
     _currentFindIndex = -1;
     _findMatches = [];
+    noteController?.updateSearchData('', [], -1);
   }
 
   // Getters
@@ -46,28 +50,40 @@ class SearchManager {
 
   /// Performs a search and updates the matches list
   void performFind(String query, VoidCallback onUpdate) {
+    if (noteController == null) return;
+
     if (query.isEmpty) {
       _currentFindIndex = -1;
       _findMatches = [];
+      noteController?.updateSearchData('', [], -1);
       onUpdate();
       return;
     }
 
-    final text = noteController.text;
-    final lowerText = text.toLowerCase();
-    final lowerQuery = query.toLowerCase();
-
+    final text = noteController!.text;
     List<int> matches = [];
-    int index = 0;
 
-    while ((index = lowerText.indexOf(lowerQuery, index)) != -1) {
-      matches.add(index);
-      index += 1;
+    try {
+      // Use RegExp for case-insensitive search without copying the whole text
+      final regex = RegExp(RegExp.escape(query), caseSensitive: false);
+      for (final match in regex.allMatches(text)) {
+        matches.add(match.start);
+      }
+    } catch (e) {
+      // Fallback to simple indexOf if regex fails
+      final lowerText = text.toLowerCase();
+      final lowerQuery = query.toLowerCase();
+      int index = 0;
+      while ((index = lowerText.indexOf(lowerQuery, index)) != -1) {
+        matches.add(index);
+        index += 1;
+      }
     }
 
     _findMatches = matches;
     _currentFindIndex = matches.isNotEmpty ? 0 : -1;
 
+    noteController?.updateSearchData(query, _findMatches, _currentFindIndex);
     onUpdate();
 
     if (matches.isNotEmpty) {
@@ -77,6 +93,7 @@ class SearchManager {
 
   /// Selects and scrolls to the current match
   void selectCurrentMatch() {
+    if (noteController == null) return;
     if (_currentFindIndex >= 0 && _currentFindIndex < _findMatches.length) {
       // Check if ScrollController is attached
       if (!scrollController.hasClients) {
@@ -91,7 +108,7 @@ class SearchManager {
 
       // Calculate the position of the current match
       final matchPosition = _findMatches[_currentFindIndex];
-      final text = noteController.text;
+      final text = noteController!.text;
 
       // Calculate scroll position
       final textBeforeMatch = text.substring(0, matchPosition);
@@ -99,7 +116,7 @@ class SearchManager {
       final lineNumber = lines.length - 1;
 
       // Estimate position based on line number and average line height
-      final lineHeight = textStyle.fontSize! * textStyle.height!;
+      final lineHeight = textStyle.fontSize! * (textStyle.height ?? 1.2);
       final estimatedPosition = lineNumber * lineHeight;
 
       // Get current scroll position and viewport height
@@ -126,6 +143,11 @@ class SearchManager {
 
     _currentFindIndex = (_currentFindIndex + 1) % _findMatches.length;
 
+    noteController?.updateSearchData(
+      noteController?.searchQuery ?? '',
+      _findMatches,
+      _currentFindIndex,
+    );
     onUpdate();
     selectCurrentMatch();
   }
@@ -139,6 +161,11 @@ class SearchManager {
             ? _findMatches.length - 1
             : _currentFindIndex - 1;
 
+    noteController?.updateSearchData(
+      noteController?.searchQuery ?? '',
+      _findMatches,
+      _currentFindIndex,
+    );
     onUpdate();
     selectCurrentMatch();
   }
@@ -147,97 +174,88 @@ class SearchManager {
   void clear(VoidCallback onUpdate) {
     _currentFindIndex = -1;
     _findMatches = [];
+    noteController?.updateSearchData('', [], -1);
     onUpdate();
-  }
-
-  /// Builds the highlight overlay widget
-  Widget buildHighlightOverlay(String query, ColorScheme colorScheme) {
-    final text = noteController.text;
-
-    if (query.isEmpty || _findMatches.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      padding: const EdgeInsets.only(
-        top: 4.0, // Match TextField's default padding
-        bottom: 4.0,
-        left: 0.0,
-        right: 0.0,
-      ),
-      alignment: Alignment.topLeft,
-      child: CustomPaint(
-        painter: HighlightPainter(
-          text: text,
-          textStyle: textStyle,
-          matches: _findMatches,
-          currentFindIndex: _currentFindIndex,
-          query: query,
-          colorScheme: colorScheme,
-        ),
-        child: Text(
-          text,
-          style: textStyle.copyWith(color: Colors.transparent),
-          textAlign: TextAlign.start,
-          textHeightBehavior: const TextHeightBehavior(
-            leadingDistribution: TextLeadingDistribution.even,
-          ),
-        ),
-      ),
-    );
   }
 }
 
-/// Custom painter for drawing rounded highlight rectangles
-class HighlightPainter extends CustomPainter {
-  final String text;
-  final TextStyle textStyle;
-  final List<int> matches;
-  final int currentFindIndex;
-  final String query;
-  final ColorScheme colorScheme;
+/// Custom TextEditingController that handles search highlighting
+class SearchTextEditingController extends TextEditingController {
+  String _searchQuery = '';
+  int _currentMatchIndex = -1;
+  List<int> _matches = [];
+  Color? highlightColor;
+  Color? currentMatchColor;
 
-  HighlightPainter({
-    required this.text,
-    required this.textStyle,
-    required this.matches,
-    required this.currentFindIndex,
-    required this.query,
-    required this.colorScheme,
-  });
+  SearchTextEditingController({super.text});
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final textPainter = TextPainter(
-      text: TextSpan(text: text, style: textStyle),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout(maxWidth: size.width);
+  String get searchQuery => _searchQuery;
 
-    for (int i = 0; i < matches.length; i++) {
-      final start = matches[i];
-      final end = start + query.length;
-      final selection = TextSelection(baseOffset: start, extentOffset: end);
-      final boxes = textPainter.getBoxesForSelection(selection);
-      final isCurrent = i == currentFindIndex;
-      final color = isCurrent
-          ? colorScheme.primary.withAlpha(140)
-          : colorScheme.primary.withAlpha(40);
-      final fillPaint = Paint()..color = color;
-      final strokePaint = Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.0;
-      for (final box in boxes) {
-        final rect = RRect.fromRectAndRadius(box.toRect(), const Radius.circular(0.0));
-        canvas.drawRRect(rect, fillPaint);
-        canvas.drawRRect(rect, strokePaint);
-      }
+  void updateSearchData(String query, List<int> matches, int currentIndex) {
+    if (_searchQuery == query &&
+        _currentMatchIndex == currentIndex &&
+        _matches.length == matches.length) {
+      return;
     }
+    _searchQuery = query;
+    _matches = matches;
+    _currentMatchIndex = currentIndex;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  TextSpan buildTextSpan({
+    required BuildContext context,
+    TextStyle? style,
+    required bool withComposing,
+  }) {
+    if (_searchQuery.isEmpty || _matches.isEmpty) {
+      return super.buildTextSpan(
+        context: context,
+        style: style,
+        withComposing: withComposing,
+      );
+    }
+
+    final List<InlineSpan> children = [];
+    final String text = this.text;
+    int lastIndex = 0;
+
+    final Color hColor =
+        highlightColor ?? Theme.of(context).colorScheme.primary.withAlpha(40);
+    final Color cColor =
+        currentMatchColor ?? Theme.of(context).colorScheme.primary.withAlpha(140);
+
+    for (int i = 0; i < _matches.length; i++) {
+      final int start = _matches[i];
+      final int end = start + _searchQuery.length;
+
+      // Safety check for range
+      if (start < lastIndex || end > text.length) continue;
+
+      if (start > lastIndex) {
+        children.add(TextSpan(text: text.substring(lastIndex, start)));
+      }
+
+      final bool isCurrent = i == _currentMatchIndex;
+      children.add(
+        TextSpan(
+          text: text.substring(start, end),
+          style: style?.copyWith(backgroundColor: isCurrent ? cColor : hColor),
+        ),
+      );
+
+      lastIndex = end;
+    }
+
+    if (lastIndex < text.length) {
+      children.add(TextSpan(text: text.substring(lastIndex)));
+    }
+
+    return TextSpan(style: style, children: children);
+  }
 }
 
 /// Widget that provides highlighted text field with search functionality
@@ -267,65 +285,26 @@ class HighlightedTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // If no search query or no matches, show normal TextField
-    if (searchQuery == null ||
-        searchQuery!.isEmpty ||
-        searchManager == null ||
-        !searchManager!.hasMatches) {
-      return TextField(
-        controller: controller,
-        undoController: undoController,
-        focusNode: focusNode,
-        style: textStyle,
-        maxLines: null,
-        expands: true,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          hintText: hintText,
-          hintStyle: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: textStyle.fontSize,
-            height: textStyle.height,
-          ),
+    // Now we always use a normal TextField because highlighting is handled by the controller
+    return TextField(
+      controller: controller,
+      undoController: undoController,
+      focusNode: focusNode,
+      style: textStyle,
+      maxLines: null,
+      expands: true,
+      scrollController: scrollController,
+      decoration: InputDecoration(
+        border: InputBorder.none,
+        hintText: hintText,
+        hintStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          fontSize: textStyle.fontSize,
+          height: textStyle.height,
         ),
-        onChanged: (_) => onChanged(),
-      );
-    }
-
-    // For search mode, use a Stack with ScrollView containing both TextField and overlay
-    return SingleChildScrollView(
-      controller: scrollController,
-      child: Stack(
-        children: [
-          // Main TextField for editing
-          TextField(
-            controller: controller,
-            undoController: undoController,
-            focusNode: focusNode,
-            style: textStyle,
-            maxLines: null,
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              hintText: hintText,
-              hintStyle: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: textStyle.fontSize,
-                height: textStyle.height,
-              ),
-            ),
-            onChanged: (_) => onChanged(),
-          ),
-          // Overlay for highlighting
-          Positioned.fill(
-            child: IgnorePointer(
-              child: searchManager!.buildHighlightOverlay(
-                searchQuery!,
-                Theme.of(context).colorScheme,
-              ),
-            ),
-          ),
-        ],
       ),
+      onChanged: (_) => onChanged(),
     );
   }
 }
+
