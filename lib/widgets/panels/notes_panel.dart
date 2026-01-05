@@ -98,6 +98,8 @@ class NotesPanelState extends State<NotesPanel> {
   // Visual position tracking
   double? _currentVisualLineY;
 
+  List<Note> get notes => _notes;
+
   bool get sortByDate => _sortMode == SortMode.date;
   bool get isExpanded => _isExpanded;
 

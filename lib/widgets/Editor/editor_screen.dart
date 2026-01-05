@@ -19,7 +19,7 @@ import 'unified_text_handler.dart';
 import 'list_continuation_handler.dart';
 import 'list_handler.dart';
 import 'search_handler.dart';
-import 'editor_bottom_bar.dart';
+import 'editor_tool_bar.dart';
 import 'format_handler.dart';
 import '../../services/tab_manager.dart';
 import 'note_statistics_dialog.dart';
@@ -50,6 +50,8 @@ class NotaEditor extends StatefulWidget {
   final bool initialEditorCentered; // Estado inicial del centrado desde el tab
   final ValueChanged<bool>?
   onEditorCenteredChanged; // Callback cuando cambia el centrado
+  final VoidCallback? onNextNote;
+  final VoidCallback? onPreviousNote;
 
   const NotaEditor({
     super.key,
@@ -67,6 +69,8 @@ class NotaEditor extends StatefulWidget {
     this.onReadModeChanged,
     this.initialEditorCentered = false,
     this.onEditorCenteredChanged,
+    this.onNextNote,
+    this.onPreviousNote,
   });
 
   @override
@@ -432,6 +436,7 @@ class _NotaEditorState extends State<NotaEditor>
     // Guardar el estado del foco y cursor antes del guardado
     final bool hadFocus = _editorFocusNode.hasFocus;
     final TextSelection currentSelection = widget.noteController.selection;
+    final int? originalNoteId = widget.selectedNote.id;
 
     // Para auto-guardado, usar método separado que no interfiera con el foco
     if (isAutoSave) {
@@ -459,9 +464,15 @@ class _NotaEditorState extends State<NotaEditor>
       // Restaurar foco y posición del cursor si se perdieron
       if (hadFocus && !_editorFocusNode.hasFocus) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
+          if (mounted &&
+              originalNoteId != null &&
+              widget.selectedNote.id == originalNoteId) {
             _editorFocusNode.requestFocus();
-            widget.noteController.selection = currentSelection;
+            final textLength = widget.noteController.text.length;
+            if (currentSelection.start <= textLength &&
+                currentSelection.end <= textLength) {
+              widget.noteController.selection = currentSelection;
+            }
           }
         });
       }
@@ -470,9 +481,15 @@ class _NotaEditorState extends State<NotaEditor>
       if (mounted) {
         _saveController.reset();
         // Restaurar foco incluso en caso de error
-        if (hadFocus) {
+        if (hadFocus &&
+            originalNoteId != null &&
+            widget.selectedNote.id == originalNoteId) {
           _editorFocusNode.requestFocus();
-          widget.noteController.selection = currentSelection;
+          final textLength = widget.noteController.text.length;
+          if (currentSelection.start <= textLength &&
+              currentSelection.end <= textLength) {
+            widget.noteController.selection = currentSelection;
+          }
         }
       }
       rethrow;
@@ -1263,22 +1280,7 @@ class _NotaEditorState extends State<NotaEditor>
         actions: {
           SaveIntent: CallbackAction<SaveIntent>(
             onInvoke: (_) {
-              // Preservar foco antes del guardado para shortcuts
-              final hadFocus = _editorFocusNode.hasFocus;
-              final currentSelection = widget.noteController.selection;
-
-              _handleSave().then((_) {
-                // Restaurar foco después del guardado si se perdió
-                if (hadFocus && !_editorFocusNode.hasFocus) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) {
-                      _editorFocusNode.requestFocus();
-                      widget.noteController.selection = currentSelection;
-                    }
-                  });
-                }
-              });
-
+              _handleSave();
               return null;
             },
           ),
@@ -1447,24 +1449,7 @@ class _NotaEditorState extends State<NotaEditor>
                               builder: (context, isHovering) => SaveButton(
                                 controller: _saveController,
                                 onPressed: () {
-                                  // Preservar foco antes del guardado
-                                  final hadFocus = _editorFocusNode.hasFocus;
-                                  final currentSelection =
-                                      widget.noteController.selection;
-
-                                  _handleSave().then((_) {
-                                    // Restaurar foco después del guardado si se perdió
-                                    if (hadFocus && !_editorFocusNode.hasFocus) {
-                                      WidgetsBinding.instance
-                                          .addPostFrameCallback((_) {
-                                            if (mounted) {
-                                              _editorFocusNode.requestFocus();
-                                              widget.noteController.selection =
-                                                  currentSelection;
-                                            }
-                                          });
-                                    }
-                                  });
+                                  _handleSave();
                                 },
                               ),
                             ),
@@ -1564,6 +1549,8 @@ class _NotaEditorState extends State<NotaEditor>
                               _undoController.redo();
                             }
                           },
+                          onNextNote: () => widget.onNextNote?.call(),
+                          onPreviousNote: () => widget.onPreviousNote?.call(),
                           onFormatTap: _handleFormat,
                           isReadMode: _isReadMode,
                         ),

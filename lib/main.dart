@@ -762,6 +762,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
               if (activeTab != null) {
                 _searchQuery = activeTab.searchQuery ?? '';
                 _isAdvancedSearch = activeTab.isAdvancedSearch;
+                _selectedNote = activeTab.note;
+              } else {
+                _selectedNote = null;
               }
             });
           }
@@ -1372,7 +1375,118 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     }
   }
 
-  void _onNoteSelected(Note note) async {
+  Future<List<Note>> _getNotesForNavigation(Note currentNote) async {
+    final notesPanel = _notesPanelStateKey.currentState;
+    if (notesPanel != null) {
+      final notes = notesPanel.notes;
+      if (notes.any((n) => n.id == currentNote.id)) {
+        return notes;
+      }
+    }
+
+    // If not in current panel, fetch from database for the note's notebook
+    final dbHelper = DatabaseHelper();
+    final repo = NoteRepository(dbHelper);
+    final notes = await repo.getNotesByNotebookId(currentNote.notebookId);
+
+    // Load preferences for this specific notebook
+    final prefs = await SharedPreferences.getInstance();
+    final sortModeString =
+        prefs.getString('notes_sort_mode_${currentNote.notebookId}') ?? 'order';
+    final sortMode = SortMode.values.firstWhere(
+      (e) => e.name == sortModeString,
+      orElse: () => SortMode.order,
+    );
+    final completionSubSortByDate =
+        prefs.getBool(
+          'notes_completion_sub_sort_by_date_${currentNote.notebookId}',
+        ) ??
+        false;
+
+    // Sort notes
+    switch (sortMode) {
+      case SortMode.date:
+        notes.sort((a, b) {
+          if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+          return b.createdAt.compareTo(a.createdAt);
+        });
+        break;
+      case SortMode.order:
+        notes.sort((a, b) {
+          if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+          return a.orderIndex.compareTo(b.orderIndex);
+        });
+        break;
+      case SortMode.completion:
+        notes.sort((a, b) {
+          if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+          if (a.isCompleted == b.isCompleted) {
+            if (completionSubSortByDate) {
+              return b.createdAt.compareTo(a.createdAt);
+            } else {
+              return a.title.compareTo(b.title);
+            }
+          } else {
+            return a.isCompleted ? 1 : -1;
+          }
+        });
+        break;
+    }
+
+    return notes;
+  }
+
+  void _navigateToNextNote() async {
+    final currentNote = _selectedNote ?? _tabManager.activeTab?.note;
+    if (currentNote == null) return;
+
+    final notes = await _getNotesForNavigation(currentNote);
+    if (notes.isEmpty) return;
+
+    int nextIndex = 0;
+    final currentIndex = notes.indexWhere((n) => n.id == currentNote.id);
+    if (currentIndex != -1 && currentIndex < notes.length - 1) {
+      nextIndex = currentIndex + 1;
+    } else if (currentIndex == notes.length - 1) {
+      // Wrap around to the first note
+      nextIndex = 0;
+    }
+
+    // Suppress tab animation for a smoother transition
+    if (mounted && _editorTabsKey.currentState != null) {
+      _editorTabsKey.currentState!.suppressNextUpdateAnimations();
+    }
+    _onNoteSelected(notes[nextIndex], forceSameTab: true, skipNotebookSync: true);
+  }
+
+  void _navigateToPreviousNote() async {
+    final currentNote = _selectedNote ?? _tabManager.activeTab?.note;
+    if (currentNote == null) return;
+
+    final notes = await _getNotesForNavigation(currentNote);
+    if (notes.isEmpty) return;
+
+    int prevIndex = notes.length - 1;
+    final currentIndex = notes.indexWhere((n) => n.id == currentNote.id);
+    if (currentIndex > 0) {
+      prevIndex = currentIndex - 1;
+    } else if (currentIndex == 0) {
+      // Wrap around to the last note
+      prevIndex = notes.length - 1;
+    }
+
+    // Suppress tab animation for a smoother transition
+    if (mounted && _editorTabsKey.currentState != null) {
+      _editorTabsKey.currentState!.suppressNextUpdateAnimations();
+    }
+    _onNoteSelected(notes[prevIndex], forceSameTab: true, skipNotebookSync: true);
+  }
+
+  void _onNoteSelected(
+    Note note, {
+    bool forceSameTab = false,
+    bool skipNotebookSync = false,
+  }) async {
     // Save current note if exists and has unsaved changes
     final activeTab = _tabManager.activeTab;
     if (_selectedNote != null && activeTab?.isDirty == true) {
@@ -1413,7 +1527,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       final activeTab = _tabManager.activeTab;
       if (activeTab != null) {
         // If the active tab is pinned, do not overwrite it: open in a new tab instead
-        if (activeTab.isPinned) {
+        if (activeTab.isPinned && !forceSameTab) {
           _tabManager.openTab(note);
         } else if (activeTab.isEmpty) {
           // Assign note to empty tab
@@ -1447,7 +1561,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       }
     }
 
-    if (note.notebookId != 0) {
+    if (note.notebookId != 0 && !skipNotebookSync) {
       try {
         final dbHelper = DatabaseHelper();
         final notebookRepository = NotebookRepository(dbHelper);
@@ -2668,6 +2782,8 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       noteController: activeTab.noteController,
       titleController: activeTab.titleController,
       onSave: _handleSave,
+      onNextNote: _navigateToNextNote,
+      onPreviousNote: _navigateToPreviousNote,
       onTitleChanged: () {
         setState(() {
           isEditing = true;

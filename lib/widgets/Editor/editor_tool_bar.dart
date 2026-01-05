@@ -7,6 +7,8 @@ import 'format_handler.dart';
 class EditorBottomBar extends StatefulWidget {
   final VoidCallback onUndo;
   final VoidCallback onRedo;
+  final VoidCallback onNextNote;
+  final VoidCallback onPreviousNote;
   final Function(FormatType) onFormatTap;
   final bool isReadMode;
 
@@ -14,6 +16,8 @@ class EditorBottomBar extends StatefulWidget {
     super.key,
     required this.onUndo,
     required this.onRedo,
+    required this.onNextNote,
+    required this.onPreviousNote,
     required this.onFormatTap,
     this.isReadMode = false,
   });
@@ -84,6 +88,18 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                   icon: const Icon(Icons.redo_rounded, size: 20),
                   onPressed: widget.onRedo,
                   tooltipMessage: 'Redo (Ctrl+Shift+Z)',
+                ),
+                _buildTooltipIconButton(
+                  context,
+                  icon: const Icon(Icons.keyboard_arrow_up_rounded, size: 20),
+                  onPressed: widget.onPreviousNote,
+                  tooltipMessage: 'Previous Note',
+                ),
+                _buildTooltipIconButton(
+                  context,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+                  onPressed: widget.onNextNote,
+                  tooltipMessage: 'Next Note',
                 ),
                 const VerticalDivider(width: 16, indent: 8, endIndent: 8),
                 _buildTooltipIconButton(
