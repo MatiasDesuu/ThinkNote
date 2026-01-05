@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../database/models/calendar_event.dart';
 import '../../database/models/calendar_event_status.dart';
 import '../../database/models/note.dart';
@@ -65,6 +66,7 @@ class CalendarPanelState extends State<CalendarPanel>
   List<Notebook> _favoriteNotebooks = [];
   List<Task> _tasksWithDeadlines = [];
   bool _isLoading = true;
+  bool _showCombinedEvents = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late StreamSubscription<Note> _noteUpdateSubscription;
@@ -96,24 +98,61 @@ class CalendarPanelState extends State<CalendarPanel>
     _databaseChangeSubscription = DatabaseService().onDatabaseChanged.listen((
       _,
     ) {
-      if (widget.mode == CalendarPanelMode.notes) {
+      if (_showCombinedEvents) {
         _loadFavoriteNotebooks();
+        _loadTasksWithDeadlines();
+        _loadEvents();
+      } else if (widget.mode == CalendarPanelMode.notes) {
+        _loadFavoriteNotebooks();
+        _loadEvents();
       } else {
         _loadTasksWithDeadlines();
       }
     });
     _eventsController = StreamController<List<CalendarEvent>>.broadcast();
 
-    if (widget.mode == CalendarPanelMode.notes) {
-      _loadEvents();
-      _loadStatuses();
-      _loadFavoriteNotebooks();
-    } else {
-      _loadTasksWithDeadlines();
-      _animationController.forward();
-      setState(() {
-        _isLoading = false;
-      });
+    _loadSettings().then((_) {
+      if (_showCombinedEvents) {
+        _loadEvents();
+        _loadStatuses();
+        _loadFavoriteNotebooks();
+        _loadTasksWithDeadlines();
+        _animationController.forward();
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (widget.mode == CalendarPanelMode.notes) {
+          _loadEvents();
+          _loadStatuses();
+          _loadFavoriteNotebooks();
+        } else {
+          _loadTasksWithDeadlines();
+          _animationController.forward();
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
+        }
+      }
+    });
+  }
+
+  Future<void> _loadSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() {
+          _showCombinedEvents =
+              prefs.getBool('calendar_show_combined_events_${widget.mode.name}') ??
+              false;
+        });
+      }
+    } catch (e) {
+      print('Error loading calendar settings: $e');
     }
   }
 
@@ -134,6 +173,31 @@ class CalendarPanelState extends State<CalendarPanel>
     setState(() {
       _isPanelVisible = !_isPanelVisible;
     });
+  }
+
+  void _toggleCombinedEvents() async {
+    setState(() {
+      _showCombinedEvents = !_showCombinedEvents;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(
+        'calendar_show_combined_events_${widget.mode.name}',
+        _showCombinedEvents,
+      );
+    } catch (e) {
+      print('Error saving calendar settings: $e');
+    }
+
+    if (_showCombinedEvents) {
+      if (widget.mode == CalendarPanelMode.notes) {
+        _loadTasksWithDeadlines();
+      } else {
+        _loadEvents();
+        _loadStatuses();
+      }
+    }
   }
 
   void showPanel() {
@@ -666,60 +730,85 @@ class CalendarPanelState extends State<CalendarPanel>
     );
   }
 
+  List<dynamic> _getCombinedItemsForSelectedDay(
+    List<CalendarEvent> eventsSource, {
+    bool tasksFirst = false,
+  }) {
+    final eventsForSelectedDay =
+        eventsSource
+            .where(
+              (event) =>
+                  event.date.year == _selectedDate.year &&
+                  event.date.month == _selectedDate.month &&
+                  event.date.day == _selectedDate.day,
+            )
+            .toList();
+
+    // Sort events
+    eventsForSelectedDay.sort((a, b) {
+      if (a.status != null && b.status != null) {
+        final statusA = _statuses.firstWhere(
+          (s) => s.name == a.status,
+          orElse:
+              () => CalendarEventStatus(
+                id: 0,
+                name: a.status!,
+                color: '#2196F3',
+                orderIndex: 999,
+              ),
+        );
+        final statusB = _statuses.firstWhere(
+          (s) => s.name == b.status,
+          orElse:
+              () => CalendarEventStatus(
+                id: 0,
+                name: b.status!,
+                color: '#2196F3',
+                orderIndex: 999,
+              ),
+        );
+        return statusA.orderIndex.compareTo(statusB.orderIndex);
+      }
+      if (a.status == null && b.status != null) return 1;
+      if (a.status != null && b.status == null) return -1;
+      return 0;
+    });
+
+    final tasksForSelectedDay =
+        _tasksWithDeadlines.where((task) {
+          if (task.date == null) return false;
+          return task.date!.year == _selectedDate.year &&
+              task.date!.month == _selectedDate.month &&
+              task.date!.day == _selectedDate.day;
+        }).toList();
+
+    // Sort tasks
+    tasksForSelectedDay.sort((a, b) {
+      if (a.completed && !b.completed) return 1;
+      if (!a.completed && b.completed) return -1;
+      if (a.state == TaskState.inProgress && b.state != TaskState.inProgress) {
+        return -1;
+      }
+      if (a.state != TaskState.inProgress && b.state == TaskState.inProgress) {
+        return 1;
+      }
+      return a.orderIndex.compareTo(b.orderIndex);
+    });
+
+    if (!_showCombinedEvents) {
+      return tasksFirst ? tasksForSelectedDay : eventsForSelectedDay;
+    }
+
+    return tasksFirst
+        ? [...tasksForSelectedDay, ...eventsForSelectedDay]
+        : [...eventsForSelectedDay, ...tasksForSelectedDay];
+  }
+
   Widget _buildEventsPanel(List<CalendarEvent> eventsSource) {
     final colorScheme = Theme.of(context).colorScheme;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final eventsForSelectedDay =
-            eventsSource
-                .where(
-                  (event) =>
-                      event.date.year == _selectedDate.year &&
-                      event.date.month == _selectedDate.month &&
-                      event.date.day == _selectedDate.day,
-                )
-                .toList();
-
-        // Ordenar eventos según el status y su orderIndex
-        eventsForSelectedDay.sort((a, b) {
-          // Si ambos eventos tienen status, ordenar por orderIndex
-          if (a.status != null && b.status != null) {
-            final statusA = _statuses.firstWhere(
-              (s) => s.name == a.status,
-              orElse:
-                  () => CalendarEventStatus(
-                    id: 0,
-                    name: a.status!,
-                    color: '#2196F3',
-                    orderIndex:
-                        999, // Alto orderIndex para status no encontrados
-                  ),
-            );
-            final statusB = _statuses.firstWhere(
-              (s) => s.name == b.status,
-              orElse:
-                  () => CalendarEventStatus(
-                    id: 0,
-                    name: b.status!,
-                    color: '#2196F3',
-                    orderIndex:
-                        999, // Alto orderIndex para status no encontrados
-                  ),
-            );
-            return statusA.orderIndex.compareTo(statusB.orderIndex);
-          }
-
-          // Si solo uno tiene status, el que no tiene status va al final
-          if (a.status == null && b.status != null) {
-            return 1; // a va después de b
-          }
-          if (a.status != null && b.status == null) {
-            return -1; // a va antes de b
-          }
-
-          // Si ninguno tiene status, mantener el orden original
-          return 0;
-        });
+        final combinedItems = _getCombinedItemsForSelectedDay(eventsSource);
 
         return Container(
           width: constraints.maxWidth,
@@ -735,7 +824,9 @@ class CalendarPanelState extends State<CalendarPanel>
                     Row(
                       children: [
                         Icon(
-                          Icons.event_note_rounded,
+                          _showCombinedEvents
+                              ? Icons.event_available_rounded
+                              : Icons.event_note_rounded,
                           size: 20,
                           color: colorScheme.primary,
                         ),
@@ -743,33 +834,61 @@ class CalendarPanelState extends State<CalendarPanel>
                         Text(
                           // Use the selected date's month name so selecting days from
                           // previous/next months shows the correct month in the header.
-                          'Notes for ${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}',
+                          '${_showCombinedEvents ? "Events" : "Notes"} for ${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}',
                           style: Theme.of(context).textTheme.titleSmall
                               ?.copyWith(color: colorScheme.onSurface),
                         ),
                       ],
                     ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.label_rounded,
-                        color: colorScheme.primary,
-                      ),
-                      onPressed: _showStatusManager,
-                      constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
-                      ),
-                      padding: EdgeInsets.zero,
+                    Row(
+                      children: [
+                        CustomTooltip(
+                          message:
+                              _showCombinedEvents
+                                  ? 'Show only notes'
+                                  : 'Show all events',
+                          builder:
+                              (context, isHovering) => IconButton(
+                                icon: Icon(
+                                  _showCombinedEvents
+                                      ? Icons.layers_rounded
+                                      : Icons.layers_outlined,
+                                  color:
+                                      _showCombinedEvents
+                                          ? colorScheme.primary
+                                          : colorScheme.onSurfaceVariant,
+                                ),
+                                onPressed: _toggleCombinedEvents,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
+                                padding: EdgeInsets.zero,
+                              ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.label_rounded,
+                            color: colorScheme.primary,
+                          ),
+                          onPressed: _showStatusManager,
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                          padding: EdgeInsets.zero,
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
               Expanded(
                 child:
-                    eventsForSelectedDay.isEmpty
+                    combinedItems.isEmpty
                         ? Center(
                           child: Text(
-                            'No notes for this day',
+                            'No ${_showCombinedEvents ? "events" : "notes"} for this day',
                             style: TextStyle(
                               color: colorScheme.onSurfaceVariant,
                             ),
@@ -777,278 +896,15 @@ class CalendarPanelState extends State<CalendarPanel>
                         )
                         : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: eventsForSelectedDay.length,
+                          itemCount: combinedItems.length,
                           itemBuilder: (context, index) {
-                            final event = eventsForSelectedDay[index];
-                            if (event.note == null) {
-                              return const SizedBox.shrink();
+                            final item = combinedItems[index];
+                            if (item is CalendarEvent) {
+                              return _buildNoteItem(item);
+                            } else if (item is Task) {
+                              return _buildTaskItem(item);
                             }
-
-                            return Draggable<CalendarEvent>(
-                              data: event,
-                              dragAnchorStrategy: pointerDragAnchorStrategy,
-                              feedback: Material(
-                                color: Colors.transparent,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        Theme.of(
-                                          context,
-                                        ).colorScheme.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(8),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withAlpha(51),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.description_outlined,
-                                        color:
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        event.note?.title ?? 'Unknown Note',
-                                        style: TextStyle(
-                                          color:
-                                              Theme.of(
-                                                context,
-                                              ).colorScheme.onSurface,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              child: CustomTooltip(
-                                message: event.note!.title,
-                                builder: (context, isHovering) {
-                                  return Card(
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    color: colorScheme.surfaceContainerHighest,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(12),
-                                        onTap: () {
-                                          // Inform parent that the note was selected from the calendar
-                                          // so it can suppress tab open/replace animations if desired.
-                                          if (widget.onNoteSelectedFromPanel !=
-                                              null) {
-                                            widget.onNoteSelectedFromPanel!(
-                                              event.note!,
-                                            );
-                                          }
-                                          widget.onNoteSelected?.call(
-                                            event.note!,
-                                          );
-                                        },
-                                        onSecondaryTapDown:
-                                            (details) =>
-                                                _showStatusMenu(event, details),
-                                        child: Listener(
-                                          onPointerDown: (pointerEvent) {
-                                            try {
-                                              if ((pointerEvent.buttons & 4) !=
-                                                  0) {
-                                                if (widget.onNoteOpenInNewTab !=
-                                                        null &&
-                                                    event.note != null) {
-                                                  widget.onNoteOpenInNewTab!(
-                                                    event.note!,
-                                                  );
-                                                } else {}
-                                              }
-                                            } catch (e) {
-                                              print(
-                                                '[calendar] error in onPointerDown: $e',
-                                              );
-                                            }
-                                          },
-                                          child: GestureDetector(
-                                            behavior: HitTestBehavior.opaque,
-                                            onTertiaryTapDown: (details) {
-                                              if (widget.onNoteOpenInNewTab !=
-                                                      null &&
-                                                  event.note != null) {
-                                                widget.onNoteOpenInNewTab!(
-                                                  event.note!,
-                                                );
-                                              } else {
-                                                print(
-                                                  '[calendar] onNoteOpenInNewTab callback is null or note is null',
-                                                );
-                                              }
-                                            },
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                    vertical: 6,
-                                                  ),
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.description_outlined,
-                                                    color: colorScheme.primary,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Expanded(
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Text(
-                                                          event.note!.title,
-                                                          style: Theme.of(
-                                                                context,
-                                                              )
-                                                              .textTheme
-                                                              .bodyMedium
-                                                              ?.copyWith(
-                                                                color:
-                                                                    colorScheme
-                                                                        .onSurface,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                              ),
-                                                          maxLines: 1,
-                                                          overflow:
-                                                              TextOverflow
-                                                                  .ellipsis,
-                                                        ),
-                                                        if (event.status !=
-                                                            null) ...[
-                                                          const SizedBox(
-                                                            height: 2,
-                                                          ),
-                                                          Row(
-                                                            children: [
-                                                              Container(
-                                                                width: 8,
-                                                                height: 8,
-                                                                decoration: BoxDecoration(
-                                                                  color: _getStatusColor(
-                                                                    event
-                                                                        .status!,
-                                                                  ),
-                                                                  shape:
-                                                                      BoxShape
-                                                                          .circle,
-                                                                ),
-                                                              ),
-                                                              const SizedBox(
-                                                                width: 4,
-                                                              ),
-                                                              Baseline(
-                                                                baseline: 8,
-                                                                baselineType:
-                                                                    TextBaseline
-                                                                        .alphabetic,
-                                                                child: Text(
-                                                                  event.status!,
-                                                                  style: Theme.of(
-                                                                        context,
-                                                                      )
-                                                                      .textTheme
-                                                                      .bodySmall
-                                                                      ?.copyWith(
-                                                                        color:
-                                                                            colorScheme.onSurfaceVariant,
-                                                                        fontSize:
-                                                                            10,
-                                                                      ),
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ],
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  // Delete button (only visible on hover)
-                                                  Opacity(
-                                                    opacity:
-                                                        isHovering ? 1.0 : 0.0,
-                                                    child: IgnorePointer(
-                                                      ignoring: !isHovering,
-                                                      child: Padding(
-                                                        padding:
-                                                            const EdgeInsets.only(
-                                                              left: 4,
-                                                            ),
-                                                        child: MouseRegion(
-                                                          cursor:
-                                                              SystemMouseCursors
-                                                                  .click,
-                                                          child: GestureDetector(
-                                                            onTap:
-                                                                () =>
-                                                                    _deleteEvent(
-                                                                      event,
-                                                                    ),
-                                                            child: Container(
-                                                              padding:
-                                                                  const EdgeInsets.all(
-                                                                    4,
-                                                                  ),
-                                                              decoration: BoxDecoration(
-                                                                color: colorScheme
-                                                                    .error
-                                                                    .withAlpha(
-                                                                      20,
-                                                                    ),
-                                                                borderRadius:
-                                                                    BorderRadius.circular(
-                                                                      6,
-                                                                    ),
-                                                              ),
-                                                              child: Icon(
-                                                                Icons
-                                                                    .close_rounded,
-                                                                size: 14,
-                                                                color:
-                                                                    colorScheme
-                                                                        .error,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
+                            return const SizedBox.shrink();
                           },
                         ),
               ),
@@ -1057,6 +913,198 @@ class CalendarPanelState extends State<CalendarPanel>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildNoteItem(CalendarEvent event) {
+    final colorScheme = Theme.of(context).colorScheme;
+    if (event.note == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Draggable<CalendarEvent>(
+      data: event,
+      dragAnchorStrategy: pointerDragAnchorStrategy,
+      feedback: Material(
+        color: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(51),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.description_outlined,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                event.note?.title ?? 'Unknown Note',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      child: CustomTooltip(
+        message: event.note!.title,
+        builder: (context, isHovering) {
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            color: colorScheme.surfaceContainerHighest,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  // Inform parent that the note was selected from the calendar
+                  // so it can suppress tab open/replace animations if desired.
+                  if (widget.onNoteSelectedFromPanel != null) {
+                    widget.onNoteSelectedFromPanel!(event.note!);
+                  }
+                  widget.onNoteSelected?.call(event.note!);
+                },
+                onSecondaryTapDown: (details) => _showStatusMenu(event, details),
+                child: Listener(
+                  onPointerDown: (pointerEvent) {
+                    try {
+                      if ((pointerEvent.buttons & 4) != 0) {
+                        if (widget.onNoteOpenInNewTab != null &&
+                            event.note != null) {
+                          widget.onNoteOpenInNewTab!(event.note!);
+                        } else {}
+                      }
+                    } catch (e) {
+                      print('[calendar] error in onPointerDown: $e');
+                    }
+                  },
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTertiaryTapDown: (details) {
+                      if (widget.onNoteOpenInNewTab != null &&
+                          event.note != null) {
+                        widget.onNoteOpenInNewTab!(event.note!);
+                      } else {
+                        print(
+                          '[calendar] onNoteOpenInNewTab callback is null or note is null',
+                        );
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.description_outlined,
+                            color: colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  event.note!.title,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurface,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (event.status != null) ...[
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: _getStatusColor(event.status!),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Baseline(
+                                        baseline: 8,
+                                        baselineType: TextBaseline.alphabetic,
+                                        child: Text(
+                                          event.status!,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          // Delete button (only visible on hover)
+                          Opacity(
+                            opacity: isHovering ? 1.0 : 0.0,
+                            child: IgnorePointer(
+                              ignoring: !isHovering,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 4),
+                                child: MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: GestureDetector(
+                                    onTap: () => _deleteEvent(event),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.error.withAlpha(20),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Icon(
+                                        Icons.close_rounded,
+                                        size: 14,
+                                        color: colorScheme.error,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -1158,31 +1206,10 @@ class CalendarPanelState extends State<CalendarPanel>
     final colorScheme = Theme.of(context).colorScheme;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final tasksForSelectedDay =
-            _tasksWithDeadlines.where((task) {
-              if (task.date == null) return false;
-              return task.date!.year == _selectedDate.year &&
-                  task.date!.month == _selectedDate.month &&
-                  task.date!.day == _selectedDate.day;
-            }).toList();
-
-        // Sort tasks: pending first, then by state
-        tasksForSelectedDay.sort((a, b) {
-          // Completed tasks go to the end
-          if (a.completed && !b.completed) return 1;
-          if (!a.completed && b.completed) return -1;
-          // Then sort by state (inProgress first, then pending)
-          if (a.state == TaskState.inProgress &&
-              b.state != TaskState.inProgress) {
-            return -1;
-          }
-          if (a.state != TaskState.inProgress &&
-              b.state == TaskState.inProgress) {
-            return 1;
-          }
-          // Finally by order index
-          return a.orderIndex.compareTo(b.orderIndex);
-        });
+        final combinedItems = _getCombinedItemsForSelectedDay(
+          _events,
+          tasksFirst: true,
+        );
 
         return Container(
           width: constraints.maxWidth,
@@ -1195,19 +1222,45 @@ class CalendarPanelState extends State<CalendarPanel>
                 child: Row(
                   children: [
                     Icon(
-                      Icons.task_alt_rounded,
+                      _showCombinedEvents
+                          ? Icons.event_available_rounded
+                          : Icons.task_alt_rounded,
                       size: 20,
                       color: colorScheme.primary,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Tasks for ${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}',
+                        '${_showCombinedEvents ? "Events" : "Tasks"} for ${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           color: colorScheme.onSurface,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
+                    ),
+                    CustomTooltip(
+                      message:
+                          _showCombinedEvents
+                              ? 'Show only tasks'
+                              : 'Show all events',
+                      builder:
+                          (context, isHovering) => IconButton(
+                            icon: Icon(
+                              _showCombinedEvents
+                                  ? Icons.layers_rounded
+                                  : Icons.layers_outlined,
+                              color:
+                                  _showCombinedEvents
+                                      ? colorScheme.primary
+                                      : colorScheme.onSurfaceVariant,
+                            ),
+                            onPressed: _toggleCombinedEvents,
+                            constraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32,
+                            ),
+                            padding: EdgeInsets.zero,
+                          ),
                     ),
                     IconButton(
                       icon: Icon(
@@ -1226,10 +1279,10 @@ class CalendarPanelState extends State<CalendarPanel>
               ),
               Expanded(
                 child:
-                    tasksForSelectedDay.isEmpty
+                    combinedItems.isEmpty
                         ? Center(
                           child: Text(
-                            'No tasks for this day',
+                            'No ${_showCombinedEvents ? "events" : "tasks"} for this day',
                             style: TextStyle(
                               color: colorScheme.onSurfaceVariant,
                             ),
@@ -1237,10 +1290,15 @@ class CalendarPanelState extends State<CalendarPanel>
                         )
                         : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: tasksForSelectedDay.length,
+                          itemCount: combinedItems.length,
                           itemBuilder: (context, index) {
-                            final task = tasksForSelectedDay[index];
-                            return _buildTaskItem(task);
+                            final item = combinedItems[index];
+                            if (item is Task) {
+                              return _buildTaskItem(item);
+                            } else if (item is CalendarEvent) {
+                              return _buildNoteItem(item);
+                            }
+                            return const SizedBox.shrink();
                           },
                         ),
               ),
@@ -1528,7 +1586,22 @@ class CalendarPanelState extends State<CalendarPanel>
                 _selectedDate.day == date.day;
 
             final bool hasEvents;
-            if (widget.mode == CalendarPanelMode.tasks) {
+            if (_showCombinedEvents) {
+              hasEvents =
+                  _events.any(
+                    (event) =>
+                        event.date.year == date.year &&
+                        event.date.month == date.month &&
+                        event.date.day == date.day,
+                  ) ||
+                  _tasksWithDeadlines.any(
+                    (task) =>
+                        task.date != null &&
+                        task.date!.year == date.year &&
+                        task.date!.month == date.month &&
+                        task.date!.day == date.day,
+                  );
+            } else if (widget.mode == CalendarPanelMode.tasks) {
               hasEvents = _tasksWithDeadlines.any(
                 (task) =>
                     task.date != null &&
@@ -1551,10 +1624,12 @@ class CalendarPanelState extends State<CalendarPanel>
                   onWillAcceptWithDetails: (details) {
                     final data = details.data;
 
-                    if (widget.mode == CalendarPanelMode.tasks) {
-                      return data is Task;
+                    // Accept Tasks
+                    if (data is Task) {
+                      return true;
                     }
 
+                    // Accept Notes (from sidebar/list)
                     if (data is Map<String, dynamic>) {
                       if (data['type'] == 'note') {
                         if (data['isMultiDrag'] == true) {
@@ -1565,21 +1640,25 @@ class CalendarPanelState extends State<CalendarPanel>
                           return note.id != null;
                         }
                       }
-                    } else if (data is CalendarEvent) {
+                    }
+
+                    // Accept CalendarEvents (moving existing events)
+                    if (data is CalendarEvent) {
                       return data.id != 0;
                     }
+
                     return false;
                   },
                   onAcceptWithDetails: (details) async {
                     final data = details.data;
 
-                    if (widget.mode == CalendarPanelMode.tasks) {
-                      if (data is Task) {
-                        await _handleTaskDropWithDate(data, date);
-                      }
+                    // Handle Task drop
+                    if (data is Task) {
+                      await _handleTaskDropWithDate(data, date);
                       return;
                     }
 
+                    // Handle Note drop
                     if (data is Map<String, dynamic> &&
                         data['type'] == 'note') {
                       if (data['isMultiDrag'] == true) {
@@ -1591,7 +1670,9 @@ class CalendarPanelState extends State<CalendarPanel>
                         final note = data['note'] as Note;
                         await _handleNoteDropWithDate(note, date);
                       }
-                    } else if (data is CalendarEvent) {
+                    }
+                    // Handle CalendarEvent drop (moving)
+                    else if (data is CalendarEvent) {
                       await _handleEventDropWithDate(data, date);
                     }
                   },

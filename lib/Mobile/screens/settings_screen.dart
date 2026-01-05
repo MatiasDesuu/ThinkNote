@@ -260,6 +260,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!_isInitialized) {
       return Scaffold(
         appBar: AppBar(
+          toolbarHeight: 40.0,
           title: const Text('Settings'),
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
@@ -279,6 +280,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Scaffold(
         extendBody: true,
         appBar: AppBar(
+          toolbarHeight: 40.0,
           title: const Text('Settings'),
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,

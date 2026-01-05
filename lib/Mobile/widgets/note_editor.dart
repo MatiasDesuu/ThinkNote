@@ -266,6 +266,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                       _isImmersiveMode
                           ? null
                           : AppBar(
+                            toolbarHeight: 40.0,
                             scrolledUnderElevation: 0,
                             surfaceTintColor: Colors.transparent,
                             backgroundColor: theme.colorScheme.surface,

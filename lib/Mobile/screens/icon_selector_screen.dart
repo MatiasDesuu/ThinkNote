@@ -32,6 +32,7 @@ class _IconSelectorScreenState extends State<IconSelectorScreen> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
+        toolbarHeight: 40.0,
         backgroundColor: colorScheme.surface,
         elevation: 0,
         leading: IconButton(

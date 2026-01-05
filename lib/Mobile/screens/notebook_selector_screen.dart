@@ -319,6 +319,7 @@ class _NotebookSelectorScreenState extends State<NotebookSelectorScreen>
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
+        toolbarHeight: 40.0,
         backgroundColor: colorScheme.surface,
         elevation: 0,
         leading: IconButton(

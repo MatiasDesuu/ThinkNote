@@ -262,6 +262,7 @@ class _ThinksScreenState extends State<ThinksScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
+          toolbarHeight: 40.0,
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           title: const Text('Thinks'),

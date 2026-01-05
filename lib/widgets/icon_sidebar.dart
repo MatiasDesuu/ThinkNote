@@ -11,6 +11,7 @@ import 'custom_snackbar.dart';
 import 'search_screen_desktop.dart';
 import '../database/models/note.dart';
 import '../database/models/notebook.dart';
+import '../database/models/task.dart';
 import '../services/immersive_mode_service.dart';
 
 class IconSidebarButton {
@@ -178,6 +179,7 @@ class IconSidebar extends StatefulWidget {
   final Function(Directory)? onOpenFolder;
   final Function(Notebook)? onNotebookSelected;
   final Function(Note)? onNoteSelected;
+  final Function(Task)? onTaskSelected;
   final Function(Note, String, bool)? onNoteSelectedWithSearch;
   final VoidCallback? onBack;
   final VoidCallback? onDirectorySet;
@@ -220,6 +222,7 @@ class IconSidebar extends StatefulWidget {
     this.onOpenFolder,
     this.onNotebookSelected,
     this.onNoteSelected,
+    this.onTaskSelected,
     this.onNoteSelectedWithSearch,
     this.onBack,
     this.onDirectorySet,
@@ -257,10 +260,10 @@ class IconSidebar extends StatefulWidget {
   });
 
   @override
-  State<IconSidebar> createState() => _IconSidebarState();
+  IconSidebarState createState() => IconSidebarState();
 }
 
-class _IconSidebarState extends State<IconSidebar>
+class IconSidebarState extends State<IconSidebar>
     with SingleTickerProviderStateMixin {
   late SyncAnimationController _syncController;
   late ImmersiveModeService _immersiveModeService;
@@ -365,7 +368,7 @@ class _IconSidebarState extends State<IconSidebar>
     }
   }
 
-  void _openToDoScreen() {
+  void openTasksScreen({Task? initialTask}) {
     if (widget.rootDir == null) return;
 
     showDialog(
@@ -377,11 +380,20 @@ class _IconSidebarState extends State<IconSidebar>
               rootDir: widget.rootDir!,
               onDirectorySet: widget.onDirectorySet ?? () {},
               onThemeUpdated: widget.onThemeUpdated,
+              initialTask: initialTask,
+              onNoteSelected: (note) {
+                Navigator.of(context).pop();
+                widget.onNoteSelected?.call(note);
+              },
             ),
           ),
     );
 
     _performBackgroundSync();
+  }
+
+  void _openToDoScreen() {
+    openTasksScreen();
   }
 
   void _openSettings() {

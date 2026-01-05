@@ -338,11 +338,11 @@ class TasksScreenState extends State<TasksScreen>
       length: 2,
       child: Scaffold(
         appBar: AppBar(
+          toolbarHeight: 0,
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           backgroundColor: Theme.of(context).colorScheme.surface,
           automaticallyImplyLeading: false,
-          toolbarHeight: 0,
           bottom: PreferredSize(
             preferredSize: Size.fromHeight(_allTags.isNotEmpty ? 88 : 48),
             child: Column(

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../database/models/calendar_event.dart';
 import '../../database/models/calendar_event_status.dart';
 import '../../database/models/note.dart';
+import '../../database/models/task.dart';
 import '../../database/repositories/calendar_event_repository.dart';
 import '../../database/repositories/calendar_event_status_repository.dart';
 import '../../database/repositories/note_repository.dart';
@@ -14,6 +15,7 @@ import '../../services/notification_service.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../widgets/note_editor.dart';
 import 'calendar_event_status_screen.dart';
+import 'task_detail_screen.dart';
 import '../../database/database_service.dart';
 import '../../widgets/custom_date_picker_dialog.dart';
 
@@ -28,14 +30,18 @@ class CalendarScreen extends StatefulWidget {
 
 class CalendarScreenState extends State<CalendarScreen> {
   static const String _calendarExpandedKey = 'calendar_expanded';
+  static const String _showCombinedEventsKey = 'calendar_mobile_show_combined_events';
+  final DatabaseService _databaseService = DatabaseService();
   late CalendarEventRepository _calendarEventRepository;
   late CalendarEventStatusRepository _statusRepository;
   late DateTime _selectedMonth;
   late DateTime _selectedDate;
   List<CalendarEvent> _events = [];
   List<CalendarEventStatus> _statuses = [];
+  List<Task> _tasksWithDeadlines = [];
   bool _isLoading = true;
   bool _isExpanded = true;
+  bool _showCombinedEvents = false;
   bool _isInitialized = false;
   late StreamSubscription<Note> _noteUpdateSubscription;
   StreamSubscription? _dbSubscription;
@@ -63,14 +69,19 @@ class CalendarScreenState extends State<CalendarScreen> {
     if (mounted) {
       setState(() {
         _isExpanded = prefs.getBool(_calendarExpandedKey) ?? true;
+        _showCombinedEvents = prefs.getBool(_showCombinedEventsKey) ?? false;
         _isInitialized = true;
       });
+      if (_showCombinedEvents) {
+        _loadTasksWithDeadlines();
+      }
     }
   }
 
   Future<void> _saveCalendarState() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_calendarExpandedKey, _isExpanded);
+    await prefs.setBool(_showCombinedEventsKey, _showCombinedEvents);
   }
 
   @override
@@ -101,12 +112,18 @@ class CalendarScreenState extends State<CalendarScreen> {
     _dbSubscription = DatabaseService().onDatabaseChanged.listen((_) {
       if (!_isUpdatingManually && mounted) {
         _loadEvents();
+        if (_showCombinedEvents) {
+          _loadTasksWithDeadlines();
+        }
       }
     });
 
     _dbHelperSubscription = DatabaseHelper.onDatabaseChanged.listen((_) {
       if (!_isUpdatingManually && mounted) {
         _loadEvents();
+        if (_showCombinedEvents) {
+          _loadTasksWithDeadlines();
+        }
       }
     });
   }
@@ -144,6 +161,9 @@ class CalendarScreenState extends State<CalendarScreen> {
           _events = [...previousEvents, ...events, ...nextEvents];
           _isLoading = false;
         });
+        if (_showCombinedEvents) {
+          _loadTasksWithDeadlines();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -218,6 +238,31 @@ class CalendarScreenState extends State<CalendarScreen> {
       _isExpanded = !_isExpanded;
     });
     _saveCalendarState();
+  }
+
+  void _toggleCombinedEvents() {
+    setState(() {
+      _showCombinedEvents = !_showCombinedEvents;
+    });
+    _saveCalendarState();
+    if (_showCombinedEvents) {
+      _loadTasksWithDeadlines();
+    }
+  }
+
+  Future<void> _loadTasksWithDeadlines() async {
+    if (!mounted) return;
+
+    try {
+      final tasksWithDates = await DatabaseService().taskService.getTasksWithDeadlines();
+      if (mounted) {
+        setState(() {
+          _tasksWithDeadlines = tasksWithDates;
+        });
+      }
+    } catch (e) {
+      print('Error loading tasks with deadlines: $e');
+    }
   }
 
   void _goToPreviousMonth() {
@@ -338,6 +383,26 @@ class CalendarScreenState extends State<CalendarScreen> {
         CustomSnackbar.show(
           context: context,
           message: 'Error removing note from calendar: $e',
+          type: CustomSnackbarType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _clearTaskDate(Task task) async {
+    try {
+      _isUpdatingManually = true;
+      await _databaseService.taskService.updateTaskDate(task.id!, null);
+      DatabaseService().notifyDatabaseChanged();
+      await _loadTasksWithDeadlines();
+      _isUpdatingManually = false;
+    } catch (e) {
+      _isUpdatingManually = false;
+      print('Error clearing task date: $e');
+      if (mounted) {
+        CustomSnackbar.show(
+          context: context,
+          message: 'Error removing task from calendar: $e',
           type: CustomSnackbarType.error,
         );
       }
@@ -830,6 +895,15 @@ class CalendarScreenState extends State<CalendarScreen> {
                       event.date.day == date.day,
                 );
 
+                final hasTasks = _showCombinedEvents && _tasksWithDeadlines.any(
+                  (task) =>
+                      task.date?.year == date.year &&
+                      task.date?.month == date.month &&
+                      task.date?.day == date.day,
+                );
+
+                final showDot = hasEvents || hasTasks;
+
                 return Expanded(
                   child: DragTarget<Note>(
                     onWillAcceptWithDetails:
@@ -906,7 +980,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                                       fontSize: isSelected ? 14 : 12,
                                     ),
                                   ),
-                                  if (hasEvents)
+                                  if (showDot)
                                     Container(
                                       width: 3,
                                       height: 3,
@@ -1084,6 +1158,15 @@ class CalendarScreenState extends State<CalendarScreen> {
                 event.date.day == day,
           );
 
+          final hasTasks = _showCombinedEvents && _tasksWithDeadlines.any(
+            (task) =>
+                task.date?.year == _selectedMonth.year &&
+                task.date?.month == _selectedMonth.month &&
+                task.date?.day == day,
+          );
+
+          final showDot = hasEvents || hasTasks;
+
           rowChildren.add(
             Expanded(
               child: DragTarget<Note>(
@@ -1135,7 +1218,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                                   ),
                                 ),
                               ),
-                              if (hasEvents)
+                              if (showDot)
                                 Positioned(
                                   bottom: 4,
                                   left: 0,
@@ -1204,210 +1287,344 @@ class CalendarScreenState extends State<CalendarScreen> {
 
   Widget _buildEventsPanel() {
     final colorScheme = Theme.of(context).colorScheme;
-    final eventsForSelectedDay =
-        _events
-            .where(
-              (event) =>
-                  event.date.year == _selectedDate.year &&
-                  event.date.month == _selectedDate.month &&
-                  event.date.day == _selectedDate.day,
-            )
-            .toList();
+    
+    final eventsForSelectedDay = _events.where((event) =>
+        event.date.year == _selectedDate.year &&
+        event.date.month == _selectedDate.month &&
+        event.date.day == _selectedDate.day).toList();
 
-    // Ordenar eventos según el status y su orderIndex
+    // Sort events
     eventsForSelectedDay.sort((a, b) {
-      // Si ambos eventos tienen status, ordenar por orderIndex
       if (a.status != null && b.status != null) {
-        final statusA = _statuses.firstWhere(
-          (s) => s.name == a.status,
-          orElse:
-              () => CalendarEventStatus(
-                id: 0,
-                name: a.status!,
-                color: '#2196F3',
-                orderIndex: 999, // Alto orderIndex para status no encontrados
-              ),
-        );
-        final statusB = _statuses.firstWhere(
-          (s) => s.name == b.status,
-          orElse:
-              () => CalendarEventStatus(
-                id: 0,
-                name: b.status!,
-                color: '#2196F3',
-                orderIndex: 999, // Alto orderIndex para status no encontrados
-              ),
-        );
+        final statusA = _statuses.firstWhere((s) => s.name == a.status,
+            orElse: () => CalendarEventStatus(id: 0, name: a.status!, color: '#2196F3', orderIndex: 999));
+        final statusB = _statuses.firstWhere((s) => s.name == b.status,
+            orElse: () => CalendarEventStatus(id: 0, name: b.status!, color: '#2196F3', orderIndex: 999));
         return statusA.orderIndex.compareTo(statusB.orderIndex);
       }
-
-      // Si solo uno tiene status, el que no tiene status va al final
-      if (a.status == null && b.status != null) {
-        return 1; // a va después de b
-      }
-      if (a.status != null && b.status == null) {
-        return -1; // a va antes de b
-      }
-
-      // Si ninguno tiene status, mantener el orden original
+      if (a.status == null && b.status != null) return 1;
+      if (a.status != null && b.status == null) return -1;
       return 0;
     });
+
+    final tasksForSelectedDay = _tasksWithDeadlines.where((task) {
+      if (task.date == null) return false;
+      return task.date!.year == _selectedDate.year &&
+          task.date!.month == _selectedDate.month &&
+          task.date!.day == _selectedDate.day;
+    }).toList();
+
+    // Sort tasks
+    tasksForSelectedDay.sort((a, b) {
+      if (a.completed && !b.completed) return 1;
+      if (!a.completed && b.completed) return -1;
+      if (a.state == TaskState.inProgress && b.state != TaskState.inProgress) return -1;
+      if (a.state != TaskState.inProgress && b.state == TaskState.inProgress) return 1;
+      return a.orderIndex.compareTo(b.orderIndex);
+    });
+
+    final List<dynamic> combinedItems = _showCombinedEvents
+        ? [...eventsForSelectedDay, ...tasksForSelectedDay]
+        : eventsForSelectedDay;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
               Icon(
-                Icons.event_note_rounded,
+                _showCombinedEvents ? Icons.event_available_rounded : Icons.event_note_rounded,
                 size: 20,
                 color: colorScheme.primary,
               ),
               const SizedBox(width: 8),
-              Text(
-                'Notes for ${_formattedMonth.split(' ')[0]} ${_selectedDate.day}, ${_selectedDate.year}',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Text(
+                  '${_showCombinedEvents ? "Events" : "Notes"} for ${_formattedMonth.split(' ')[0]} ${_selectedDate.day}, ${_selectedDate.year}',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
+              ),
+              IconButton(
+                icon: Icon(
+                  _showCombinedEvents ? Icons.layers_rounded : Icons.layers_outlined,
+                  color: _showCombinedEvents ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                  size: 20,
+                ),
+                onPressed: _toggleCombinedEvents,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                padding: EdgeInsets.zero,
               ),
             ],
           ),
         ),
         Expanded(
-          child:
-              eventsForSelectedDay.isEmpty
-                  ? Center(
-                    child: Text(
-                      'No notes for this day',
-                      style: TextStyle(color: colorScheme.onSurfaceVariant),
-                    ),
-                  )
-                  : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    itemCount: eventsForSelectedDay.length,
-                    itemBuilder: (context, index) {
-                      final event = eventsForSelectedDay[index];
-                      if (event.note == null) {
-                        return const SizedBox.shrink();
-                      }
-
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        color: colorScheme.surfaceContainerHighest,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: () {
-                              _openNoteEditor(event.note!);
-                            },
-                            onLongPress: () {
-                              _showEventContextMenu(event);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: 16,
-                                right: 8,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.description_outlined,
-                                    color: colorScheme.primary,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          event.note!.title,
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.bodyMedium?.copyWith(
-                                            color: colorScheme.onSurface,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        if (event.status != null) ...[
-                                          const SizedBox(height: 2),
-                                          Row(
-                                            children: [
-                                              Container(
-                                                width: 8,
-                                                height: 8,
-                                                decoration: BoxDecoration(
-                                                  color: _getStatusColor(
-                                                    event.status!,
-                                                  ),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                event.status!,
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall?.copyWith(
-                                                  color:
-                                                      colorScheme
-                                                          .onSurfaceVariant,
-                                                  fontSize: 10,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 8),
-                                    child: IconButton(
-                                      icon: Icon(
-                                        Icons.close_rounded,
-                                        color: colorScheme.error,
-                                        size: 18,
-                                      ),
-                                      onPressed: () async {
-                                        await _deleteEvent(event);
-                                      },
-                                      constraints: const BoxConstraints(
-                                        minWidth: 24,
-                                        minHeight: 24,
-                                      ),
-                                      padding: EdgeInsets.zero,
-                                      style: IconButton.styleFrom(
-                                        backgroundColor: colorScheme.error
-                                            .withAlpha(20),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+          child: combinedItems.isEmpty
+              ? Center(
+                  child: Text(
+                    'No ${_showCombinedEvents ? "events" : "notes"} for this day',
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
                   ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  itemCount: combinedItems.length,
+                  itemBuilder: (context, index) {
+                    final item = combinedItems[index];
+                    if (item is CalendarEvent) {
+                      return _buildNoteItem(item, colorScheme);
+                    } else if (item is Task) {
+                      return _buildTaskItem(item, colorScheme);
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
         ),
       ],
     );
+  }
+
+  Widget _buildNoteItem(CalendarEvent event, ColorScheme colorScheme) {
+    if (event.note == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      color: colorScheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            _openNoteEditor(event.note!);
+          },
+          onLongPress: () {
+            _showEventContextMenu(event);
+          },
+          child: Padding(
+            padding: const EdgeInsets.only(left: 16, right: 8),
+            child: Row(
+              children: [
+                Icon(Icons.description_outlined, color: colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        event.note!.title,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (event.status != null) ...[
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(event.status!),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              event.status!,
+                              style: Theme.of(
+                                context,
+                              ).textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: colorScheme.error,
+                      size: 18,
+                    ),
+                    onPressed: () async {
+                      await _deleteEvent(event);
+                    },
+                    constraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
+                    padding: EdgeInsets.zero,
+                    style: IconButton.styleFrom(
+                      backgroundColor: colorScheme.error.withAlpha(20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTaskItem(Task task, ColorScheme colorScheme) {
+    final isCompleted = task.completed || task.state == TaskState.completed;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      color: colorScheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            _openTaskDetails(task);
+          },
+          child: Padding(
+            padding: const EdgeInsets.only(left: 16, right: 8),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.task_alt_rounded,
+                  color: colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        task.name,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color:
+                              isCompleted
+                                  ? colorScheme.onSurfaceVariant
+                                  : colorScheme.onSurface,
+                          decoration:
+                              isCompleted ? TextDecoration.lineThrough : null,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (task.state != TaskState.none) ...[
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: _getTaskStateColor(task.state, colorScheme),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _getTaskStateText(task.state),
+                              style: Theme.of(
+                                context,
+                              ).textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: colorScheme.error,
+                      size: 18,
+                    ),
+                    onPressed: () async {
+                      await _clearTaskDate(task);
+                    },
+                    constraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
+                    padding: EdgeInsets.zero,
+                    style: IconButton.styleFrom(
+                      backgroundColor: colorScheme.error.withAlpha(20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openTaskDetails(Task task) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => TaskDetailScreen(
+              task: task,
+              databaseService: _databaseService,
+            ),
+      ),
+    ).then((_) => _loadTasksWithDeadlines());
+  }
+
+  Color _getTaskStateColor(TaskState state, ColorScheme colorScheme) {
+    switch (state) {
+      case TaskState.pending:
+        return colorScheme.onSurfaceVariant;
+      case TaskState.inProgress:
+        return const Color(0xFFE67E22);
+      case TaskState.completed:
+        return colorScheme.primary;
+      case TaskState.none:
+        return colorScheme.onSurfaceVariant;
+    }
+  }
+
+  String _getTaskStateText(TaskState state) {
+    switch (state) {
+      case TaskState.pending:
+        return 'Pending';
+      case TaskState.inProgress:
+        return 'In Progress';
+      case TaskState.completed:
+        return 'Completed';
+      case TaskState.none:
+        return '';
+    }
   }
 }

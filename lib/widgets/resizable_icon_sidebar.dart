@@ -4,6 +4,7 @@ import 'dart:io';
 import 'icon_sidebar.dart';
 import '../database/models/note.dart';
 import '../database/models/notebook.dart';
+import '../database/models/task.dart';
 
 class ResizableIconSidebar extends StatefulWidget {
   final Directory? rootDir;
@@ -11,6 +12,7 @@ class ResizableIconSidebar extends StatefulWidget {
   final Function(Directory)? onOpenFolder;
   final Function(Notebook)? onNotebookSelected;
   final Function(Note)? onNoteSelected;
+  final Function(Task)? onTaskSelected;
   final Function(Note, String, bool)? onNoteSelectedWithSearch;
   final VoidCallback? onBack;
   final VoidCallback? onDirectorySet;
@@ -53,6 +55,7 @@ class ResizableIconSidebar extends StatefulWidget {
     this.onOpenFolder,
     this.onNotebookSelected,
     this.onNoteSelected,
+    this.onTaskSelected,
     this.onNoteSelectedWithSearch,
     this.onBack,
     this.onDirectorySet,
@@ -98,9 +101,14 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
   late AnimationController _animationController;
   late Animation<double> _widthAnimation;
   late GlobalIconSidebarState _globalIconSidebarState;
+  final GlobalKey<IconSidebarState> _iconSidebarKey = GlobalKey<IconSidebarState>();
   double _currentWidth = 70;
 
   bool get isExpanded => _globalIconSidebarState.isExpanded;
+
+  void openTasksScreen({Task? initialTask}) {
+    _iconSidebarKey.currentState?.openTasksScreen(initialTask: initialTask);
+  }
 
   @override
   void initState() {
@@ -256,11 +264,13 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
                         color:
                             Theme.of(context).colorScheme.surfaceContainerLow,
                         child: IconSidebar(
+                          key: _iconSidebarKey,
                           rootDir: widget.rootDir,
                           onOpenNote: widget.onOpenNote,
                           onOpenFolder: widget.onOpenFolder,
                           onNotebookSelected: widget.onNotebookSelected,
                           onNoteSelected: widget.onNoteSelected,
+                          onTaskSelected: widget.onTaskSelected,
                           onNoteSelectedWithSearch:
                               widget.onNoteSelectedWithSearch,
                           onBack: widget.onBack,

@@ -224,6 +224,7 @@ class _ThinkEditorState extends State<ThinkEditor>
       child: Scaffold(
         backgroundColor: Theme.of(context).colorScheme.surface,
         appBar: AppBar(
+          toolbarHeight: 40.0,
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           backgroundColor: Theme.of(context).colorScheme.surface,

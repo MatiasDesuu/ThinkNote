@@ -8,6 +8,7 @@ import '../animations/animations_handler.dart';
 import 'dart:async';
 import '../database/database_service.dart';
 import '../database/models/task.dart';
+import '../database/models/note.dart';
 import '../database/models/subtask.dart';
 import '../widgets/custom_snackbar.dart';
 import '../widgets/context_menu.dart';
@@ -27,12 +28,16 @@ class TodoScreenDB extends StatefulWidget {
   final Directory rootDir;
   final VoidCallback onDirectorySet;
   final VoidCallback? onThemeUpdated;
+  final Task? initialTask;
+  final Function(Note)? onNoteSelected;
 
   const TodoScreenDB({
     super.key,
     required this.rootDir,
     required this.onDirectorySet,
     this.onThemeUpdated,
+    this.initialTask,
+    this.onNoteSelected,
   });
 
   @override
@@ -110,6 +115,11 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     );
 
     _loadSavedSettings();
+    
+    if (widget.initialTask != null) {
+      _selectTask(widget.initialTask!);
+    }
+    
     _loadTasks();
 
     // Agregar listener para el título
@@ -1299,6 +1309,11 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                           appFocusNode: _appFocusNode,
                           onTaskSelected: (task) {
                             _selectTask(task);
+                          },
+                          onNoteSelected: (note) {
+                            if (widget.onNoteSelected != null) {
+                              widget.onNoteSelected!(note);
+                            }
                           },
                         ),
                       ),

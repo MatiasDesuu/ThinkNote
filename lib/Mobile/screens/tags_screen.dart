@@ -203,6 +203,7 @@ class _TagsScreenState extends State<TagsScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
+          toolbarHeight: 40.0,
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           backgroundColor: Theme.of(context).colorScheme.surface,

@@ -244,11 +244,11 @@ class _SearchScreenState extends State<SearchScreen> {
                 },
                 child: Scaffold(
                   appBar: AppBar(
+                    toolbarHeight: 40.0,
                     elevation: 0,
                     scrolledUnderElevation: 0,
                     surfaceTintColor: Colors.transparent,
                     backgroundColor: theme.colorScheme.surface,
-                    toolbarHeight: 64,
                     leading: IconButton(
                       icon: Icon(
                         Icons.arrow_back_rounded,

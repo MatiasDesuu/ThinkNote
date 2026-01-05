@@ -719,7 +719,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                 if (!mounted) return;
                 scaffoldMessenger.showSnackBar(
                   SnackBar(
-                    content: Text('Error deleting subtask: \${e.toString()}'),
+                    content: Text('Error deleting subtask: ${e.toString()}'),
                     backgroundColor: colorScheme.error,
                   ),
                 );
@@ -737,7 +737,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
           context: context,
           title: 'Delete Subtask',
           message:
-              'Are you sure you want to delete this subtask?\n\${subtask.text}',
+              'Are you sure you want to delete this subtask?\n${subtask.text}',
           confirmText: 'Delete',
           confirmColor: colorScheme.error,
         );
@@ -914,6 +914,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
       },
       child: Scaffold(
         appBar: AppBar(
+          toolbarHeight: 40.0,
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           backgroundColor: Theme.of(context).colorScheme.surface,

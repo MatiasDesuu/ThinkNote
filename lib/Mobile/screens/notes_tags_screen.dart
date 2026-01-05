@@ -59,6 +59,7 @@ class _NotesTagsScreenState extends State<NotesTagsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 40.0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         backgroundColor: Theme.of(context).colorScheme.surface,

@@ -653,6 +653,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                       },
                       extendBodyBehindAppBar: false,
                       appBar: AppBar(
+                        toolbarHeight: 40.0,
                         automaticallyImplyLeading: false,
                         scrolledUnderElevation: 0,
                         surfaceTintColor: Colors.transparent,

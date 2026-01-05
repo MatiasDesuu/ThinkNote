@@ -97,6 +97,7 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 40.0,
         title: const Text('Templates'),
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,

@@ -20,6 +20,7 @@ import 'widgets/panels/trash_panel.dart';
 import 'widgets/panels/favorites_panel.dart';
 import 'database/models/note.dart';
 import 'database/models/notebook.dart';
+import 'database/models/task.dart';
 import 'database/models/editor_tab.dart';
 import 'database/database_helper.dart';
 import 'database/repositories/note_repository.dart';
@@ -1463,6 +1464,10 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     }
   }
 
+  void _onTaskSelected(Task task) {
+    _iconSidebarKey.currentState?.openTasksScreen(initialTask: task);
+  }
+
   void _onNoteSelectedWithSearch(
     Note note,
     String searchQuery,
@@ -1823,6 +1828,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                         (folder) => _onNotebookSelected(folder as Notebook),
                     onNotebookSelected: _onNotebookSelected,
                     onNoteSelected: _onNoteSelected,
+                    onTaskSelected: _onTaskSelected,
                     onNoteSelectedWithSearch: _onNoteSelectedWithSearch,
                     onThemeUpdated: widget.onThemeUpdated,
                     onFavoriteRemoved: () {
@@ -2034,6 +2040,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                         onNotebookSelected: _onNotebookSelected,
                         onNotebookSelectedFromFavorite:
                             _onNotebookSelectedFromFavorite,
+                        onTaskSelected: _onTaskSelected,
                         appFocusNode: _appFocusNode,
                       ),
                     ),
