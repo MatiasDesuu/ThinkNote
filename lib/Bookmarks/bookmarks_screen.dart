@@ -83,7 +83,10 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     required ColorScheme colorScheme,
   }) {
     return Material(
-      color: isSelected ? colorScheme.primary.withAlpha(25) : colorScheme.surfaceContainerHighest,
+      color:
+          isSelected
+              ? colorScheme.primary.withAlpha(25)
+              : colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
@@ -95,7 +98,13 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                label == LinksHandlerDB.hiddenTag ? (isSelected ? Icons.visibility_rounded : Icons.visibility_off_rounded) : (isSelected ? Icons.label_rounded : Icons.label_outline_rounded),
+                label == LinksHandlerDB.hiddenTag
+                    ? (isSelected
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded)
+                    : (isSelected
+                        ? Icons.label_rounded
+                        : Icons.label_outline_rounded),
                 size: 20,
                 color: colorScheme.primary,
               ),
@@ -104,7 +113,8 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                 label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   height: 1.0,
-                  color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+                  color:
+                      isSelected ? colorScheme.primary : colorScheme.onSurface,
                 ),
               ),
             ],
@@ -322,7 +332,8 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                                         ),
                                         child: _buildTagChip(
                                           label: 'All',
-                                          isSelected: _linksHandler.selectedTag == null,
+                                          isSelected:
+                                              _linksHandler.selectedTag == null,
                                           onTap: () {
                                             _linksHandler.setSelectedTag(null);
                                             _loadBookmarks();
@@ -338,10 +349,14 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                                           ),
                                           child: _buildTagChip(
                                             label: tag,
-                                            isSelected: _linksHandler.selectedTag == tag,
+                                            isSelected:
+                                                _linksHandler.selectedTag ==
+                                                tag,
                                             onTap: () {
                                               _linksHandler.setSelectedTag(
-                                                _linksHandler.selectedTag == tag ? null : tag,
+                                                _linksHandler.selectedTag == tag
+                                                    ? null
+                                                    : tag,
                                               );
                                               _loadBookmarks();
                                               setState(() {});
@@ -611,6 +626,13 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
 
   Future<void> _copyLinkToClipboard(String url) async {
     await Clipboard.setData(ClipboardData(text: url));
+    if (mounted) {
+      CustomSnackbar.show(
+        context: context,
+        message: 'Link copied to clipboard',
+        type: CustomSnackbarType.success,
+      );
+    }
   }
 
   Future<void> _showEditLinkDialog(Bookmark bookmark) async {
@@ -620,7 +642,7 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     final titleController = TextEditingController(text: bookmark.title);
     final urlController = TextEditingController(text: bookmark.url);
     final descController = TextEditingController(text: bookmark.description);
-    
+
     String tagsText = bookmark.tags.join(', ');
 
     final tagsController = TextEditingController(text: tagsText);
@@ -867,12 +889,15 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
 
         final pathSegments = uri.pathSegments;
         final postIdIndex = pathSegments.indexOf('comments');
-        if (postIdIndex == -1 || postIdIndex + 1 >= pathSegments.length) return null;
+        if (postIdIndex == -1 || postIdIndex + 1 >= pathSegments.length)
+          return null;
 
         final postId = pathSegments[postIdIndex + 1];
         final apiUrl = 'https://www.reddit.com/comments/$postId.json';
 
-        final response = await http.get(Uri.parse(apiUrl)).timeout(const Duration(seconds: 3));
+        final response = await http
+            .get(Uri.parse(apiUrl))
+            .timeout(const Duration(seconds: 3));
         if (response.statusCode == 200) {
           final jsonData = jsonDecode(response.body);
           if (jsonData is List && jsonData.isNotEmpty) {
@@ -900,7 +925,10 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
             .timeout(const Duration(seconds: 3));
         if (response.statusCode == 200) {
           final document = html.parse(response.body);
-          final ogTitle = document.querySelector('meta[property="og:title"]')?.attributes['content'];
+          final ogTitle =
+              document
+                  .querySelector('meta[property="og:title"]')
+                  ?.attributes['content'];
           String? pageTitle;
 
           if (ogTitle != null && ogTitle.isNotEmpty) {
@@ -1277,9 +1305,9 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                                             bottom: 8,
                                           ),
                                           color:
-                                              Theme.of(
-                                                context,
-                                              ).colorScheme.surfaceContainerHighest,
+                                              Theme.of(context)
+                                                  .colorScheme
+                                                  .surfaceContainerHighest,
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
                                               12,
@@ -1325,10 +1353,8 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                                                                 ?.copyWith(
                                                                   color:
                                                                       Theme.of(
-                                                                            context,
-                                                                          )
-                                                                          .colorScheme
-                                                                          .onSurface,
+                                                                        context,
+                                                                      ).colorScheme.onSurface,
                                                                   fontWeight:
                                                                       FontWeight
                                                                           .w500,
@@ -1364,10 +1390,8 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                                                                     ?.copyWith(
                                                                       color:
                                                                           Theme.of(
-                                                                                context,
-                                                                              )
-                                                                              .colorScheme
-                                                                              .primary,
+                                                                            context,
+                                                                          ).colorScheme.primary,
                                                                       fontSize:
                                                                           11,
                                                                     ),
@@ -1391,23 +1415,22 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                                                                   .click,
                                                           child: GestureDetector(
                                                             onTap: () async {
-                                                              final confirmed =
-                                                                  await showDeleteConfirmationDialog(
-                                                                    context:
-                                                                        context,
-                                                                    title:
-                                                                        'Delete Tag Mapping',
-                                                                    message:
-                                                                        'Are you sure you want to delete this tag mapping?\n\nURL Pattern: ${pattern.urlPattern}\nTag: ${pattern.tag}',
-                                                                    confirmText:
-                                                                        'Delete',
-                                                                    confirmColor:
-                                                                        Theme.of(
-                                                                              context,
-                                                                            )
-                                                                            .colorScheme
-                                                                            .error,
-                                                                  );
+                                                              final confirmed = await showDeleteConfirmationDialog(
+                                                                context:
+                                                                    context,
+                                                                title:
+                                                                    'Delete Tag Mapping',
+                                                                message:
+                                                                    'Are you sure you want to delete this tag mapping?\n\nURL Pattern: ${pattern.urlPattern}\nTag: ${pattern.tag}',
+                                                                confirmText:
+                                                                    'Delete',
+                                                                confirmColor:
+                                                                    Theme.of(
+                                                                          context,
+                                                                        )
+                                                                        .colorScheme
+                                                                        .error,
+                                                              );
 
                                                               if (confirmed ==
                                                                   true) {
@@ -1426,22 +1449,20 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                                                                   const EdgeInsets.all(
                                                                     4,
                                                                   ),
-                                                              decoration:
-                                                                  BoxDecoration(
-                                                                    color:
-                                                                        Theme.of(
-                                                                              context,
-                                                                            )
-                                                                            .colorScheme
-                                                                            .error
-                                                                            .withAlpha(
-                                                                              20,
-                                                                            ),
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                          6,
-                                                                        ),
-                                                                  ),
+                                                              decoration: BoxDecoration(
+                                                                color: Theme.of(
+                                                                      context,
+                                                                    )
+                                                                    .colorScheme
+                                                                    .error
+                                                                    .withAlpha(
+                                                                      20,
+                                                                    ),
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      6,
+                                                                    ),
+                                                              ),
                                                               child: Icon(
                                                                 Icons
                                                                     .close_rounded,
@@ -1714,7 +1735,7 @@ class _BookmarkIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final uri = Uri.tryParse(url);
     final host = uri?.host.replaceAll('www.', '') ?? '';
-    
+
     if (host.isEmpty) {
       return _buildFallback('?');
     }
@@ -1737,7 +1758,9 @@ class _BookmarkIcon extends StatelessWidget {
           width: size,
           height: size,
           fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => _buildFallback(host[0].toUpperCase()),
+          errorBuilder:
+              (context, error, stackTrace) =>
+                  _buildFallback(host[0].toUpperCase()),
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
             return _buildFallback(host[0].toUpperCase());
@@ -1761,7 +1784,7 @@ class _BookmarkIcon extends StatelessWidget {
       Colors.amber,
       Colors.cyan,
     ];
-    
+
     final colorIndex = initial.codeUnitAt(0) % colors.length;
     final baseColor = colors[colorIndex];
 
@@ -1771,10 +1794,7 @@ class _BookmarkIcon extends StatelessWidget {
       decoration: BoxDecoration(
         color: baseColor.withAlpha(30),
         borderRadius: BorderRadius.circular(size * 0.2),
-        border: Border.all(
-          color: baseColor.withAlpha(50),
-          width: 1,
-        ),
+        border: Border.all(color: baseColor.withAlpha(50), width: 1),
       ),
       child: Center(
         child: Text(
@@ -1825,9 +1845,10 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
         decoration: BoxDecoration(
-          color: _isHovering
-              ? widget.colorScheme.surfaceContainerHighest
-              : widget.colorScheme.surface,
+          color:
+              _isHovering
+                  ? widget.colorScheme.surfaceContainerHighest
+                  : widget.colorScheme.surface,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Material(
@@ -1841,14 +1862,14 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
                 tapPosition: details.globalPosition,
                 items: [
                   ContextMenuItem(
-                    icon: Icons.copy,
-                    label: 'Copy Link',
-                    onTap: widget.onCopy,
-                  ),
-                  ContextMenuItem(
-                    icon: Icons.edit,
+                    icon: Icons.edit_rounded,
                     label: 'Edit',
                     onTap: widget.onEdit,
+                  ),
+                  ContextMenuItem(
+                    icon: Icons.copy_rounded,
+                    label: 'Copy Link',
+                    onTap: widget.onCopy,
                   ),
                   ContextMenuItem(
                     icon: Icons.delete_forever_rounded,
@@ -1908,38 +1929,55 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
                             Text(
                               formattedDate,
                               style: TextStyle(
-                                color: widget.colorScheme.onSurface.withAlpha(130),
+                                color: widget.colorScheme.onSurface.withAlpha(
+                                  130,
+                                ),
                                 fontSize: 11,
                               ),
                             ),
                             const SizedBox(width: 8),
-                              Expanded(
-                                child: SizedBox(
-                                  height: 20,
-                                  child: ListView(
-                                    scrollDirection: Axis.horizontal,
-                                    children: widget.bookmark.tags.map(
-                                      (tag) => Container(
-                                        margin: const EdgeInsets.only(right: 6),
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: widget.colorScheme.primary.withAlpha(20),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          tag,
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: widget.colorScheme.primary,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ).toList(),
-                                  ),
+                            Expanded(
+                              child: SizedBox(
+                                height: 20,
+                                child: ListView(
+                                  scrollDirection: Axis.horizontal,
+                                  children:
+                                      widget.bookmark.tags
+                                          .map(
+                                            (tag) => Container(
+                                              margin: const EdgeInsets.only(
+                                                right: 6,
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 2,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: widget
+                                                    .colorScheme
+                                                    .primary
+                                                    .withAlpha(20),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                tag,
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color:
+                                                      widget
+                                                          .colorScheme
+                                                          .primary,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                          .toList(),
                                 ),
                               ),
-                            
+                            ),
                           ],
                         ),
                       ],
@@ -1956,35 +1994,54 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
                         children: [
                           CustomTooltip(
                             message: 'Edit',
-                            builder: (context, isHovering) => IconButton(
-                              icon: Icon(
-                                Icons.edit_outlined,
-                                color: widget.colorScheme.onSurfaceVariant,
-                                size: 18,
-                              ),
-                              onPressed: widget.onEdit,
-                              constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
-                              ),
-                              padding: EdgeInsets.zero,
-                            ),
+                            builder:
+                                (context, isHovering) => IconButton(
+                                  icon: Icon(
+                                    Icons.edit_outlined,
+                                    color: widget.colorScheme.primary,
+                                    size: 18,
+                                  ),
+                                  onPressed: widget.onEdit,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 32,
+                                    minHeight: 32,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                ),
+                          ),
+                          CustomTooltip(
+                            message: 'Copy Link',
+                            builder:
+                                (context, isHovering) => IconButton(
+                                  icon: Icon(
+                                    Icons.copy_rounded,
+                                    color: widget.colorScheme.primary,
+                                    size: 18,
+                                  ),
+                                  onPressed: widget.onCopy,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 32,
+                                    minHeight: 32,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                ),
                           ),
                           CustomTooltip(
                             message: 'Delete',
-                            builder: (context, isHovering) => IconButton(
-                              icon: Icon(
-                                Icons.delete_outline_rounded,
-                                color: widget.colorScheme.error,
-                                size: 18,
-                              ),
-                              onPressed: widget.onDelete,
-                              constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
-                              ),
-                              padding: EdgeInsets.zero,
-                            ),
+                            builder:
+                                (context, isHovering) => IconButton(
+                                  icon: Icon(
+                                    Icons.delete_forever_rounded,
+                                    color: widget.colorScheme.error,
+                                    size: 18,
+                                  ),
+                                  onPressed: widget.onDelete,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 32,
+                                    minHeight: 32,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                ),
                           ),
                         ],
                       ),
