@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../custom_tooltip.dart';
+import '../context_menu.dart';
 import 'format_handler.dart';
 
 class EditorBottomBar extends StatefulWidget {
@@ -48,6 +49,35 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
         onPressed: onPressed,
         visualDensity: VisualDensity.compact,
       ),
+    );
+  }
+
+  void _showHeadingsMenu(BuildContext context, Offset position) {
+    ContextMenuOverlay.show(
+      context: context,
+      tapPosition: position,
+      items: [
+        ContextMenuItem(
+          icon: Symbols.format_h2_rounded,
+          label: 'Heading 2',
+          onTap: () => widget.onFormatTap(FormatType.heading2),
+        ),
+        ContextMenuItem(
+          icon: Symbols.format_h3_rounded,
+          label: 'Heading 3',
+          onTap: () => widget.onFormatTap(FormatType.heading3),
+        ),
+        ContextMenuItem(
+          icon: Symbols.format_h4_rounded,
+          label: 'Heading 4',
+          onTap: () => widget.onFormatTap(FormatType.heading4),
+        ),
+        ContextMenuItem(
+          icon: Symbols.format_h5_rounded,
+          label: 'Heading 5',
+          onTap: () => widget.onFormatTap(FormatType.heading5),
+        ),
+      ],
     );
   }
 
@@ -162,35 +192,17 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                   tooltipMessage: 'Horizontal Divider',
                 ),
                 const VerticalDivider(width: 16, indent: 8, endIndent: 8),
-                _buildTooltipIconButton(
-                  context,
-                  icon: const Icon(Symbols.format_h1_rounded, size: 20),
-                  onPressed: () => widget.onFormatTap(FormatType.heading1),
-                  tooltipMessage: 'Heading 1',
-                ),
-                _buildTooltipIconButton(
-                  context,
-                  icon: const Icon(Symbols.format_h2_rounded, size: 20),
-                  onPressed: () => widget.onFormatTap(FormatType.heading2),
-                  tooltipMessage: 'Heading 2',
-                ),
-                _buildTooltipIconButton(
-                  context,
-                  icon: const Icon(Symbols.format_h3_rounded, size: 20),
-                  onPressed: () => widget.onFormatTap(FormatType.heading3),
-                  tooltipMessage: 'Heading 3',
-                ),
-                _buildTooltipIconButton(
-                  context,
-                  icon: const Icon(Symbols.format_h4_rounded, size: 20),
-                  onPressed: () => widget.onFormatTap(FormatType.heading4),
-                  tooltipMessage: 'Heading 4',
-                ),
-                _buildTooltipIconButton(
-                  context,
-                  icon: const Icon(Symbols.format_h5_rounded, size: 20),
-                  onPressed: () => widget.onFormatTap(FormatType.heading5),
-                  tooltipMessage: 'Heading 5',
+                GestureDetector(
+                  onSecondaryTapDown: (details) =>
+                      _showHeadingsMenu(context, details.globalPosition),
+                  onLongPressStart: (details) =>
+                      _showHeadingsMenu(context, details.globalPosition),
+                  child: _buildTooltipIconButton(
+                    context,
+                    icon: const Icon(Symbols.format_h1_rounded, size: 20),
+                    onPressed: () => widget.onFormatTap(FormatType.heading1),
+                    tooltipMessage: 'Heading 1 (Right click for more)',
+                  ),
                 ),
                 const VerticalDivider(width: 16, indent: 8, endIndent: 8),
                 _buildTooltipIconButton(

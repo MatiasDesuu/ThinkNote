@@ -211,7 +211,8 @@ class UnifiedTextHandler extends StatelessWidget {
         final title = segment.text.substring(2, segment.text.length - 2).trim();
 
         return WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
           child: _NoteLinkWidget(
             text: showNoteLinkBrackets ? segment.originalText : title,
             textStyle: baseStyle.copyWith(
@@ -236,7 +237,8 @@ class UnifiedTextHandler extends StatelessWidget {
         final name = segment.text.substring(11, segment.text.length - 2).trim();
 
         return WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
           child: _NoteLinkWidget(
             text: showNoteLinkBrackets ? segment.originalText : name,
             textStyle: baseStyle.copyWith(
@@ -717,7 +719,7 @@ class _InlineCodeWidgetState extends State<_InlineCodeWidget> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
       child: MouseRegion(
         onEnter: (_) => setState(() => _isHovered = true),
         onExit:
@@ -729,7 +731,7 @@ class _InlineCodeWidgetState extends State<_InlineCodeWidget> {
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: Theme.of(
                   context,
@@ -748,10 +750,11 @@ class _InlineCodeWidgetState extends State<_InlineCodeWidget> {
                 ),
               ),
             ),
-            if (_isHovered)
-              Positioned(
-                top: 2,
-                right: 2,
+            Positioned(
+              top: 2,
+              right: 2,
+              child: Opacity(
+                opacity: _isHovered ? 1.0 : 0.0,
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
@@ -771,12 +774,15 @@ class _InlineCodeWidgetState extends State<_InlineCodeWidget> {
                         color:
                             _isCopied
                                 ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.onSurface,
+                                : Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant.withAlpha(180),
                       ),
                     ),
                   ),
                 ),
               ),
+            ),
           ],
         ),
       ),
@@ -801,7 +807,7 @@ class _TaggedCodeWidgetState extends State<_TaggedCodeWidget> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
       child: MouseRegion(
         onEnter: (_) => setState(() => _isHovered = true),
         onExit:
@@ -829,7 +835,7 @@ class _TaggedCodeWidgetState extends State<_TaggedCodeWidget> {
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
-                    vertical: 4,
+                    vertical: 2,
                   ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
@@ -848,10 +854,11 @@ class _TaggedCodeWidgetState extends State<_TaggedCodeWidget> {
                     ),
                   ),
                 ),
-                if (_isHovered)
-                  Positioned(
-                    top: 2,
-                    right: 2,
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: Opacity(
+                    opacity: _isHovered ? 1.0 : 0.0,
                     child: IgnorePointer(
                       child: Icon(
                         _isCopied ? Icons.check_rounded : Icons.copy_rounded,
@@ -865,6 +872,7 @@ class _TaggedCodeWidgetState extends State<_TaggedCodeWidget> {
                       ),
                     ),
                   ),
+                ),
               ],
             ),
           ),
