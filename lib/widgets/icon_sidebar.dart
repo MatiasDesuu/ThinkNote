@@ -206,8 +206,6 @@ class IconSidebar extends StatefulWidget {
   final Function(int)? onPageChanged;
   final VoidCallback? onAddBookmark;
   final VoidCallback? onManageTags;
-  final VoidCallback? onToggleView;
-  final bool isGridView;
   final LayerLink? searchLayerLink;
   final GlobalKey<dynamic>? calendarPanelKey;
   final VoidCallback? onToggleCalendar;
@@ -249,8 +247,6 @@ class IconSidebar extends StatefulWidget {
     this.onPageChanged,
     this.onAddBookmark,
     this.onManageTags,
-    this.onToggleView,
-    this.isGridView = false,
     this.searchLayerLink,
     this.calendarPanelKey,
     this.onToggleCalendar,

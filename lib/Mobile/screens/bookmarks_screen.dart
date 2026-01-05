@@ -951,22 +951,6 @@ class BookmarksScreenState extends State<BookmarksScreen> {
     );
   }
 
-  Widget _buildFallbackIcon() {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(
-        Icons.link_rounded,
-        size: 28,
-        color: Theme.of(context).colorScheme.primary,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final tags = _handler.allTags;
@@ -1187,36 +1171,19 @@ class BookmarksScreenState extends State<BookmarksScreen> {
         _deleteBookmark(bookmark);
       },
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        leading: SizedBox(
-          width: 40,
-          height: 40,
-          child: Align(
-            alignment: Alignment.center,
-            child:
-                uri != null
-                    ? ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        color: Theme.of(context).colorScheme.surfaceContainer,
-                        child: Image.network(
-                          'https://www.google.com/s2/favicons?domain=${uri.host}&sz=64',
-                          width: 32,
-                          height: 32,
-                          errorBuilder: (_, __, ___) => _buildFallbackIcon(),
-                        ),
-                      ),
-                    )
-                    : _buildFallbackIcon(),
-          ),
+        leading: _BookmarkIcon(
+          url: bookmark.url,
+          size: 32,
+          colorScheme: Theme.of(context).colorScheme,
         ),
         title: Text(
           bookmark.title,
           style: TextStyle(
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.onSurface,
-            fontSize: 14,
+            fontSize: 15,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -1254,34 +1221,29 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                     ).colorScheme.onSurface.withAlpha(150),
                   ),
                 ),
-                if (bookmark.tags.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Text(
-                      '|',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 18,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
+                const SizedBox(width: 8),
+                  Expanded(
+                    child: SizedBox(
+                      height: 20,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
                         children:
                             bookmark.tags.map((tag) {
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 4),
+                              return Container(
+                                margin: const EdgeInsets.only(right: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary.withAlpha(20),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
                                 child: Text(
-                                  '#$tag',
+                                  tag,
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 10,
                                     color: Theme.of(
                                       context,
                                     ).colorScheme.primary,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               );
@@ -1289,7 +1251,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                       ),
                     ),
                   ),
-                ],
+
               ],
             ),
           ],
@@ -1298,6 +1260,96 @@ class BookmarksScreenState extends State<BookmarksScreen> {
           if (uri != null) launchUrl(uri);
         },
         onLongPress: () => _showBookmarkOptions(bookmark),
+      ),
+    );
+  }
+}
+
+class _BookmarkIcon extends StatelessWidget {
+  final String url;
+  final double size;
+  final ColorScheme colorScheme;
+
+  const _BookmarkIcon({
+    required this.url,
+    required this.size,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final uri = Uri.tryParse(url);
+    final host = uri?.host.replaceAll('www.', '') ?? '';
+    
+    if (host.isEmpty) {
+      return _buildFallback('?');
+    }
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(size * 0.2),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withAlpha(50),
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size * 0.2 - 1),
+        child: Image.network(
+          'https://www.google.com/s2/favicons?domain=${uri!.host}&sz=32',
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => _buildFallback(host[0].toUpperCase()),
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return _buildFallback(host[0].toUpperCase());
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFallback(String initial) {
+    final List<Color> colors = [
+      Colors.blue,
+      Colors.red,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.indigo,
+      Colors.pink,
+      Colors.amber,
+      Colors.cyan,
+    ];
+    
+    final colorIndex = initial.codeUnitAt(0) % colors.length;
+    final baseColor = colors[colorIndex];
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: baseColor.withAlpha(30),
+        borderRadius: BorderRadius.circular(size * 0.2),
+        border: Border.all(
+          color: baseColor.withAlpha(50),
+          width: 1,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            color: baseColor,
+            fontWeight: FontWeight.bold,
+            fontSize: size * 0.5,
+          ),
+        ),
       ),
     );
   }

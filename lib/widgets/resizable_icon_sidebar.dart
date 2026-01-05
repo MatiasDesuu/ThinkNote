@@ -39,8 +39,6 @@ class ResizableIconSidebar extends StatefulWidget {
   final Function(int)? onPageChanged;
   final VoidCallback? onAddBookmark;
   final VoidCallback? onManageTags;
-  final VoidCallback? onToggleView;
-  final bool isGridView;
   final LayerLink? searchLayerLink;
   final GlobalKey<dynamic>? calendarPanelKey;
   final VoidCallback? onToggleCalendar;
@@ -82,8 +80,6 @@ class ResizableIconSidebar extends StatefulWidget {
     this.onPageChanged,
     this.onAddBookmark,
     this.onManageTags,
-    this.onToggleView,
-    this.isGridView = false,
     this.searchLayerLink,
     this.calendarPanelKey,
     this.onToggleCalendar,
@@ -298,8 +294,6 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
                           onPageChanged: widget.onPageChanged,
                           onAddBookmark: widget.onAddBookmark,
                           onManageTags: widget.onManageTags,
-                          onToggleView: widget.onToggleView,
-                          isGridView: widget.isGridView,
                           searchLayerLink: widget.searchLayerLink,
                           calendarPanelKey: widget.calendarPanelKey,
                           onToggleCalendar: widget.onToggleCalendar,

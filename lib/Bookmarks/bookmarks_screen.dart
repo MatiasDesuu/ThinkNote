@@ -6,8 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:any_link_preview/any_link_preview.dart';
 import 'package:flutter/services.dart';
 import '../widgets/resizable_icon_sidebar.dart';
 import '../Settings/settings_screen.dart';
@@ -45,7 +43,6 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
   final TagsHandlerDB _tagsHandler = TagsHandlerDB();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _appFocusNode = FocusNode();
-  bool _isGridView = false;
   Directory? _rootDir;
   bool _isLoading = true;
   List<Bookmark> _filteredBookmarks = [];
@@ -60,7 +57,6 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     super.initState();
     _linksHandler.resetSearch();
     _initializeBookmarks();
-    _loadViewPreference();
     _loadRootDir();
 
     // Listen to database changes for background sync updates
@@ -141,18 +137,6 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     }
   }
 
-  Future<void> _loadViewPreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _isGridView = prefs.getBool('bookmarks_grid_view') ?? false;
-    });
-  }
-
-  Future<void> _saveViewPreference(bool isGridView) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('bookmarks_grid_view', isGridView);
-  }
-
   Future<void> _loadBookmarks() async {
     try {
       // Cargar bookmarks con filtrado asíncrono
@@ -220,13 +204,6 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                 isBookmarksScreen: true,
                 onAddBookmark: _showAddLinkDialog,
                 onManageTags: _showManageTagsDialog,
-                onToggleView: () {
-                  setState(() {
-                    _isGridView = !_isGridView;
-                    _saveViewPreference(_isGridView);
-                  });
-                },
-                isGridView: _isGridView,
                 appFocusNode: _appFocusNode,
               ),
 
@@ -306,26 +283,30 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                               ),
                             ),
                             // Botón de ordenamiento
-                            IconButton(
-                              icon: CustomTooltip(
-                                message: _linksHandler.isOldestFirst ? 'Sort by oldest first' : 'Sort by newest first',
-                                builder: (context, isHovering) => RotatedBox(
-                                  quarterTurns:
-                                      _linksHandler.isOldestFirst ? 2 : 0,
-                                  child: Icon(
-                                    Icons.arrow_downward_rounded,
-                                    color:
-                                        _linksHandler.isOldestFirst
-                                            ? colorScheme.primary
-                                            : colorScheme.onSurfaceVariant,
+                            CustomTooltip(
+                              message:
+                                  _linksHandler.isOldestFirst
+                                      ? 'Sort by oldest first'
+                                      : 'Sort by newest first',
+                              builder:
+                                  (context, isHovering) => IconButton(
+                                    icon: RotatedBox(
+                                      quarterTurns:
+                                          _linksHandler.isOldestFirst ? 2 : 0,
+                                      child: Icon(
+                                        Icons.arrow_downward_rounded,
+                                        color:
+                                            _linksHandler.isOldestFirst
+                                                ? colorScheme.primary
+                                                : colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      _linksHandler.toggleSortOrder();
+                                      _loadBookmarks();
+                                      setState(() {});
+                                    },
                                   ),
-                                ),
-                              ),
-                              onPressed: () {
-                                _linksHandler.toggleSortOrder();
-                                _loadBookmarks();
-                                setState(() {});
-                              },
                             ),
                             // Eliminamos los botones de la barra superior
                             if (_linksHandler.allTags.isNotEmpty)
@@ -377,7 +358,7 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                         ),
                       ),
 
-                      // Bookmarks list/grid
+                      // Bookmarks list
                       Expanded(
                         child:
                             _isLoading
@@ -395,11 +376,6 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                                       ),
                                     ],
                                   ),
-                                )
-                                : _isGridView
-                                ? _buildBookmarksGrid(
-                                  _filteredBookmarks,
-                                  colorScheme,
                                 )
                                 : _buildBookmarksList(
                                   _filteredBookmarks,
@@ -589,87 +565,6 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
           colorScheme: colorScheme,
           onDelete: () => _showDeleteConfirmation(bookmark),
           onEdit: () => _showEditLinkDialog(bookmark),
-          onCopy: () => _copyLinkToClipboard(bookmark.url),
-          onTap: () async {
-            if (uri != null && await canLaunchUrl(uri)) {
-              await _launchUrl(bookmark.url);
-            }
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildBookmarksGrid(
-    List<Bookmark> bookmarks,
-    ColorScheme colorScheme,
-  ) {
-    if (bookmarks.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _linksHandler.isSearching
-                  ? Icons.search_off_rounded
-                  : Icons.bookmarks_outlined,
-              size: 48,
-              color: colorScheme.onSurfaceVariant.withAlpha(127),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _linksHandler.isSearching
-                  ? 'No results found for "${_linksHandler.searchQuery}"'
-                  : 'No saved bookmarks',
-              style: TextStyle(color: colorScheme.onSurfaceVariant),
-              textAlign: TextAlign.center,
-            ),
-            if (_linksHandler.isSearching)
-              Padding(
-                padding: const EdgeInsets.only(top: 12.0),
-                child: TextButton.icon(
-                  icon: const Icon(Icons.clear_rounded),
-                  label: const Text('Clear search'),
-                  onPressed: () {
-                    _linksHandler.setSearchQuery('');
-                    _loadBookmarks();
-                    setState(() {});
-                  },
-                ),
-              ),
-            if (!_linksHandler.isSearching)
-              Padding(
-                padding: const EdgeInsets.only(top: 12.0),
-                child: TextButton.icon(
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Add a bookmark'),
-                  onPressed: _showAddLinkDialog,
-                ),
-              ),
-          ],
-        ),
-      );
-    }
-
-    return MasonryGridView.count(
-      controller: _scrollController,
-      crossAxisCount: (MediaQuery.of(context).size.width / 300).floor().clamp(
-        1,
-        8,
-      ),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      padding: const EdgeInsets.all(16),
-      itemCount: bookmarks.length,
-      itemBuilder: (context, index) {
-        final bookmark = bookmarks[index];
-        final uri = Uri.tryParse(bookmark.url);
-
-        return _BookmarkCard(
-          bookmark: bookmark,
-          colorScheme: colorScheme,
-          onEdit: () => _showEditLinkDialog(bookmark),
-          onDelete: () => _showDeleteConfirmation(bookmark),
           onCopy: () => _copyLinkToClipboard(bookmark.url),
           onTap: () async {
             if (uri != null && await canLaunchUrl(uri)) {
@@ -1804,255 +1699,90 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
   }
 }
 
-class _BookmarkCard extends StatefulWidget {
-  final Bookmark bookmark;
+class _BookmarkIcon extends StatelessWidget {
+  final String url;
+  final double size;
   final ColorScheme colorScheme;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-  final VoidCallback onCopy;
-  final VoidCallback onTap;
 
-  const _BookmarkCard({
-    required this.bookmark,
+  const _BookmarkIcon({
+    required this.url,
+    required this.size,
     required this.colorScheme,
-    required this.onEdit,
-    required this.onDelete,
-    required this.onCopy,
-    required this.onTap,
   });
 
   @override
-  State<_BookmarkCard> createState() => _BookmarkCardState();
-}
-
-class _BookmarkCardState extends State<_BookmarkCard> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    final uri = Uri.tryParse(widget.bookmark.url);
-    final date = DateTime.parse(widget.bookmark.timestamp);
-    final formattedDate = DateFormat("dd/MMM/yyyy").format(date);
+    final uri = Uri.tryParse(url);
+    final host = uri?.host.replaceAll('www.', '') ?? '';
+    
+    if (host.isEmpty) {
+      return _buildFallback('?');
+    }
 
-    return Material(
-      color: Colors.transparent,
-      child: GestureDetector(
-        onSecondaryTapDown: (details) {
-          ContextMenuOverlay.show(
-            context: context,
-            tapPosition: details.globalPosition,
-            items: [
-              ContextMenuItem(
-                icon: Icons.copy,
-                label: 'Copy Link',
-                onTap: () => widget.onCopy(),
-              ),
-              ContextMenuItem(
-                icon: Icons.edit_rounded,
-                label: 'Edit',
-                onTap: () => widget.onEdit(),
-              ),
-              ContextMenuItem(
-                icon: Icons.delete_forever_rounded,
-                label: 'Delete',
-                iconColor: Theme.of(context).colorScheme.error,
-                onTap: () => widget.onDelete(),
-              ),
-            ],
-          );
-        },
-        child: InkWell(
-          onTap: widget.onTap,
-          splashColor: widget.colorScheme.primary.withAlpha(30),
-          child: MouseRegion(
-            onEnter: (_) => setState(() => _isHovered = true),
-            onExit: (_) => setState(() => _isHovered = false),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 0),
-              width: 280,
-              margin: const EdgeInsets.only(bottom: 2),
-              decoration: BoxDecoration(
-                color:
-                    _isHovered
-                        ? widget.colorScheme.primary.withAlpha(50)
-                        : widget.colorScheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Stack(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Link Preview
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(8),
-                        ),
-                        child: AnyLinkPreview(
-                          link: widget.bookmark.url,
-                          displayDirection: UIDirection.uiDirectionVertical,
-                          showMultimedia: true,
-                          bodyMaxLines: 2,
-                          bodyTextOverflow: TextOverflow.ellipsis,
-                          titleStyle: TextStyle(
-                            color: widget.colorScheme.onSurface,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                          bodyStyle: TextStyle(
-                            color: widget.colorScheme.onSurface.withAlpha(150),
-                            fontSize: 12,
-                          ),
-                          errorBody: 'No preview available',
-                          errorTitle: 'Error loading preview',
-                          errorWidget: Container(
-                            height: 100,
-                            color: widget.colorScheme.surfaceContainerLow,
-                            child: Center(
-                              child: Icon(
-                                Icons.link_rounded,
-                                color: widget.colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                          cache: const Duration(days: 7),
-                          backgroundColor:
-                              _isHovered
-                                  ? widget.colorScheme.primary.withAlpha(50)
-                                  : widget.colorScheme.surfaceContainerHigh,
-                          borderRadius: 0,
-                          removeElevation: true,
-                          onTap: widget.onTap,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // URL and date
-                            Row(
-                              children: [
-                                if (uri != null)
-                                  Container(
-                                    width: 16,
-                                    height: 16,
-                                    margin: const EdgeInsets.only(right: 4),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(3),
-                                      child: Image.network(
-                                        'https://www.google.com/s2/favicons?domain=${uri.host}&sz=64',
-                                        width: 16,
-                                        height: 16,
-                                        errorBuilder:
-                                            (_, __, ___) => Icon(
-                                              Icons.link_rounded,
-                                              size: 12,
-                                              color: widget.colorScheme.primary,
-                                            ),
-                                      ),
-                                    ),
-                                  ),
-                                Expanded(
-                                  child: Text(
-                                    widget.bookmark.url,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall?.copyWith(
-                                      color: widget.colorScheme.onSurface.withAlpha(
-                                        150,
-                                      ),
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            // Date and tags
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  formattedDate,
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.bodySmall?.copyWith(
-                                    color: widget.colorScheme.onSurface.withAlpha(
-                                      150,
-                                    ),
-                                  ),
-                                ),
-                                if (widget.bookmark.tags.isNotEmpty) ...[
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                    ),
-                                    child: Text(
-                                      '|',
-                                      style: TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    height: 18,
-                                    child: SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      child: Row(
-                                        children:
-                                            widget.bookmark.tags
-                                                .map(
-                                                  (tag) => Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                          right: 4,
-                                                        ),
-                                                    child: Text(
-                                                      '#$tag',
-                                                      style: TextStyle(
-                                                        fontSize: 11,
-                                                        color:
-                                                            widget
-                                                                .colorScheme
-                                                                .primary,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                )
-                                                .toList(),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Visibility(
-                      visible: _isHovered,
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.delete_forever_rounded,
-                          size: 20,
-                          color: widget.colorScheme.error,
-                        ),
-                        onPressed: widget.onDelete,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(size * 0.2),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withAlpha(50),
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size * 0.2 - 1),
+        child: Image.network(
+          'https://www.google.com/s2/favicons?domain=${uri!.host}&sz=32',
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => _buildFallback(host[0].toUpperCase()),
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return _buildFallback(host[0].toUpperCase());
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFallback(String initial) {
+    // Generate a consistent color based on the initial
+    final List<Color> colors = [
+      Colors.blue,
+      Colors.red,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.indigo,
+      Colors.pink,
+      Colors.amber,
+      Colors.cyan,
+    ];
+    
+    final colorIndex = initial.codeUnitAt(0) % colors.length;
+    final baseColor = colors[colorIndex];
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: baseColor.withAlpha(30),
+        borderRadius: BorderRadius.circular(size * 0.2),
+        border: Border.all(
+          color: baseColor.withAlpha(50),
+          width: 1,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            color: baseColor,
+            fontWeight: FontWeight.bold,
+            fontSize: size * 0.5,
           ),
         ),
       ),
@@ -2086,7 +1816,6 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
 
   @override
   Widget build(BuildContext context) {
-    final uri = Uri.tryParse(widget.bookmark.url);
     final date = DateTime.parse(widget.bookmark.timestamp);
     final formattedDate = DateFormat("dd/MMM/yyyy - HH:mm").format(date);
 
@@ -2131,45 +1860,17 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
               );
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Ícono de bookmark (favicon)
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: widget.colorScheme.surfaceContainer,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Material(
-                        shape: const CircleBorder(),
-                        color: Colors.transparent,
-                        child: Center(
-                          child: uri != null
-                              ? Image.network(
-                                'https://www.google.com/s2/favicons?domain=${uri.host}&sz=64',
-                                width: 32,
-                                height: 32,
-                                errorBuilder: (_, __, ___) => Icon(
-                                  Icons.link_rounded,
-                                  size: 32,
-                                  color: widget.colorScheme.primary,
-                                ),
-                              )
-                              : Icon(
-                                Icons.link_rounded,
-                                size: 28,
-                                color: widget.colorScheme.primary,
-                              ),
-                        ),
-                      ),
-                    ),
+                  _BookmarkIcon(
+                    url: widget.bookmark.url,
+                    size: 32,
+                    colorScheme: widget.colorScheme,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   // Título y detalles
                   Expanded(
                     child: Column(
@@ -2180,9 +1881,9 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.bold,
                             color: widget.colorScheme.onSurface,
-                            fontSize: 14,
+                            fontSize: 15,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -2191,51 +1892,46 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: widget.colorScheme.onSurface.withAlpha(150),
+                            color: widget.colorScheme.onSurface.withAlpha(130),
                             fontSize: 12,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         Row(
                           children: [
                             Icon(
-                              Icons.schedule_rounded,
+                              Icons.access_time_rounded,
                               size: 14,
                               color: widget.colorScheme.primary,
                             ),
-                            const SizedBox(width: 2),
+                            const SizedBox(width: 4),
                             Text(
                               formattedDate,
                               style: TextStyle(
-                                color: widget.colorScheme.onSurface.withAlpha(150),
-                                fontSize: 12,
+                                color: widget.colorScheme.onSurface.withAlpha(130),
+                                fontSize: 11,
                               ),
                             ),
-                            if (widget.bookmark.tags.isNotEmpty) ...[
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                child: Text(
-                                  '|',
-                                  style: TextStyle(
-                                    color: widget.colorScheme.onSurface.withAlpha(150),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(
-                                height: 18,
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
+                            const SizedBox(width: 8),
+                              Expanded(
+                                child: SizedBox(
+                                  height: 20,
+                                  child: ListView(
+                                    scrollDirection: Axis.horizontal,
                                     children: widget.bookmark.tags.map(
-                                      (tag) => Padding(
-                                        padding: const EdgeInsets.only(right: 4),
+                                      (tag) => Container(
+                                        margin: const EdgeInsets.only(right: 6),
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: widget.colorScheme.primary.withAlpha(20),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
                                         child: Text(
-                                          '#$tag',
+                                          tag,
                                           style: TextStyle(
-                                            fontSize: 12,
+                                            fontSize: 10,
                                             color: widget.colorScheme.primary,
-                                            fontWeight: FontWeight.w500,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                         ),
                                       ),
@@ -2243,33 +1939,54 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
                                   ),
                                 ),
                               ),
-                            ],
+                            
                           ],
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 8),
                   // Botón eliminar
                   Opacity(
                     opacity: _isHovering ? 1.0 : 0.0,
                     child: IgnorePointer(
                       ignoring: !_isHovering,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.delete_forever_rounded,
-                            color: widget.colorScheme.error,
-                            size: 18,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CustomTooltip(
+                            message: 'Edit',
+                            builder: (context, isHovering) => IconButton(
+                              icon: Icon(
+                                Icons.edit_outlined,
+                                color: widget.colorScheme.onSurfaceVariant,
+                                size: 18,
+                              ),
+                              onPressed: widget.onEdit,
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
                           ),
-                          onPressed: widget.onDelete,
-                          constraints: const BoxConstraints(
-                            minWidth: 32,
-                            minHeight: 32,
+                          CustomTooltip(
+                            message: 'Delete',
+                            builder: (context, isHovering) => IconButton(
+                              icon: Icon(
+                                Icons.delete_outline_rounded,
+                                color: widget.colorScheme.error,
+                                size: 18,
+                              ),
+                              onPressed: widget.onDelete,
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
                           ),
-                          padding: EdgeInsets.zero,
-                        ),
+                        ],
                       ),
                     ),
                   ),
