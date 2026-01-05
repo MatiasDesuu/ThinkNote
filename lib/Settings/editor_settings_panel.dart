@@ -34,6 +34,7 @@ class EditorSettingsCache {
   bool? _hideTabsInImmersive;
   bool? _expandNotebooksOnSelection;
   bool? _expandNotebooksOnNoteOpen;
+  bool? _expandNotebooksOnLinkOpen;
   double? _wordsPerSecond;
   bool? _showBottomBar;
 
@@ -62,6 +63,9 @@ class EditorSettingsCache {
   bool get expandNotebooksOnNoteOpen =>
       _expandNotebooksOnNoteOpen ??
       EditorSettings.defaultExpandNotebooksOnNoteOpen;
+  bool get expandNotebooksOnLinkOpen =>
+      _expandNotebooksOnLinkOpen ??
+      EditorSettings.defaultExpandNotebooksOnLinkOpen;
   double get wordsPerSecond =>
       _wordsPerSecond ?? EditorSettings.defaultWordsPerSecond;
   bool get showBottomBar => _showBottomBar ?? EditorSettings.defaultShowBottomBar;
@@ -84,6 +88,7 @@ class EditorSettingsCache {
         EditorSettings.getHideTabsInImmersive(),
         EditorSettings.getExpandNotebooksOnSelection(),
         EditorSettings.getExpandNotebooksOnNoteOpen(),
+        EditorSettings.getExpandNotebooksOnLinkOpen(),
         EditorSettings.getWordsPerSecond(),
         EditorSettings.getShowBottomBar(),
       ]);
@@ -101,8 +106,9 @@ class EditorSettingsCache {
       _hideTabsInImmersive = results[10] as bool;
       _expandNotebooksOnSelection = results[11] as bool;
       _expandNotebooksOnNoteOpen = results[12] as bool;
-      _wordsPerSecond = results[13] as double;
-      _showBottomBar = results[14] as bool;
+      _expandNotebooksOnLinkOpen = results[13] as bool;
+      _wordsPerSecond = results[14] as double;
+      _showBottomBar = results[15] as bool;
       _isInitialized = true;
     } catch (e) {
       print('Error initializing editor settings cache: $e');
@@ -184,6 +190,10 @@ class EditorSettingsCache {
     _expandNotebooksOnNoteOpen = expand;
   }
 
+  void updateExpandNotebooksOnLinkOpen(bool expand) {
+    _expandNotebooksOnLinkOpen = expand;
+  }
+
   void updateWordsPerSecond(double wps) {
     _wordsPerSecond = wps;
   }
@@ -211,6 +221,8 @@ class EditorSettingsEvents {
       StreamController<bool>.broadcast();
   static final _expandNotebooksOnNoteOpenController =
       StreamController<bool>.broadcast();
+  static final _expandNotebooksOnLinkOpenController =
+      StreamController<bool>.broadcast();
   static final _wordsPerSecondController = StreamController<double>.broadcast();
   static final _showBottomBarController = StreamController<bool>.broadcast();
 
@@ -234,6 +246,8 @@ class EditorSettingsEvents {
       _expandNotebooksOnSelectionController.stream;
   static Stream<bool> get expandNotebooksOnNoteOpenStream =>
       _expandNotebooksOnNoteOpenController.stream;
+  static Stream<bool> get expandNotebooksOnLinkOpenStream =>
+      _expandNotebooksOnLinkOpenController.stream;
   static Stream<double> get wordsPerSecondStream =>
       _wordsPerSecondController.stream;
   static Stream<bool> get showBottomBarStream =>
@@ -287,6 +301,10 @@ class EditorSettingsEvents {
     _expandNotebooksOnNoteOpenController.add(expand);
   }
 
+  static void notifyExpandNotebooksOnLinkOpenChanged(bool expand) {
+    _expandNotebooksOnLinkOpenController.add(expand);
+  }
+
   static void notifyWordsPerSecondChanged(double wps) {
     _wordsPerSecondController.add(wps);
   }
@@ -308,6 +326,7 @@ class EditorSettingsEvents {
     _hideTabsInImmersiveController.close();
     _expandNotebooksOnSelectionController.close();
     _expandNotebooksOnNoteOpenController.close();
+    _expandNotebooksOnLinkOpenController.close();
     _wordsPerSecondController.close();
   }
 }
@@ -328,6 +347,8 @@ class EditorSettings {
       'expand_notebooks_on_selection';
   static const String _expandNotebooksOnNoteOpenKey =
       'expand_notebooks_on_note_open';
+  static const String _expandNotebooksOnLinkOpenKey =
+      'expand_notebooks_on_link_open';
   static const String _wordsPerSecondKey = 'words_per_second';
   static const String _showBottomBarKey = 'show_editor_bottom_bar';
   static const double defaultLineSpacing = 1.0;
@@ -345,6 +366,7 @@ class EditorSettings {
   static const bool defaultHideTabsInImmersive = false;
   static const bool defaultExpandNotebooksOnSelection = true;
   static const bool defaultExpandNotebooksOnNoteOpen = true;
+  static const bool defaultExpandNotebooksOnLinkOpen = true;
   static const double defaultWordsPerSecond = 5.0;
   static const bool defaultShowBottomBar = true;
 
@@ -565,6 +587,21 @@ class EditorSettings {
     EditorSettingsEvents.notifyExpandNotebooksOnNoteOpenChanged(value);
   }
 
+  // Get expand notebooks on link open setting
+  static Future<bool> getExpandNotebooksOnLinkOpen() async {
+    return await PlatformSettings.get(
+      _expandNotebooksOnLinkOpenKey,
+      defaultExpandNotebooksOnLinkOpen,
+    );
+  }
+
+  // Save expand notebooks on link open setting
+  static Future<void> setExpandNotebooksOnLinkOpen(bool value) async {
+    await PlatformSettings.set(_expandNotebooksOnLinkOpenKey, value);
+    EditorSettingsCache.instance.updateExpandNotebooksOnLinkOpen(value);
+    EditorSettingsEvents.notifyExpandNotebooksOnLinkOpenChanged(value);
+  }
+
   // Get words per second setting
   static Future<double> getWordsPerSecond() async {
     return await PlatformSettings.get(_wordsPerSecondKey, defaultWordsPerSecond);
@@ -616,6 +653,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
   bool _hideTabsInImmersive = false;
   bool _expandNotebooksOnSelection = true;
   bool _expandNotebooksOnNoteOpen = true;
+  bool _expandNotebooksOnLinkOpen = true;
   double _wordsPerSecond = 5.0;
   bool _showBottomBar = true;
   bool _isLoading = true;
@@ -642,6 +680,8 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
         await EditorSettings.getExpandNotebooksOnSelection();
     final expandNotebooksOnNoteOpen =
         await EditorSettings.getExpandNotebooksOnNoteOpen();
+    final expandNotebooksOnLinkOpen =
+        await EditorSettings.getExpandNotebooksOnLinkOpen();
     final wordsPerSecond = await EditorSettings.getWordsPerSecond();
     final showBottomBar = await EditorSettings.getShowBottomBar();
     setState(() {
@@ -658,6 +698,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
       _hideTabsInImmersive = hideTabsInImmersive;
       _expandNotebooksOnSelection = expandNotebooksOnSelection;
       _expandNotebooksOnNoteOpen = expandNotebooksOnNoteOpen;
+      _expandNotebooksOnLinkOpen = expandNotebooksOnLinkOpen;
       _wordsPerSecond = wordsPerSecond;
       _showBottomBar = showBottomBar;
       _isLoading = false;
@@ -742,6 +783,12 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
     setState(() => _expandNotebooksOnNoteOpen = value);
     await EditorSettings.setExpandNotebooksOnNoteOpen(value);
     EditorSettingsEvents.notifyExpandNotebooksOnNoteOpenChanged(value);
+  }
+
+  Future<void> _updateExpandNotebooksOnLinkOpen(bool value) async {
+    setState(() => _expandNotebooksOnLinkOpen = value);
+    await EditorSettings.setExpandNotebooksOnLinkOpen(value);
+    EditorSettingsEvents.notifyExpandNotebooksOnLinkOpenChanged(value);
   }
 
   Future<void> _updateWordsPerSecond(double value) async {
@@ -1072,6 +1119,37 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                     Switch(
                       value: _expandNotebooksOnNoteOpen,
                       onChanged: _updateExpandNotebooksOnNoteOpen,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Expand Notebooks on Link Open
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Auto-expand notebooks when opening links',
+                            style: textStyle,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Automatically expand parent folders when opening notebook links',
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: _expandNotebooksOnLinkOpen,
+                      onChanged: _updateExpandNotebooksOnLinkOpen,
                     ),
                   ],
                 ),

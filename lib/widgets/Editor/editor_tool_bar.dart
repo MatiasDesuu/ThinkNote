@@ -144,6 +144,12 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                 ),
                 _buildTooltipIconButton(
                   context,
+                  icon: const Icon(Icons.book_rounded, size: 20),
+                  onPressed: () => widget.onFormatTap(FormatType.notebookLink),
+                  tooltipMessage: 'Notebook Link',
+                ),
+                _buildTooltipIconButton(
+                  context,
                   icon: const Icon(Icons.link_rounded, size: 20),
                   onPressed: () => widget.onFormatTap(FormatType.link),
                   tooltipMessage: 'Hyperlink',

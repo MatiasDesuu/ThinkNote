@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import '../../database/models/note.dart';
+import '../../database/models/notebook.dart';
 import '../../database/database_helper.dart';
 import '../../database/repositories/note_repository.dart';
 import '../../database/repositories/notebook_repository.dart';
@@ -9,6 +10,7 @@ import '../../database/models/notebook_icons.dart';
 import 'link_handler.dart';
 import 'format_handler.dart';
 import '../context_menu.dart';
+import '../custom_snackbar.dart';
 
 /// A unified text handler that processes ALL types of text formatting:
 /// - Note links ([[Note Title]])
@@ -19,9 +21,11 @@ class UnifiedTextHandler extends StatelessWidget {
   final String text;
   final TextStyle textStyle;
   final Function(Note, bool)? onNoteLinkTap;
+  final Function(Notebook, bool)? onNotebookLinkTap;
   final Function(String)? onTextChanged;
   final TextEditingController? controller;
   final bool enableNoteLinkDetection;
+  final bool enableNotebookLinkDetection;
   final bool enableLinkDetection;
   final bool enableListDetection;
   final bool enableFormatDetection;
@@ -32,9 +36,11 @@ class UnifiedTextHandler extends StatelessWidget {
     required this.text,
     required this.textStyle,
     this.onNoteLinkTap,
+    this.onNotebookLinkTap,
     this.onTextChanged,
     this.controller,
     this.enableNoteLinkDetection = true,
+    this.enableNotebookLinkDetection = true,
     this.enableLinkDetection = true,
     this.enableListDetection = true,
     this.enableFormatDetection = true,
@@ -210,8 +216,7 @@ class UnifiedTextHandler extends StatelessWidget {
             text: showNoteLinkBrackets ? segment.originalText : title,
             textStyle: baseStyle.copyWith(
               color: Theme.of(context).colorScheme.primary,
-              decoration: TextDecoration.underline,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
             onTap:
                 (position) =>
@@ -219,6 +224,31 @@ class UnifiedTextHandler extends StatelessWidget {
             onMiddleClick:
                 (position) =>
                     _handleNoteLinkTapAsync(title, context, true, position),
+          ),
+        );
+
+      case FormatType.notebookLink:
+        if (!enableNotebookLinkDetection) {
+          return TextSpan(text: segment.originalText, style: baseStyle);
+        }
+
+        // Extract name from [[notebook:Name]]
+        final name = segment.text.substring(11, segment.text.length - 2).trim();
+
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: _NoteLinkWidget(
+            text: showNoteLinkBrackets ? segment.originalText : name,
+            textStyle: baseStyle.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+            onTap:
+                (position) =>
+                    _handleNotebookLinkTapAsync(name, context, false, position),
+            onMiddleClick:
+                (position) =>
+                    _handleNotebookLinkTapAsync(name, context, true, position),
           ),
         );
 
@@ -411,6 +441,83 @@ class UnifiedTextHandler extends StatelessWidget {
     onTextChanged!(newText);
   }
 
+  void _handleNotebookLinkTapAsync(
+    String name,
+    BuildContext context,
+    bool isMiddleClick,
+    Offset position,
+  ) async {
+    final dbHelper = DatabaseHelper();
+    final notebookRepository = NotebookRepository(dbHelper);
+    final allNotebooks = await notebookRepository.getAllNotebooks();
+
+    final matchingNotebooks =
+        allNotebooks
+            .where(
+              (notebook) =>
+                  notebook.name.toLowerCase().trim() == name.toLowerCase(),
+            )
+            .toList();
+
+    if (matchingNotebooks.isEmpty) {
+      if (context.mounted) {
+        CustomSnackbar.show(
+          context: context,
+          message: 'Notebook "$name" not found',
+          type: CustomSnackbarType.error,
+        );
+      }
+      return;
+    }
+
+    if (matchingNotebooks.length == 1) {
+      _handleNotebookLinkTap(matchingNotebooks.first, isMiddleClick);
+    } else {
+      _showNotebookSelectionContextMenu(
+        context,
+        matchingNotebooks,
+        name,
+        isMiddleClick,
+        position,
+      );
+    }
+  }
+
+  void _handleNotebookLinkTap(Notebook notebook, bool isMiddleClick) {
+    if (onNotebookLinkTap != null) {
+      onNotebookLinkTap!(notebook, isMiddleClick);
+    }
+  }
+
+  void _showNotebookSelectionContextMenu(
+    BuildContext context,
+    List<Notebook> notebooks,
+    String name,
+    bool isMiddleClick,
+    Offset position,
+  ) async {
+    final List<ContextMenuItem> menuItems = [];
+
+    for (final notebook in notebooks) {
+      final notebookIcon = _getNotebookIcon(notebook.iconId);
+
+      menuItems.add(
+        ContextMenuItem(
+          icon: notebookIcon,
+          label: notebook.name,
+          onTap: () => _handleNotebookLinkTap(notebook, false),
+          onMiddleClick: () => _handleNotebookLinkTap(notebook, true),
+        ),
+      );
+    }
+
+    ContextMenuOverlay.show(
+      context: context,
+      tapPosition: position,
+      items: menuItems,
+    );
+  }
+
   void _handleNoteLinkTapAsync(
     String title,
     BuildContext context,
@@ -429,6 +536,13 @@ class UnifiedTextHandler extends StatelessWidget {
             .toList();
 
     if (matchingNotes.isEmpty) {
+      if (context.mounted) {
+        CustomSnackbar.show(
+          context: context,
+          message: 'Note "$title" not found',
+          type: CustomSnackbarType.error,
+        );
+      }
       return;
     }
 
@@ -489,7 +603,7 @@ class UnifiedTextHandler extends StatelessWidget {
                     child: Text(
                       note.title,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

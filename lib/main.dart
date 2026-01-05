@@ -1689,6 +1689,19 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     );
   }
 
+  void _onNotebookSelectedFromLink(Notebook notebook) async {
+    setState(() {
+      _selectedNotebook = notebook;
+      _selectedTag = null;
+    });
+    _databaseSidebarKey.currentState?.clearSelectedTag();
+    final expand = await EditorSettings.getExpandNotebooksOnLinkOpen();
+    _databaseSidebarKey.currentState?.handleNotebookSelection(
+      notebook,
+      expand: expand,
+    );
+  }
+
   void _onTrashUpdated() {
     _databaseSidebarKey.currentState?.reloadSidebar();
   }
@@ -2833,6 +2846,20 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       initialEditorCentered: activeTab.isEditorCentered,
       onEditorCenteredChanged: (isEditorCentered) {
         _tabManager.setTabEditorCentered(activeTab, isEditorCentered);
+      },
+      onNotebookLinkTap: _onNotebookSelectedFromLink,
+      onNoteLinkTap: (note, openInNewTab) {
+        if (!openInNewTab) {
+          if (mounted && _editorTabsKey.currentState != null) {
+            _editorTabsKey.currentState!.suppressNextUpdateAnimations();
+          }
+        }
+
+        if (openInNewTab) {
+          _onNoteOpenInNewTab(note);
+        } else {
+          _onNoteSelected(note, forceSameTab: true);
+        }
       },
     );
   }

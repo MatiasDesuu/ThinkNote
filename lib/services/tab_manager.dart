@@ -93,6 +93,35 @@ class TabManager extends ChangeNotifier {
   void assignNoteToActiveTab(Note note) {
     if (_activeTab == null || _activeTab!.note != null) return;
 
+    // Check if note is already open in another tab
+    final existingTabIndex = _tabs.indexWhere(
+      (tab) => tab.note != null && tab.note!.id == note.id,
+    );
+
+    if (existingTabIndex != -1) {
+      // Note is already open, switch to it and remove the empty tab
+      final emptyTab = _activeTab!;
+      _activeTab = _tabs[existingTabIndex];
+      _tabs.remove(emptyTab);
+      _saveTabsToStorage();
+
+      // Dispose empty tab controllers
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        try {
+          emptyTab.noteController.dispose();
+        } catch (e) {
+          // Already disposed
+        }
+        try {
+          emptyTab.titleController.dispose();
+        } catch (e) {
+          // Already disposed
+        }
+        notifyListeners();
+      });
+      return;
+    }
+
     final activeTabIndex = _tabs.indexOf(_activeTab!);
     if (activeTabIndex == -1) return;
 
@@ -128,6 +157,34 @@ class TabManager extends ChangeNotifier {
 
   void replaceNoteInActiveTab(Note note) {
     if (_activeTab == null) return;
+
+    // Check if note is already open in another tab
+    final existingTabIndex = _tabs.indexWhere(
+      (tab) => tab.note != null && tab.note!.id == note.id,
+    );
+
+    if (existingTabIndex != -1 && _tabs[existingTabIndex] != _activeTab) {
+      // Note is already open in another tab. Switch to it and close current tab.
+      final currentTab = _activeTab!;
+      _activeTab = _tabs[existingTabIndex];
+      _tabs.remove(currentTab);
+      _saveTabsToStorage();
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        try {
+          currentTab.noteController.dispose();
+        } catch (e) {
+          // Already disposed
+        }
+        try {
+          currentTab.titleController.dispose();
+        } catch (e) {
+          // Already disposed
+        }
+        notifyListeners();
+      });
+      return;
+    }
 
     final activeTabIndex = _tabs.indexOf(_activeTab!);
     if (activeTabIndex == -1) return;

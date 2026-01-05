@@ -75,6 +75,7 @@ enum FormatType {
   checkboxUnchecked, // [ ] text
   checkboxChecked, // [x] text
   noteLink, // [[text]]
+  notebookLink, // [[notebook:text]]
   link, // [text](url)
   url, // http://...
   horizontalRule, // * * * (horizontal divider line)
@@ -198,6 +199,11 @@ class FormatDetector {
       type: FormatType.code,
       regex: RegExp(r'`(.*?)`', dotAll: true),
       contentExtractor: (m) => m.group(1) ?? '',
+    ),
+    _FormatPattern(
+      type: FormatType.notebookLink,
+      regex: RegExp(r'\[\[notebook:([^\[\]]+)\]\]'),
+      contentExtractor: (m) => m.group(0)!, // Keep brackets
     ),
     _FormatPattern(
       type: FormatType.noteLink,
@@ -409,6 +415,13 @@ class FormatDetector {
       case FormatType.noteLink:
         style = baseStyle.copyWith(
           color: Theme.of(context).colorScheme.primary,
+          decoration: TextDecoration.underline,
+          fontWeight: FontWeight.w500,
+        );
+        break;
+      case FormatType.notebookLink:
+        style = baseStyle.copyWith(
+          color: Theme.of(context).colorScheme.secondary,
           decoration: TextDecoration.underline,
           fontWeight: FontWeight.w500,
         );
@@ -778,6 +791,9 @@ class FormatUtils {
       case FormatType.noteLink:
         wrappedText = '[[$selectedText]]';
         break;
+      case FormatType.notebookLink:
+        wrappedText = '[[notebook:$selectedText]]';
+        break;
       case FormatType.link:
         wrappedText = '[$selectedText]()';
         break;
@@ -872,6 +888,8 @@ class FormatUtils {
         return RegExp(r'^-?\[x\]\s+.*$').hasMatch(text);
       case FormatType.noteLink:
         return RegExp(r'^\[\[.*\]\]$').hasMatch(text);
+      case FormatType.notebookLink:
+        return RegExp(r'^\[\[notebook:.*\]\]$').hasMatch(text);
       case FormatType.link:
         return RegExp(r'^\[.*\]\(.*\)$').hasMatch(text);
       case FormatType.url:

@@ -8,6 +8,7 @@ import '../../scriptmode_handler.dart';
 import '../../Settings/editor_settings_panel.dart';
 import '../../animations/animations_handler.dart';
 import '../../database/models/note.dart';
+import '../../database/models/notebook.dart';
 import '../../database/database_helper.dart';
 import '../../database/repositories/note_repository.dart';
 import '../../shortcuts_handler.dart';
@@ -52,6 +53,8 @@ class NotaEditor extends StatefulWidget {
   onEditorCenteredChanged; // Callback cuando cambia el centrado
   final VoidCallback? onNextNote;
   final VoidCallback? onPreviousNote;
+  final Function(Notebook)? onNotebookLinkTap;
+  final Function(Note, bool)? onNoteLinkTap;
 
   const NotaEditor({
     super.key,
@@ -71,6 +74,8 @@ class NotaEditor extends StatefulWidget {
     this.onEditorCenteredChanged,
     this.onNextNote,
     this.onPreviousNote,
+    this.onNotebookLinkTap,
+    this.onNoteLinkTap,
   });
 
   @override
@@ -1025,6 +1030,11 @@ class _NotaEditorState extends State<NotaEditor>
           suffix = ']]';
           cursorOffset = 2;
           break;
+        case FormatType.notebookLink:
+          prefix = '[[notebook:';
+          suffix = ']]';
+          cursorOffset = 11;
+          break;
         case FormatType.link:
           prefix = '[';
           suffix = ']()';
@@ -1750,13 +1760,27 @@ class _NotaEditorState extends State<NotaEditor>
                   onNoteLinkTap: (note, isMiddleClick) {
                     _handleNoteLinkTap(note, isMiddleClick);
                   },
+                  onNotebookLinkTap: (notebook, isMiddleClick) {
+                    _handleNotebookLinkTap(notebook, isMiddleClick);
+                  },
                 ),
       ),
     );
   }
 
+  void _handleNotebookLinkTap(Notebook notebook, bool isMiddleClick) {
+    if (widget.onNotebookLinkTap != null) {
+      widget.onNotebookLinkTap!(notebook);
+    }
+  }
+
   /// Handles note link taps - opens note in current tab or new tab
   void _handleNoteLinkTap(Note targetNote, bool openInNewTab) {
+    if (widget.onNoteLinkTap != null) {
+      widget.onNoteLinkTap!(targetNote, openInNewTab);
+      return;
+    }
+
     if (widget.tabManager == null) return;
 
     // Skip if the note doesn't exist (notebookId -1 indicates a dummy note)

@@ -889,8 +889,9 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
 
         final pathSegments = uri.pathSegments;
         final postIdIndex = pathSegments.indexOf('comments');
-        if (postIdIndex == -1 || postIdIndex + 1 >= pathSegments.length)
+        if (postIdIndex == -1 || postIdIndex + 1 >= pathSegments.length) {
           return null;
+        }
 
         final postId = pathSegments[postIdIndex + 1];
         final apiUrl = 'https://www.reddit.com/comments/$postId.json';

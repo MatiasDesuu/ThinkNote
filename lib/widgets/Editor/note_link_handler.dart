@@ -6,6 +6,7 @@ import '../../database/repositories/notebook_repository.dart';
 import '../../database/database_helper.dart';
 import '../../database/models/notebook_icons.dart';
 import '../context_menu.dart';
+import '../custom_snackbar.dart';
 
 /// A widget that detects and makes note links clickable in text content
 /// Detects patterns like [[Note Title]] and makes them clickable
@@ -92,8 +93,7 @@ class NoteLinkHandler extends StatelessWidget {
               textStyle: textStyle.copyWith(
                 color: Theme.of(context).colorScheme.primary,
                 decorationColor: Theme.of(context).colorScheme.primary,
-                decoration: TextDecoration.underline,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
               onTap:
                   (position) => _handleNoteLinkSelection(
@@ -123,8 +123,7 @@ class NoteLinkHandler extends StatelessWidget {
               textStyle: textStyle.copyWith(
                 color: Theme.of(context).colorScheme.primary,
                 decorationColor: Theme.of(context).colorScheme.primary,
-                decoration: TextDecoration.underline,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
               onTap:
                   (position) => _handleNoteLinkSelection(
@@ -167,6 +166,11 @@ class NoteLinkHandler extends StatelessWidget {
   ) {
     // If no matching notes exist, simply do nothing
     if (matchingNotes.isEmpty) {
+      CustomSnackbar.show(
+        context: context,
+        message: 'Note "$title" not found',
+        type: CustomSnackbarType.error,
+      );
       return;
     }
 
@@ -230,7 +234,7 @@ class NoteLinkHandler extends StatelessWidget {
                     child: Text(
                       note.title,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -479,8 +483,7 @@ class CombinedTextHandler extends StatelessWidget {
               textStyle: textStyle.copyWith(
                 color: Theme.of(context).colorScheme.primary,
                 decorationColor: Theme.of(context).colorScheme.primary,
-                decoration: TextDecoration.underline,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
               onTap:
                   (position) => _handleCombinedNoteLinkSelection(
@@ -510,8 +513,7 @@ class CombinedTextHandler extends StatelessWidget {
               textStyle: textStyle.copyWith(
                 color: Theme.of(context).colorScheme.primary,
                 decorationColor: Theme.of(context).colorScheme.primary,
-                decoration: TextDecoration.underline,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
               onTap:
                   (position) => _handleCombinedNoteLinkSelection(
@@ -567,6 +569,11 @@ class CombinedTextHandler extends StatelessWidget {
   ) {
     // If no matching notes exist, simply do nothing
     if (matchingNotes.isEmpty) {
+      CustomSnackbar.show(
+        context: context,
+        message: 'Note "$title" not found',
+        type: CustomSnackbarType.error,
+      );
       return;
     }
 
@@ -630,7 +637,7 @@ class CombinedTextHandler extends StatelessWidget {
                     child: Text(
                       note.title,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
