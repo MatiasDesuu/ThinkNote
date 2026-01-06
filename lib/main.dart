@@ -2133,6 +2133,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                                     (tab) => _tabManager.togglePin(tab),
                                 onNewTab: _onNewTab,
                                 onTabReorder: _onTabReorder,
+                                onOpenNotebook: _onOpenNotebookFromTab,
                               ),
                             // Editor content
                             Expanded(child: _buildEditorContent()),
@@ -2661,6 +2662,17 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
         debugPrint('Error loading parent notebook: $e');
       }
     }
+  }
+
+  void _onOpenNotebookFromTab(EditorTab tab) {
+    if (tab.note == null) return;
+
+    // Expand panels if they are collapsed
+    _sidebarKey.currentState?.expandPanel();
+    _notesPanelKey.currentState?.expandPanel();
+
+    // Select the note, which will trigger notebook synchronization
+    _onNoteSelected(tab.note!);
   }
 
   Widget _buildEditorContent() {

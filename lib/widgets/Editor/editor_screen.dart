@@ -1763,6 +1763,12 @@ class _NotaEditorState extends State<NotaEditor>
                   onNotebookLinkTap: (notebook, isMiddleClick) {
                     _handleNotebookLinkTap(notebook, isMiddleClick);
                   },
+                  onTextChanged: (newText) {
+                    widget.noteController.value = widget.noteController.value.copyWith(
+                      text: newText,
+                      selection: TextSelection.collapsed(offset: newText.length),
+                    );
+                  },
                 ),
       ),
     );

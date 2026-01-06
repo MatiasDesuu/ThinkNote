@@ -74,24 +74,33 @@ class ListHandler extends StatelessWidget {
     ListItem listItem,
     int lineIndex,
   ) {
-    final List<TextSpan> children = [];
+    final List<InlineSpan> children = [];
 
-    // Add checkbox symbol with consistent styling using simple text characters
+    if (listItem.indentLevel > 0) {
+      children.add(
+        TextSpan(text: '  ' * listItem.indentLevel, style: textStyle),
+      );
+    }
+
     children.add(
-      TextSpan(
-        text: listItem.isChecked ? '▣ ' : '☐ ',
-        style: textStyle.copyWith(
-          fontSize: textStyle.fontSize, // Same size as regular text
-          fontWeight: FontWeight.normal, // Normal weight to match text
-          height: 1.0, // Consistent line height
-          color:
+      WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: GestureDetector(
+          onTap: () => _toggleCheckbox(lineIndex, listItem),
+          child: Padding(
+            padding: const EdgeInsets.only(right: 6.0),
+            child: Icon(
               listItem.isChecked
-                  ? Colors.grey
-                  : textStyle.color, // Subtle color for checkbox
+                  ? Icons.check_box_rounded
+                  : Icons.check_box_outline_blank_rounded,
+              size: (textStyle.fontSize ?? 16.0) + 4.0,
+              color:
+                  listItem.isChecked
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
         ),
-        recognizer:
-            TapGestureRecognizer()
-              ..onTap = () => _toggleCheckbox(lineIndex, listItem),
       ),
     );
 

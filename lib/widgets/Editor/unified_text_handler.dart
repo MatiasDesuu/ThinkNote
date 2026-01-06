@@ -263,22 +263,36 @@ class UnifiedTextHandler extends StatelessWidget {
         final isChecked = segment.type == FormatType.checkboxChecked;
         // Extract content: "- [ ] Content" -> "Content"
         final match = RegExp(
-          r'^\s*-\s?\[\s*[xX\s]?\s*\]\s*(.+)$',
+          r'^(\s*)-\s?\[\s*[xX\s]?\s*\]\s*(.*)$',
           multiLine: true,
         ).firstMatch(segment.originalText);
-        final content = match?.group(1) ?? '';
+        final indent = match?.group(1) ?? '';
+        final content = match?.group(2) ?? '';
 
         return TextSpan(
           children: [
-            TextSpan(
-              text: isChecked ? '▣ ' : '☐ ', // Custom checkbox symbol
-              style: baseStyle.copyWith(
-                color: isChecked ? Colors.grey : baseStyle.color,
-                fontWeight: FontWeight.normal,
+            if (indent.isNotEmpty) TextSpan(text: indent, style: baseStyle),
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => _toggleCheckbox(segment, isChecked),
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 6.0),
+                    child: Icon(
+                      isChecked
+                          ? Icons.check_box_rounded
+                          : Icons.check_box_outline_blank_rounded,
+                      size: (baseStyle.fontSize ?? 16.0) + 4.0,
+                      color:
+                          isChecked
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
               ),
-              recognizer:
-                  TapGestureRecognizer()
-                    ..onTap = () => _toggleCheckbox(segment, isChecked),
             ),
             ..._buildNestedSpans(
               context,

@@ -52,3 +52,4 @@ app.*.map.json
 build_and_release.bat
 release_response.json
 build_and_release.sh
+releases.json

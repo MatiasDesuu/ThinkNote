@@ -446,11 +446,6 @@ class EditorTabsState extends State<EditorTabs> {
                               }
 
                               return Flexible(
-                                // Use a stable key per tab so Flutter won't reuse
-                                // the underlying AnimatedContainer state when the
-                                // list shifts; this prevents unrelated tabs from
-                                // briefly animating collapse/expand when a tab
-                                // is removed.
                                 key: ValueKey(tabKey),
                                 child: AnimatedContainer(
                                   width: targetWidth,
@@ -1040,7 +1035,7 @@ class EditorTabsState extends State<EditorTabs> {
       if (tab.note != null && widget.onOpenNotebook != null)
         ContextMenuItem(
           icon: Icons.folder_open_rounded,
-          label: 'Open Notebook',
+          label: 'Locate in Notebook',
           onTap: () {
             widget.onOpenNotebook!(tab);
           },
