@@ -19,6 +19,7 @@ class BookmarksHandler {
 
   // Constant for hidden tag
   static const String hiddenTag = 'hidden';
+  static const String untaggedTag = 'untagged_filter';
 
   final LinksHandlerDB _linksHandler = LinksHandlerDB();
   final TagsHandlerDB _tagsHandler = TagsHandlerDB();
@@ -54,6 +55,8 @@ class BookmarksHandler {
     return filtered;
   }
 
+  bool get hasBookmarks => _bookmarks.isNotEmpty;
+
   List<String> get allTags => _allTags;
   bool get isOldestFirst => _isOldestFirst;
   bool get isSearching => _isSearching;
@@ -64,9 +67,8 @@ class BookmarksHandler {
     _isOldestFirst = !_isOldestFirst;
   }
 
-  void setSelectedTag(String? tag) async {
+  void setSelectedTag(String? tag) {
     _selectedTag = tag;
-    await loadData(); // Recargar los datos cuando se cambia el tag seleccionado
   }
 
   void toggleSearch() {
@@ -233,6 +235,10 @@ class BookmarksHandler {
           if (tags.contains(_selectedTag)) {
             tagFiltered.add(bookmark);
           }
+        } else if (_selectedTag == untaggedTag) {
+          if (tags.isEmpty) {
+            tagFiltered.add(bookmark);
+          }
         } else {
           // Para otros tags, mostrar los que tienen el tag y NO tienen el tag hidden
           if (tags.contains(_selectedTag) && !tags.contains(hiddenTag)) {
@@ -322,7 +328,19 @@ class BookmarksScreenState extends State<BookmarksScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                label == BookmarksHandler.hiddenTag ? (isSelected ? Icons.visibility_rounded : Icons.visibility_off_rounded) : (isSelected ? Icons.label_rounded : Icons.label_outline_rounded),
+                label == 'All'
+                    ? Icons.all_inclusive_rounded
+                    : label == BookmarksHandler.hiddenTag
+                        ? (isSelected
+                            ? Icons.visibility_rounded
+                            : Icons.visibility_off_rounded)
+                        : label == 'Untagged'
+                            ? (isSelected
+                                ? Icons.label_off_rounded
+                                : Icons.label_off_outlined)
+                            : (isSelected
+                                ? Icons.label_rounded
+                                : Icons.label_outline_rounded),
                 size: 20,
                 color: colorScheme.primary,
               ),
@@ -1014,7 +1032,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                           ? 'Show newest first'
                           : 'Show oldest first',
                 ),
-                if (tags.isNotEmpty)
+                if (_handler.hasBookmarks || _handler.selectedTag != null)
                   Expanded(
                     child: SizedBox(
                       height: 36,
@@ -1027,9 +1045,23 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                               label: 'All',
                               isSelected: _handler.selectedTag == null,
                               onTap: () async {
-                                setState(() {
-                                  _handler.setSelectedTag(null);
-                                });
+                                _handler.setSelectedTag(null);
+                                await loadData();
+                              },
+                              colorScheme: colorScheme,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: _buildTagChip(
+                              label: 'Untagged',
+                              isSelected: _handler.selectedTag == BookmarksHandler.untaggedTag,
+                              onTap: () async {
+                                _handler.setSelectedTag(
+                                  _handler.selectedTag == BookmarksHandler.untaggedTag 
+                                      ? null 
+                                      : BookmarksHandler.untaggedTag
+                                );
                                 await loadData();
                               },
                               colorScheme: colorScheme,
@@ -1042,9 +1074,9 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                                 label: tag,
                                 isSelected: _handler.selectedTag == tag,
                                 onTap: () async {
-                                  setState(() {
-                                    _handler.setSelectedTag(_handler.selectedTag == tag ? null : tag);
-                                  });
+                                  _handler.setSelectedTag(
+                                    _handler.selectedTag == tag ? null : tag
+                                  );
                                   await loadData();
                                 },
                                 colorScheme: colorScheme,

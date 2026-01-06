@@ -8,6 +8,7 @@ class LinksHandlerDB {
 
   // Constant for hidden tag
   static const String hiddenTag = 'hidden';
+  static const String untaggedTag = 'untagged_filter';
 
   final DatabaseService _databaseService = DatabaseService();
   List<Bookmark> _bookmarks = [];
@@ -215,6 +216,11 @@ class LinksHandlerDB {
         // Si estamos en el filtro "hidden", mostrar solo los que tienen ese tag
         if (_selectedTag == hiddenTag) {
           if (tags.contains(_selectedTag)) {
+            tagFiltered.add(bookmark);
+          }
+        } else if (_selectedTag == untaggedTag) {
+          // Filtro para bookmarks sin tags (excluyendo el tag hidden si existiera)
+          if (tags.isEmpty) {
             tagFiltered.add(bookmark);
           }
         } else {

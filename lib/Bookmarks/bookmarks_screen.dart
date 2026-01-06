@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:async';
-import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,15 +11,14 @@ import '../Settings/settings_screen.dart';
 import '../database/database_service.dart';
 import '../database/database_helper.dart';
 import '../database/models/bookmark.dart';
-import '../database/models/bookmark_tag.dart';
 import 'bookmarks_handler.dart';
 import 'bookmarks_tags_handler.dart';
-import 'package:http/http.dart' as http;
-import 'package:html/parser.dart' as html;
 import '../widgets/custom_snackbar.dart';
 import '../widgets/custom_tooltip.dart';
 import '../widgets/context_menu.dart';
 import '../widgets/confirmation_dialogue.dart';
+import 'bookmarks_sidebar_panel.dart';
+import 'bookmarks_dialogs.dart';
 
 class LinksScreenDesktopDB extends StatefulWidget {
   final VoidCallback onLinkRemoved;
@@ -37,7 +35,7 @@ class LinksScreenDesktopDB extends StatefulWidget {
 }
 
 class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final LinksHandlerDB _linksHandler = LinksHandlerDB();
   final TagsHandlerDB _tagsHandler = TagsHandlerDB();
@@ -48,6 +46,12 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
   List<Bookmark> _filteredBookmarks = [];
   StreamSubscription? _dbSubscription;
 
+  // Variables for resizable panel
+  double _sidebarWidth = 240;
+  bool _isSidebarVisible = true;
+  late AnimationController _sidebarAnimController;
+  late Animation<double> _sidebarWidthAnimation;
+
   void refresh() {
     _loadBookmarks();
   }
@@ -56,8 +60,20 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
   void initState() {
     super.initState();
     _linksHandler.resetSearch();
+    
+    // Initialize sidebar animation
+    _sidebarAnimController = AnimationController(
+        duration: const Duration(milliseconds: 200),
+        vsync: this,
+        value: 1.0,
+    );
+    _sidebarWidthAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _sidebarAnimController, curve: Curves.easeInOut),
+    );
+    
     _initializeBookmarks();
     _loadRootDir();
+    _loadSidebarSettings();
 
     // Listen to database changes for background sync updates
     _dbSubscription = DatabaseHelper.onDatabaseChanged.listen((_) {
@@ -67,61 +83,54 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     });
   }
 
+  Future<void> _loadSidebarSettings() async {
+      final prefs = await SharedPreferences.getInstance();
+      final width = prefs.getDouble('bookmarks_sidebar_width') ?? 240;
+      if (mounted) {
+          setState(() {
+              _sidebarWidth = width;
+          });
+      }
+  }
+
+  Future<void> _saveSidebarWidth(double width) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('bookmarks_sidebar_width', width);
+  }
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    setState(() {
+      _sidebarWidth = (_sidebarWidth + details.delta.dx).clamp(200.0, 400.0);
+    });
+  }
+
+  void _onDragEnd() async {
+    await _saveSidebarWidth(_sidebarWidth);
+  }
+
+  void _toggleSidebar() {
+    if (_isSidebarVisible) {
+      _sidebarAnimController.reverse().then((_) {
+        setState(() {
+          _isSidebarVisible = false;
+        });
+      });
+    } else {
+      setState(() {
+        _isSidebarVisible = true;
+      });
+      _sidebarAnimController.forward();
+    }
+  }
+
   @override
   void dispose() {
+    _sidebarAnimController.dispose();
     _dbSubscription?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     _appFocusNode.dispose();
     super.dispose();
-  }
-
-  Widget _buildTagChip({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-    required ColorScheme colorScheme,
-  }) {
-    return Material(
-      color:
-          isSelected
-              ? colorScheme.primary.withAlpha(25)
-              : colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        hoverColor: colorScheme.primary.withAlpha(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                label == LinksHandlerDB.hiddenTag
-                    ? (isSelected
-                        ? Icons.visibility_rounded
-                        : Icons.visibility_off_rounded)
-                    : (isSelected
-                        ? Icons.label_rounded
-                        : Icons.label_outline_rounded),
-                size: 20,
-                color: colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  height: 1.0,
-                  color:
-                      isSelected ? colorScheme.primary : colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Future<void> _initializeBookmarks() async {
@@ -212,168 +221,87 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                 isThinksScreen: false,
                 isSettingsScreen: false,
                 isBookmarksScreen: true,
-                onAddBookmark: _showAddLinkDialog,
-                onManageTags: _showManageTagsDialog,
+                onAddBookmark: () => BookmarksDialogs.showAddBookmarkDialog(
+                  context: context,
+                  linksHandler: _linksHandler,
+                  onSuccess: _loadBookmarks,
+                ),
+                onManageTags: () => BookmarksDialogs.showManageTagsDialog(
+                  context: context,
+                  tagsHandler: _tagsHandler,
+                ),
                 appFocusNode: _appFocusNode,
+                onToggleSidebar: _toggleSidebar,
               ),
 
-              VerticalDivider(
-                width: 1,
-                thickness: 1,
-                color: colorScheme.surfaceContainerHighest,
+              // Animated Sidebar
+              AnimatedBuilder(
+                animation: _sidebarWidthAnimation,
+                builder: (context, child) {
+                  final animatedWidth =
+                      _sidebarWidthAnimation.value * (_sidebarWidth + 1);
+                  if (animatedWidth <= 0 && !_isSidebarVisible) {
+                    return const SizedBox.shrink();
+                  }
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      /* Fixed: Added vertical divider */
+                      VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: colorScheme.surfaceContainerHighest,
+                      ),
+                      ClipRect(
+                        child: SizedBox(
+                          width: animatedWidth,
+                          child: OverflowBox(
+                            alignment: Alignment.centerLeft,
+                            minWidth: 0,
+                            maxWidth: _sidebarWidth + 1,
+                            child: child,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+                child: BookmarksSidebarPanel(
+                  width: _sidebarWidth,
+                  totalBookmarks: _filteredBookmarks.length,
+                  tags: _linksHandler.allTags,
+                  selectedTag: _linksHandler.selectedTag,
+                  isOldestFirst: _linksHandler.isOldestFirst,
+                  searchQuery: _linksHandler.searchQuery,
+                  searchController: _searchController,
+                  onSearchChanged: (value) {
+                    _linksHandler.setSearchQuery(value);
+                    _loadBookmarks();
+                    setState(() {});
+                  },
+                  onTagSelected: (tag) {
+                    _linksHandler.setSelectedTag(
+                      _linksHandler.selectedTag == tag ? null : tag,
+                    );
+                    _loadBookmarks();
+                    setState(() {});
+                  },
+                  onSortToggle: () {
+                    _linksHandler.toggleSortOrder();
+                    _loadBookmarks();
+                    setState(() {});
+                  },
+                  onDragUpdate: _onDragUpdate,
+                  onDragEnd: _onDragEnd,
+                ),
               ),
 
-              // Main content
+              // Main content (List only)
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 40),
                   child: Column(
                     children: [
-                      // Sort button and Tags
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          children: [
-                            // Botón de búsqueda
-                            IconButton(
-                              icon: Icon(
-                                _linksHandler.isSearching
-                                    ? Icons.search_off_rounded
-                                    : Icons.search_rounded,
-                                color:
-                                    _linksHandler.isSearching
-                                        ? colorScheme.primary
-                                        : colorScheme.onSurfaceVariant,
-                              ),
-                              onPressed: () {
-                                _linksHandler.toggleSearch();
-                                _loadBookmarks();
-                                setState(() {});
-                              },
-                            ),
-                            // Campo de búsqueda
-                            AnimatedSize(
-                              duration: const Duration(milliseconds: 200),
-                              curve: Curves.easeInOut,
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                curve: Curves.easeInOut,
-                                width: _linksHandler.isSearching ? 200 : 0,
-                                child:
-                                    _linksHandler.isSearching
-                                        ? Padding(
-                                          padding: const EdgeInsets.only(
-                                            right: 8,
-                                          ),
-                                          child: TextField(
-                                            autofocus: true,
-                                            decoration: const InputDecoration(
-                                              hintText: 'Search bookmarks...',
-                                              isDense: true,
-                                              contentPadding:
-                                                  EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 8,
-                                                  ),
-                                              border: OutlineInputBorder(),
-                                            ),
-                                            onChanged: (value) {
-                                              _linksHandler.setSearchQuery(
-                                                value,
-                                              );
-                                              _loadBookmarks();
-                                              setState(() {});
-                                            },
-                                          ),
-                                        )
-                                        : const SizedBox.shrink(),
-                              ),
-                            ),
-                            // Botón de ordenamiento
-                            CustomTooltip(
-                              message:
-                                  _linksHandler.isOldestFirst
-                                      ? 'Sort by oldest first'
-                                      : 'Sort by newest first',
-                              builder:
-                                  (context, isHovering) => IconButton(
-                                    icon: RotatedBox(
-                                      quarterTurns:
-                                          _linksHandler.isOldestFirst ? 2 : 0,
-                                      child: Icon(
-                                        Icons.arrow_downward_rounded,
-                                        color:
-                                            _linksHandler.isOldestFirst
-                                                ? colorScheme.primary
-                                                : colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                    onPressed: () {
-                                      _linksHandler.toggleSortOrder();
-                                      _loadBookmarks();
-                                      setState(() {});
-                                    },
-                                  ),
-                            ),
-                            // Eliminamos los botones de la barra superior
-                            if (_linksHandler.allTags.isNotEmpty)
-                              Expanded(
-                                child: SizedBox(
-                                  height: 36,
-                                  child: ListView(
-                                    scrollDirection: Axis.horizontal,
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 2,
-                                        ),
-                                        child: _buildTagChip(
-                                          label: 'All',
-                                          isSelected:
-                                              _linksHandler.selectedTag == null,
-                                          onTap: () {
-                                            _linksHandler.setSelectedTag(null);
-                                            _loadBookmarks();
-                                            setState(() {});
-                                          },
-                                          colorScheme: colorScheme,
-                                        ),
-                                      ),
-                                      ..._linksHandler.allTags.map(
-                                        (tag) => Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 2,
-                                          ),
-                                          child: _buildTagChip(
-                                            label: tag,
-                                            isSelected:
-                                                _linksHandler.selectedTag ==
-                                                tag,
-                                            onTap: () {
-                                              _linksHandler.setSelectedTag(
-                                                _linksHandler.selectedTag == tag
-                                                    ? null
-                                                    : tag,
-                                              );
-                                              _loadBookmarks();
-                                              setState(() {});
-                                            },
-                                            colorScheme: colorScheme,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-
-                      // Bookmarks list
                       Expanded(
                         child:
                             _isLoading
@@ -474,41 +402,9 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
             right: 138, // Control buttons width
             height: 48,
             child: MoveWindow(
-              child: Container(
-                color: colorScheme.surface,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Center(
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.bookmarks_rounded,
-                        size: 20,
-                        color: colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Bookmarks',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Text(
-                          '${_filteredBookmarks.length}',
-                          style: TextStyle(
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                    ],
-                  ),
+                child: Container(
+                  color: Colors.transparent,
                 ),
-              ),
             ),
           ),
         ],
@@ -527,7 +423,7 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
           children: [
             Icon(
               _linksHandler.isSearching
-                  ? Icons.search_off
+                  ? Icons.search_off_rounded
                   : Icons.bookmarks_outlined,
               size: 48,
               color: colorScheme.onSurfaceVariant.withAlpha(127),
@@ -544,7 +440,7 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
               Padding(
                 padding: const EdgeInsets.only(top: 12.0),
                 child: TextButton.icon(
-                  icon: const Icon(Icons.clear),
+                  icon: const Icon(Icons.clear_rounded),
                   label: const Text('Clear search'),
                   onPressed: () {
                     _linksHandler.setSearchQuery('');
@@ -557,9 +453,13 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
               Padding(
                 padding: const EdgeInsets.only(top: 12.0),
                 child: TextButton.icon(
-                  icon: const Icon(Icons.add),
+                  icon: const Icon(Icons.add_rounded),
                   label: const Text('Add a bookmark'),
-                  onPressed: _showAddLinkDialog,
+                  onPressed: () => BookmarksDialogs.showAddBookmarkDialog(
+                    context: context,
+                    linksHandler: _linksHandler,
+                    onSuccess: _loadBookmarks,
+                  ),
                 ),
               ),
           ],
@@ -579,7 +479,12 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
           bookmark: bookmark,
           colorScheme: colorScheme,
           onDelete: () => _showDeleteConfirmation(bookmark),
-          onEdit: () => _showEditLinkDialog(bookmark),
+          onEdit: () => BookmarksDialogs.showEditBookmarkDialog(
+            context: context,
+            linksHandler: _linksHandler,
+            bookmark: bookmark,
+            onSuccess: _loadBookmarks,
+          ),
           onCopy: () => _copyLinkToClipboard(bookmark.url),
           onTap: () async {
             if (uri != null && await canLaunchUrl(uri)) {
@@ -633,1078 +538,6 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
         type: CustomSnackbarType.success,
       );
     }
-  }
-
-  Future<void> _showEditLinkDialog(Bookmark bookmark) async {
-    if (!mounted) return;
-
-    final formKey = GlobalKey<FormState>();
-    final titleController = TextEditingController(text: bookmark.title);
-    final urlController = TextEditingController(text: bookmark.url);
-    final descController = TextEditingController(text: bookmark.description);
-
-    String tagsText = bookmark.tags.join(', ');
-
-    final tagsController = TextEditingController(text: tagsText);
-
-    await showDialog(
-      context: context,
-      builder:
-          (context) => Dialog(
-            backgroundColor: Colors.transparent,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: 500,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        height: 56,
-                        decoration: BoxDecoration(),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.edit_rounded,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Edit Bookmark',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const Spacer(),
-                            IconButton(
-                              icon: Icon(
-                                Icons.close_rounded,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
-                        child: Column(
-                          children: [
-                            TextFormField(
-                              controller: titleController,
-                              decoration: InputDecoration(
-                                labelText: 'Title*',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                filled: true,
-                                fillColor: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest
-                                    .withAlpha(76),
-                                prefixIcon: const Icon(Icons.title_rounded),
-                              ),
-                              validator:
-                                  (value) =>
-                                      value?.isEmpty ?? true
-                                          ? 'Required'
-                                          : null,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: urlController,
-                              decoration: InputDecoration(
-                                labelText: 'URL*',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                filled: true,
-                                fillColor: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest
-                                    .withAlpha(76),
-                                prefixIcon: const Icon(Icons.link_rounded),
-                              ),
-                              validator: (value) {
-                                if (value?.isEmpty ?? true) return 'Required';
-                                if (!Uri.parse(value!).isAbsolute) {
-                                  return 'Invalid URL';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: descController,
-                              decoration: InputDecoration(
-                                labelText: 'Description',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                filled: true,
-                                fillColor: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest
-                                    .withAlpha(76),
-                                prefixIcon: const Icon(
-                                  Icons.description_rounded,
-                                ),
-                              ),
-                              maxLines: 1,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: tagsController,
-                              decoration: InputDecoration(
-                                labelText: 'Tags (comma separated)',
-                                hintText: 'e.g.: work, research, personal',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                filled: true,
-                                fillColor: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest
-                                    .withAlpha(76),
-                                prefixIcon: const Icon(Icons.tag_rounded),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        height: 56,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                style: TextButton.styleFrom(
-                                  backgroundColor:
-                                      Theme.of(
-                                        context,
-                                      ).colorScheme.surfaceContainerHigh,
-                                  foregroundColor:
-                                      Theme.of(context).colorScheme.onSurface,
-                                  minimumSize: const Size(0, 44),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Cancel',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.normal,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () async {
-                                  if (formKey.currentState!.validate()) {
-                                    await _linksHandler.updateBookmark(
-                                      id: bookmark.id!,
-                                      newTitle: titleController.text,
-                                      newUrl: urlController.text,
-                                      newDescription: descController.text,
-                                      newTags:
-                                          tagsController.text
-                                              .split(',')
-                                              .map((e) => e.trim())
-                                              .where((e) => e.isNotEmpty)
-                                              .toList(),
-                                    );
-                                    await _loadBookmarks();
-                                    if (context.mounted) {
-                                      Navigator.pop(context);
-                                    }
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      Theme.of(context).colorScheme.primary,
-                                  foregroundColor:
-                                      Theme.of(context).colorScheme.onPrimary,
-                                  minimumSize: const Size(0, 44),
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Save Changes',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-    );
-  }
-
-  Future<void> _showAddLinkDialog() async {
-    final formKey = GlobalKey<FormState>();
-    final titleController = TextEditingController();
-    final urlController = TextEditingController();
-    final descController = TextEditingController();
-    final tagsController = TextEditingController();
-    bool isFetchingTitle = false;
-    bool isTitleEdited = false;
-
-    String getDefaultTitle(String url) {
-      try {
-        final uri = Uri.parse(url);
-        return uri.host.replaceAll('www.', '');
-      } catch (e) {
-        return 'New Bookmark';
-      }
-    }
-
-    Future<String?> getRedditTitle(String url) async {
-      try {
-        final uri = Uri.parse(url);
-        if (!uri.path.contains('/comments/')) return null;
-
-        final pathSegments = uri.pathSegments;
-        final postIdIndex = pathSegments.indexOf('comments');
-        if (postIdIndex == -1 || postIdIndex + 1 >= pathSegments.length) {
-          return null;
-        }
-
-        final postId = pathSegments[postIdIndex + 1];
-        final apiUrl = 'https://www.reddit.com/comments/$postId.json';
-
-        final response = await http
-            .get(Uri.parse(apiUrl))
-            .timeout(const Duration(seconds: 3));
-        if (response.statusCode == 200) {
-          final jsonData = jsonDecode(response.body);
-          if (jsonData is List && jsonData.isNotEmpty) {
-            final postData = jsonData[0]['data']['children'][0]['data'];
-            return postData['title'];
-          }
-        }
-      } catch (e) {
-        print('Error getting Reddit title: $e');
-      }
-      return null;
-    }
-
-    Future<void> fetchWebTitle(String url) async {
-      if (url.isEmpty) return;
-
-      final uri = Uri.tryParse(url);
-      if (uri == null || !uri.isAbsolute) return;
-
-      setState(() => isFetchingTitle = true);
-
-      try {
-        final response = await http
-            .get(uri)
-            .timeout(const Duration(seconds: 3));
-        if (response.statusCode == 200) {
-          final document = html.parse(response.body);
-          final ogTitle =
-              document
-                  .querySelector('meta[property="og:title"]')
-                  ?.attributes['content'];
-          String? pageTitle;
-
-          if (ogTitle != null && ogTitle.isNotEmpty) {
-            pageTitle = ogTitle;
-          } else {
-            // Check if it's a Reddit URL and use API
-            if (url.contains('reddit.com')) {
-              pageTitle = await getRedditTitle(url);
-            }
-            if (pageTitle == null || pageTitle.isEmpty) {
-              pageTitle = document.querySelector('title')?.text;
-            }
-          }
-
-          if (pageTitle != null && pageTitle.isNotEmpty && !isTitleEdited) {
-            titleController.text = pageTitle;
-          }
-        }
-      } catch (e) {
-        if (!isTitleEdited) {
-          titleController.text = getDefaultTitle(url);
-        }
-      } finally {
-        setState(() => isFetchingTitle = false);
-      }
-    }
-
-    await showDialog(
-      context: context,
-      builder:
-          (context) => Dialog(
-            backgroundColor: Colors.transparent,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: 500,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        height: 56,
-                        decoration: BoxDecoration(),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.bookmark_rounded,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'New Bookmark',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const Spacer(),
-                            IconButton(
-                              icon: Icon(
-                                Icons.close_rounded,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
-                        child: Column(
-                          children: [
-                            TextFormField(
-                              controller: urlController,
-                              decoration: InputDecoration(
-                                labelText: 'URL*',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                filled: true,
-                                fillColor: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest
-                                    .withAlpha(76),
-                                prefixIcon: const Icon(Icons.link_rounded),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    Icons.search_rounded,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                                  onPressed:
-                                      () => fetchWebTitle(urlController.text),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value?.isEmpty ?? true) return 'Required';
-                                if (!Uri.parse(value!).isAbsolute) {
-                                  return 'Invalid URL';
-                                }
-                                return null;
-                              },
-                              onChanged: (value) async {
-                                if (titleController.text.isEmpty ||
-                                    !isTitleEdited) {
-                                  await fetchWebTitle(value);
-                                }
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: titleController,
-                              decoration: InputDecoration(
-                                labelText: 'Title*',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                filled: true,
-                                fillColor: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest
-                                    .withAlpha(76),
-                                prefixIcon: const Icon(Icons.title_rounded),
-                                suffixIcon:
-                                    isFetchingTitle
-                                        ? const Padding(
-                                          padding: EdgeInsets.all(12.0),
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                        : null,
-                              ),
-                              validator:
-                                  (value) =>
-                                      value?.isEmpty ?? true
-                                          ? 'Required'
-                                          : null,
-                              onChanged: (value) {
-                                if (value.isNotEmpty) {
-                                  setState(() => isTitleEdited = true);
-                                }
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: descController,
-                              decoration: InputDecoration(
-                                labelText: 'Description',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                filled: true,
-                                fillColor: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest
-                                    .withAlpha(76),
-                                prefixIcon: const Icon(
-                                  Icons.description_rounded,
-                                ),
-                              ),
-                              maxLines: 1,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: tagsController,
-
-                              decoration: InputDecoration(
-                                labelText: 'Tags (comma separated)',
-                                hintText: 'e.g.: work, research, personal',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                filled: true,
-                                fillColor: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest
-                                    .withAlpha(76),
-                                prefixIcon: const Icon(Icons.tag_rounded),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        height: 56,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                style: TextButton.styleFrom(
-                                  backgroundColor:
-                                      Theme.of(
-                                        context,
-                                      ).colorScheme.surfaceContainerHigh,
-                                  foregroundColor:
-                                      Theme.of(context).colorScheme.onSurface,
-                                  minimumSize: const Size(0, 44),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Cancel',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.normal,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () async {
-                                  if (formKey.currentState!.validate()) {
-                                    await _linksHandler.addBookmark(
-                                      title: titleController.text,
-                                      url: urlController.text,
-                                      description: descController.text,
-                                      tags:
-                                          tagsController.text
-                                              .split(',')
-                                              .map((e) => e.trim())
-                                              .where((e) => e.isNotEmpty)
-                                              .toList(),
-                                    );
-                                    await _loadBookmarks();
-                                    if (context.mounted) {
-                                      Navigator.pop(context);
-                                    }
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      Theme.of(context).colorScheme.primary,
-                                  foregroundColor:
-                                      Theme.of(context).colorScheme.onPrimary,
-                                  minimumSize: const Size(0, 44),
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Save Link',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-    );
-  }
-
-  void _showManageTagsDialog() async {
-    if (!mounted) return;
-
-    await _tagsHandler.loadPatterns();
-
-    if (!mounted) return;
-
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              backgroundColor: Colors.transparent,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  width: 500,
-                  height: 400,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        height: 56,
-                        decoration: BoxDecoration(),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.label_rounded,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Predefined Tags',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const Spacer(),
-                            IconButton(
-                              icon: Icon(
-                                Icons.new_label_rounded,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              onPressed: () async {
-                                await _showAddTagDialog();
-                                await _tagsHandler.loadPatterns();
-                                setState(() {});
-                              },
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.close_rounded,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: FutureBuilder<List<TagUrlPattern>>(
-                          future: Future.value(_tagsHandler.allPatterns),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            }
-
-                            final patterns = snapshot.data ?? [];
-
-                            return patterns.isEmpty
-                                ? Center(
-                                  child: Text(
-                                    'No predefined tags',
-                                    style: TextStyle(
-                                      color:
-                                          Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                )
-                                : ListView.builder(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                  ),
-                                  itemCount: patterns.length,
-                                  itemBuilder: (context, index) {
-                                    final pattern = patterns[index];
-                                    return CustomTooltip(
-                                      message:
-                                          'URL: ${pattern.urlPattern}\nTag: ${pattern.tag}',
-                                      builder: (context, isHovering) {
-                                        return Card(
-                                          margin: const EdgeInsets.only(
-                                            bottom: 8,
-                                          ),
-                                          color:
-                                              Theme.of(context)
-                                                  .colorScheme
-                                                  .surfaceContainerHighest,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          child: Material(
-                                            color: Colors.transparent,
-                                            child: InkWell(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              onTap: () {},
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 16,
-                                                      vertical: 8,
-                                                    ),
-                                                child: Row(
-                                                  children: [
-                                                    Icon(
-                                                      Icons.label_rounded,
-                                                      color:
-                                                          Theme.of(
-                                                            context,
-                                                          ).colorScheme.primary,
-                                                    ),
-                                                    const SizedBox(width: 12),
-                                                    Expanded(
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          Text(
-                                                            pattern.urlPattern,
-                                                            style: Theme.of(
-                                                                  context,
-                                                                )
-                                                                .textTheme
-                                                                .bodyMedium
-                                                                ?.copyWith(
-                                                                  color:
-                                                                      Theme.of(
-                                                                        context,
-                                                                      ).colorScheme.onSurface,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
-                                                                ),
-                                                            maxLines: 1,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
-                                                          ),
-                                                          Row(
-                                                            children: [
-                                                              Icon(
-                                                                Icons
-                                                                    .arrow_forward_rounded,
-                                                                size: 12,
-                                                                color:
-                                                                    Theme.of(
-                                                                          context,
-                                                                        )
-                                                                        .colorScheme
-                                                                        .onSurfaceVariant,
-                                                              ),
-                                                              const SizedBox(
-                                                                width: 4,
-                                                              ),
-                                                              Text(
-                                                                pattern.tag,
-                                                                style: Theme.of(
-                                                                      context,
-                                                                    )
-                                                                    .textTheme
-                                                                    .bodySmall
-                                                                    ?.copyWith(
-                                                                      color:
-                                                                          Theme.of(
-                                                                            context,
-                                                                          ).colorScheme.primary,
-                                                                      fontSize:
-                                                                          11,
-                                                                    ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    // Delete button (only visible on hover)
-                                                    Opacity(
-                                                      opacity:
-                                                          isHovering
-                                                              ? 1.0
-                                                              : 0.0,
-                                                      child: IgnorePointer(
-                                                        ignoring: !isHovering,
-                                                        child: MouseRegion(
-                                                          cursor:
-                                                              SystemMouseCursors
-                                                                  .click,
-                                                          child: GestureDetector(
-                                                            onTap: () async {
-                                                              final confirmed = await showDeleteConfirmationDialog(
-                                                                context:
-                                                                    context,
-                                                                title:
-                                                                    'Delete Tag Mapping',
-                                                                message:
-                                                                    'Are you sure you want to delete this tag mapping?\n\nURL Pattern: ${pattern.urlPattern}\nTag: ${pattern.tag}',
-                                                                confirmText:
-                                                                    'Delete',
-                                                                confirmColor:
-                                                                    Theme.of(
-                                                                          context,
-                                                                        )
-                                                                        .colorScheme
-                                                                        .error,
-                                                              );
-
-                                                              if (confirmed ==
-                                                                  true) {
-                                                                await _tagsHandler
-                                                                    .removeTagMapping(
-                                                                      pattern
-                                                                          .urlPattern,
-                                                                      pattern
-                                                                          .tag,
-                                                                    );
-                                                                setState(() {});
-                                                              }
-                                                            },
-                                                            child: Container(
-                                                              padding:
-                                                                  const EdgeInsets.all(
-                                                                    4,
-                                                                  ),
-                                                              decoration: BoxDecoration(
-                                                                color: Theme.of(
-                                                                      context,
-                                                                    )
-                                                                    .colorScheme
-                                                                    .error
-                                                                    .withAlpha(
-                                                                      20,
-                                                                    ),
-                                                                borderRadius:
-                                                                    BorderRadius.circular(
-                                                                      6,
-                                                                    ),
-                                                              ),
-                                                              child: Icon(
-                                                                Icons
-                                                                    .close_rounded,
-                                                                size: 14,
-                                                                color:
-                                                                    Theme.of(
-                                                                          context,
-                                                                        )
-                                                                        .colorScheme
-                                                                        .error,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  },
-                                );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _showAddTagDialog() async {
-    final urlController = TextEditingController();
-    final tagController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    await showDialog(
-      context: context,
-      builder:
-          (context) => Dialog(
-            backgroundColor: Colors.transparent,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: 400,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        height: 56,
-                        decoration: BoxDecoration(),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.label_rounded,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'New Predefined Tag',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const Spacer(),
-                            IconButton(
-                              icon: Icon(
-                                Icons.close_rounded,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
-                        child: Column(
-                          children: [
-                            TextFormField(
-                              controller: urlController,
-                              decoration: InputDecoration(
-                                labelText: 'URL Pattern*',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                filled: true,
-                                fillColor: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest
-                                    .withAlpha(76),
-                                prefixIcon: const Icon(Icons.link_rounded),
-                              ),
-                              validator:
-                                  (value) =>
-                                      value?.isEmpty ?? true
-                                          ? 'Required'
-                                          : null,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: tagController,
-                              decoration: InputDecoration(
-                                labelText: 'Tag*',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                filled: true,
-                                fillColor: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest
-                                    .withAlpha(76),
-                                prefixIcon: const Icon(Icons.tag_rounded),
-                              ),
-                              validator:
-                                  (value) =>
-                                      value?.isEmpty ?? true
-                                          ? 'Required'
-                                          : null,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        height: 56,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                style: TextButton.styleFrom(
-                                  backgroundColor:
-                                      Theme.of(
-                                        context,
-                                      ).colorScheme.surfaceContainerHigh,
-                                  foregroundColor:
-                                      Theme.of(context).colorScheme.onSurface,
-                                  minimumSize: const Size(0, 44),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Cancel',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.normal,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () async {
-                                  if (formKey.currentState!.validate()) {
-                                    try {
-                                      await _tagsHandler.addTagMapping(
-                                        urlController.text.trim(),
-                                        tagController.text.trim(),
-                                      );
-                                      if (context.mounted) {
-                                        Navigator.pop(context);
-                                      }
-                                    } catch (e) {
-                                      if (context.mounted) {
-                                        String errorMessage =
-                                            'Error adding pattern';
-
-                                        if (e.toString().contains(
-                                          'already exists',
-                                        )) {
-                                          errorMessage =
-                                              'A tag pattern with this URL and tag already exists.';
-                                        } else if (e.toString().contains(
-                                          'UNIQUE constraint failed',
-                                        )) {
-                                          errorMessage =
-                                              'A tag pattern with this URL and tag already exists.';
-                                        } else {
-                                          errorMessage =
-                                              'Error adding pattern: ${e.toString()}';
-                                        }
-
-                                        CustomSnackbar.show(
-                                          context: context,
-                                          message: errorMessage,
-                                          type: CustomSnackbarType.error,
-                                        );
-                                      }
-                                    }
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      Theme.of(context).colorScheme.primary,
-                                  foregroundColor:
-                                      Theme.of(context).colorScheme.onPrimary,
-                                  minimumSize: const Size(0, 44),
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Save',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-    );
   }
 
   void _openSettings() async {
@@ -1998,7 +831,7 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
                             builder:
                                 (context, isHovering) => IconButton(
                                   icon: Icon(
-                                    Icons.edit_outlined,
+                                    Icons.edit_rounded,
                                     color: widget.colorScheme.primary,
                                     size: 18,
                                   ),

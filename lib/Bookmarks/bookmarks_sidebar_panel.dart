@@ -1,0 +1,299 @@
+import 'package:flutter/material.dart';
+import 'bookmarks_handler.dart';
+
+class BookmarksSidebarPanel extends StatelessWidget {
+  final double width;
+  final int totalBookmarks;
+  final List<String> tags;
+  final String? selectedTag;
+  final bool isOldestFirst;
+  final String searchQuery;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<String?> onTagSelected;
+  final VoidCallback onSortToggle;
+  final Function(DragUpdateDetails) onDragUpdate;
+  final VoidCallback onDragEnd;
+  final TextEditingController searchController;
+
+  const BookmarksSidebarPanel({
+    super.key,
+    required this.width,
+    required this.totalBookmarks,
+    required this.tags,
+    required this.selectedTag,
+    required this.isOldestFirst,
+    required this.searchQuery,
+    required this.onSearchChanged,
+    required this.onTagSelected,
+    required this.onSortToggle,
+    required this.onDragUpdate,
+    required this.onDragEnd,
+    required this.searchController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // Ensure controller text matches query if different (to handle external resets)
+    if (searchController.text != searchQuery) {
+      searchController.text = searchQuery;
+      // move cursor to end
+      searchController.selection = TextSelection.fromPosition(
+        TextPosition(offset: searchController.text.length),
+      );
+    }
+
+    return Container(
+      width: width,
+      decoration: BoxDecoration(color: colorScheme.surfaceContainerLow),
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header: Title and Count (Exactly like Thinks)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.bookmarks_rounded,
+                      color: colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Bookmarks',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      totalBookmarks.toString(),
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Search Bar
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search...',
+                    prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: colorScheme.outlineVariant),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: colorScheme.outlineVariant),
+                    ),
+                    filled: true,
+                    fillColor: colorScheme.surface,
+                    suffixIcon:
+                        searchQuery.isNotEmpty
+                            ? IconButton(
+                              icon: const Icon(Icons.clear_rounded, size: 16),
+                              onPressed: () {
+                                onSearchChanged('');
+                              },
+                            )
+                            : null,
+                  ),
+                  onChanged: onSearchChanged,
+                ),
+              ),
+
+              // Sort Button
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                child: InkWell(
+                  onTap: onSortToggle,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 4,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.sort_rounded,
+                          size: 18,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          isOldestFirst ? 'Oldest first' : 'Newest first',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          isOldestFirst
+                              ? Icons.arrow_upward_rounded
+                              : Icons.arrow_downward_rounded,
+                          size: 16,
+                          color: colorScheme.primary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              const Divider(height: 1),
+
+              // Tags Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                child: Text(
+                  'TAGS',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurfaceVariant,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+
+              // Tags List
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  children: [
+                    _buildTagItem(
+                      context: context,
+                      label: 'All Bookmarks',
+                      isSelected: selectedTag == null,
+                      onTap: () => onTagSelected(null),
+                      icon: Icons.all_inclusive_rounded,
+                    ),
+                    _buildTagItem(
+                      context: context,
+                      label: 'Untagged',
+                      isSelected: selectedTag == LinksHandlerDB.untaggedTag,
+                      onTap: () => onTagSelected(LinksHandlerDB.untaggedTag),
+                      icon:
+                          selectedTag == LinksHandlerDB.untaggedTag
+                              ? Icons.label_off_rounded
+                              : Icons.label_off_outlined,
+                    ),
+                    ...tags.map(
+                      (tag) => _buildTagItem(
+                        context: context,
+                        label: tag,
+                        isSelected: selectedTag == tag,
+                        onTap: () => onTagSelected(tag),
+                        icon:
+                            tag == LinksHandlerDB.hiddenTag
+                                ? (selectedTag == tag
+                                    ? Icons.visibility_rounded
+                                    : Icons.visibility_off_rounded)
+                                : (selectedTag == tag
+                                    ? Icons.label_rounded
+                                    : Icons.label_outline_rounded),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Resize Handle
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.resizeLeftRight,
+              child: GestureDetector(
+                onHorizontalDragUpdate: onDragUpdate,
+                onHorizontalDragEnd: (_) => onDragEnd(),
+                child: Container(width: 5, color: Colors.transparent),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTagItem({
+    required BuildContext context,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required IconData icon,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Material(
+        color: isSelected ? colorScheme.secondaryContainer : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
+                  color:
+                      isSelected
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                      color:
+                          isSelected
+                              ? colorScheme.onSecondaryContainer
+                              : colorScheme.onSurface,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

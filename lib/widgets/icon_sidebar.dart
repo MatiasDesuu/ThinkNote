@@ -778,7 +778,8 @@ class IconSidebarState extends State<IconSidebar>
         ),
       // Botón para ocultar/mostrar panel lateral en tasks y thinks
       if ((widget.isTasksScreen ||
-              widget.isThinksScreen) &&
+              widget.isThinksScreen ||
+              widget.isBookmarksScreen) &&
           widget.onToggleSidebar != null)
         IconSidebarButton(
           icon: Icons.view_sidebar_rounded,
