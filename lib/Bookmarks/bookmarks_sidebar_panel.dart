@@ -125,38 +125,42 @@ class BookmarksSidebarPanel extends StatelessWidget {
                   horizontal: 16,
                   vertical: 4,
                 ),
-                child: InkWell(
-                  onTap: onSortToggle,
+                child: Material(
+                  color: Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 4,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.sort_rounded,
-                          size: 18,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          isOldestFirst ? 'Oldest first' : 'Newest first',
-                          style: TextStyle(
-                            fontSize: 13,
+                  child: InkWell(
+                    onTap: onSortToggle,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.sort_rounded,
+                            size: 18,
                             color: colorScheme.onSurfaceVariant,
                           ),
-                        ),
-                        const Spacer(),
-                        Icon(
-                          isOldestFirst
-                              ? Icons.arrow_upward_rounded
-                              : Icons.arrow_downward_rounded,
-                          size: 16,
-                          color: colorScheme.primary,
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Text(
+                            isOldestFirst ? 'Oldest first' : 'Newest first',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const Spacer(),
+                          Icon(
+                            isOldestFirst
+                                ? Icons.arrow_upward_rounded
+                                : Icons.arrow_downward_rounded,
+                            size: 16,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -255,7 +259,7 @@ class BookmarksSidebarPanel extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: Material(
-        color: isSelected ? colorScheme.secondaryContainer : Colors.transparent,
+        color: isSelected ? colorScheme.surfaceContainerHighest : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
           onTap: onTap,
@@ -282,7 +286,7 @@ class BookmarksSidebarPanel extends StatelessWidget {
                           isSelected ? FontWeight.w600 : FontWeight.normal,
                       color:
                           isSelected
-                              ? colorScheme.onSecondaryContainer
+                              ? colorScheme.primary
                               : colorScheme.onSurface,
                     ),
                     maxLines: 1,
