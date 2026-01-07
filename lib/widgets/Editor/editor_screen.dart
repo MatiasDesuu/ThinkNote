@@ -25,6 +25,7 @@ import 'format_handler.dart';
 import '../../services/tab_manager.dart';
 import 'note_statistics_dialog.dart';
 import '../custom_tooltip.dart';
+import '../draggable_header.dart';
 
 // Global reference to the current active editor's toggle read mode function
 VoidCallback? _currentActiveEditorToggleReadMode;
@@ -1351,13 +1352,10 @@ class _NotaEditorState extends State<NotaEditor>
               },
               child: Column(
                 children: [
-                  SizedBox(
-                    height:
-                        _immersiveModeService.isImmersiveMode &&
-                                !Platform.isLinux
-                            ? 40.0
-                            : 0,
-                  ),
+                  if (_immersiveModeService.isImmersiveMode &&
+                      !Platform.isLinux &&
+                      EditorSettingsCache.instance.hideTabsInImmersive)
+                    const DraggableArea(height: 40),
                   // Title bar - with centered padding when editor is centered
                   Container(
                     padding: EdgeInsets.only(

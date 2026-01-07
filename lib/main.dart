@@ -2681,7 +2681,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     if (activeTab == null) {
       return Column(
         children: [
-          DraggableArea(height: 40),
+          if (_immersiveModeService.isImmersiveMode &&
+              EditorSettingsCache.instance.hideTabsInImmersive)
+            const DraggableArea(height: 40),
           Expanded(
             child: Stack(
               children: [
@@ -2749,6 +2751,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     if (activeTab.isEmpty) {
       return Column(
         children: [
+          if (_immersiveModeService.isImmersiveMode &&
+              EditorSettingsCache.instance.hideTabsInImmersive)
+            const DraggableArea(height: 40),
           Expanded(
             child: Stack(
               children: [
