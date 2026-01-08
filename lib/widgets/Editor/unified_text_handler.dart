@@ -56,116 +56,104 @@ class UnifiedTextHandler extends StatelessWidget {
       return Text(text, style: textStyle);
     }
 
-    final lines = text.split('\n');
-    final hasHorizontalRule = lines.any(
-      (line) => _horizontalRuleRegex.hasMatch(line.trim()),
-    );
-
-    if (hasHorizontalRule) {
-      final widgets = _buildWidgetsWithHorizontalRules(context, lines);
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: widgets,
-      );
-    }
-
-    final spans = _buildUnifiedTextSpans(context);
-    return RichText(
-      text: TextSpan(children: spans),
-      textAlign: TextAlign.start,
+    final widgets = _buildParagraphWidgets(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: widgets,
     );
   }
 
-  /// Builds widgets with horizontal rules as Dividers
-  List<Widget> _buildWidgetsWithHorizontalRules(
-    BuildContext context,
-    List<String> lines,
-  ) {
+  /// Builds widgets for paragraphs separated by blank lines, handling horizontal rules
+  List<Widget> _buildParagraphWidgets(BuildContext context) {
+    final lines = text.split('\n');
     final List<Widget> widgets = [];
-    final StringBuffer currentTextBuffer = StringBuffer();
     final colorScheme = Theme.of(context).colorScheme;
-    bool isAfterDivider = false;
+    final StringBuffer currentParagraph = StringBuffer();
+    int consecutiveEmptyLines = 0;
+    int currentOffset = 0;
+    int paragraphStartOffset = 0;
 
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
 
-      if (_horizontalRuleRegex.hasMatch(line.trim())) {
-        // Flush any accumulated text before the horizontal rule
-        if (currentTextBuffer.isNotEmpty) {
-          final spans = _buildNestedSpans(
-            context,
-            currentTextBuffer.toString(),
-            textStyle,
-          );
-          widgets.add(
-            RichText(
-              text: TextSpan(children: spans),
-              textAlign: TextAlign.start,
-            ),
-          );
-          currentTextBuffer.clear();
-        }
-
-        // Add the horizontal rule divider
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.only(top: 4, bottom: 4),
-            child: Container(
-              height: 2,
-              decoration: BoxDecoration(
-                color: colorScheme.outline.withAlpha(150),
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
-        );
-        isAfterDivider = true;
+      if (line.trim().isEmpty) {
+        // Count consecutive empty lines
+        consecutiveEmptyLines++;
+        currentOffset += line.length + 1; // +1 for \n
       } else {
-        // Accumulate text lines
-        final bool isNextLineDivider =
-            i + 1 < lines.length &&
-            _horizontalRuleRegex.hasMatch(lines[i + 1].trim());
-
-        if ((isAfterDivider || isNextLineDivider) && line.isEmpty) {
-          if (currentTextBuffer.isNotEmpty) {
-            currentTextBuffer.write('\n');
-          }
-          currentTextBuffer.write(' ');
-          isAfterDivider = false;
-        } else {
-          if (currentTextBuffer.isNotEmpty) {
-            currentTextBuffer.write('\n');
-          }
-          currentTextBuffer.write(line);
-          isAfterDivider = false;
+        // Flush any accumulated paragraph before adding space
+        if (currentParagraph.isNotEmpty) {
+          _addParagraphWidget(context, currentParagraph.toString(), widgets, colorScheme, paragraphStartOffset);
+          currentOffset += currentParagraph.length + 1; // +1 for \n separator
+          currentParagraph.clear();
         }
+
+        // Add space for accumulated empty lines
+        if (consecutiveEmptyLines > 0) {
+          widgets.add(SizedBox(height: 16.0 * consecutiveEmptyLines));
+          currentOffset += consecutiveEmptyLines; // Each empty line contributes 1 to offset (\n)
+          consecutiveEmptyLines = 0;
+        }
+
+        // Start new paragraph
+        paragraphStartOffset = currentOffset;
+        if (currentParagraph.isNotEmpty) {
+          currentParagraph.write('\n');
+          currentOffset += 1;
+        }
+        currentParagraph.write(line);
+        currentOffset += line.length;
       }
     }
 
-    // Flush remaining text
-    if (currentTextBuffer.isNotEmpty) {
-      final spans = _buildNestedSpans(
-        context,
-        currentTextBuffer.toString(),
-        textStyle,
-      );
-      widgets.add(
-        RichText(text: TextSpan(children: spans), textAlign: TextAlign.start),
-      );
+    // Flush the last paragraph
+    if (currentParagraph.isNotEmpty) {
+      _addParagraphWidget(context, currentParagraph.toString(), widgets, colorScheme, paragraphStartOffset);
     }
 
     return widgets;
   }
 
-  List<InlineSpan> _buildUnifiedTextSpans(BuildContext context) {
-    return _buildNestedSpans(context, text, textStyle);
+  void _addParagraphWidget(BuildContext context, String paragraphText, List<Widget> widgets, ColorScheme colorScheme, int baseOffset) {
+    if (_horizontalRuleRegex.hasMatch(paragraphText.trim())) {
+      // Add horizontal rule divider
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Container(
+            height: 2,
+            decoration: BoxDecoration(
+              color: colorScheme.outline.withAlpha(150),
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        ),
+      );
+    } else {
+      // Process paragraph as formatted text
+      final spans = _buildNestedSpans(
+        context,
+        paragraphText,
+        textStyle,
+        baseOffset: baseOffset,
+      );
+      widgets.add(
+        RichText(
+          text: TextSpan(children: spans),
+          textAlign: TextAlign.start,
+        ),
+      );
+    }
   }
+
+
 
   List<InlineSpan> _buildNestedSpans(
     BuildContext context,
     String text,
-    TextStyle style,
-  ) {
+    TextStyle style, {
+    int baseOffset = 0,
+  }) {
     if (text.isEmpty) return [];
 
     final segments = FormatDetector.parseSegments(text);
@@ -184,7 +172,7 @@ class UnifiedTextHandler extends StatelessWidget {
       }
 
       // Process segment
-      spans.add(_buildSegmentSpan(context, segment, style));
+      spans.add(_buildSegmentSpan(context, segment, style, baseOffset: baseOffset));
       lastIndex = segment.end;
     }
 
@@ -199,8 +187,9 @@ class UnifiedTextHandler extends StatelessWidget {
   InlineSpan _buildSegmentSpan(
     BuildContext context,
     FormatSegment segment,
-    TextStyle baseStyle,
-  ) {
+    TextStyle baseStyle, {
+    int baseOffset = 0,
+  }) {
     switch (segment.type) {
       case FormatType.noteLink:
         if (!enableNoteLinkDetection) {
@@ -268,6 +257,9 @@ class UnifiedTextHandler extends StatelessWidget {
         ).firstMatch(segment.originalText);
         final indent = match?.group(1) ?? '';
         final content = match?.group(2) ?? '';
+        // In Dart, match.start is a getter for the whole match. 
+        // We find the index of the content within originalText.
+        final contentOffset = segment.originalText.lastIndexOf(content);
 
         return TextSpan(
           children: [
@@ -277,7 +269,7 @@ class UnifiedTextHandler extends StatelessWidget {
               child: MouseRegion(
                 cursor: SystemMouseCursors.click,
                 child: GestureDetector(
-                  onTap: () => _toggleCheckbox(segment, isChecked),
+                  onTap: () => _toggleCheckbox(segment, isChecked, baseOffset),
                   child: Padding(
                     padding: const EdgeInsets.only(right: 6.0),
                     child: Icon(
@@ -299,8 +291,10 @@ class UnifiedTextHandler extends StatelessWidget {
               content,
               baseStyle.copyWith(
                 color: isChecked ? Colors.grey : baseStyle.color,
-                decoration: isChecked ? TextDecoration.lineThrough : null,
+                decoration:
+                    isChecked ? TextDecoration.lineThrough : TextDecoration.none,
               ),
+              baseOffset: baseOffset + segment.start + contentOffset,
             ),
           ],
         );
@@ -315,11 +309,17 @@ class UnifiedTextHandler extends StatelessWidget {
           multiLine: true,
         ).firstMatch(segment.originalText);
         final content = match?.group(1) ?? '';
+        final contentOffset = segment.originalText.lastIndexOf(content);
 
         return TextSpan(
           children: [
             TextSpan(text: '• ', style: baseStyle), // Standardize bullet
-            ..._buildNestedSpans(context, content, baseStyle),
+            ..._buildNestedSpans(
+              context,
+              content,
+              baseStyle,
+              baseOffset: baseOffset + segment.start + contentOffset,
+            ),
           ],
         );
 
@@ -334,11 +334,17 @@ class UnifiedTextHandler extends StatelessWidget {
         ).firstMatch(segment.originalText);
         final marker = match?.group(1) ?? '1.';
         final content = match?.group(2) ?? '';
+        final contentOffset = segment.originalText.lastIndexOf(content);
 
         return TextSpan(
           children: [
             TextSpan(text: '$marker ', style: baseStyle),
-            ..._buildNestedSpans(context, content, baseStyle),
+            ..._buildNestedSpans(
+              context,
+              content,
+              baseStyle,
+              baseOffset: baseOffset + segment.start + contentOffset,
+            ),
           ],
         );
 
@@ -352,21 +358,27 @@ class UnifiedTextHandler extends StatelessWidget {
         }
 
         double fontSize = baseStyle.fontSize ?? 16;
+        int markerLength = 0;
         switch (segment.type) {
           case FormatType.heading1:
             fontSize *= 2.0;
+            markerLength = 2; // # plus space
             break;
           case FormatType.heading2:
             fontSize *= 1.5;
+            markerLength = 3; // ## plus space
             break;
           case FormatType.heading3:
             fontSize *= 1.3;
+            markerLength = 4; // ### plus space
             break;
           case FormatType.heading4:
             fontSize *= 1.2;
+            markerLength = 5; // #### plus space
             break;
           case FormatType.heading5:
             fontSize *= 1.1;
+            markerLength = 6; // ##### plus space
             break;
           default:
             break;
@@ -378,7 +390,12 @@ class UnifiedTextHandler extends StatelessWidget {
         );
 
         return TextSpan(
-          children: _buildNestedSpans(context, segment.text, headingStyle),
+          children: _buildNestedSpans(
+            context,
+            segment.text,
+            headingStyle,
+            baseOffset: baseOffset + segment.start + markerLength,
+          ),
         );
 
       case FormatType.bold:
@@ -387,6 +404,7 @@ class UnifiedTextHandler extends StatelessWidget {
             context,
             segment.text,
             baseStyle.copyWith(fontWeight: FontWeight.bold),
+            baseOffset: baseOffset + segment.start + 2, // ** or __
           ),
         );
 
@@ -396,6 +414,7 @@ class UnifiedTextHandler extends StatelessWidget {
             context,
             segment.text,
             baseStyle.copyWith(fontStyle: FontStyle.italic),
+            baseOffset: baseOffset + segment.start + 1, // * or _
           ),
         );
 
@@ -405,6 +424,7 @@ class UnifiedTextHandler extends StatelessWidget {
             context,
             segment.text,
             baseStyle.copyWith(decoration: TextDecoration.lineThrough),
+            baseOffset: baseOffset + segment.start + 2, // ~~
           ),
         );
 
@@ -442,18 +462,22 @@ class UnifiedTextHandler extends StatelessWidget {
     }
   }
 
-  void _toggleCheckbox(FormatSegment segment, bool isChecked) {
+  void _toggleCheckbox(FormatSegment segment, bool isChecked, int baseOffset) {
     if (onTextChanged == null) return;
 
-    final newText = text.replaceRange(
-      segment.start,
-      segment.end,
-      segment.originalText.replaceFirst(
-        RegExp(r'\[\s*[xX\s]?\s*\]'),
-        isChecked ? '[ ]' : '[x]',
-      ),
+    // Find the exact line in the current text
+    final lineText = segment.originalText;
+    final start = text.indexOf(lineText);
+    if (start == -1 || start + lineText.length > text.length) return;
+
+    final end = start + lineText.length;
+
+    final newLineText = lineText.replaceFirst(
+      RegExp(r'\[\s*[xX\s]?\s*\]'),
+      isChecked ? '[ ]' : '[x]',
     );
 
+    final newText = text.replaceRange(start, end, newLineText);
     onTextChanged!(newText);
   }
 
@@ -733,7 +757,7 @@ class _InlineCodeWidgetState extends State<_InlineCodeWidget> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
       child: MouseRegion(
         onEnter: (_) => setState(() => _isHovered = true),
         onExit:
@@ -821,7 +845,7 @@ class _TaggedCodeWidgetState extends State<_TaggedCodeWidget> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
       child: MouseRegion(
         onEnter: (_) => setState(() => _isHovered = true),
         onExit:

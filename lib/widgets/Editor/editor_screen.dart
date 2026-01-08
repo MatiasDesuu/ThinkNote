@@ -789,7 +789,8 @@ class _NotaEditorState extends State<NotaEditor>
     final cursorPosition = selection.baseOffset;
 
     // Find the start and end of the current line
-    int lineStart = text.lastIndexOf('\n', cursorPosition - 1) + 1;
+    int lineStart =
+        cursorPosition > 0 ? text.lastIndexOf('\n', cursorPosition - 1) + 1 : 0;
     int lineEnd = text.indexOf('\n', cursorPosition);
     if (lineEnd == -1) lineEnd = text.length;
 

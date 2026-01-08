@@ -227,7 +227,7 @@ class FormatDetector {
     ),
     _FormatPattern(
       type: FormatType.taggedCode,
-      regex: RegExp(r'(?<!\[)\[([^\[\]]+)\](?![(\[])'),
+      regex: RegExp(r'(?<!\[)\[([^\[\]]+)\]'),
       contentExtractor: (m) => m.group(1) ?? '',
     ),
   ];
