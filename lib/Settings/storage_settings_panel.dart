@@ -211,7 +211,7 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                         maxLines: 1,
                       ),
                     ),
-                    onPressed: _isExporting ? null : _exportDatabase,
+                    onPressed: _isExporting || _isPickerOpen ? null : _exportDatabase,
                     style: buttonStyle,
                   ),
                 ),
@@ -241,7 +241,7 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                         maxLines: 1,
                       ),
                     ),
-                    onPressed: _isExportingToFiles ? null : _exportToFiles,
+                    onPressed: _isExportingToFiles || _isPickerOpen ? null : _exportToFiles,
                     style: buttonStyle,
                   ),
                 ),
@@ -272,7 +272,7 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                       ),
                     ),
                     onPressed:
-                        _isExportingBookmarks ? null : _exportBookmarksToHtml,
+                        _isExportingBookmarks || _isPickerOpen ? null : _exportBookmarksToHtml,
                     style: buttonStyle,
                   ),
                 ),
@@ -365,7 +365,7 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                         maxLines: 1,
                       ),
                     ),
-                    onPressed: _isDeleting ? null : _deleteDatabase,
+                    onPressed: _isDeleting || _isPickerOpen ? null : _deleteDatabase,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colorScheme.error,
                       foregroundColor: colorScheme.onError,
@@ -510,6 +510,7 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
   }
 
   Future<void> _optimizeDatabase() async {
+    setState(() => _isPickerOpen = true);
     final confirmed = await showDialog<bool>(
       context: context,
       builder:
@@ -636,9 +637,15 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
           ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true) {
+      if (mounted) setState(() => _isPickerOpen = false);
+      return;
+    }
 
-    setState(() => _isOptimizing = true);
+    setState(() {
+      _isOptimizing = true;
+      _isPickerOpen = false;
+    });
     try {
       await DatabaseService().optimizeDatabase();
 
@@ -661,7 +668,7 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
   }
 
   Future<void> _deleteDatabase() async {
-    setState(() => _isDeleting = true);
+    setState(() => _isPickerOpen = true);
     try {
       final colorScheme = Theme.of(context).colorScheme;
       final confirmed = await showDeleteConfirmationDialog(
@@ -674,6 +681,10 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
       );
 
       if (confirmed == true) {
+        setState(() {
+          _isDeleting = true;
+          _isPickerOpen = false;
+        });
         await DatabaseService().deleteDatabase();
 
         if (!mounted) return;
@@ -691,12 +702,17 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
         type: CustomSnackbarType.error,
       );
     } finally {
-      setState(() => _isDeleting = false);
+      if (mounted) {
+        setState(() {
+          _isDeleting = false;
+          _isPickerOpen = false;
+        });
+      }
     }
   }
 
   Future<void> _exportDatabase() async {
-    setState(() => _isExporting = true);
+    setState(() => _isPickerOpen = true);
     try {
       final result = await FilePicker.platform.saveFile(
         dialogTitle: 'Export Database',
@@ -706,6 +722,10 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
       );
 
       if (result != null) {
+        setState(() {
+          _isExporting = true;
+          _isPickerOpen = false;
+        });
         await DatabaseService().exportDatabase(result);
 
         if (!mounted) return;
@@ -723,18 +743,27 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
         type: CustomSnackbarType.error,
       );
     } finally {
-      setState(() => _isExporting = false);
+      if (mounted) {
+        setState(() {
+          _isExporting = false;
+          _isPickerOpen = false;
+        });
+      }
     }
   }
 
   Future<void> _exportToFiles() async {
-    setState(() => _isExportingToFiles = true);
+    setState(() => _isPickerOpen = true);
     try {
       final result = await FilePicker.platform.getDirectoryPath(
         dialogTitle: 'Select Export Directory',
       );
 
       if (result != null) {
+        setState(() {
+          _isExportingToFiles = true;
+          _isPickerOpen = false;
+        });
         await DatabaseService().exportToFiles(result);
 
         if (!mounted) return;
@@ -752,12 +781,17 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
         type: CustomSnackbarType.error,
       );
     } finally {
-      setState(() => _isExportingToFiles = false);
+      if (mounted) {
+        setState(() {
+          _isExportingToFiles = false;
+          _isPickerOpen = false;
+        });
+      }
     }
   }
 
   Future<void> _exportBookmarksToHtml() async {
-    setState(() => _isExportingBookmarks = true);
+    setState(() => _isPickerOpen = true);
     try {
       final result = await FilePicker.platform.saveFile(
         dialogTitle: 'Export Bookmarks to HTML',
@@ -767,6 +801,10 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
       );
 
       if (result != null) {
+        setState(() {
+          _isExportingBookmarks = true;
+          _isPickerOpen = false;
+        });
         await DatabaseService().exportBookmarksToHtml(result);
 
         if (!mounted) return;
@@ -784,7 +822,12 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
         type: CustomSnackbarType.error,
       );
     } finally {
-      setState(() => _isExportingBookmarks = false);
+      if (mounted) {
+        setState(() {
+          _isExportingBookmarks = false;
+          _isPickerOpen = false;
+        });
+      }
     }
   }
 }
