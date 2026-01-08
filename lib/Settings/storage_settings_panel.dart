@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../database/database_service.dart';
 import '../widgets/custom_snackbar.dart';
 import '../widgets/confirmation_dialogue.dart';
+import '../widgets/custom_dialog.dart';
 
 class StorageSettingsPanel extends StatefulWidget {
   const StorageSettingsPanel({super.key});
@@ -22,6 +23,9 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
   bool _isExportingToFiles = false;
   bool _isImportingFromFolder = false;
   bool _isExportingBookmarks = false;
+  bool _isOptimizing = false;
+  bool _isPickerOpen = false;
+  double _importProgress = 0.0;
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +98,9 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                     label: FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
-                        _isImporting ? 'Importing...' : 'Import from ZIP',
+                        _isImporting
+                            ? 'Importing (${(_importProgress * 100).toStringAsFixed(0)}%)...'
+                            : 'Import from ZIP',
                         style: textStyle?.copyWith(
                           color: colorScheme.onPrimary,
                           fontWeight: FontWeight.bold,
@@ -103,10 +109,14 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                         maxLines: 1,
                       ),
                     ),
-                    onPressed: _isImporting ? null : _importZipFile,
+                    onPressed: _isImporting || _isImportingFromFolder || _isPickerOpen ? null : _importZipFile,
                     style: buttonStyle,
                   ),
                 ),
+                if (_isImporting) ...[
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(value: _importProgress),
+                ],
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
@@ -123,7 +133,7 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                       fit: BoxFit.scaleDown,
                       child: Text(
                         _isImportingFromFolder
-                            ? 'Importing...'
+                            ? 'Importing (${(_importProgress * 100).toStringAsFixed(0)}%)...'
                             : 'Import from Folder',
                         style: textStyle?.copyWith(
                           color: colorScheme.onPrimary,
@@ -134,10 +144,14 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                       ),
                     ),
                     onPressed:
-                        _isImportingFromFolder ? null : _importFromFolder,
+                        _isImporting || _isImportingFromFolder || _isPickerOpen ? null : _importFromFolder,
                     style: buttonStyle,
                   ),
                 ),
+                if (_isImportingFromFolder) ...[
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(value: _importProgress),
+                ],
               ],
             ),
           ),
@@ -300,6 +314,38 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     icon:
+                        _isOptimizing
+                            ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : const Icon(Icons.auto_fix_high_rounded),
+                    label: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        _isOptimizing ? 'Optimizing...' : 'Optimize Database',
+                        style: textStyle?.copyWith(
+                          color: colorScheme.onPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
+                    onPressed: _isOptimizing ? null : _optimizeDatabase,
+                    style: buttonStyle,
+                  ),
+                ),
+                if (_isOptimizing) ...[
+                  const SizedBox(height: 8),
+                  const LinearProgressIndicator(),
+                ],
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon:
                         _isDeleting
                             ? const SizedBox(
                               width: 24,
@@ -339,8 +385,38 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
     );
   }
 
+  Widget _buildBulletPoint(BuildContext context, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 7, right: 10),
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 14,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _importZipFile() async {
-    setState(() => _isImporting = true);
+    setState(() => _isPickerOpen = true);
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -350,7 +426,17 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
       if (result != null && result.files.isNotEmpty) {
         final zipFile = result.files.first;
         if (zipFile.path != null) {
-          await DatabaseService().importFromZip(zipFile.path!);
+          setState(() {
+            _isImporting = true;
+            _importProgress = 0.0;
+            _isPickerOpen = false;
+          });
+          await DatabaseService().importFromZip(
+            zipFile.path!,
+            onProgress: (progress) {
+              setState(() => _importProgress = progress);
+            },
+          );
 
           if (!mounted) return;
           CustomSnackbar.show(
@@ -368,19 +454,35 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
         type: CustomSnackbarType.error,
       );
     } finally {
-      setState(() => _isImporting = false);
+      if (mounted) {
+        setState(() {
+          _isImporting = false;
+          _isPickerOpen = false;
+          _importProgress = 0.0;
+        });
+      }
     }
   }
 
   Future<void> _importFromFolder() async {
-    setState(() => _isImportingFromFolder = true);
+    setState(() => _isPickerOpen = true);
     try {
       final result = await FilePicker.platform.getDirectoryPath(
         dialogTitle: 'Select Import Directory',
       );
 
       if (result != null) {
-        await DatabaseService().importFromFolder(result);
+        setState(() {
+          _isImportingFromFolder = true;
+          _importProgress = 0.0;
+          _isPickerOpen = false;
+        });
+        await DatabaseService().importFromFolder(
+          result,
+          onProgress: (progress) {
+            setState(() => _importProgress = progress);
+          },
+        );
 
         if (!mounted) return;
         CustomSnackbar.show(
@@ -397,7 +499,164 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
         type: CustomSnackbarType.error,
       );
     } finally {
-      setState(() => _isImportingFromFolder = false);
+      if (mounted) {
+        setState(() {
+          _isImportingFromFolder = false;
+          _isPickerOpen = false;
+          _importProgress = 0.0;
+        });
+      }
+    }
+  }
+
+  Future<void> _optimizeDatabase() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => CustomDialog(
+            title: 'Optimize Database',
+            icon: Icons.auto_fix_high_rounded,
+            width: 450,
+            bottomBar: Container(
+              height: 64,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: TextButton.styleFrom(
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surfaceContainerHigh,
+                        foregroundColor: Theme.of(context).colorScheme.onSurface,
+                        minimumSize: const Size(0, 44),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        minimumSize: const Size(0, 44),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Optimize',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'This process will perform a VACUUM operation on your database. It includes:',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildBulletPoint(
+                    context,
+                    'Reclaiming unused disk space.',
+                  ),
+                  _buildBulletPoint(
+                    context,
+                    'Defragmenting the database file.',
+                  ),
+                  _buildBulletPoint(
+                    context,
+                    'Improving database performance.',
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primaryContainer
+                          .withAlpha(50),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withAlpha(50),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 20,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Your notes and data will NOT be deleted.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isOptimizing = true);
+    try {
+      await DatabaseService().optimizeDatabase();
+
+      if (!mounted) return;
+      CustomSnackbar.show(
+        context: context,
+        message: 'Database optimized successfully',
+        type: CustomSnackbarType.success,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      CustomSnackbar.show(
+        context: context,
+        message: 'Error optimizing database: $e',
+        type: CustomSnackbarType.error,
+      );
+    } finally {
+      setState(() => _isOptimizing = false);
     }
   }
 

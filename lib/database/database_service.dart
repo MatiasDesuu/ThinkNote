@@ -63,12 +63,20 @@ class DatabaseService {
     DatabaseHelper.notifyDatabaseChanged();
   }
 
-  Future<void> importFromZip(String zipPath) async {
+  Future<int> _countEntities(Directory dir) async {
+    final entities = await dir.list(recursive: true).toList();
+    return entities.length;
+  }
+
+  Future<void> importFromZip(String zipPath, {void Function(double)? onProgress}) async {
     // 1. Descomprimir el archivo en una carpeta temporal
     final tempDir = await Directory.systemTemp.createTemp('thinknote_import_');
     try {
       final bytes = await File(zipPath).readAsBytes();
       final archive = ZipDecoder().decodeBytes(bytes);
+
+      final totalEntries = archive.length;
+      int extractedCount = 0;
 
       for (final file in archive) {
         final outFile = File(path.join(tempDir.path, file.name));
@@ -76,6 +84,8 @@ class DatabaseService {
           await outFile.create(recursive: true);
           await outFile.writeAsBytes(file.content as List<int>);
         }
+        extractedCount++;
+        onProgress?.call((extractedCount / totalEntries) * 0.5); // 50% for extraction
       }
 
       // 2. Obtener la base de datos
@@ -83,7 +93,13 @@ class DatabaseService {
       final db = await dbHelper.database;
 
       // 3. Recorrer la estructura de carpetas y archivos
-      await _processDirectory(tempDir, db, null);
+      final totalToProcess = await _countEntities(tempDir);
+      int processedCount = 0;
+
+      await _processDirectory(tempDir, db, null, (processed) {
+        processedCount += processed;
+        onProgress?.call(0.5 + ((processedCount / totalToProcess) * 0.5)); // 50% for processing
+      });
 
       // 4. Notificar que la base de datos ha cambiado
       notifyDatabaseChanged();
@@ -93,7 +109,7 @@ class DatabaseService {
     }
   }
 
-  Future<void> importFromFolder(String folderPath) async {
+  Future<void> importFromFolder(String folderPath, {void Function(double)? onProgress}) async {
     try {
       final sourceDir = Directory(folderPath);
       if (!await sourceDir.exists()) {
@@ -104,13 +120,23 @@ class DatabaseService {
       final dbHelper = DatabaseHelper();
       final db = await dbHelper.database;
 
+      final totalEntities = await _countEntities(sourceDir);
+      int processedCount = 0;
+
       // Procesar la estructura de carpetas y archivos (notebooks y notas)
-      await _processDirectoryFromFolder(sourceDir, db, null);
+      await _processDirectoryFromFolder(sourceDir, db, null, (processed) {
+        processedCount += processed;
+        onProgress?.call(processedCount / totalEntities);
+      });
 
       // Procesar la carpeta Thinks si existe
       final thinksDir = Directory(path.join(folderPath, 'Thinks'));
       if (await thinksDir.exists()) {
-        await _importThinksFromFolder(thinksDir, db);
+        // Note: _importThinksFromFolder might need progress too but it's part of the same count
+        await _importThinksFromFolder(thinksDir, db, (processed) {
+          processedCount += processed;
+          onProgress?.call(processedCount / totalEntities);
+        });
       }
 
       // Notificar que la base de datos ha cambiado
@@ -126,6 +152,7 @@ class DatabaseService {
     Directory dir,
     sqlite.Database db,
     int? parentId,
+    void Function(int) onItemProcessed,
   ) async {
     final entities = await dir.list().toList();
 
@@ -152,8 +179,10 @@ class DatabaseService {
         final result = db.select('SELECT last_insert_rowid() as id');
         final notebookId = result.first['id'] as int;
 
+        onItemProcessed(1);
+
         // Procesar recursivamente el contenido de la carpeta
-        await _processDirectory(entity, db, notebookId);
+        await _processDirectory(entity, db, notebookId, onItemProcessed);
       }
     }
 
@@ -184,6 +213,7 @@ class DatabaseService {
             0,
           ],
         );
+        onItemProcessed(1);
       }
     }
   }
@@ -192,6 +222,7 @@ class DatabaseService {
     Directory dir,
     sqlite.Database db,
     int? parentId,
+    void Function(int) onItemProcessed,
   ) async {
     final entities = await dir.list().toList();
 
@@ -227,8 +258,10 @@ class DatabaseService {
         final result = db.select('SELECT last_insert_rowid() as id');
         final notebookId = result.first['id'] as int;
 
+        onItemProcessed(1);
+
         // Procesar recursivamente el contenido de la carpeta
-        await _processDirectoryFromFolder(entity, db, notebookId);
+        await _processDirectoryFromFolder(entity, db, notebookId, onItemProcessed);
       }
     }
 
@@ -290,6 +323,7 @@ class DatabaseService {
             0,
           ],
         );
+        onItemProcessed(1);
       }
     }
   }
@@ -297,6 +331,7 @@ class DatabaseService {
   Future<void> _importThinksFromFolder(
     Directory thinksDir,
     sqlite.Database db,
+    void Function(int) onItemProcessed,
   ) async {
     final entities = await thinksDir.list().toList();
 
@@ -324,6 +359,7 @@ class DatabaseService {
             DateTime.now().millisecondsSinceEpoch,
           ],
         );
+        onItemProcessed(1);
       }
     }
   }
@@ -337,6 +373,17 @@ class DatabaseService {
       notifyDatabaseChanged();
     } catch (e) {
       throw Exception('Error deleting database: $e');
+    }
+  }
+
+  Future<void> optimizeDatabase() async {
+    try {
+      final dbHelper = DatabaseHelper();
+      final db = await dbHelper.database;
+      db.execute('VACUUM');
+      notifyDatabaseChanged();
+    } catch (e) {
+      throw Exception('Error optimizing database: $e');
     }
   }
 
