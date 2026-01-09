@@ -8,6 +8,7 @@ import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:collection/collection.dart';
 
 // Handlers
 import 'shortcuts_handler.dart';
@@ -1103,6 +1104,85 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
           context: context,
           message:
               'Error creating todo: ${e.toString().replaceAll('Exception: ', '')}',
+          type: CustomSnackbarType.error,
+        );
+      }
+    }
+  }
+
+  Future<Notebook> _getOrCreateDraftsNotebook() async {
+    final dbHelper = DatabaseHelper();
+    final notebookRepository = NotebookRepository(dbHelper);
+
+    // Search for "Drafts" in root
+    final rootNotebooks = await notebookRepository.getNotebooksByParentId(null);
+    final drafts = rootNotebooks.where((n) => n.name == 'Drafts').firstOrNull;
+
+    if (drafts != null) {
+      return drafts;
+    }
+
+    // Create it
+    final newDrafts = Notebook(
+      name: 'Drafts',
+      parentId: null,
+      createdAt: DateTime.now(),
+      orderIndex: 0,
+    );
+
+    final id = await notebookRepository.createNotebook(newDrafts);
+    return (await notebookRepository.getNotebook(id))!;
+  }
+
+  Future<void> _createQuickNote({required bool isTask}) async {
+    final dbHelper = DatabaseHelper();
+    final noteRepository = NoteRepository(dbHelper);
+
+    try {
+      final draftsNotebook = await _getOrCreateDraftsNotebook();
+
+      final newNote = Note(
+        title: isTask ? 'New Todo' : 'New Note',
+        content: '',
+        notebookId: draftsNotebook.id!,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        isFavorite: false,
+        tags: '',
+        isTask: isTask,
+        isCompleted: false,
+      );
+
+      final noteId = await noteRepository.createNote(newNote);
+      final createdNote = await noteRepository.getNote(noteId);
+
+      if (createdNote != null) {
+        // If the active tab is empty, assign the note to it
+        if (_tabManager.activeTab?.isEmpty ?? false) {
+          _tabManager.assignNoteToActiveTab(createdNote);
+        } else {
+          // Otherwise open a new tab
+          _tabManager.openTab(createdNote);
+        }
+
+        _selectNote(createdNote);
+        _databaseSidebarKey.currentState?.reloadSidebar();
+        DatabaseHelper.notifyDatabaseChanged();
+
+        // Move focus to editor after creating the new note
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted && _appFocusNode.canRequestFocus) {
+            FocusScope.of(context).requestFocus(_appFocusNode);
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error creating quick note: $e');
+      if (mounted) {
+        CustomSnackbar.show(
+          context: context,
+          message:
+              'Error creating note: ${e.toString().replaceAll('Exception: ', '')}',
           type: CustomSnackbarType.error,
         );
       }
@@ -2762,7 +2842,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.note_add_outlined,
+                        Icons.note_alt_outlined,
                         size: 64,
                         color: Theme.of(
                           context,
@@ -2775,6 +2855,40 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                           color: Theme.of(
                             context,
                           ).colorScheme.onSurface.withAlpha(127),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () => _createQuickNote(isTask: false),
+                        icon: const Icon(Icons.note_add_rounded),
+                        label: const Text('Create New Note'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
+                          minimumSize: const Size(200, 45),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: () => _createQuickNote(isTask: true),
+                        icon: const Icon(Icons.add_task_rounded),
+                        label: const Text('Create New Todo'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
+                          minimumSize: const Size(200, 45),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ],
