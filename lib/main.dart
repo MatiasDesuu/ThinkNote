@@ -2666,6 +2666,11 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   void _onNewTab() {
     _tabManager.createEmptyTab();
 
+    // Force rebuild to show the new tab immediately
+    if (mounted) {
+      setState(() {});
+    }
+
     // Move focus to tabs immediately after creating a new tab
     if (mounted && _editorTabsKey.currentState != null) {
       _editorTabsKey.currentState!.requestFocus();
