@@ -17,6 +17,9 @@ import '../Settings/settings_screen.dart';
 import '../widgets/Editor/editor_screen.dart';
 import '../widgets/Editor/search_handler.dart';
 import '../database/models/note.dart';
+import '../database/models/notebook.dart';
+import '../database/repositories/notebook_repository.dart';
+import '../database/repositories/note_repository.dart';
 import '../widgets/custom_snackbar.dart';
 import '../widgets/context_menu.dart';
 import '../widgets/confirmation_dialogue.dart';
@@ -240,6 +243,76 @@ class _ThinksScreenState extends State<ThinksScreen>
             type: CustomSnackbarType.error,
           );
         }
+      }
+    }
+  }
+
+  Future<void> _moveToDrafts(Think think) async {
+    try {
+      final dbHelper = DatabaseHelper();
+      final notebookRepo = NotebookRepository(dbHelper);
+      final noteRepo = NoteRepository(dbHelper);
+
+      // Search for "Drafts" in root
+      final rootNotebooks = await notebookRepo.getNotebooksByParentId(null);
+      var drafts = rootNotebooks.where((n) => n.name == 'Drafts').firstOrNull;
+
+      if (drafts == null) {
+        final newDrafts = Notebook(
+          name: 'Drafts',
+          parentId: null,
+          createdAt: DateTime.now(),
+          orderIndex: 0,
+        );
+        final id = await notebookRepo.createNotebook(newDrafts);
+        drafts = await notebookRepo.getNotebook(id);
+      }
+
+      if (drafts == null) {
+        throw Exception('Could not access Drafts notebook');
+      }
+
+      // Create Note from Think
+      final noteToAdd = Note(
+        title: think.title,
+        content: think.content,
+        notebookId: drafts.id!,
+        createdAt: think.createdAt,
+        updatedAt: DateTime.now(),
+        isFavorite: think.isFavorite,
+        tags: think.tags,
+      );
+
+      await noteRepo.createNote(noteToAdd);
+
+      // Delete Think
+      await _thinkService.deleteThink(think.id!);
+
+      if (mounted) {
+        // If the moved Think is the current one, clear the editor
+        if (_selectedThink?.id == think.id) {
+          setState(() {
+            _selectedThink = null;
+            _noteController.text = '';
+            _titleController.text = '';
+          });
+        }
+
+        await _loadThinks();
+
+        CustomSnackbar.show(
+          context: context,
+          message: 'Think moved to Drafts',
+          type: CustomSnackbarType.success,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomSnackbar.show(
+          context: context,
+          message: 'Error moving to Drafts: ${e.toString()}',
+          type: CustomSnackbarType.error,
+        );
       }
     }
   }
@@ -484,6 +557,11 @@ class _ThinksScreenState extends State<ThinksScreen>
           label:
               think.isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
           onTap: () => _toggleFavorite(think),
+        ),
+        ContextMenuItem(
+          icon: Icons.move_to_inbox_rounded,
+          label: 'Move to Drafts',
+          onTap: () => _moveToDrafts(think),
         ),
         ContextMenuItem(
           icon: Icons.delete_rounded,
