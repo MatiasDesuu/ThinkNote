@@ -35,6 +35,7 @@ class ShortcutsHandler {
     required VoidCallback onCloseTab,
     required VoidCallback onNewTab,
     required VoidCallback onToggleReadMode,
+    required VoidCallback onToggleSplitView,
     required VoidCallback onToggleCalendarPanel,
     required VoidCallback onToggleFavoritesPanel,
     required VoidCallback onToggleTrashPanel,
@@ -79,6 +80,12 @@ class ShortcutsHandler {
       const SingleActivator(LogicalKeyboardKey.keyW, control: true): onCloseTab,
       const SingleActivator(LogicalKeyboardKey.keyP, control: true):
           onToggleReadMode,
+      const SingleActivator(
+            LogicalKeyboardKey.keyP,
+            control: true,
+            shift: true,
+          ):
+          onToggleSplitView,
     };
   }
 
@@ -101,6 +108,7 @@ class ShortcutsHandler {
     required VoidCallback onCloseTab,
     required VoidCallback onNewTab,
     required VoidCallback onToggleReadMode,
+    required VoidCallback onToggleSplitView,
     required VoidCallback onToggleCalendarPanel,
     required VoidCallback onToggleFavoritesPanel,
     required VoidCallback onToggleTrashPanel,
@@ -122,6 +130,10 @@ class ShortcutsHandler {
       }
       if (key == LogicalKeyboardKey.keyF) {
         onGlobalSearch();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.keyP) {
+        onToggleSplitView();
         return true;
       }
       if (key == LogicalKeyboardKey.keyT) {
@@ -282,6 +294,7 @@ class GlobalAppShortcuts extends StatefulWidget {
   final VoidCallback onCloseTab;
   final VoidCallback onNewTab;
   final VoidCallback onToggleReadMode;
+  final VoidCallback onToggleSplitView;
   final VoidCallback onToggleCalendarPanel;
   final VoidCallback onToggleFavoritesPanel;
   final VoidCallback onToggleTrashPanel;
@@ -309,6 +322,7 @@ class GlobalAppShortcuts extends StatefulWidget {
     required this.onCloseTab,
     required this.onNewTab,
     required this.onToggleReadMode,
+    required this.onToggleSplitView,
     required this.onToggleCalendarPanel,
     required this.onToggleFavoritesPanel,
     required this.onToggleTrashPanel,
@@ -362,6 +376,7 @@ class _GlobalAppShortcutsState extends State<GlobalAppShortcuts> {
       onCloseTab: widget.onCloseTab,
       onNewTab: widget.onNewTab,
       onToggleReadMode: widget.onToggleReadMode,
+      onToggleSplitView: widget.onToggleSplitView,
       onToggleCalendarPanel: widget.onToggleCalendarPanel,
       onToggleFavoritesPanel: widget.onToggleFavoritesPanel,
       onToggleTrashPanel: widget.onToggleTrashPanel,

@@ -31,9 +31,17 @@ import '../draggable_header.dart';
 // Global reference to the current active editor's toggle read mode function
 VoidCallback? _currentActiveEditorToggleReadMode;
 
+// Global reference to the current active editor's toggle split view function
+VoidCallback? _currentActiveEditorToggleSplitView;
+
 // Global function to toggle read mode on the currently active editor
 void toggleActiveEditorReadMode() {
   _currentActiveEditorToggleReadMode?.call();
+}
+
+// Global function to toggle split view on the currently active editor
+void toggleActiveEditorSplitView() {
+  _currentActiveEditorToggleSplitView?.call();
 }
 
 class NotaEditor extends StatefulWidget {
@@ -234,6 +242,7 @@ class _NotaEditorState extends State<NotaEditor>
 
     // Register this editor as the active one for global toggle function
     _currentActiveEditorToggleReadMode = _toggleReadMode;
+    _currentActiveEditorToggleSplitView = _toggleSplitView;
 
     // Initialize SearchManager
     _searchManager = SearchManager(
@@ -400,6 +409,9 @@ class _NotaEditorState extends State<NotaEditor>
     // Clear global reference if this is the active editor
     if (_currentActiveEditorToggleReadMode == _toggleReadMode) {
       _currentActiveEditorToggleReadMode = null;
+    }
+    if (_currentActiveEditorToggleSplitView == _toggleSplitView) {
+      _currentActiveEditorToggleSplitView = null;
     }
 
     super.dispose();
@@ -1595,7 +1607,7 @@ class _NotaEditorState extends State<NotaEditor>
                               ),
                             ),
                             CustomTooltip(
-                              message: _isReadMode ? 'Edit mode' : 'Read mode',
+                              message: _isReadMode ? 'Edit mode (Ctrl+P)' : 'Read mode (Ctrl+P)',
                               builder: (context, isHovering) => IconButton(
                                 icon: Icon(
                                   _isReadMode
@@ -1607,7 +1619,7 @@ class _NotaEditorState extends State<NotaEditor>
                               ),
                             ),
                             CustomTooltip(
-                              message: 'Split view',
+                              message: 'Split view (Ctrl+Shift+P)',
                               builder: (context, isHovering) => IconButton(
                                 icon: Icon(
                                   _isSplitView
@@ -1619,7 +1631,7 @@ class _NotaEditorState extends State<NotaEditor>
                               ),
                             ),
                             CustomTooltip(
-                              message: _isEditorCentered ? 'Disable centered layout' : 'Enable centered layout',
+                              message: _isEditorCentered ? 'Disable centered layout (F1)' : 'Enable centered layout (F1)',
                               builder: (context, isHovering) => IconButton(
                                 icon: Icon(
                                   _isEditorCentered
@@ -1648,7 +1660,7 @@ class _NotaEditorState extends State<NotaEditor>
                             ),
                             if (_immersiveModeService.isImmersiveMode)
                               CustomTooltip(
-                                message: 'Exit immersive mode',
+                                message: 'Exit immersive mode (F4)',
                                 builder: (context, isHovering) => IconButton(
                                   icon: Icon(
                                     Icons.fullscreen_exit_rounded,
@@ -1761,7 +1773,7 @@ class _NotaEditorState extends State<NotaEditor>
                                           VerticalDivider(
                                             width: 1,
                                             thickness: 1,
-                                            color: Theme.of(context).colorScheme.outline,
+                                            color: Theme.of(context).colorScheme.outline.withAlpha(128),
                                           ),
                                           const SizedBox(width: 16),
                                           Expanded(

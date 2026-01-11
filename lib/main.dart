@@ -2015,6 +2015,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       onCloseTab: _closeCurrentTab,
       onNewTab: _onNewTab,
       onToggleReadMode: toggleActiveEditorReadMode,
+      onToggleSplitView: toggleActiveEditorSplitView,
       onToggleCalendarPanel: _toggleCalendarPanel,
       onToggleFavoritesPanel: _toggleFavoritesPanel,
       onToggleTrashPanel: _toggleTrashPanel,
