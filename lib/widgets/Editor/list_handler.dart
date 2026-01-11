@@ -253,10 +253,10 @@ class ListItem {
 }
 
 class ListDetector {
-  static final RegExp _numberedListRegex = RegExp(r'^\s*(\d+)\.\s+(.*)$');
-  static final RegExp _bulletListRegex = RegExp(r'^\s*([-•◦▪])\s+(.*)$');
+  static final RegExp _numberedListRegex = RegExp(r'^\s*(\d+)\.\s(.*)$');
+  static final RegExp _bulletListRegex = RegExp(r'^\s*([-•◦▪])\s(.*)$');
   static final RegExp _checkboxListRegex = RegExp(
-    r'^\s*([-•◦▪])\s?\[\s*([x\s]?)\s*\]\s*(.*)$',
+    r'^\s*([-•◦▪])\s?\[\s*([x\s]?)\s*\]\s(.*)$',
     caseSensitive: false,
   );
 

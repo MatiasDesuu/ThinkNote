@@ -192,13 +192,13 @@ class UnifiedTextHandler extends StatelessWidget {
         segment.type == FormatType.checkboxChecked) {
       isChecked = segment.type == FormatType.checkboxChecked;
       final match = RegExp(
-        r'^(\s*)([-•◦▪])\s?\[\s*[xX\s]?\s*\]\s*(.*)$',
+        r'^(\s*)([-•◦▪])\s?\[\s*[xX\s]?\s*\]\s(.*)$',
       ).firstMatch(segment.originalText);
       indent = match?.group(1) ?? '';
       content = match?.group(3) ?? '';
     } else if (segment.type == FormatType.bullet) {
       final match = RegExp(
-        r'^(\s*)[-•*]\s+(.*)$',
+        r'^(\s*)[-•*]\s(.*)$',
       ).firstMatch(segment.originalText);
       indent = match?.group(1) ?? '';
       int spaceCount = indent.length;
@@ -212,7 +212,7 @@ class UnifiedTextHandler extends StatelessWidget {
       content = match?.group(2) ?? '';
     } else if (segment.type == FormatType.numbered) {
       final match = RegExp(
-        r'^(\s*)(\d+\.)\s+(.*)$',
+        r'^(\s*)(\d+\.)\s(.*)$',
       ).firstMatch(segment.originalText);
       indent = match?.group(1) ?? '';
       marker = "${match?.group(2) ?? '1.'} ";

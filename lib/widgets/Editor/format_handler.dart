@@ -161,22 +161,22 @@ class FormatDetector {
     // Lists
     _FormatPattern(
       type: FormatType.numbered,
-      regex: RegExp(r'^\s*\d+\.\s+(.+)$', multiLine: true),
+      regex: RegExp(r'^\s*\d+\.\s(.*)$', multiLine: true),
       contentExtractor: (m) => m.group(0)!,
     ),
     _FormatPattern(
       type: FormatType.bullet,
-      regex: RegExp(r'^\s*([-•◦▪])\s+(.+)$', multiLine: true),
+      regex: RegExp(r'^\s*([-•◦▪])\s(.*)$', multiLine: true),
       contentExtractor: (m) => m.group(0)!,
     ),
     _FormatPattern(
       type: FormatType.checkboxUnchecked,
-      regex: RegExp(r'^\s*([-•◦▪])\s?\[\s*(\s?)\s*\]\s*(.+)$', multiLine: true),
+      regex: RegExp(r'^\s*([-•◦▪])\s?\[\s*(\s?)\s*\]\s(.+)$', multiLine: true),
       contentExtractor: (m) => m.group(0)!,
     ),
     _FormatPattern(
       type: FormatType.checkboxChecked,
-      regex: RegExp(r'^\s*([-•◦▪])\s?\[\s*([xX])\s*\]\s*(.+)$', multiLine: true),
+      regex: RegExp(r'^\s*([-•◦▪])\s?\[\s*([xX])\s*\]\s(.+)$', multiLine: true),
       contentExtractor: (m) => m.group(0)!,
     ),
     // Inline Formatting

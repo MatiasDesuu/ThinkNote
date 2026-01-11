@@ -1684,6 +1684,39 @@ class _NotaEditorState extends State<NotaEditor>
           // If not handled by list continuation, let default behavior proceed
         }
 
+        // Handle Tab key
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.tab) {
+          final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+
+          if (!isShiftPressed) {
+            final controller = widget.noteController;
+            final selection = controller.selection;
+
+            if (selection.isValid) {
+              final text = controller.text;
+              const tabString = '    '; // 4 spaces
+
+              final newText = text.replaceRange(
+                selection.start,
+                selection.end,
+                tabString,
+              );
+              final newSelection = TextSelection.collapsed(
+                offset: selection.start + tabString.length,
+              );
+
+              controller.value = controller.value.copyWith(
+                text: newText,
+                selection: newSelection,
+              );
+              widget.onContentChanged();
+            }
+          }
+          // Always return handled for Tab to prevent focus traversal
+          return KeyEventResult.handled;
+        }
+
         // Handle Ctrl+S for manual save (workaround for Linux)
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.keyS &&
