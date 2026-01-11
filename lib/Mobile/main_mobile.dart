@@ -603,7 +603,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                     return Scaffold(
                       key: _scaffoldKey,
                       drawer:
-                          _selectedIndex == 2 || _selectedIndex == 3
+                          _selectedIndex != 0
                               ? null
                               : MobileDrawer(
                                 onNavigateBack: () {},
@@ -643,7 +643,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                 scaffoldKey: _scaffoldKey,
                               ),
                       drawerEdgeDragWidth:
-                          (_selectedIndex == 2 || _selectedIndex == 3)
+                          _selectedIndex != 0
                               ? 0
                               : 150,
                       onDrawerChanged: (isOpened) {

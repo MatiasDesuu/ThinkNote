@@ -64,7 +64,7 @@ class WindowStateManager {
       await prefs.setBool(_isMaximizedKey, isMaximized);
 
       if (!isMaximized) {
-        // Solo guardar tamaño y posición si no está maximizada
+        // Only save size and position if not maximized
         final size = await windowManager.getSize();
         final position = await windowManager.getPosition();
 
@@ -103,7 +103,7 @@ class WindowStateManager {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_isMaximizedKey, true);
 
-      // Guardar la posición del monitor donde se maximizó
+      // Save the position of the monitor where it was maximized
       final position = await windowManager.getPosition();
       await prefs.setDouble(_maxMonitorXKey, position.dx);
       await prefs.setDouble(_maxMonitorYKey, position.dy);
@@ -116,22 +116,21 @@ class WindowStateManager {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_isMaximizedKey, false);
 
-    // Restaurar al tamaño y posición previa, pero ajustar la posición al monitor actual
+    // Restore to previous size and position, adjusted to current monitor
     final preMaxWidth = prefs.getDouble(_preMaxWidthKey);
     final preMaxHeight = prefs.getDouble(_preMaxHeightKey);
 
     if (preMaxWidth != null && preMaxHeight != null) {
-      // Usar el tamaño previo
+      // Use previous size
       await windowManager.setSize(Size(preMaxWidth, preMaxHeight));
 
-      // Usar una posición centrada en la pantalla actual
-      // En lugar de tratar de calcular el monitor exacto, simplemente centrar
+      // Center on current screen
       await windowManager.center();
 
-      // Obtener la nueva posición centrada
+      // Get new centered position
       final newPosition = await windowManager.getPosition();
 
-      // Guardar esta nueva posición como estado normal
+      // Save this new position as normal state
       await prefs.setDouble(_windowWidthKey, preMaxWidth);
       await prefs.setDouble(_windowHeightKey, preMaxHeight);
       await prefs.setDouble(_windowXKey, newPosition.dx);
@@ -145,20 +144,19 @@ class WindowStateManager {
       final isMaximized = prefs.getBool(_isMaximizedKey) ?? false;
 
       if (isMaximized) {
-        // Obtener la posición del monitor donde se maximizó
+        // Get the position of the monitor where it was maximized
         final maxMonitorX = prefs.getDouble(_maxMonitorXKey);
         final maxMonitorY = prefs.getDouble(_maxMonitorYKey);
 
         if (maxMonitorX != null && maxMonitorY != null) {
-          // Primero posicionar la ventana en el monitor correcto
-          // Usar una posición temporal en el monitor donde se maximizó
+          // Position window in the correct monitor first
           await windowManager.setPosition(Offset(maxMonitorX, maxMonitorY));
         }
 
-        // Luego maximizar en ese monitor
+        // Then maximize on that monitor
         await windowManager.maximize();
       } else {
-        // Restaurar tamaño y posición normal
+        // Restore normal size and position
         final savedWidth = prefs.getDouble(_windowWidthKey);
         final savedHeight = prefs.getDouble(_windowHeightKey);
         final savedX = prefs.getDouble(_windowXKey);
@@ -228,7 +226,7 @@ class WindowEventHandler extends WindowListener {
   @override
   void onWindowResize() async {
     try {
-      // Solo guardar si no está maximizada para evitar sobrescribir el estado pre-maximizado
+      // Only save if not maximized to avoid overwriting pre-maximize state
       final isMaximized = await windowManager.isMaximized();
       if (!isMaximized) {
         await WindowStateManager.saveWindowState();
@@ -241,7 +239,7 @@ class WindowEventHandler extends WindowListener {
   @override
   void onWindowMove() async {
     try {
-      // Solo guardar si no está maximizada
+      // Only save if not maximized
       final isMaximized = await windowManager.isMaximized();
       if (!isMaximized) {
         await WindowStateManager.saveWindowState();
@@ -284,7 +282,7 @@ class WindowEventHandler extends WindowListener {
   @override
   void onWindowFocus() async {
     try {
-      // Verificar si el estado de maximizado cambió (para casos donde se maximiza por otros medios)
+      // Check if maximized state changed (for cases where maximized by other means)
       final isMaximized = await windowManager.isMaximized();
       if (isMaximized && !_isMaximizedBefore) {
         // Se acaba de maximizar por otros medios (doble click en title bar, etc.)
@@ -383,7 +381,7 @@ void main() async {
     if (shouldStartMaximized && maximizedMonitorPosition != null) {
       await windowManager.setPosition(maximizedMonitorPosition);
     } else if (defaultPosition != null && !shouldStartMaximized) {
-      // Configurar posición normal si no debe empezar maximizada
+      // Set normal position if not starting maximized
       await windowManager.setPosition(defaultPosition);
     }
 
@@ -436,7 +434,7 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
 
   Future<void> _handleDelayedMaximize() async {
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      // Esperar a que la UI esté completamente renderizada
+      // Wait for the UI to be fully rendered
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await Future.delayed(const Duration(milliseconds: 50));
 
@@ -447,7 +445,7 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
             final maximizedMonitorPosition =
                 await WindowStateManager.getMaximizedMonitorPosition();
 
-            // Si tenemos información del monitor, posicionar primero
+            // If we have monitor info, position first
             if (maximizedMonitorPosition != null) {
               await windowManager.setPosition(maximizedMonitorPosition);
               await Future.delayed(const Duration(milliseconds: 10));
@@ -622,7 +620,7 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
 
                                         appWindow.maximizeOrRestore();
 
-                                        // Pequeño delay para asegurar que el estado se actualice
+                                        // Small delay to ensure state is updated
                                         await Future.delayed(
                                           const Duration(milliseconds: 50),
                                         );
@@ -696,14 +694,11 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   String? _selectedTag;
   late SearchTextEditingController _noteController;
   late TextEditingController _titleController;
-  bool isEditing = false;
   bool isSaving = false;
-  bool showSavedIndicator = false;
   bool _isDialogOpen = false;
   VoidCallback? _closeCurrentDialog;
   final FocusNode _appFocusNode = FocusNode();
-  Timer? _debounceNote;
-  Timer? _debounceTitle;
+
   Timer? _autoSyncTimer;
   final GlobalKey<ResizableIconSidebarState> _iconSidebarKey =
       GlobalKey<ResizableIconSidebarState>();
@@ -735,7 +730,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       GlobalKey<EditorTabsState>();
   late SyncAnimationController _syncController;
   late final SyncService _syncService;
-  final Map<int, AnimationController> _animationControllers = {};
+
   static const String _lastSelectedNotebookIdKey = 'last_selected_notebook_id';
   late ImmersiveModeService _immersiveModeService;
   String _searchQuery = '';
@@ -752,7 +747,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     _syncController = SyncAnimationController(vsync: this);
     _noteController = SearchTextEditingController();
     _titleController = TextEditingController();
-    // Los listeners se manejan en cada pestaña individualmente
+    // Listeners are handled in each tab individually
     _tabManager = TabManager();
     _tabManager.addListener(() {
       if (mounted) {
@@ -866,6 +861,14 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     });
   }
 
+  void _focusEditor() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted && _appFocusNode.canRequestFocus) {
+        FocusScope.of(context).requestFocus(_appFocusNode);
+      }
+    });
+  }
+
   void _loadNoteContent(Note note) {
     _isLoadingNoteContent = true;
     final activeTab = _tabManager.activeTab;
@@ -970,7 +973,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
       setState(() {
         _selectedNote = updatedNote;
-        showSavedIndicator = true;
       });
 
       // Update tab manager
@@ -1031,13 +1033,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
         _selectNote(createdNote);
         _databaseSidebarKey.currentState?.reloadSidebar();
         DatabaseHelper.notifyDatabaseChanged();
-
-        // Move focus to editor after creating a new note
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted && _appFocusNode.canRequestFocus) {
-            FocusScope.of(context).requestFocus(_appFocusNode);
-          }
-        });
+        _focusEditor();
       }
     } catch (e) {
       debugPrint('Error creating note: $e');
@@ -1089,13 +1085,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
         _selectNote(createdTodo);
         _databaseSidebarKey.currentState?.reloadSidebar();
         DatabaseHelper.notifyDatabaseChanged();
-
-        // Move focus to editor after creating a new todo
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted && _appFocusNode.canRequestFocus) {
-            FocusScope.of(context).requestFocus(_appFocusNode);
-          }
-        });
+        _focusEditor();
       }
     } catch (e) {
       debugPrint('Error creating todo: $e');
@@ -1168,13 +1158,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
         _selectNote(createdNote);
         _databaseSidebarKey.currentState?.reloadSidebar();
         DatabaseHelper.notifyDatabaseChanged();
-
-        // Move focus to editor after creating the new note
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted && _appFocusNode.canRequestFocus) {
-            FocusScope.of(context).requestFocus(_appFocusNode);
-          }
-        });
+        _focusEditor();
       }
     } catch (e) {
       debugPrint('Error creating quick note: $e');
@@ -1567,7 +1551,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     bool forceSameTab = false,
     bool skipNotebookSync = false,
   }) async {
-    // Save current note if exists and has unsaved changes
     final activeTab = _tabManager.activeTab;
     if (_selectedNote != null && activeTab?.isDirty == true) {
       await _handleSave();
@@ -1578,83 +1561,57 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       _isAdvancedSearch = false;
     });
 
-    // Check if tab with this note already exists
-    final existingTab = _tabManager.tabs.firstWhere(
-      (tab) => tab.note?.id == note.id,
-      orElse:
-          () => EditorTab(
-            note: null,
-            noteController: SearchTextEditingController(),
-            titleController: TextEditingController(),
-            lastAccessed: DateTime.now(),
-          ),
-    );
+    final existingTab = _findTabForNote(note);
 
-    if (existingTab.note != null) {
-      // Tab already exists, just select it
+    if (existingTab != null) {
       _tabManager.selectTab(existingTab);
-      _loadNoteContent(note);
-      _selectNote(note);
-
-      // Move focus to editor after selecting existing tab
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted && _appFocusNode.canRequestFocus) {
-          FocusScope.of(context).requestFocus(_appFocusNode);
-        }
-      });
     } else {
-      // Check if active tab exists and decide where to open the note
-      final activeTab = _tabManager.activeTab;
-      if (activeTab != null) {
-        // If the active tab is pinned, do not overwrite it: open in a new tab instead
-        if (activeTab.isPinned && !forceSameTab) {
-          _tabManager.openTab(note);
-        } else if (activeTab.isEmpty) {
-          // Assign note to empty tab
-          _tabManager.assignNoteToActiveTab(note);
-        } else {
-          // Replace note in current tab
-          _tabManager.replaceNoteInActiveTab(note);
-        }
-
-        _loadNoteContent(note);
-        _selectNote(note);
-
-        // Move focus to editor after assigning/replacing/opening note
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted && _appFocusNode.canRequestFocus) {
-            FocusScope.of(context).requestFocus(_appFocusNode);
-          }
-        });
-      } else {
-        // No active tab, open note in new tab
-        _tabManager.openTab(note);
-        _loadNoteContent(note);
-        _selectNote(note);
-
-        // Move focus to editor after opening note in new tab
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted && _appFocusNode.canRequestFocus) {
-            FocusScope.of(context).requestFocus(_appFocusNode);
-          }
-        });
-      }
+      _openNoteInTab(note, forceSameTab: forceSameTab);
     }
 
-    if (note.notebookId != 0 && !skipNotebookSync) {
-      try {
-        final dbHelper = DatabaseHelper();
-        final notebookRepository = NotebookRepository(dbHelper);
-        final parentNotebook = await notebookRepository.getNotebook(
-          note.notebookId,
-        );
+    _loadNoteContent(note);
+    _selectNote(note);
+    _focusEditor();
 
-        if (parentNotebook != null) {
-          _onNotebookSelected(parentNotebook);
-        }
-      } catch (e) {
-        debugPrint('Error loading parent notebook: $e');
+    if (note.notebookId != 0 && !skipNotebookSync) {
+      await _syncNotebookForNote(note);
+    }
+  }
+
+  EditorTab? _findTabForNote(Note note) {
+    try {
+      return _tabManager.tabs.firstWhere((tab) => tab.note?.id == note.id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _openNoteInTab(Note note, {bool forceSameTab = false}) {
+    final activeTab = _tabManager.activeTab;
+    if (activeTab == null) {
+      _tabManager.openTab(note);
+      return;
+    }
+
+    if (activeTab.isPinned && !forceSameTab) {
+      _tabManager.openTab(note);
+    } else if (activeTab.isEmpty) {
+      _tabManager.assignNoteToActiveTab(note);
+    } else {
+      _tabManager.replaceNoteInActiveTab(note);
+    }
+  }
+
+  Future<void> _syncNotebookForNote(Note note) async {
+    try {
+      final dbHelper = DatabaseHelper();
+      final notebookRepository = NotebookRepository(dbHelper);
+      final parentNotebook = await notebookRepository.getNotebook(note.notebookId);
+      if (parentNotebook != null) {
+        _onNotebookSelected(parentNotebook);
       }
+    } catch (e) {
+      debugPrint('Error loading parent notebook: $e');
     }
   }
 
@@ -1667,7 +1624,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     String searchQuery,
     bool isAdvancedSearch,
   ) async {
-    // Save current note if exists and has unsaved changes
     final activeTab = _tabManager.activeTab;
     if (_selectedNote != null && activeTab?.isDirty == true) {
       await _handleSave();
@@ -1678,109 +1634,60 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       _isAdvancedSearch = isAdvancedSearch;
     });
 
-    // Check if tab with this note already exists
-    final existingTab = _tabManager.tabs.firstWhere(
-      (tab) => tab.note?.id == note.id,
-      orElse:
-          () => EditorTab(
-            note: null,
-            noteController: SearchTextEditingController(),
-            titleController: TextEditingController(),
-            lastAccessed: DateTime.now(),
-          ),
-    );
+    final existingTab = _findTabForNote(note);
 
-    if (existingTab.note != null) {
-      // Tab already exists, just select it
+    if (existingTab != null) {
       _tabManager.selectTab(existingTab);
-      _loadNoteContent(note);
-      _selectNote(note);
     } else {
-      // Check if active tab exists and decide where to open the note
-      final activeTab = _tabManager.activeTab;
-      if (activeTab != null) {
-        if (activeTab.isPinned) {
-          _tabManager.openTab(
-            note,
-            searchQuery: searchQuery,
-            isAdvancedSearch: isAdvancedSearch,
-          );
-        } else if (activeTab.isEmpty) {
-          // Assign note to empty tab
-          _tabManager.assignNoteToActiveTab(note);
-        } else {
-          // Replace note in current tab
-          _tabManager.replaceNoteInActiveTab(note);
-        }
-        _loadNoteContent(note);
-        _selectNote(note);
-      } else {
-        // No active tab, open note in new tab with search parameters
-        _tabManager.openTab(
-          note,
-          searchQuery: searchQuery,
-          isAdvancedSearch: isAdvancedSearch,
-        );
-        _loadNoteContent(note);
-        _selectNote(note);
-      }
+      _openNoteInTabWithSearch(note, searchQuery, isAdvancedSearch);
     }
+
+    _loadNoteContent(note);
+    _selectNote(note);
 
     if (note.notebookId != 0) {
-      try {
-        final dbHelper = DatabaseHelper();
-        final notebookRepository = NotebookRepository(dbHelper);
-        final parentNotebook = await notebookRepository.getNotebook(
-          note.notebookId,
-        );
-
-        if (parentNotebook != null) {
-          _onNotebookSelected(parentNotebook);
-        }
-      } catch (e) {
-        debugPrint('Error loading parent notebook: $e');
-      }
+      await _syncNotebookForNote(note);
     }
   }
 
-  void _onNotebookSelected(Notebook notebook) async {
+  void _openNoteInTabWithSearch(Note note, String searchQuery, bool isAdvancedSearch) {
+    final activeTab = _tabManager.activeTab;
+    if (activeTab == null || activeTab.isPinned) {
+      _tabManager.openTab(note, searchQuery: searchQuery, isAdvancedSearch: isAdvancedSearch);
+      return;
+    }
+
+    if (activeTab.isEmpty) {
+      _tabManager.assignNoteToActiveTab(note);
+    } else {
+      _tabManager.replaceNoteInActiveTab(note);
+    }
+  }
+
+  Future<void> _selectNotebook(
+    Notebook notebook, {
+    required Future<bool> Function() getExpandSetting,
+  }) async {
     setState(() {
       _selectedNotebook = notebook;
       _selectedTag = null;
     });
     _databaseSidebarKey.currentState?.clearSelectedTag();
-    final expand = await EditorSettings.getExpandNotebooksOnNoteOpen();
+    final expand = await getExpandSetting();
     _databaseSidebarKey.currentState?.handleNotebookSelection(
       notebook,
       expand: expand,
     );
   }
 
-  void _onNotebookSelectedFromFavorite(Notebook notebook) async {
-    setState(() {
-      _selectedNotebook = notebook;
-      _selectedTag = null;
-    });
-    _databaseSidebarKey.currentState?.clearSelectedTag();
-    final expand = await EditorSettings.getExpandNotebooksOnSelection();
-    _databaseSidebarKey.currentState?.handleNotebookSelection(
-      notebook,
-      expand: expand,
-    );
-  }
+  void _onNotebookSelected(Notebook notebook) =>
+      _selectNotebook(notebook, getExpandSetting: EditorSettings.getExpandNotebooksOnNoteOpen);
 
-  void _onNotebookSelectedFromLink(Notebook notebook) async {
-    setState(() {
-      _selectedNotebook = notebook;
-      _selectedTag = null;
-    });
-    _databaseSidebarKey.currentState?.clearSelectedTag();
-    final expand = await EditorSettings.getExpandNotebooksOnLinkOpen();
-    _databaseSidebarKey.currentState?.handleNotebookSelection(
-      notebook,
-      expand: expand,
-    );
-  }
+  void _onNotebookSelectedFromFavorite(Notebook notebook) =>
+      _selectNotebook(notebook, getExpandSetting: EditorSettings.getExpandNotebooksOnSelection);
+
+  void _onNotebookSelectedFromLink(Notebook notebook) =>
+      _selectNotebook(notebook, getExpandSetting: EditorSettings.getExpandNotebooksOnLinkOpen);
 
   void _onTrashUpdated() {
     _databaseSidebarKey.currentState?.reloadSidebar();
@@ -1981,13 +1888,10 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   void dispose() {
     _noteController.dispose();
     _titleController.dispose();
-    _debounceNote?.cancel();
-    _debounceTitle?.cancel();
+
     _appFocusNode.dispose();
     _syncController.dispose();
-    for (final controller in _animationControllers.values) {
-      controller.dispose();
-    }
+
     _syncService.dispose();
     _autoSyncTimer?.cancel();
     _dbChangeDebounceTimer?.cancel();
@@ -2341,13 +2245,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                         _selectNote(note);
                         _databaseSidebarKey.currentState?.reloadSidebar();
                         DatabaseHelper.notifyDatabaseChanged();
-
-                        // Move focus to editor after creating from template
-                        Future.delayed(const Duration(milliseconds: 100), () {
-                          if (mounted && _appFocusNode.canRequestFocus) {
-                            FocusScope.of(context).requestFocus(_appFocusNode);
-                          }
-                        });
+                        _focusEditor();
                       },
                       onClose: _toggleTemplatesPanel,
                       appFocusNode: _appFocusNode,
@@ -2426,8 +2324,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       await dbHelper.database;
       _syncService = SyncService();
       await _syncService.initialize();
-      await _loadExpandedState();
-      await _loadData();
+
     } catch (e) {
       debugPrint('Error initializing repositories: $e');
       if (mounted) {
@@ -2436,9 +2333,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     }
   }
 
-  Future<void> _loadExpandedState() async {}
 
-  Future<void> _loadData() async {}
 
   Future<void> _loadLastSelectedNotebook() async {
     try {
@@ -2552,30 +2447,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     }
   }
 
-  void _openGlobalSearchScreen() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => SearchScreenDesktop(
-            onNoteSelected: (Note note) {
-              _onNoteSelected(note);
-            },
-            onNotebookSelected: (Notebook notebook) {
-              _onNotebookSelected(notebook);
-            },
-            onNoteSelectedWithSearch: (
-              Note note,
-              String searchQuery,
-              bool isAdvancedSearch,
-            ) {
-              _onNoteSelectedWithSearch(note, searchQuery, isAdvancedSearch);
-            },
-          ),
-    );
-  }
+  void _openGlobalSearchScreen() => _openSearchScreen();
 
   void _onTabSelected(EditorTab tab) async {
-    // Save current note if exists and has unsaved changes
     final activeTab = _tabManager.activeTab;
     if (_selectedNote != null && activeTab?.isDirty == true) {
       await _handleSave();
@@ -2584,24 +2458,11 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     setState(() {
       _searchQuery = tab.searchQuery ?? '';
       _isAdvancedSearch = tab.isAdvancedSearch;
+      _selectedNote = tab.note;
     });
 
-    if (tab.note != null) {
-      _selectNote(tab.note);
-    } else {
-      // Empty tab - clear selected note
-      setState(() {
-        _selectedNote = null;
-      });
-    }
     _tabManager.selectTab(tab);
-
-    // Move focus to editor after selecting a tab
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted && _appFocusNode.canRequestFocus) {
-        FocusScope.of(context).requestFocus(_appFocusNode);
-      }
-    });
+    _focusEditor();
   }
 
   void _onTabClosed(EditorTab tab) async {
@@ -2641,27 +2502,12 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
     _tabManager.closeTab(tab);
 
-    // Update local state
-    if (_tabManager.activeTab != null) {
-      final activeTab = _tabManager.activeTab!;
-      setState(() {
-        _searchQuery = activeTab.searchQuery ?? '';
-        _isAdvancedSearch = activeTab.isAdvancedSearch;
-      });
-      if (activeTab.note != null) {
-        _selectNote(activeTab.note);
-      } else {
-        setState(() {
-          _selectedNote = null;
-        });
-      }
-    } else {
-      setState(() {
-        _selectedNote = null;
-        _searchQuery = '';
-        _isAdvancedSearch = false;
-      });
-    }
+    final newActiveTab = _tabManager.activeTab;
+    setState(() {
+      _searchQuery = newActiveTab?.searchQuery ?? '';
+      _isAdvancedSearch = newActiveTab?.isAdvancedSearch ?? false;
+      _selectedNote = newActiveTab?.note;
+    });
   }
 
   void _onNewTab() {
@@ -2695,13 +2541,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
   Future<void> _loadSavedTabs() async {
     await _tabManager.loadTabsFromStorage();
-
-    // No crear pestaña vacía automáticamente si no hay pestañas guardadas
-    // El editor quedará vacío hasta que el usuario abra una nota
   }
 
   void _onNoteOpenInNewTab(Note note) async {
-    // Save current note if exists
     if (_selectedNote != null) {
       await _handleSave();
     }
@@ -2711,42 +2553,17 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       _isAdvancedSearch = false;
     });
 
-    // Check if tab with this note already exists
-    final existingTab = _tabManager.tabs.firstWhere(
-      (tab) => tab.note?.id == note.id,
-      orElse:
-          () => EditorTab(
-            note: null,
-            noteController: SearchTextEditingController(),
-            titleController: TextEditingController(),
-            lastAccessed: DateTime.now(),
-          ),
-    );
+    final existingTab = _findTabForNote(note);
 
-    if (existingTab.note != null) {
-      // Tab already exists, just select it
+    if (existingTab != null) {
       _tabManager.selectTab(existingTab);
-      _selectNote(note);
     } else {
-      // Create new tab
       _tabManager.openTab(note);
-      _selectNote(note);
     }
+    _selectNote(note);
 
     if (note.notebookId != 0) {
-      try {
-        final dbHelper = DatabaseHelper();
-        final notebookRepository = NotebookRepository(dbHelper);
-        final parentNotebook = await notebookRepository.getNotebook(
-          note.notebookId,
-        );
-
-        if (parentNotebook != null) {
-          _onNotebookSelected(parentNotebook);
-        }
-      } catch (e) {
-        debugPrint('Error loading parent notebook: $e');
-      }
+      await _syncNotebookForNote(note);
     }
   }
 
@@ -2935,24 +2752,12 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       onNextNote: _navigateToNextNote,
       onPreviousNote: _navigateToPreviousNote,
       onTitleChanged: () {
-        setState(() {
-          isEditing = true;
-          showSavedIndicator = false;
-        });
-
-        // Mark tab as dirty when title changes
         final activeTab = _tabManager.activeTab;
         if (activeTab != null) {
           _tabManager.markTabAsDirty(activeTab);
         }
       },
       onContentChanged: () {
-        setState(() {
-          isEditing = true;
-          showSavedIndicator = false;
-        });
-
-        // Mark tab as dirty when content changes
         final activeTab = _tabManager.activeTab;
         if (activeTab != null) {
           _tabManager.markTabAsDirty(activeTab);
