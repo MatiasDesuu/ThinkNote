@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'list_handler.dart';
+import 'format_handler.dart';
 
-/// A utility class for handling list continuation on Enter key press
 class ListContinuationHandler {
-  // Regex to match horizontal rule pattern
-  static final RegExp _horizontalRuleRegex = RegExp(r'^\* \* \*$');
 
   /// Handles Enter key press in the text editor
   /// Returns true if the event was handled (list continuation), false otherwise
@@ -35,12 +33,11 @@ class ListContinuationHandler {
     }
     
     final currentLine = lines.last;
-    
-    // Check if the current line is a horizontal rule
-    if (_horizontalRuleRegex.hasMatch(currentLine.trim())) {
-      return false; // Let default behavior handle horizontal rules
+
+    if (FormatDetector.horizontalRuleRegex.hasMatch(currentLine.trim())) {
+      return false;
     }
-    
+
     final listItem = ListDetector.detectListItem(currentLine);
     
     if (listItem == null) {
@@ -99,12 +96,11 @@ class ListContinuationHandler {
     }
     
     final currentLine = lines.last;
-    
-    // Check if the current line is a horizontal rule
-    if (_horizontalRuleRegex.hasMatch(currentLine.trim())) {
+
+    if (FormatDetector.horizontalRuleRegex.hasMatch(currentLine.trim())) {
       return false;
     }
-    
+
     return ListDetector.detectListItem(currentLine) != null;
   }
   
@@ -127,12 +123,11 @@ class ListContinuationHandler {
     }
     
     final currentLine = lines.last;
-    
-    // Check if the current line is a horizontal rule
-    if (_horizontalRuleRegex.hasMatch(currentLine.trim())) {
+
+    if (FormatDetector.horizontalRuleRegex.hasMatch(currentLine.trim())) {
       return null;
     }
-    
+
     return ListDetector.detectListItem(currentLine);
   }
 }

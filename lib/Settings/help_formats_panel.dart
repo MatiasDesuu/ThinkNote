@@ -227,7 +227,7 @@ class HelpFormatsPanel extends StatelessWidget {
                 _buildFormatItem(
                   context: context,
                   label: 'Note links',
-                  syntax: '[[Note Title]]',
+                  syntax: '[[note:Note Title]]',
                 ),
               ],
             ),

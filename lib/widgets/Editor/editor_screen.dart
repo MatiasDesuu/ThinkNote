@@ -1028,9 +1028,9 @@ class _NotaEditorState extends State<NotaEditor>
           cursorOffset = 5;
           break;
         case FormatType.noteLink:
-          prefix = '[[';
+          prefix = '[[note:';
           suffix = ']]';
-          cursorOffset = 2;
+          cursorOffset = 7;
           break;
         case FormatType.notebookLink:
           prefix = '[[notebook:';

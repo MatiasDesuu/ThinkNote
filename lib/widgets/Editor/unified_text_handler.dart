@@ -18,7 +18,6 @@ class UnifiedTextHandler extends StatelessWidget {
   final Function(Note, bool)? onNoteLinkTap;
   final Function(Notebook, bool)? onNotebookLinkTap;
   final Function(String)? onTextChanged;
-  final TextEditingController? controller;
   final bool enableNoteLinkDetection;
   final bool enableNotebookLinkDetection;
   final bool enableLinkDetection;
@@ -33,7 +32,6 @@ class UnifiedTextHandler extends StatelessWidget {
     this.onNoteLinkTap,
     this.onNotebookLinkTap,
     this.onTextChanged,
-    this.controller,
     this.enableNoteLinkDetection = true,
     this.enableNotebookLinkDetection = true,
     this.enableLinkDetection = true,
@@ -41,8 +39,6 @@ class UnifiedTextHandler extends StatelessWidget {
     this.enableFormatDetection = true,
     this.showNoteLinkBrackets = true,
   });
-
-  static final RegExp _horizontalRuleRegex = RegExp(r'^\* \* \*$');
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +100,7 @@ class UnifiedTextHandler extends StatelessWidget {
   }
 
   void _addParagraphWidget(BuildContext context, String paragraphText, List<Widget> widgets, ColorScheme colorScheme, int baseOffset) {
-    if (_horizontalRuleRegex.hasMatch(paragraphText.trim())) {
+    if (FormatDetector.horizontalRuleRegex.hasMatch(paragraphText.trim())) {
       widgets.add(
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -235,7 +231,7 @@ class UnifiedTextHandler extends StatelessWidget {
                 MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
-                    onTap: () => _toggleCheckbox(segment, isChecked, baseOffset),
+                    onTap: () => _toggleCheckbox(segment, isChecked),
                     child: Icon(
                       isChecked
                           ? Icons.check_box_rounded
@@ -281,8 +277,6 @@ class UnifiedTextHandler extends StatelessWidget {
       ),
     );
   }
-
-
 
   List<InlineSpan> _buildNestedSpans(
     BuildContext context,
@@ -330,7 +324,7 @@ class UnifiedTextHandler extends StatelessWidget {
           return TextSpan(text: segment.originalText, style: baseStyle);
         }
 
-        final title = segment.text.substring(2, segment.text.length - 2).trim();
+        final title = segment.text.substring(7, segment.text.length - 2).trim();
 
         return WidgetSpan(
           alignment: PlaceholderAlignment.baseline,
@@ -398,7 +392,7 @@ class UnifiedTextHandler extends StatelessWidget {
               child: MouseRegion(
                 cursor: SystemMouseCursors.click,
                 child: GestureDetector(
-                  onTap: () => _toggleCheckbox(segment, isChecked, baseOffset),
+                  onTap: () => _toggleCheckbox(segment, isChecked),
                   child: Padding(
                     padding: const EdgeInsets.only(right: 6.0),
                     child: Icon(
@@ -589,7 +583,7 @@ class UnifiedTextHandler extends StatelessWidget {
     }
   }
 
-  void _toggleCheckbox(FormatSegment segment, bool isChecked, int baseOffset) {
+  void _toggleCheckbox(FormatSegment segment, bool isChecked) {
     if (onTextChanged == null) return;
 
     final lineText = segment.originalText;
