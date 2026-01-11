@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'link_handler.dart';
 
-/// A widget that detects and formats lists in text content
 class ListHandler extends StatelessWidget {
   final String text;
   final TextStyle textStyle;
@@ -25,100 +24,137 @@ class ListHandler extends StatelessWidget {
       return Text(text, style: textStyle);
     }
 
-    final spans = _buildTextSpansWithLists(context);
-    return RichText(
-      text: TextSpan(children: spans),
-      textAlign: TextAlign.start,
+    final lines = text.split('\n');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: lines.asMap().entries.map((entry) {
+        final i = entry.key;
+        final line = entry.value;
+        final listItem = ListDetector.detectListItem(line, lineNumber: i);
+
+        if (listItem != null) {
+          return _buildListItemWidget(context, listItem, i);
+        } else {
+          final int indentLevel = ListDetector.calculateIndentLevel(line);
+          if (indentLevel > 0) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 1.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(' ' * indentLevel, style: textStyle),
+                  Text('  ', style: textStyle),
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        children: _buildSpansWithLinks(
+                          context,
+                          line.trimLeft(),
+                          textStyle,
+                        ),
+                      ),
+                      textAlign: TextAlign.start,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 1.0),
+            child: RichText(
+              text: TextSpan(
+                children: _buildSpansWithLinks(context, line, textStyle),
+              ),
+              textAlign: TextAlign.start,
+            ),
+          );
+        }
+      }).toList(),
     );
   }
 
-  List<TextSpan> _buildTextSpansWithLists(BuildContext context) {
-    final lines = text.split('\n');
-    final List<TextSpan> spans = [];
-
-    for (int i = 0; i < lines.length; i++) {
-      final line = lines[i];
-      final listItem = ListDetector.detectListItem(line, lineNumber: i);
-
-      if (listItem != null && listItem.type == ListType.checkbox) {
-        // Handle checkbox with clickable functionality
-        spans.add(_buildCheckboxSpan(context, listItem, i));
-      } else if (listItem != null) {
-        // Add other list items with subtle styling and link detection
-        final listSpans = _buildSpansWithLinks(
-          context,
-          listItem.formattedText,
-          textStyle.copyWith(
-            fontWeight:
-                FontWeight.normal, // Normal weight to match regular text
-          ),
-        );
-        spans.addAll(listSpans);
-      } else {
-        // Regular text with link detection
-        final lineSpans = _buildSpansWithLinks(context, line, textStyle);
-        spans.addAll(lineSpans);
-      }
-
-      // Add newline except for the last line
-      if (i < lines.length - 1) {
-        spans.add(TextSpan(text: '\n', style: textStyle));
-      }
-    }
-
-    return spans;
-  }
-
-  TextSpan _buildCheckboxSpan(
+  Widget _buildListItemWidget(
     BuildContext context,
     ListItem listItem,
     int lineIndex,
   ) {
-    final List<InlineSpan> children = [];
+    final bool isCheckbox = listItem.type == ListType.checkbox;
 
-    if (listItem.indentLevel > 0) {
-      children.add(
-        TextSpan(text: '  ' * listItem.indentLevel, style: textStyle),
-      );
-    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (listItem.indentLevel > 0)
+            Text(' ' * listItem.indentLevel, style: textStyle),
 
-    children.add(
-      WidgetSpan(
-        alignment: PlaceholderAlignment.middle,
-        child: GestureDetector(
-          onTap: () => _toggleCheckbox(lineIndex, listItem),
-          child: Padding(
-            padding: const EdgeInsets.only(right: 6.0),
-            child: Icon(
-              listItem.isChecked
-                  ? Icons.check_box_rounded
-                  : Icons.check_box_outline_blank_rounded,
-              size: (textStyle.fontSize ?? 16.0) + 4.0,
-              color:
-                  listItem.isChecked
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
+          if (isCheckbox)
+            _buildCheckboxMarker(context, listItem, lineIndex)
+          else
+            Text(
+              '${_getBulletMarker(listItem)} ',
+              style: textStyle.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                children: _buildSpansWithLinks(
+                  context,
+                  listItem.content,
+                  textStyle.copyWith(
+                    fontWeight: FontWeight.normal,
+                    color:
+                        (isCheckbox && listItem.isChecked)
+                            ? Colors.grey
+                            : textStyle.color,
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
+  }
 
-    // Add content with link detection and subtle styling
-    final contentSpans = _buildSpansWithLinks(
-      context,
-      listItem.content,
-      textStyle.copyWith(
-        fontWeight: FontWeight.normal, // Normal weight like regular text
-        color:
+  Widget _buildCheckboxMarker(
+    BuildContext context,
+    ListItem listItem,
+    int lineIndex,
+  ) {
+    return GestureDetector(
+      onTap: () => _toggleCheckbox(lineIndex, listItem),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
             listItem.isChecked
-                ? Colors.grey
-                : textStyle.color, // Subtle color for checkbox
+                ? Icons.check_box_rounded
+                : Icons.check_box_outline_blank_rounded,
+            size: (textStyle.fontSize ?? 16.0) + 2.0,
+            color:
+                listItem.isChecked
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          Text(' ', style: textStyle),
+        ],
       ),
     );
-    children.addAll(contentSpans);
+  }
 
-    return TextSpan(children: children);
+  String _getBulletMarker(ListItem listItem) {
+    if (listItem.type == ListType.numbered) return listItem.marker;
+
+    if (listItem.indentLevel <= 0) return '•';
+    if (listItem.indentLevel == 1) return '◦';
+    return '▪';
   }
 
   void _toggleCheckbox(int lineIndex, ListItem listItem) {
@@ -130,7 +166,6 @@ class ListHandler extends StatelessWidget {
     final currentLine = lines[lineIndex];
     final newCheckedState = !listItem.isChecked;
 
-    // Replace the checkbox state in the line
     final newLine = currentLine.replaceFirst(
       RegExp(r'-\s?\[[x\s]*\]'),
       newCheckedState ? '-[x]' : '-[ ]',
@@ -186,14 +221,12 @@ class ListHandler extends StatelessWidget {
   }
 }
 
-/// Enum for different list types
 enum ListType {
-  numbered, // 1), 2), 3)
-  bullet, // -, •
-  checkbox, // - [ ], - [x]
+  numbered,
+  bullet,
+  checkbox,
 }
 
-/// Represents a detected list item
 class ListItem {
   final ListType type;
   final String marker;
@@ -201,7 +234,7 @@ class ListItem {
   final String formattedText;
   final int indentLevel;
   final int lineNumber;
-  final bool isChecked; // For checkbox items
+  final bool isChecked;
 
   const ListItem({
     required this.type,
@@ -219,29 +252,26 @@ class ListItem {
   }
 }
 
-/// A utility class for detecting lists in text
 class ListDetector {
-  // Regex patterns for different list types
   static final RegExp _numberedListRegex = RegExp(r'^\s*(\d+)\.\s+(.*)$');
-  static final RegExp _bulletListRegex = RegExp(r'^\s*([-•])\s+(.*)$');
+  static final RegExp _bulletListRegex = RegExp(r'^\s*([-•◦▪])\s+(.*)$');
   static final RegExp _checkboxListRegex = RegExp(
-    r'^\s*-\s?\[\s*([x\s]?)\s*\]\s*(.*)$',
+    r'^\s*([-•◦▪])\s?\[\s*([x\s]?)\s*\]\s*(.*)$',
     caseSensitive: false,
   );
 
-  /// Detects if a line is a list item and returns ListItem if found
   static ListItem? detectListItem(String line, {int lineNumber = 0}) {
-    // Check for checkbox lists first (- [ ] or - [x])
     final checkboxMatch = _checkboxListRegex.firstMatch(line);
     if (checkboxMatch != null) {
-      final checkState = checkboxMatch.group(1)?.trim() ?? '';
-      final content = checkboxMatch.group(2)!;
-      final indentLevel = _calculateIndentLevel(line);
+      final marker = checkboxMatch.group(1)!;
+      final checkState = checkboxMatch.group(2)?.trim() ?? '';
+      final content = checkboxMatch.group(3)!;
+      final indentLevel = calculateIndentLevel(line);
       final isChecked = checkState.toLowerCase() == 'x';
 
       return ListItem(
         type: ListType.checkbox,
-        marker: isChecked ? '-[x]' : '-[ ]',
+        marker: marker,
         content: content,
         formattedText:
             '${_getIndentString(indentLevel)}${isChecked ? '[✓]' : '[ ]'} $content',
@@ -251,12 +281,11 @@ class ListDetector {
       );
     }
 
-    // Check for numbered lists (1. 2. 3. etc.)
     final numberedMatch = _numberedListRegex.firstMatch(line);
     if (numberedMatch != null) {
       final marker = '${numberedMatch.group(1)}.';
       final content = numberedMatch.group(2)!;
-      final indentLevel = _calculateIndentLevel(line);
+      final indentLevel = calculateIndentLevel(line);
 
       return ListItem(
         type: ListType.numbered,
@@ -268,12 +297,11 @@ class ListDetector {
       );
     }
 
-    // Check for bullet lists (-, •)
     final bulletMatch = _bulletListRegex.firstMatch(line);
     if (bulletMatch != null) {
       final marker = bulletMatch.group(1)!;
       final content = bulletMatch.group(2)!;
-      final indentLevel = _calculateIndentLevel(line);
+      final indentLevel = calculateIndentLevel(line);
 
       return ListItem(
         type: ListType.bullet,
@@ -287,7 +315,6 @@ class ListDetector {
     return null;
   }
 
-  /// Detects all list items in a text block
   static List<ListItem> detectAllListItems(String text) {
     final lines = text.split('\n');
     final List<ListItem> listItems = [];
@@ -302,7 +329,6 @@ class ListDetector {
     return listItems;
   }
 
-  /// Checks if a string contains any list items
   static bool hasListItems(String text) {
     final lines = text.split('\n');
     for (final line in lines) {
@@ -313,7 +339,6 @@ class ListDetector {
     return false;
   }
 
-  /// Groups consecutive list items together
   static List<List<ListItem>> groupConsecutiveLists(List<ListItem> items) {
     if (items.isEmpty) return [];
 
@@ -324,19 +349,16 @@ class ListDetector {
       final current = items[i];
       final previous = items[i - 1];
 
-      // Check if this item is consecutive to the previous one
       if (current.lineNumber == previous.lineNumber + 1 ||
           (current.lineNumber == previous.lineNumber + 2 &&
               current.type == previous.type)) {
         currentGroup.add(current);
       } else {
-        // Start a new group
         groups.add(currentGroup);
         currentGroup = [current];
       }
     }
 
-    // Add the last group
     if (currentGroup.isNotEmpty) {
       groups.add(currentGroup);
     }
@@ -344,39 +366,35 @@ class ListDetector {
     return groups;
   }
 
-  /// Calculates the indentation level of a line
-  static int _calculateIndentLevel(String line) {
+  static int calculateIndentLevel(String line) {
     int spaces = 0;
     for (int i = 0; i < line.length; i++) {
       if (line[i] == ' ') {
         spaces++;
       } else if (line[i] == '\t') {
-        spaces += 4; // Treat tab as 4 spaces
+        spaces += 4;
       } else {
         break;
       }
     }
-    return (spaces / 2).floor(); // Every 2 spaces = 1 indent level
+    return spaces;
   }
 
-  /// Generates indent string for a given level
   static String _getIndentString(int level) {
-    return '  ' * level; // 2 spaces per level
+    return ' ' * level;
   }
 
-  /// Converts a numbered list item to the next number
   static String getNextNumberedListItem(String currentLine) {
     final match = _numberedListRegex.firstMatch(currentLine);
     if (match != null) {
       final currentNumber = int.tryParse(match.group(1)!) ?? 1;
       final nextNumber = currentNumber + 1;
-      final indent = _getIndentString(_calculateIndentLevel(currentLine));
+      final indent = _getIndentString(calculateIndentLevel(currentLine));
       return '$indent$nextNumber. ';
     }
     return '1. ';
   }
 
-  /// Gets the appropriate list marker for continuing a list
   static String getContinuationMarker(String currentLine) {
     final listItem = detectListItem(currentLine);
     if (listItem == null) return '';
@@ -400,7 +418,6 @@ class ListDetector {
   }
 }
 
-/// A text field that automatically detects and formats lists
 class ListAwareTextField extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode? focusNode;
@@ -437,7 +454,6 @@ class _ListAwareTextFieldState extends State<ListAwareTextField> {
   @override
   Widget build(BuildContext context) {
     if (widget.readOnly && widget.enableListDetection) {
-      // In read-only mode, show formatted lists with clickable checkboxes
       return SingleChildScrollView(
         controller: widget.scrollController,
         child: ListHandler(
@@ -450,7 +466,6 @@ class _ListAwareTextFieldState extends State<ListAwareTextField> {
       );
     }
 
-    // In edit mode, show regular TextField with auto-formatting
     return TextField(
       controller: widget.controller,
       focusNode: widget.focusNode,
@@ -473,7 +488,6 @@ class _ListAwareTextFieldState extends State<ListAwareTextField> {
       return;
     }
 
-    // Check if user pressed Enter after a list item
     final selection = widget.controller.selection;
     if (selection.isValid && selection.isCollapsed) {
       final cursorPosition = selection.baseOffset;
@@ -484,7 +498,6 @@ class _ListAwareTextFieldState extends State<ListAwareTextField> {
         final currentLine = lines.last;
         final previousLine = lines.length > 1 ? lines[lines.length - 2] : '';
 
-        // Check if user just pressed Enter after a list item
         if (currentLine.isEmpty &&
             ListDetector.detectListItem(previousLine) != null) {
           final continuationMarker = ListDetector.getContinuationMarker(
@@ -492,7 +505,6 @@ class _ListAwareTextFieldState extends State<ListAwareTextField> {
           );
 
           if (continuationMarker.isNotEmpty) {
-            // Insert the continuation marker
             final newText =
                 value.substring(0, cursorPosition) +
                 continuationMarker +
@@ -516,9 +528,7 @@ class _ListAwareTextFieldState extends State<ListAwareTextField> {
   }
 }
 
-/// Utility functions for list operations
 class ListUtils {
-  /// Converts plain text with list patterns to formatted text
   static String formatListsInText(String text) {
     final lines = text.split('\n');
     final formattedLines = <String>[];
@@ -535,18 +545,15 @@ class ListUtils {
     return formattedLines.join('\n');
   }
 
-  /// Extracts all list items from text as plain strings
   static List<String> extractListItems(String text) {
     final listItems = ListDetector.detectAllListItems(text);
     return listItems.map((item) => item.content).toList();
   }
 
-  /// Counts the number of list items in text
   static int countListItems(String text) {
     return ListDetector.detectAllListItems(text).length;
   }
 
-  /// Gets statistics about lists in the text
   static Map<String, int> getListStatistics(String text) {
     final listItems = ListDetector.detectAllListItems(text);
     final stats = <String, int>{

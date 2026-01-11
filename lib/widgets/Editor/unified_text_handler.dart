@@ -12,11 +12,6 @@ import 'format_handler.dart';
 import '../context_menu.dart';
 import '../custom_snackbar.dart';
 
-/// A unified text handler that processes ALL types of text formatting:
-/// - Note links ([[Note Title]])
-/// - URLs (http://example.com)
-/// - Lists (-, 1., [x])
-/// - Markdown formatting (**bold**, *italic*, etc.)
 class UnifiedTextHandler extends StatelessWidget {
   final String text;
   final TextStyle textStyle;
@@ -47,7 +42,6 @@ class UnifiedTextHandler extends StatelessWidget {
     this.showNoteLinkBrackets = true,
   });
 
-  // Regex to match horizontal rule pattern
   static final RegExp _horizontalRuleRegex = RegExp(r'^\* \* \*$');
 
   @override
@@ -63,7 +57,7 @@ class UnifiedTextHandler extends StatelessWidget {
     );
   }
 
-  /// Builds widgets for paragraphs separated by blank lines, handling horizontal rules
+  // _buildParagraphWidgets
   List<Widget> _buildParagraphWidgets(BuildContext context) {
     final lines = text.split('\n');
     final List<Widget> widgets = [];
@@ -77,25 +71,21 @@ class UnifiedTextHandler extends StatelessWidget {
       final line = lines[i];
 
       if (line.trim().isEmpty) {
-        // Count consecutive empty lines
         consecutiveEmptyLines++;
-        currentOffset += line.length + 1; // +1 for \n
+        currentOffset += line.length + 1;
       } else {
-        // Flush any accumulated paragraph before adding space
         if (currentParagraph.isNotEmpty) {
           _addParagraphWidget(context, currentParagraph.toString(), widgets, colorScheme, paragraphStartOffset);
-          currentOffset += currentParagraph.length + 1; // +1 for \n separator
+          currentOffset += currentParagraph.length + 1;
           currentParagraph.clear();
         }
 
-        // Add space for accumulated empty lines
         if (consecutiveEmptyLines > 0) {
           widgets.add(SizedBox(height: 16.0 * consecutiveEmptyLines));
-          currentOffset += consecutiveEmptyLines; // Each empty line contributes 1 to offset (\n)
+          currentOffset += consecutiveEmptyLines;
           consecutiveEmptyLines = 0;
         }
 
-        // Start new paragraph
         paragraphStartOffset = currentOffset;
         if (currentParagraph.isNotEmpty) {
           currentParagraph.write('\n');
@@ -106,7 +96,6 @@ class UnifiedTextHandler extends StatelessWidget {
       }
     }
 
-    // Flush the last paragraph
     if (currentParagraph.isNotEmpty) {
       _addParagraphWidget(context, currentParagraph.toString(), widgets, colorScheme, paragraphStartOffset);
     }
@@ -116,7 +105,6 @@ class UnifiedTextHandler extends StatelessWidget {
 
   void _addParagraphWidget(BuildContext context, String paragraphText, List<Widget> widgets, ColorScheme colorScheme, int baseOffset) {
     if (_horizontalRuleRegex.hasMatch(paragraphText.trim())) {
-      // Add horizontal rule divider
       widgets.add(
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -130,20 +118,168 @@ class UnifiedTextHandler extends StatelessWidget {
         ),
       );
     } else {
-      // Process paragraph as formatted text
-      final spans = _buildNestedSpans(
-        context,
-        paragraphText,
-        textStyle,
-        baseOffset: baseOffset,
-      );
-      widgets.add(
-        RichText(
-          text: TextSpan(children: spans),
-          textAlign: TextAlign.start,
-        ),
-      );
+      final segments = FormatDetector.parseSegments(paragraphText);
+      final listSegment = segments.isNotEmpty ? segments.first : null;
+
+      if (enableListDetection &&
+          listSegment != null &&
+          listSegment.start == 0 &&
+          (listSegment.type == FormatType.bullet ||
+              listSegment.type == FormatType.numbered ||
+              listSegment.type == FormatType.checkboxChecked ||
+              listSegment.type == FormatType.checkboxUnchecked)) {
+        widgets.add(_buildListItemWidget(context, listSegment, baseOffset));
+      } else {
+        final indentMatch = RegExp(r'^(\s+)(.*)$', dotAll: true).firstMatch(paragraphText);
+        if (enableListDetection && indentMatch != null && indentMatch.group(1)!.isNotEmpty) {
+          final indent = indentMatch.group(1)!;
+          final content = indentMatch.group(2)!;
+          
+          widgets.add(
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 1.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(indent, style: textStyle),
+                  Text('  ', style: textStyle),
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        children: _buildNestedSpans(
+                          context,
+                          content,
+                          textStyle,
+                          baseOffset: baseOffset + indent.length,
+                        ),
+                      ),
+                      textAlign: TextAlign.start,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        } else {
+          final spans = _buildNestedSpans(
+            context,
+            paragraphText,
+            textStyle,
+            baseOffset: baseOffset,
+          );
+          widgets.add(
+            RichText(
+              text: TextSpan(children: spans),
+              textAlign: TextAlign.start,
+            ),
+          );
+        }
+      }
     }
+  }
+
+  Widget _buildListItemWidget(
+    BuildContext context,
+    FormatSegment segment,
+    int baseOffset,
+  ) {
+    String marker = "";
+    String content = "";
+    String indent = "";
+    bool isChecked = false;
+
+    if (segment.type == FormatType.checkboxUnchecked ||
+        segment.type == FormatType.checkboxChecked) {
+      isChecked = segment.type == FormatType.checkboxChecked;
+      final match = RegExp(
+        r'^(\s*)([-•◦▪])\s?\[\s*[xX\s]?\s*\]\s*(.*)$',
+      ).firstMatch(segment.originalText);
+      indent = match?.group(1) ?? '';
+      content = match?.group(3) ?? '';
+    } else if (segment.type == FormatType.bullet) {
+      final match = RegExp(
+        r'^(\s*)[-•*]\s+(.*)$',
+      ).firstMatch(segment.originalText);
+      indent = match?.group(1) ?? '';
+      int spaceCount = indent.length;
+      if (spaceCount <= 0) {
+        marker = "• ";
+      } else if (spaceCount == 1) {
+        marker = "◦ ";
+      } else {
+        marker = "▪ ";
+      }
+      content = match?.group(2) ?? '';
+    } else if (segment.type == FormatType.numbered) {
+      final match = RegExp(
+        r'^(\s*)(\d+\.)\s+(.*)$',
+      ).firstMatch(segment.originalText);
+      indent = match?.group(1) ?? '';
+      marker = "${match?.group(2) ?? '1.'} ";
+      content = match?.group(3) ?? '';
+    }
+
+    final contentOffset = segment.originalText.lastIndexOf(content);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (indent.isNotEmpty) Text(indent, style: textStyle),
+          if (segment.type == FormatType.checkboxUnchecked ||
+              segment.type == FormatType.checkboxChecked)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => _toggleCheckbox(segment, isChecked, baseOffset),
+                    child: Icon(
+                      isChecked
+                          ? Icons.check_box_rounded
+                          : Icons.check_box_outline_blank_rounded,
+                      size: (textStyle.fontSize ?? 16.0) + 2.0,
+                      color:
+                          isChecked
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Text(' ', style: textStyle),
+              ],
+            )
+          else
+            Text(
+              marker,
+              style: textStyle.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                children: _buildNestedSpans(
+                  context,
+                  content,
+                  textStyle.copyWith(
+                    color: isChecked ? Colors.grey : textStyle.color,
+                    decoration:
+                        isChecked
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                  ),
+                  baseOffset: baseOffset + segment.start + contentOffset,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
 
@@ -165,13 +301,11 @@ class UnifiedTextHandler extends StatelessWidget {
     int lastIndex = 0;
 
     for (final segment in segments) {
-      // Text between segments
       if (segment.start > lastIndex) {
         final betweenText = text.substring(lastIndex, segment.start);
         spans.add(TextSpan(text: betweenText, style: style));
       }
 
-      // Process segment
       spans.add(_buildSegmentSpan(context, segment, style, baseOffset: baseOffset));
       lastIndex = segment.end;
     }
@@ -196,7 +330,6 @@ class UnifiedTextHandler extends StatelessWidget {
           return TextSpan(text: segment.originalText, style: baseStyle);
         }
 
-        // Extract title from [[Title]]
         final title = segment.text.substring(2, segment.text.length - 2).trim();
 
         return WidgetSpan(
@@ -222,7 +355,6 @@ class UnifiedTextHandler extends StatelessWidget {
           return TextSpan(text: segment.originalText, style: baseStyle);
         }
 
-        // Extract name from [[notebook:Name]]
         final name = segment.text.substring(11, segment.text.length - 2).trim();
 
         return WidgetSpan(
@@ -250,15 +382,12 @@ class UnifiedTextHandler extends StatelessWidget {
         }
 
         final isChecked = segment.type == FormatType.checkboxChecked;
-        // Extract content: "- [ ] Content" -> "Content"
         final match = RegExp(
           r'^(\s*)-\s?\[\s*[xX\s]?\s*\]\s*(.*)$',
           multiLine: true,
         ).firstMatch(segment.originalText);
         final indent = match?.group(1) ?? '';
         final content = match?.group(2) ?? '';
-        // In Dart, match.start is a getter for the whole match. 
-        // We find the index of the content within originalText.
         final contentOffset = segment.originalText.lastIndexOf(content);
 
         return TextSpan(
@@ -303,7 +432,6 @@ class UnifiedTextHandler extends StatelessWidget {
         if (!enableListDetection) {
           return TextSpan(text: segment.originalText, style: baseStyle);
         }
-        // Extract content
         final match = RegExp(
           r'^\s*[-•*]\s+(.+)$',
           multiLine: true,
@@ -313,7 +441,7 @@ class UnifiedTextHandler extends StatelessWidget {
 
         return TextSpan(
           children: [
-            TextSpan(text: '• ', style: baseStyle), // Standardize bullet
+            TextSpan(text: '• ', style: baseStyle),
             ..._buildNestedSpans(
               context,
               content,
@@ -327,7 +455,6 @@ class UnifiedTextHandler extends StatelessWidget {
         if (!enableListDetection) {
           return TextSpan(text: segment.originalText, style: baseStyle);
         }
-        // Extract content
         final match = RegExp(
           r'^\s*(\d+\.)\s+(.+)$',
           multiLine: true,
@@ -362,23 +489,23 @@ class UnifiedTextHandler extends StatelessWidget {
         switch (segment.type) {
           case FormatType.heading1:
             fontSize *= 2.0;
-            markerLength = 2; // # plus space
+            markerLength = 2;
             break;
           case FormatType.heading2:
             fontSize *= 1.5;
-            markerLength = 3; // ## plus space
+            markerLength = 3;
             break;
           case FormatType.heading3:
             fontSize *= 1.3;
-            markerLength = 4; // ### plus space
+            markerLength = 4;
             break;
           case FormatType.heading4:
             fontSize *= 1.2;
-            markerLength = 5; // #### plus space
+            markerLength = 5;
             break;
           case FormatType.heading5:
             fontSize *= 1.1;
-            markerLength = 6; // ##### plus space
+            markerLength = 6;
             break;
           default:
             break;
@@ -404,7 +531,7 @@ class UnifiedTextHandler extends StatelessWidget {
             context,
             segment.text,
             baseStyle.copyWith(fontWeight: FontWeight.bold),
-            baseOffset: baseOffset + segment.start + 2, // ** or __
+            baseOffset: baseOffset + segment.start + 2,
           ),
         );
 
@@ -414,7 +541,7 @@ class UnifiedTextHandler extends StatelessWidget {
             context,
             segment.text,
             baseStyle.copyWith(fontStyle: FontStyle.italic),
-            baseOffset: baseOffset + segment.start + 1, // * or _
+            baseOffset: baseOffset + segment.start + 1,
           ),
         );
 
@@ -424,7 +551,7 @@ class UnifiedTextHandler extends StatelessWidget {
             context,
             segment.text,
             baseStyle.copyWith(decoration: TextDecoration.lineThrough),
-            baseOffset: baseOffset + segment.start + 2, // ~~
+            baseOffset: baseOffset + segment.start + 2,
           ),
         );
 
@@ -465,7 +592,6 @@ class UnifiedTextHandler extends StatelessWidget {
   void _toggleCheckbox(FormatSegment segment, bool isChecked, int baseOffset) {
     if (onTextChanged == null) return;
 
-    // Find the exact line in the current text
     final lineText = segment.originalText;
     final start = text.indexOf(lineText);
     if (start == -1 || start + lineText.length > text.length) return;
