@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as p;
 import '../../scriptmode_handler.dart';
@@ -52,6 +53,9 @@ class NotaEditor extends StatefulWidget {
   final bool initialEditorCentered; // Estado inicial del centrado desde el tab
   final ValueChanged<bool>?
   onEditorCenteredChanged; // Callback cuando cambia el centrado
+  final bool initialSplitView; // Estado inicial de vista dividida desde el tab
+  final ValueChanged<bool>?
+  onSplitViewChanged; // Callback cuando cambia la vista dividida
   final VoidCallback? onNextNote;
   final VoidCallback? onPreviousNote;
   final Function(Notebook)? onNotebookLinkTap;
@@ -73,6 +77,8 @@ class NotaEditor extends StatefulWidget {
     this.onReadModeChanged,
     this.initialEditorCentered = false,
     this.onEditorCenteredChanged,
+    this.initialSplitView = false,
+    this.onSplitViewChanged,
     this.onNextNote,
     this.onPreviousNote,
     this.onNotebookLinkTap,
@@ -87,12 +93,15 @@ class _NotaEditorState extends State<NotaEditor>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   bool _isScript = false;
   bool _isReadMode = false;
+  bool _isSplitView = false;
+  String _splitViewPreviewText = '';
   bool _isEditorCentered = false; // Estado individual de centrado por tab
   bool _showFindBar = false;
   bool _isRestoringSearch = false;
   bool _isEditorSettingsLoaded = false;
   Timer? _scriptDetectionDebouncer;
   Timer? _autoSaveDebounce;
+  Timer? _splitViewUpdateTimer;
   late SaveAnimationController _saveController;
   final FocusNode _editorFocusNode = FocusNode();
   final FocusNode _findBarFocusNode = FocusNode();
@@ -115,6 +124,8 @@ class _NotaEditorState extends State<NotaEditor>
   late SearchManager _searchManager;
   final UndoHistoryController _undoController = UndoHistoryController();
   final ScrollController _scrollController = ScrollController();
+  final ScrollController _previewScrollController = ScrollController();
+  bool _isSyncingScroll = false;
   final GlobalKey _exportButtonKey = GlobalKey();
 
   TextStyle get _textStyle => TextStyle(
@@ -183,6 +194,8 @@ class _NotaEditorState extends State<NotaEditor>
     _saveController = SaveAnimationController(vsync: this);
     widget.noteController.addListener(_onContentChanged);
     widget.titleController.addListener(_onTitleChanged);
+    _scrollController.addListener(() => _syncScroll(_scrollController, _previewScrollController));
+    _previewScrollController.addListener(() => _syncScroll(_previewScrollController, _scrollController));
     _findController.addListener(() {
       if (_isRestoringSearch) return;
       final query = _findController.text;
@@ -211,6 +224,10 @@ class _NotaEditorState extends State<NotaEditor>
 
     // Inicializar modo lectura desde el tab
     _isReadMode = widget.initialReadMode;
+
+    // Initialize double view state
+    _isSplitView = widget.initialSplitView;
+    _splitViewPreviewText = widget.noteController.text;
 
     // Inicializar centrado desde el tab
     _isEditorCentered = widget.initialEditorCentered;
@@ -265,9 +282,28 @@ class _NotaEditorState extends State<NotaEditor>
       );
 
       // Sync read mode with the new tab's state
-      if (_isReadMode != widget.initialReadMode) {
+      if (widget.initialReadMode != oldWidget.initialReadMode || noteChanged) {
         setState(() {
           _isReadMode = widget.initialReadMode;
+          if (_isReadMode) {
+            _isSplitView = false;
+            widget.onSplitViewChanged?.call(false);
+          }
+        });
+      }
+
+      // Sync split view with the new tab's state
+      if (widget.initialSplitView != oldWidget.initialSplitView || noteChanged) {
+        setState(() {
+          _isSplitView = widget.initialSplitView;
+          _splitViewPreviewText = widget.noteController.text;
+        });
+      }
+
+      // Sync split view preview when note changes
+      if (_isSplitView && noteChanged) {
+        setState(() {
+          _splitViewPreviewText = widget.noteController.text;
         });
       }
 
@@ -294,16 +330,28 @@ class _NotaEditorState extends State<NotaEditor>
     }
 
     // Sync editor centering with the new tab's state (always, not just when the note changes)
-    if (_isEditorCentered != widget.initialEditorCentered) {
+    if (widget.initialEditorCentered != oldWidget.initialEditorCentered) {
       setState(() {
         _isEditorCentered = widget.initialEditorCentered;
       });
     }
 
     // Sync read mode with the new tab's state (always, not just when the note changes)
-    if (_isReadMode != widget.initialReadMode) {
+    if (widget.initialReadMode != oldWidget.initialReadMode) {
       setState(() {
         _isReadMode = widget.initialReadMode;
+        if (_isReadMode && _isSplitView) {
+          _isSplitView = false;
+          widget.onSplitViewChanged?.call(false);
+        }
+      });
+    }
+
+    // Sync split view with the new tab's state (always, not just when the note changes)
+    if (widget.initialSplitView != oldWidget.initialSplitView) {
+      setState(() {
+        _isSplitView = widget.initialSplitView;
+        _splitViewPreviewText = widget.noteController.text;
       });
     }
 
@@ -336,6 +384,7 @@ class _NotaEditorState extends State<NotaEditor>
     _editorFocusNode.dispose();
     _findBarFocusNode.dispose();
     _findController.dispose();
+    _splitViewUpdateTimer?.cancel();
     _fontSizeSubscription?.cancel();
     _lineSpacingSubscription?.cancel();
     _fontColorSubscription?.cancel();
@@ -345,6 +394,7 @@ class _NotaEditorState extends State<NotaEditor>
     _showBottomBarSubscription?.cancel();
     _immersiveModeService.removeListener(_onImmersiveModeChanged);
     _scrollController.dispose();
+    _previewScrollController.dispose();
 
     // Clear global reference if this is the active editor
     if (_currentActiveEditorToggleReadMode == _toggleReadMode) {
@@ -352,6 +402,15 @@ class _NotaEditorState extends State<NotaEditor>
     }
 
     super.dispose();
+  }
+
+  void _syncScroll(ScrollController source, ScrollController destination) {
+    if (!_isSplitView || _isSyncingScroll) return;
+    if (!source.hasClients || !destination.hasClients) return;
+
+    _isSyncingScroll = true;
+    destination.jumpTo(source.offset.clamp(0.0, destination.position.maxScrollExtent));
+    _isSyncingScroll = false;
   }
 
   void _onTitleChanged() {
@@ -381,6 +440,17 @@ class _NotaEditorState extends State<NotaEditor>
         });
       }
     });
+
+    if (_isSplitView) {
+      _splitViewUpdateTimer?.cancel();
+      _splitViewUpdateTimer = Timer(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          setState(() {
+            _splitViewPreviewText = widget.noteController.text;
+          });
+        }
+      });
+    }
 
     if (_isAutoSaveEnabled) {
       _autoSaveDebounce?.cancel();
@@ -414,17 +484,49 @@ class _NotaEditorState extends State<NotaEditor>
   }
 
   void _toggleReadMode() {
+    bool splitViewChanged = false;
     setState(() {
       _isReadMode = !_isReadMode;
+      if (_isReadMode && _isSplitView) {
+        _isSplitView = false;
+        splitViewChanged = true;
+      }
     });
 
     // Notificar al TabManager del cambio de modo lectura
     widget.onReadModeChanged?.call(_isReadMode);
+    if (splitViewChanged) {
+      widget.onSplitViewChanged?.call(false);
+    }
 
     // Close search when switching to read mode
     if (_isReadMode && _showFindBar) {
       _hideFindBar();
     }
+  }
+
+  void _toggleSplitView() {
+    bool readModeChanged = false;
+    setState(() {
+      _isSplitView = !_isSplitView;
+      if (_isSplitView) {
+        if (_isReadMode) {
+          _isReadMode = false;
+          readModeChanged = true;
+        }
+        _splitViewPreviewText = widget.noteController.text;
+      }
+    });
+
+    if (readModeChanged) {
+      widget.onReadModeChanged?.call(false);
+    }
+
+    // Notificar al TabManager del cambio de split view
+    widget.onSplitViewChanged?.call(_isSplitView);
+
+    // Close search if it might interfere
+    // (Actually split view can have search)
   }
 
   void _toggleEditorCentered() {
@@ -1361,13 +1463,13 @@ class _NotaEditorState extends State<NotaEditor>
                   Container(
                     padding: EdgeInsets.only(
                       left:
-                          _isEditorCentered && constraints.maxWidth >= 600
+                          !_isSplitView && _isEditorCentered && constraints.maxWidth >= 600
                               ? _calculateCenteredPaddingForEditor(
                                 constraints.maxWidth,
                               )
                               : 0,
                       right:
-                          _isEditorCentered && constraints.maxWidth >= 600
+                          !_isSplitView && _isEditorCentered && constraints.maxWidth >= 600
                               ? _calculateCenteredPaddingForEditor(
                                 constraints.maxWidth,
                               )
@@ -1475,6 +1577,18 @@ class _NotaEditorState extends State<NotaEditor>
                               ),
                             ),
                             CustomTooltip(
+                              message: 'Split view',
+                              builder: (context, isHovering) => IconButton(
+                                icon: Icon(
+                                  _isSplitView
+                                      ? Symbols.split_scene_right_rounded
+                                      : Symbols.split_scene_rounded,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                onPressed: _toggleSplitView,
+                              ),
+                            ),
+                            CustomTooltip(
                               message: _isEditorCentered ? 'Disable centered layout' : 'Enable centered layout',
                               builder: (context, isHovering) => IconButton(
                                 icon: Icon(
@@ -1533,13 +1647,13 @@ class _NotaEditorState extends State<NotaEditor>
                     Container(
                       padding: EdgeInsets.only(
                         left:
-                            _isEditorCentered && constraints.maxWidth >= 600
+                            !_isSplitView && _isEditorCentered && constraints.maxWidth >= 600
                                 ? _calculateCenteredPaddingForEditor(
                                   constraints.maxWidth,
                                 )
                                 : 0,
                         right:
-                            _isEditorCentered && constraints.maxWidth >= 600
+                            !_isSplitView && _isEditorCentered && constraints.maxWidth >= 600
                                 ? _calculateCenteredPaddingForEditor(
                                   constraints.maxWidth,
                                 )
@@ -1571,13 +1685,13 @@ class _NotaEditorState extends State<NotaEditor>
                     child: Container(
                       padding: EdgeInsets.only(
                         left:
-                            _isEditorCentered && constraints.maxWidth >= 600
+                            !_isSplitView && _isEditorCentered && constraints.maxWidth >= 600
                                 ? _calculateCenteredPaddingForEditor(
                                   constraints.maxWidth,
                                 )
                                 : 0,
                         right:
-                            _isEditorCentered && constraints.maxWidth >= 600
+                            !_isSplitView && _isEditorCentered && constraints.maxWidth >= 600
                                 ? _calculateCenteredPaddingForEditor(
                                   constraints.maxWidth,
                                 )
@@ -1597,9 +1711,38 @@ class _NotaEditorState extends State<NotaEditor>
                                       onNoteLinkTap: (note, isMiddleClick) {
                                         _handleNoteLinkTap(note, isMiddleClick);
                                       },
+                                      controller: _previewScrollController,
                                     )
-                                    : _buildNoteReadPreview(context)
-                                : _buildHighlightedTextField(),
+                                    : _buildNoteReadPreview(context, controller: _previewScrollController)
+                                : _isSplitView
+                                    ? Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildHighlightedTextField(),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          VerticalDivider(
+                                            width: 1,
+                                            thickness: 1,
+                                            color: Theme.of(context).colorScheme.outline,
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: _isScript
+                                                ? ScriptModeHandlerDesktop.buildScriptPreview(
+                                                    context,
+                                                    _splitViewPreviewText,
+                                                    textStyle: _textStyle,
+                                                    onNoteLinkTap: (note, isMiddleClick) {
+                                                      _handleNoteLinkTap(note, isMiddleClick);
+                                                    },
+                                                    controller: _previewScrollController,
+                                                  )
+                                                : _buildNoteReadPreview(context, overrideText: _splitViewPreviewText, controller: _previewScrollController),
+                                          ),
+                                        ],
+                                      )
+                                    : _buildHighlightedTextField(),
 
                             // Find bar as floating overlay
                             if (_showFindBar)
@@ -1802,13 +1945,50 @@ class _NotaEditorState extends State<NotaEditor>
     );
   }
 
-  Widget _buildNoteReadPreview(BuildContext context) {
+  Widget _buildNoteReadPreview(BuildContext context, {String? overrideText, ScrollController? controller}) {
     final colorScheme = Theme.of(context).colorScheme;
-    final text = widget.noteController.text;
+    final text = overrideText ?? widget.noteController.text;
     // Use the same color as the first script mode block
     final backgroundColor = colorScheme.surfaceContainerLow;
 
+    final content = text.isEmpty
+        ? Text(
+          'No content to display',
+          style: _textStyle,
+          textAlign: TextAlign.start,
+        )
+        : UnifiedTextHandler(
+          text: text,
+          textStyle: _textStyle,
+          enableNoteLinkDetection: true,
+          enableLinkDetection: true,
+          enableListDetection: true,
+          enableFormatDetection: true,
+          showNoteLinkBrackets: false,
+          onNoteLinkTap: (note, isMiddleClick) {
+            _handleNoteLinkTap(note, isMiddleClick);
+          },
+          onNotebookLinkTap: (notebook, isMiddleClick) {
+            _handleNotebookLinkTap(notebook, isMiddleClick);
+          },
+          onTextChanged: (newText) {
+            widget.noteController.value = widget.noteController.value.copyWith(
+              text: newText,
+              selection: TextSelection.collapsed(offset: newText.length),
+            );
+          },
+        );
+
+    // In split view (when overrideText is provided), don't use the container styling
+    if (overrideText != null) {
+      return SingleChildScrollView(
+        controller: controller,
+        child: content,
+      );
+    }
+
     return SingleChildScrollView(
+      controller: controller,
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
@@ -1817,34 +1997,7 @@ class _NotaEditorState extends State<NotaEditor>
         ),
         padding: const EdgeInsets.all(16),
         margin: const EdgeInsets.only(top: 8),
-        child:
-            text.isEmpty
-                ? Text(
-                  'No content to display',
-                  style: _textStyle,
-                  textAlign: TextAlign.start,
-                )
-                : UnifiedTextHandler(
-                  text: text,
-                  textStyle: _textStyle,
-                  enableNoteLinkDetection: true,
-                  enableLinkDetection: true,
-                  enableListDetection: true,
-                  enableFormatDetection: true,
-                  showNoteLinkBrackets: false,
-                  onNoteLinkTap: (note, isMiddleClick) {
-                    _handleNoteLinkTap(note, isMiddleClick);
-                  },
-                  onNotebookLinkTap: (notebook, isMiddleClick) {
-                    _handleNotebookLinkTap(notebook, isMiddleClick);
-                  },
-                  onTextChanged: (newText) {
-                    widget.noteController.value = widget.noteController.value.copyWith(
-                      text: newText,
-                      selection: TextSelection.collapsed(offset: newText.length),
-                    );
-                  },
-                ),
+        child: content,
       ),
     );
   }

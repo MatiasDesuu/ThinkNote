@@ -49,11 +49,13 @@ class ScriptModeHandlerDesktop {
     String content, {
     TextStyle? textStyle,
     Function(Note, bool)? onNoteLinkTap,
+    ScrollController? controller,
   }) {
     final blocks = parseScript(content);
     final colorScheme = Theme.of(context).colorScheme;
 
     return ListView.separated(
+      controller: controller,
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: blocks.length,
       separatorBuilder: (context, index) => const SizedBox(height: 8),

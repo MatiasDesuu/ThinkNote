@@ -508,6 +508,23 @@ class TabManager extends ChangeNotifier {
     }
   }
 
+  void setTabSplitView(EditorTab tab, bool isSplitView) {
+    final index = _tabs.indexOf(tab);
+    if (index != -1) {
+      final updatedTab = tab.copyWith(isSplitView: isSplitView);
+      _tabs[index] = updatedTab;
+
+      if (_activeTab == tab) {
+        _activeTab = updatedTab;
+      }
+
+      _saveTabsToStorage();
+
+      // No notificamos listeners aquí para evitar reconstrucciones innecesarias
+      // El estado del split view se maneja localmente en el editor
+    }
+  }
+
   void updateNoteInTab(Note updatedNote) {
     final index = _tabs.indexWhere(
       (tab) => tab.note != null && tab.note!.id == updatedNote.id,
@@ -664,6 +681,7 @@ class TabManager extends ChangeNotifier {
           'isPinned': tab.isPinned,
           'isReadMode': tab.isReadMode,
           'isEditorCentered': tab.isEditorCentered,
+          'isSplitView': tab.isSplitView,
           'lastAccessed': tab.lastAccessed.toIso8601String(),
         };
 
@@ -710,6 +728,8 @@ class TabManager extends ChangeNotifier {
           final isReadMode = tabData['isReadMode'] as bool? ?? false;
           final isEditorCentered =
               tabData['isEditorCentered'] as bool? ?? false;
+          final isSplitView =
+              tabData['isSplitView'] as bool? ?? false;
           final lastAccessed = DateTime.parse(
             tabData['lastAccessed'] as String,
           );
@@ -730,6 +750,7 @@ class TabManager extends ChangeNotifier {
               isPinned: isPinned,
               isReadMode: isReadMode,
               isEditorCentered: isEditorCentered,
+              isSplitView: isSplitView,
               lastAccessed: lastAccessed,
               tabId: tabId,
             );

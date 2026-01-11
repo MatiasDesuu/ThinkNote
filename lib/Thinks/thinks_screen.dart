@@ -62,6 +62,7 @@ class _ThinksScreenState extends State<ThinksScreen>
   final TextEditingController _titleController = TextEditingController();
   Timer? _debounceNote;
   bool _isEditorCentered = false;
+  bool _isSplitView = false;
   final FocusNode _appFocusNode = FocusNode();
 
   // Variables for resizable panel
@@ -928,6 +929,12 @@ class _ThinksScreenState extends State<ThinksScreen>
                                       await prefs.setBool('editor_centered', isEditorCentered);
                                       setState(() {
                                         _isEditorCentered = isEditorCentered;
+                                      });
+                                    },
+                                    initialSplitView: _isSplitView,
+                                    onSplitViewChanged: (isSplitView) {
+                                      setState(() {
+                                        _isSplitView = isSplitView;
                                       });
                                     },
                                   ),

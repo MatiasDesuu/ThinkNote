@@ -2979,6 +2979,10 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       onReadModeChanged: (isReadMode) {
         _tabManager.setTabReadMode(activeTab, isReadMode);
       },
+      initialSplitView: activeTab.isSplitView,
+      onSplitViewChanged: (isSplitView) {
+        _tabManager.setTabSplitView(activeTab, isSplitView);
+      },
       initialEditorCentered: activeTab.isEditorCentered,
       onEditorCenteredChanged: (isEditorCentered) {
         _tabManager.setTabEditorCentered(activeTab, isEditorCentered);

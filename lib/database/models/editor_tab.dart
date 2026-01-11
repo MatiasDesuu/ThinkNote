@@ -12,6 +12,7 @@ class EditorTab {
   final bool isPinned;
   final bool isReadMode;
   final bool isEditorCentered; // Individual centered state for each tab
+  final bool isSplitView; // Individual split view state for each tab
   final DateTime lastAccessed;
   final String? tabId; // Unique identifier for empty tabs
 
@@ -25,6 +26,7 @@ class EditorTab {
     this.isPinned = false,
     this.isReadMode = false,
     this.isEditorCentered = false,
+    this.isSplitView = false,
     required this.lastAccessed,
     this.tabId,
   });
@@ -39,6 +41,7 @@ class EditorTab {
     bool? isPinned,
     bool? isReadMode,
     bool? isEditorCentered,
+    bool? isSplitView,
     DateTime? lastAccessed,
     String? tabId,
   }) {
@@ -52,6 +55,7 @@ class EditorTab {
       isPinned: isPinned ?? this.isPinned,
       isReadMode: isReadMode ?? this.isReadMode,
       isEditorCentered: isEditorCentered ?? this.isEditorCentered,
+      isSplitView: isSplitView ?? this.isSplitView,
       lastAccessed: lastAccessed ?? this.lastAccessed,
       tabId: tabId ?? this.tabId,
     );
