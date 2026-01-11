@@ -910,6 +910,12 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 // Editor Centered
                 Row(
                   children: [
+                    Icon(
+                      Icons.center_focus_strong_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -938,6 +944,12 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 // Show Editor Bottom Bar
                 Row(
                   children: [
+                    Icon(
+                      Icons.construction_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -966,6 +978,12 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 // Auto Save
                 Row(
                   children: [
+                    Icon(
+                      Icons.save_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -992,9 +1010,15 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 const SizedBox(height: 20),
 
                 // Start at Startup (Windows only)
-                if (Platform.isWindows)
+                if (Platform.isWindows) ...[
                   Row(
                     children: [
+                      Icon(
+                        Icons.launch_rounded,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1017,12 +1041,18 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                       ),
                     ],
                   ),
-
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
+                ],
 
                 // Show Notebook Icons
                 Row(
                   children: [
+                    Icon(
+                      Icons.book_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1051,6 +1081,12 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 // Show Note Icons
                 Row(
                   children: [
+                    Icon(
+                      Icons.description_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1079,6 +1115,12 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 // Hide Tabs in Immersive Mode
                 Row(
                   children: [
+                    Icon(
+                      Icons.tab_unselected_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1107,6 +1149,12 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 // Expand Notebooks on Selection
                 Row(
                   children: [
+                    Icon(
+                      Icons.unfold_more_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1138,6 +1186,12 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 // Expand Notebooks on Note Open
                 Row(
                   children: [
+                    Icon(
+                      Icons.open_in_new_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1169,6 +1223,12 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 // Expand Notebooks on Link Open
                 Row(
                   children: [
+                    Icon(
+                      Icons.link_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1201,18 +1261,32 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Script mode words per second', style: textStyle),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.speed_rounded,
+                          size: 20,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 12),
+                        Text('Script mode words per second', style: textStyle),
+                      ],
+                    ),
                     const SizedBox(height: 4),
-                    Text(
-                      'Adjust the reading speed for script mode duration estimation',
-                      style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 13,
+                    Padding(
+                      padding: const EdgeInsets.only(left: 32.0),
+                      child: Text(
+                        'Adjust the reading speed for script mode duration estimation',
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
+                        const SizedBox(width: 32),
                         Text(
                           '${_wordsPerSecond.toStringAsFixed(1)} WPS',
                           style: TextStyle(
@@ -1240,18 +1314,32 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Preview update delay', style: textStyle),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.timer_rounded,
+                          size: 20,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 12),
+                        Text('Preview update delay', style: textStyle),
+                      ],
+                    ),
                     const SizedBox(height: 4),
-                    Text(
-                      'Adjust how fast the split view preview updates while typing',
-                      style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 13,
+                    Padding(
+                      padding: const EdgeInsets.only(left: 32.0),
+                      child: Text(
+                        'Adjust how fast the split view preview updates while typing',
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
+                        const SizedBox(width: 32),
                         Text(
                           '${(_splitViewUpdateDelay / 1000).toStringAsFixed(2)} s',
                           style: TextStyle(
@@ -1311,13 +1399,24 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 const SizedBox(height: 16),
 
                 // Font Size
-                Text(
-                  'Font size:',
-                  style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.format_size_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Font size:',
+                      style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
+                    const SizedBox(width: 32),
                     Expanded(
                       child: Slider(
                         value: _fontSize,
@@ -1355,13 +1454,24 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 const SizedBox(height: 20),
 
                 // Line Spacing
-                Text(
-                  'Line spacing:',
-                  style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.format_line_spacing_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Line spacing:',
+                      style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
+                    const SizedBox(width: 32),
                     Expanded(
                       child: Slider(
                         value: _lineSpacing,
@@ -1399,15 +1509,26 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 const SizedBox(height: 20),
 
                 // Text Color
-                Text(
-                  'Text color:',
-                  style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.palette_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Text color:',
+                      style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
 
                 // Use theme color toggle
                 Row(
                   children: [
+                    const SizedBox(width: 32),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1434,68 +1555,87 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 // Color selection (only visible when not using theme color)
                 if (!_useThemeFontColor) ...[
                   const SizedBox(height: 16),
-                  Text(
-                    'Select custom color:',
-                    style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 32.0),
+                    child: Text(
+                      'Select custom color:',
+                      style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  _buildColorGrid(),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 32.0),
+                    child: _buildColorGrid(),
+                  ),
                 ],
 
                 const SizedBox(height: 20),
 
                 // Font Family
-                Text(
-                  'Font family:',
-                  style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.font_download_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Font family:',
+                      style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                    child: InkWell(
-                      onTap: _showFontSelector,
+                Padding(
+                  padding: const EdgeInsets.only(left: 32.0),
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: Material(
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerHighest.withAlpha(
-                            127,
+                      child: InkWell(
+                        onTap: _showFontSelector,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
                           ),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: colorScheme.outline,
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.text_fields_rounded,
-                              color: colorScheme.primary,
-                              size: 20,
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest.withAlpha(
+                              127,
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                _fontFamily,
-                                style: TextStyle(
-                                  fontFamily: _fontFamily,
-                                  fontSize: 16,
-                                  color: colorScheme.onSurface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: colorScheme.outline,
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.text_fields_rounded,
+                                color: colorScheme.primary,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _fontFamily,
+                                  style: TextStyle(
+                                    fontFamily: _fontFamily,
+                                    fontSize: 16,
+                                    color: colorScheme.onSurface,
+                                  ),
                                 ),
                               ),
-                            ),
-                            Icon(
-                              Icons.arrow_drop_down_rounded,
-                              color: colorScheme.onSurface,
-                            ),
-                          ],
+                              Icon(
+                                Icons.arrow_drop_down_rounded,
+                                color: colorScheme.onSurface,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

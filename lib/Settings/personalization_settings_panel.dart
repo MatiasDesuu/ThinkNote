@@ -260,6 +260,12 @@ class _PersonalizationSettingsPanelState
                   // Catppuccin toggle
                   Row(
                     children: [
+                      Icon(
+                        Icons.toggle_on_rounded,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,22 +294,48 @@ class _PersonalizationSettingsPanelState
                     const SizedBox(height: 16),
 
                     // Flavor selector
-                    Text(
-                      'Flavor',
-                      style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.color_lens_rounded,
+                          size: 20,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Flavor',
+                          style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
-                    _buildFlavorSelector(),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 32.0),
+                      child: _buildFlavorSelector(),
+                    ),
 
                     const SizedBox(height: 16),
 
                     // Accent selector
-                    Text(
-                      'Accent Color',
-                      style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.colorize_rounded,
+                          size: 20,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Accent Color',
+                          style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
-                    _buildAccentSelector(),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 32.0),
+                      child: _buildAccentSelector(),
+                    ),
                   ],
                 ],
               ),
@@ -345,22 +377,48 @@ class _PersonalizationSettingsPanelState
                   const SizedBox(height: 16),
 
                   // Strong Colors
-                  Text(
-                    'Strong Colors',
-                    style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.brightness_7_rounded,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Strong Colors',
+                        style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
-                  _buildColorGrid(0, 17),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 32.0),
+                    child: _buildColorGrid(0, 17),
+                  ),
 
                   const SizedBox(height: 16),
 
                   // Soft Colors
-                  Text(
-                    'Soft Colors',
-                    style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.brightness_5_rounded,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Soft Colors',
+                        style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
-                  _buildColorGrid(18, 35),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 32.0),
+                    child: _buildColorGrid(18, 35),
+                  ),
                 ],
               ),
             ),
@@ -403,6 +461,12 @@ class _PersonalizationSettingsPanelState
                   // Light/dark theme selector (always visible)
                   Row(
                     children: [
+                      Icon(
+                        _isDarkTheme ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(child: Text('Light theme', style: textStyle)),
                       Switch(
                         value: !_isDarkTheme,
@@ -416,6 +480,12 @@ class _PersonalizationSettingsPanelState
                   // E-Ink Theme toggle (always visible)
                   Row(
                     children: [
+                      Icon(
+                        Icons.contrast_rounded,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,6 +514,12 @@ class _PersonalizationSettingsPanelState
                     const SizedBox(height: 16),
                     Row(
                       children: [
+                        Icon(
+                          Icons.color_lens_rounded,
+                          size: 20,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -469,6 +545,12 @@ class _PersonalizationSettingsPanelState
                       const SizedBox(height: 16),
                       Row(
                         children: [
+                          Icon(
+                            Icons.auto_fix_high_rounded,
+                            size: 20,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
