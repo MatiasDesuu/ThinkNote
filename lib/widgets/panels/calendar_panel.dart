@@ -821,24 +821,29 @@ class CalendarPanelState extends State<CalendarPanel>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          _showCombinedEvents
-                              ? Icons.event_available_rounded
-                              : Icons.event_note_rounded,
-                          size: 20,
-                          color: colorScheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          // Use the selected date's month name so selecting days from
-                          // previous/next months shows the correct month in the header.
-                          '${_showCombinedEvents ? "Events" : "Notes"} for ${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}',
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(color: colorScheme.onSurface),
-                        ),
-                      ],
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(
+                            _showCombinedEvents
+                                ? Icons.event_available_rounded
+                                : Icons.event_note_rounded,
+                            size: 20,
+                            color: colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              // Use the selected date's month name so selecting days from
+                              // previous/next months shows the correct month in the header.
+                              '${_showCombinedEvents ? "Events" : "Notes"} for ${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}',
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(color: colorScheme.onSurface),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     Row(
                       children: [
