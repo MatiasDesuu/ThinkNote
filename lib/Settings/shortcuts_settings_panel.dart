@@ -49,18 +49,23 @@ class ShortcutsSettingsPanel extends StatelessWidget {
                 const SizedBox(height: 8),
                 _buildShortcutItem(
                   context: context,
-                  label: 'Create new note',
-                  shortcut: 'Ctrl + N',
-                ),
-                _buildShortcutItem(
-                  context: context,
                   label: 'Create new notebook',
                   shortcut: 'Ctrl + Shift + N',
                 ),
                 _buildShortcutItem(
                   context: context,
+                  label: 'Create new note',
+                  shortcut: 'Ctrl + N',
+                ),
+                _buildShortcutItem(
+                  context: context,
                   label: 'Create new todo',
                   shortcut: 'Ctrl + D',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Open Templates panel',
+                  shortcut: 'Ctrl + Shift + T',
                 ),
                 _buildShortcutItem(
                   context: context,
@@ -81,6 +86,7 @@ class ShortcutsSettingsPanel extends StatelessWidget {
                   context: context,
                   label: 'Close current tab',
                   shortcut: 'Ctrl + W',
+                  showDivider: false,
                 ),
               ],
             ),
@@ -122,6 +128,7 @@ class ShortcutsSettingsPanel extends StatelessWidget {
                   context: context,
                   label: 'Synchronize with server',
                   shortcut: 'F5',
+                  showDivider: false,
                 ),
               ],
             ),
@@ -187,8 +194,29 @@ class ShortcutsSettingsPanel extends StatelessWidget {
                 ),
                 _buildShortcutItem(
                   context: context,
+                  label: 'Toggle Favorites panel',
+                  shortcut: 'F7',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Toggle Trash panel',
+                  shortcut: 'F8',
+                ),
+                _buildShortcutItem(
+                  context: context,
                   label: 'Global search',
-                  shortcut: 'Ctrl + Shift + S',
+                  shortcut: 'Ctrl + Shift + F',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Toggle Edit/Read Mode',
+                  shortcut: 'Ctrl + P',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Toggle Split View',
+                  shortcut: 'Ctrl + Shift + P',
+                  showDivider: false,
                 ),
               ],
             ),
@@ -202,40 +230,52 @@ class ShortcutsSettingsPanel extends StatelessWidget {
     required BuildContext context,
     required String label,
     required String shortcut,
+    bool showDivider = true,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(color: colorScheme.onSurface, fontSize: 15),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(8.0),
-              border: Border.all(
-                color: colorScheme.outline.withAlpha(51),
-                width: 1,
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(color: colorScheme.onSurface, fontSize: 15),
+                ),
               ),
-            ),
-            child: Text(
-              shortcut,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-                color: colorScheme.onSurfaceVariant,
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8.0),
+                  border: Border.all(
+                    color: colorScheme.outline.withAlpha(80),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  shortcut,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+        if (showDivider)
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: colorScheme.outline.withAlpha(80),
+          ),
+      ],
     );
   }
 }

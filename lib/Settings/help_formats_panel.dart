@@ -67,6 +67,17 @@ class HelpFormatsPanel extends StatelessWidget {
                   label: 'Inline code',
                   syntax: '`text`',
                 ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Copy block',
+                  syntax: '[text]',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Horizontal Divider',
+                  syntax: '* * *',
+                  showDivider: false,
+                ),
               ],
             ),
           ),
@@ -127,6 +138,7 @@ class HelpFormatsPanel extends StatelessWidget {
                   context: context,
                   label: 'Heading 5',
                   syntax: '##### Tiny Heading',
+                  showDivider: false,
                 ),
               ],
             ),
@@ -166,22 +178,23 @@ class HelpFormatsPanel extends StatelessWidget {
                 _buildFormatItem(
                   context: context,
                   label: 'Numbered list',
-                  syntax: '1. item',
+                  syntax: '1. text',
                 ),
                 _buildFormatItem(
                   context: context,
                   label: 'Bullet list',
-                  syntax: '- item or • item',
+                  syntax: '- text',
                 ),
                 _buildFormatItem(
                   context: context,
                   label: 'Checkbox (unchecked)',
-                  syntax: '-[ ] task',
+                  syntax: '-[ ] text',
                 ),
                 _buildFormatItem(
                   context: context,
                   label: 'Checkbox (checked)',
-                  syntax: '-[x] task',
+                  syntax: '-[x] text',
+                  showDivider: false,
                 ),
               ],
             ),
@@ -226,8 +239,19 @@ class HelpFormatsPanel extends StatelessWidget {
                 ),
                 _buildFormatItem(
                   context: context,
+                  label: 'Web links with custom text',
+                  syntax: '[Example](http://example.com)',
+                ),
+                _buildFormatItem(
+                  context: context,
                   label: 'Note links',
                   syntax: '[[note:Note Title]]',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Notebooks links',
+                  syntax: '[[notebook:Notebook Title]]',
+                  showDivider: false,
                 ),
               ],
             ),
@@ -268,140 +292,257 @@ class HelpFormatsPanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'How to Create Templates',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.add_circle_outline_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'How to Create Templates',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  '1. Create a notebook named "#templates" or "#category" (you can also create sub-notebooks for organized groups like #templates_meetings or #category_work).',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '2. Create a notebook starting with "#template_" (e.g., #template_Project) to use the entire notebook structure as a template.',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '3. Add notes to these notebooks - they will be copied when the template is applied.',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '4. Use template variables like {{date}} or {{notebook}} in titles and content.',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 14,
-                    height: 1.4,
+                Padding(
+                  padding: const EdgeInsets.only(left: 28.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '1. Create a notebook named "#templates" or "#category" (you can also create sub-notebooks for organized groups like #templates_meetings or #category_work).',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colorScheme.outline.withAlpha(80),
+                        ),
+                      ),
+                      Text(
+                        '2. Create a notebook starting with "#template_" (e.g., #template_Project) to use the entire notebook structure as a template.',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colorScheme.outline.withAlpha(80),
+                        ),
+                      ),
+                      Text(
+                        '3. Add notes to these notebooks - they will be copied when the template is applied.',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colorScheme.outline.withAlpha(80),
+                        ),
+                      ),
+                      Text(
+                        '4. Use template variables like {{date}} or {{notebook}} in titles and content.',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'How to Use Templates',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.play_circle_outline_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'How to Use Templates',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  '1. Open the templates panel by clicking the New Note icon in the sidebar and then clicking the "Templates" button (you can also use Ctrl+Shift+T / Cmd+Shift+T).',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '2. Select a template from the list.',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '3. Choose the notebook where you want to create the new note.',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '4. Click to apply - a new note will be created with the template content.',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 14,
-                    height: 1.4,
+                Padding(
+                  padding: const EdgeInsets.only(left: 28.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '1. Open the templates panel by clicking the New Note icon in the sidebar and then clicking the "Templates" button (you can also use Ctrl+Shift+T / Cmd+Shift+T).',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colorScheme.outline.withAlpha(80),
+                        ),
+                      ),
+                      Text(
+                        '2. Select a template from the list.',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colorScheme.outline.withAlpha(80),
+                        ),
+                      ),
+                      Text(
+                        '3. Choose the notebook where you want to create the new note.',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colorScheme.outline.withAlpha(80),
+                        ),
+                      ),
+                      Text(
+                        '4. Click to apply - a new note will be created with the template content.',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Stack Templates - Create Multiple Notes at Once',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.layers_rounded,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Stack Templates - Create Multiple Notes at Once',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Stack templates let you create several related notes in one click.',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'How to Create Stack Templates:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '1. Create a note template with "#stack" in the title (like "#stack Meeting Notes").',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '2. In the template content, specify which notes to create using {{note1, note2, note3}}.',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '3. Make sure notes with those exact titles exist in the same template notebook.',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '4. When applied, it will create all the specified notes in your target notebook.',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 14,
-                    height: 1.4,
+                Padding(
+                  padding: const EdgeInsets.only(left: 28.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Stack templates let you create several related notes in one click.',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'How to Create Stack Templates:',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '1. Create a note template with "#stack" in the title (like "#stack Meeting Notes").',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colorScheme.outline.withAlpha(80),
+                        ),
+                      ),
+                      Text(
+                        '2. In the template content, specify which notes to create using {{note1, note2, note3}}.',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colorScheme.outline.withAlpha(80),
+                        ),
+                      ),
+                      Text(
+                        '3. Make sure notes with those exact titles exist in the same template notebook.',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colorScheme.outline.withAlpha(80),
+                        ),
+                      ),
+                      Text(
+                        '4. When applied, it will create all the specified notes in your target notebook.',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -439,9 +580,19 @@ class HelpFormatsPanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Dates & Time',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 18,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Dates & Time',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ],
                 ),
                 _buildFormatItem(
                   context: context,
@@ -562,11 +713,22 @@ class HelpFormatsPanel extends StatelessWidget {
                   context: context,
                   label: 'Timezone',
                   syntax: '{{timezone}}',
+                  showDivider: false,
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Contextual',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 18,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Contextual',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ],
                 ),
                 _buildFormatItem(
                   context: context,
@@ -587,6 +749,7 @@ class HelpFormatsPanel extends StatelessWidget {
                   context: context,
                   label: 'Sequential Number (titles only)',
                   syntax: '{{number}}',
+                  showDivider: false,
                 ),
               ],
             ),
@@ -600,15 +763,16 @@ class HelpFormatsPanel extends StatelessWidget {
     required BuildContext context,
     required String label,
     required String syntax,
+    bool showDivider = true,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
             children: [
               Expanded(
                 child: Text(
@@ -644,8 +808,14 @@ class HelpFormatsPanel extends StatelessWidget {
               ),
             ],
           ),
-        ],
-      ),
+        ),
+        if (showDivider)
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: colorScheme.outline.withAlpha(80),
+          ),
+      ],
     );
   }
 }
