@@ -381,7 +381,7 @@ class ListDetector {
   }
 
   static String _getIndentString(int level) {
-    return ' ' * level;
+    return '\t' * (level ~/ 4) + ' ' * (level % 4);
   }
 
   static String getNextNumberedListItem(String currentLine) {

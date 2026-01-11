@@ -1688,14 +1688,57 @@ class _NotaEditorState extends State<NotaEditor>
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.tab) {
           final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+          final controller = widget.noteController;
+          final selection = controller.selection;
+
+          if (selection.isValid && selection.isCollapsed) {
+            final text = controller.text;
+            final cursorPosition = selection.baseOffset;
+
+            // Find current line start and end
+            int lineStart = text.lastIndexOf('\n', cursorPosition - 1) + 1;
+            if (lineStart < 0) lineStart = 0;
+            int lineEnd = text.indexOf('\n', cursorPosition);
+            if (lineEnd == -1) lineEnd = text.length;
+
+            final currentLine = text.substring(lineStart, lineEnd);
+            final isListItem = ListDetector.detectListItem(currentLine) != null;
+
+            if (isListItem) {
+              if (!isShiftPressed) {
+                // Indent list item: insert tab at line start
+                final newText = text.replaceRange(lineStart, lineStart, '\t');
+                controller.value = controller.value.copyWith(
+                  text: newText,
+                  selection:
+                      TextSelection.collapsed(offset: cursorPosition + 1),
+                );
+              } else {
+                // Outdent list item: remove tab or 4 spaces at line start
+                final indentMatch =
+                    RegExp(r'^(\t|    )').firstMatch(currentLine);
+                if (indentMatch != null) {
+                  final indentLength = indentMatch.group(0)!.length;
+                  final newText =
+                      text.replaceRange(lineStart, lineStart + indentLength, '');
+                  controller.value = controller.value.copyWith(
+                    text: newText,
+                    selection: TextSelection.collapsed(
+                      offset: (cursorPosition - indentLength)
+                          .clamp(lineStart, newText.length),
+                    ),
+                  );
+                }
+              }
+              widget.onContentChanged();
+              return KeyEventResult.handled;
+            }
+          }
 
           if (!isShiftPressed) {
-            final controller = widget.noteController;
-            final selection = controller.selection;
-
             if (selection.isValid) {
               final text = controller.text;
-              const tabString = '    '; // 4 spaces
+              const tabString = '\t';
 
               final newText = text.replaceRange(
                 selection.start,
