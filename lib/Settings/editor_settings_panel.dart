@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/custom_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
@@ -395,24 +396,19 @@ class EditorSettings {
   static const List<String> availableFonts = [
     'Roboto',
     'Inter',
-    'Open Sans',
-    'Lato',
-    'Poppins',
-    'Source Sans Pro',
-    'Ubuntu',
-    'Noto Sans',
     'Montserrat',
-    'Raleway',
-    'Work Sans',
-    'Nunito',
-    'Quicksand',
-    'Comfortaa',
-    'Josefin Sans',
-    'Barlow',
-    'IBM Plex Sans',
-    'Fira Sans',
-    'PT Sans',
+    'Poppins',
+    'Ubuntu',
+    'Open Sans',
     'Merriweather',
+    'Lora',
+    'Playfair Display',
+    'Fira Code',
+    'JetBrains Mono',
+    'Source Code Pro',
+    'IBM Plex Mono',
+    'Roboto Mono',
+    'Dancing Script',
   ];
 
   // Usar los mismos colores que materialYouColors, pero agregando blanco y negro al principio
@@ -1553,18 +1549,17 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                   ),
                   child: Text(
                     'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec suscipit arcu id sem sodales, vel eleifend nunc tincidunt. Nulla faucibus et nulla ut convallis. Vivamus viverra magna venenatis tempor pellentesque. Aliquam erat volutpat. Suspendisse semper gravida sapien id suscipit. Donec non vestibulum lacus. In id lorem ac nisi faucibus dapibus vitae sit amet odio. Sed euismod venenatis libero at blandit. Aenean dictum ante ut viverra ullamcorper. Morbi quis tortor in purus mollis interdum. Sed ullamcorper ex velit, vitae fringilla ligula pellentesque eu. Integer tincidunt faucibus nisl eget condimentum. Curabitur posuere aliquam mollis.\n',
-                    style: TextStyle(
+                    style: GoogleFonts.getFont(
+                      _fontFamily,
                       fontSize: _fontSize,
                       height: _lineSpacing,
-                      fontFamily: _fontFamily,
                       color:
                           _useThemeFontColor
                               ? colorScheme.onSurface
                               : _fontColor,
                     ),
                   ),
-                ),
-              ],
+            ),],
             ),
           ),
         ),
@@ -1722,8 +1717,8 @@ class _FontSelectorDialog extends StatelessWidget {
                         Expanded(
                           child: Text(
                             font,
-                            style: TextStyle(
-                              fontFamily: font,
+                            style: GoogleFonts.getFont(
+                              font,
                               fontSize: 16,
                               color: colorScheme.onSurface,
                             ),

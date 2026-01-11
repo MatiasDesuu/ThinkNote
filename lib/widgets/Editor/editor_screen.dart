@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as p;
@@ -138,16 +139,15 @@ class _NotaEditorState extends State<NotaEditor>
   bool _isSyncingScroll = false;
   final GlobalKey _exportButtonKey = GlobalKey();
 
-  TextStyle get _textStyle => TextStyle(
+  TextStyle get _textStyle => GoogleFonts.getFont(
+    _fontFamily,
     fontSize: _fontSize,
     height: _lineSpacing,
-    fontFamily: _fontFamily,
     color:
         _useThemeFontColor
             ? Theme.of(context).colorScheme.onSurface
             : _fontColor ?? Theme.of(context).colorScheme.onSurface,
-    letterSpacing: 0.0,
-  );
+  ).copyWith(letterSpacing: 0.0);
 
   void _highlightSearchText() {
     if (widget.searchQuery == null ||
@@ -250,10 +250,10 @@ class _NotaEditorState extends State<NotaEditor>
     _searchManager = SearchManager(
       noteController: widget.noteController,
       scrollController: _scrollController,
-      textStyle: TextStyle(
+      textStyle: GoogleFonts.getFont(
+        _fontFamily,
         fontSize: _fontSize,
         height: _lineSpacing,
-        fontFamily: _fontFamily,
       ),
     );
 
