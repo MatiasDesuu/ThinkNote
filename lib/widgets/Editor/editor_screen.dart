@@ -1752,6 +1752,7 @@ class _NotaEditorState extends State<NotaEditor>
                                     : _buildNoteReadPreview(context, controller: _previewScrollController)
                                 : _isSplitView
                                     ? Row(
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
                                         children: [
                                           Expanded(
                                             child: _buildHighlightedTextField(),
