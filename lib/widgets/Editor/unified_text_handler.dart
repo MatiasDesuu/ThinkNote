@@ -135,7 +135,8 @@ class UnifiedTextHandler extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 1.0),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(indent, style: textStyle),
                   Text('  ', style: textStyle),
@@ -220,7 +221,8 @@ class UnifiedTextHandler extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
         children: [
           if (indent.isNotEmpty) Text(indent, style: textStyle),
           if (segment.type == FormatType.checkboxUnchecked ||
@@ -252,7 +254,6 @@ class UnifiedTextHandler extends StatelessWidget {
               marker,
               style: textStyle.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
               ),
             ),
           Expanded(

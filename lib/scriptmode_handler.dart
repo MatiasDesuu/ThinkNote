@@ -49,6 +49,7 @@ class ScriptModeHandlerDesktop {
     String content, {
     TextStyle? textStyle,
     Function(Note, bool)? onNoteLinkTap,
+    Function(String)? onTextChanged,
     ScrollController? controller,
   }) {
     final blocks = parseScript(content);
@@ -72,9 +73,11 @@ class ScriptModeHandlerDesktop {
           padding: const EdgeInsets.all(16),
           child: _buildEnhancedScriptText(
             context,
-            block.content,
+            block,
+            content,
             textStyle ?? Theme.of(context).textTheme.bodyLarge!,
             onNoteLinkTap: onNoteLinkTap,
+            onTextChanged: onTextChanged,
           ),
         );
       },
@@ -83,13 +86,15 @@ class ScriptModeHandlerDesktop {
 
   static Widget _buildEnhancedScriptText(
     BuildContext context,
-    String text,
+    ScriptBlock block,
+    String fullContent,
     TextStyle textStyle, {
     Function(Note, bool)? onNoteLinkTap,
+    Function(String)? onTextChanged,
   }) {
     // Use the new UnifiedTextHandler that handles ALL formatting types
     return UnifiedTextHandler(
-      text: text,
+      text: block.content,
       textStyle: textStyle,
       enableNoteLinkDetection: true,
       enableLinkDetection: true,
@@ -97,6 +102,29 @@ class ScriptModeHandlerDesktop {
       enableFormatDetection: true,
       showNoteLinkBrackets: false,
       onNoteLinkTap: onNoteLinkTap,
+      onTextChanged: onTextChanged != null ? (newBlockContent) {
+        // We need to rebuild the full content with the updated block
+        final lines = fullContent.split('\n');
+        if (lines.isEmpty) return;
+
+        final header = lines.first; // #script
+        final blocks = parseScript(fullContent);
+        
+        // Find the block we updated
+        final updatedBlocks = blocks.map((b) => b.number == block.number 
+          ? ScriptBlock(number: b.number, content: newBlockContent) 
+          : b).toList();
+        
+        // Reconstruct full content
+        StringBuffer sb = StringBuffer();
+        sb.writeln(header);
+        for (var b in updatedBlocks) {
+          sb.writeln('#${b.number}');
+          sb.writeln(b.content);
+        }
+        
+        onTextChanged(sb.toString().trimRight());
+      } : null,
     );
   }
 }

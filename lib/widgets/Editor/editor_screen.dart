@@ -274,6 +274,7 @@ class _NotaEditorState extends State<NotaEditor>
     if (noteChanged) {
       _reconfigureListeners(oldWidget);
       _detectScriptMode();
+      _splitViewUpdateTimer?.cancel();
 
       // Update the SearchManager with the new controllers
       _searchManager.updateControllers(
@@ -427,6 +428,23 @@ class _NotaEditorState extends State<NotaEditor>
     }
   }
 
+  void _updateControllerAndSplitView(String newText, {TextSelection? selection}) {
+    if (_isSplitView) {
+      setState(() {
+        _splitViewPreviewText = newText;
+      });
+    }
+
+    if (selection != null) {
+      widget.noteController.value = widget.noteController.value.copyWith(
+        text: newText,
+        selection: selection,
+      );
+    } else {
+      widget.noteController.text = newText;
+    }
+  }
+
   void _onContentChanged() {
     widget.onContentChanged();
 
@@ -442,14 +460,18 @@ class _NotaEditorState extends State<NotaEditor>
     });
 
     if (_isSplitView) {
-      _splitViewUpdateTimer?.cancel();
-      _splitViewUpdateTimer = Timer(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          setState(() {
-            _splitViewPreviewText = widget.noteController.text;
-          });
-        }
-      });
+      if (_splitViewPreviewText == widget.noteController.text) {
+        _splitViewUpdateTimer?.cancel();
+      } else {
+        _splitViewUpdateTimer?.cancel();
+        _splitViewUpdateTimer = Timer(const Duration(milliseconds: 200), () {
+          if (mounted) {
+            setState(() {
+              _splitViewPreviewText = widget.noteController.text;
+            });
+          }
+        });
+      }
     }
 
     if (_isAutoSaveEnabled) {
@@ -1003,9 +1025,11 @@ class _NotaEditorState extends State<NotaEditor>
 
     final newText =
         text.substring(0, lineStart) + newLine + text.substring(lineEnd);
-    controller.text = newText;
-    controller.selection = TextSelection.collapsed(
-      offset: newCursorOffset.clamp(lineStart, lineStart + newLine.length),
+    _updateControllerAndSplitView(
+      newText,
+      selection: TextSelection.collapsed(
+        offset: newCursorOffset.clamp(lineStart, lineStart + newLine.length),
+      ),
     );
     widget.onContentChanged();
     _editorFocusNode.requestFocus();
@@ -1020,10 +1044,10 @@ class _NotaEditorState extends State<NotaEditor>
       if (text.startsWith('#script')) {
         // Remove #script and any following newline
         String newText = text.replaceFirst(RegExp(r'^#script\n?'), '');
-        widget.noteController.text = newText;
+        _updateControllerAndSplitView(newText);
         widget.onContentChanged();
       } else {
-        widget.noteController.text = '#script\n$text';
+        _updateControllerAndSplitView('#script\n$text');
         widget.onContentChanged();
       }
       _editorFocusNode.requestFocus();
@@ -1045,7 +1069,13 @@ class _NotaEditorState extends State<NotaEditor>
       );
 
       if (newText != text) {
-        widget.noteController.text = newText;
+        _updateControllerAndSplitView(
+          newText,
+          selection: TextSelection(
+            baseOffset: selection.start,
+            extentOffset: selection.start + (newText.length - (text.length - (selection.end - selection.start))),
+          ),
+        );
         widget.onContentChanged();
       }
 
@@ -1711,6 +1741,12 @@ class _NotaEditorState extends State<NotaEditor>
                                       onNoteLinkTap: (note, isMiddleClick) {
                                         _handleNoteLinkTap(note, isMiddleClick);
                                       },
+                                      onTextChanged: (newText) {
+                                        widget.noteController.value = widget.noteController.value.copyWith(
+                                          text: newText,
+                                          selection: widget.noteController.selection,
+                                        );
+                                      },
                                       controller: _previewScrollController,
                                     )
                                     : _buildNoteReadPreview(context, controller: _previewScrollController)
@@ -1735,6 +1771,12 @@ class _NotaEditorState extends State<NotaEditor>
                                                     textStyle: _textStyle,
                                                     onNoteLinkTap: (note, isMiddleClick) {
                                                       _handleNoteLinkTap(note, isMiddleClick);
+                                                    },
+                                                    onTextChanged: (newText) {
+                                                      _updateControllerAndSplitView(
+                                                        newText,
+                                                        selection: widget.noteController.selection,
+                                                      );
                                                     },
                                                     controller: _previewScrollController,
                                                   )
@@ -1972,9 +2014,9 @@ class _NotaEditorState extends State<NotaEditor>
             _handleNotebookLinkTap(notebook, isMiddleClick);
           },
           onTextChanged: (newText) {
-            widget.noteController.value = widget.noteController.value.copyWith(
-              text: newText,
-              selection: TextSelection.collapsed(offset: newText.length),
+            _updateControllerAndSplitView(
+              newText,
+              selection: widget.noteController.selection,
             );
           },
         );
