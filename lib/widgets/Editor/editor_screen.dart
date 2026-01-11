@@ -121,6 +121,7 @@ class _NotaEditorState extends State<NotaEditor>
   String _fontFamily = 'Roboto';
   bool _isAutoSaveEnabled = true;
   bool _showBottomBar = true;
+  double _splitViewUpdateDelay = 500.0;
   StreamSubscription? _fontSizeSubscription;
   StreamSubscription? _lineSpacingSubscription;
   StreamSubscription? _fontColorSubscription;
@@ -128,6 +129,7 @@ class _NotaEditorState extends State<NotaEditor>
   StreamSubscription? _autoSaveEnabledSubscription;
   StreamSubscription? _wordsPerSecondSubscription;
   StreamSubscription? _showBottomBarSubscription;
+  StreamSubscription? _splitViewUpdateDelaySubscription;
   late ImmersiveModeService _immersiveModeService;
   late SearchManager _searchManager;
   final UndoHistoryController _undoController = UndoHistoryController();
@@ -402,6 +404,7 @@ class _NotaEditorState extends State<NotaEditor>
     _autoSaveEnabledSubscription?.cancel();
     _wordsPerSecondSubscription?.cancel();
     _showBottomBarSubscription?.cancel();
+    _splitViewUpdateDelaySubscription?.cancel();
     _immersiveModeService.removeListener(_onImmersiveModeChanged);
     _scrollController.dispose();
     _previewScrollController.dispose();
@@ -476,13 +479,16 @@ class _NotaEditorState extends State<NotaEditor>
         _splitViewUpdateTimer?.cancel();
       } else {
         _splitViewUpdateTimer?.cancel();
-        _splitViewUpdateTimer = Timer(const Duration(milliseconds: 200), () {
-          if (mounted) {
-            setState(() {
-              _splitViewPreviewText = widget.noteController.text;
-            });
-          }
-        });
+        _splitViewUpdateTimer = Timer(
+          Duration(milliseconds: _splitViewUpdateDelay.round()),
+          () {
+            if (mounted) {
+              setState(() {
+                _splitViewPreviewText = widget.noteController.text;
+              });
+            }
+          },
+        );
       }
     }
 
@@ -717,12 +723,23 @@ class _NotaEditorState extends State<NotaEditor>
     _fontFamilySubscription?.cancel();
     _autoSaveEnabledSubscription?.cancel();
     _showBottomBarSubscription?.cancel();
+    _splitViewUpdateDelaySubscription?.cancel();
 
     _wordsPerSecondSubscription = EditorSettingsEvents.wordsPerSecondStream
         .listen((wps) {
           if (mounted) {
             setState(() {
               // Force rebuild to update duration estimator
+            });
+          }
+        });
+
+    _splitViewUpdateDelaySubscription = EditorSettingsEvents
+        .splitViewUpdateDelayStream
+        .listen((delay) {
+          if (mounted) {
+            setState(() {
+              _splitViewUpdateDelay = delay;
             });
           }
         });
@@ -1321,6 +1338,7 @@ class _NotaEditorState extends State<NotaEditor>
       _fontFamily = cache.fontFamily;
       _isAutoSaveEnabled = cache.isAutoSaveEnabled;
       _showBottomBar = cache.showBottomBar;
+      _splitViewUpdateDelay = cache.splitViewUpdateDelay;
     });
     _isEditorSettingsLoaded = true;
   }
@@ -1336,6 +1354,7 @@ class _NotaEditorState extends State<NotaEditor>
         _fontFamily = cache.fontFamily;
         _isAutoSaveEnabled = cache.isAutoSaveEnabled;
         _showBottomBar = cache.showBottomBar;
+        _splitViewUpdateDelay = cache.splitViewUpdateDelay;
       });
     }
   }

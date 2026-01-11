@@ -37,6 +37,7 @@ class EditorSettingsCache {
   bool? _expandNotebooksOnLinkOpen;
   double? _wordsPerSecond;
   bool? _showBottomBar;
+  double? _splitViewUpdateDelay;
 
   double get fontSize => _fontSize ?? EditorSettings.defaultFontSize;
   double get lineSpacing => _lineSpacing ?? EditorSettings.defaultLineSpacing;
@@ -69,6 +70,8 @@ class EditorSettingsCache {
   double get wordsPerSecond =>
       _wordsPerSecond ?? EditorSettings.defaultWordsPerSecond;
   bool get showBottomBar => _showBottomBar ?? EditorSettings.defaultShowBottomBar;
+  double get splitViewUpdateDelay =>
+      _splitViewUpdateDelay ?? EditorSettings.defaultSplitViewUpdateDelay;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -91,6 +94,7 @@ class EditorSettingsCache {
         EditorSettings.getExpandNotebooksOnLinkOpen(),
         EditorSettings.getWordsPerSecond(),
         EditorSettings.getShowBottomBar(),
+        EditorSettings.getSplitViewUpdateDelay(),
       ]);
 
       _fontSize = results[0] as double;
@@ -109,6 +113,7 @@ class EditorSettingsCache {
       _expandNotebooksOnLinkOpen = results[13] as bool;
       _wordsPerSecond = results[14] as double;
       _showBottomBar = results[15] as bool;
+      _splitViewUpdateDelay = results[16] as double;
       _isInitialized = true;
     } catch (e) {
       print('Error initializing editor settings cache: $e');
@@ -130,6 +135,7 @@ class EditorSettingsCache {
           EditorSettings.defaultExpandNotebooksOnNoteOpen;
       _wordsPerSecond = EditorSettings.defaultWordsPerSecond;
       _showBottomBar = EditorSettings.defaultShowBottomBar;
+      _splitViewUpdateDelay = EditorSettings.defaultSplitViewUpdateDelay;
       _isInitialized = true;
     }
   }
@@ -201,6 +207,10 @@ class EditorSettingsCache {
   void updateShowBottomBar(bool show) {
     _showBottomBar = show;
   }
+
+  void updateSplitViewUpdateDelay(double delay) {
+    _splitViewUpdateDelay = delay;
+  }
 }
 
 // Eventos de configuración
@@ -225,6 +235,8 @@ class EditorSettingsEvents {
       StreamController<bool>.broadcast();
   static final _wordsPerSecondController = StreamController<double>.broadcast();
   static final _showBottomBarController = StreamController<bool>.broadcast();
+  static final _splitViewUpdateDelayController =
+      StreamController<double>.broadcast();
 
   static Stream<double> get fontSizeStream => _fontSizeController.stream;
   static Stream<double> get lineSpacingStream => _lineSpacingController.stream;
@@ -252,6 +264,8 @@ class EditorSettingsEvents {
       _wordsPerSecondController.stream;
   static Stream<bool> get showBottomBarStream =>
       _showBottomBarController.stream;
+  static Stream<double> get splitViewUpdateDelayStream =>
+      _splitViewUpdateDelayController.stream;
 
   static void notifyFontSizeChanged(double size) {
     _fontSizeController.add(size);
@@ -313,6 +327,10 @@ class EditorSettingsEvents {
     _showBottomBarController.add(show);
   }
 
+  static void notifySplitViewUpdateDelayChanged(double delay) {
+    _splitViewUpdateDelayController.add(delay);
+  }
+
   static void dispose() {
     _fontSizeController.close();
     _lineSpacingController.close();
@@ -328,6 +346,7 @@ class EditorSettingsEvents {
     _expandNotebooksOnNoteOpenController.close();
     _expandNotebooksOnLinkOpenController.close();
     _wordsPerSecondController.close();
+    _splitViewUpdateDelayController.close();
   }
 }
 
@@ -351,6 +370,7 @@ class EditorSettings {
       'expand_notebooks_on_link_open';
   static const String _wordsPerSecondKey = 'words_per_second';
   static const String _showBottomBarKey = 'show_editor_bottom_bar';
+  static const String _splitViewUpdateDelayKey = 'split_view_update_delay';
   static const double defaultLineSpacing = 1.0;
 
   // Default values
@@ -369,6 +389,7 @@ class EditorSettings {
   static const bool defaultExpandNotebooksOnLinkOpen = true;
   static const double defaultWordsPerSecond = 5.0;
   static const bool defaultShowBottomBar = true;
+  static const double defaultSplitViewUpdateDelay = 500.0;
 
   // Fuentes disponibles
   static const List<String> availableFonts = [
@@ -626,6 +647,21 @@ class EditorSettings {
     EditorSettingsEvents.notifyShowBottomBarChanged(value);
   }
 
+  // Get split view update delay setting
+  static Future<double> getSplitViewUpdateDelay() async {
+    return await PlatformSettings.get(
+      _splitViewUpdateDelayKey,
+      defaultSplitViewUpdateDelay,
+    );
+  }
+
+  // Save split view update delay setting
+  static Future<void> setSplitViewUpdateDelay(double value) async {
+    await PlatformSettings.set(_splitViewUpdateDelayKey, value);
+    EditorSettingsCache.instance.updateSplitViewUpdateDelay(value);
+    EditorSettingsEvents.notifySplitViewUpdateDelayChanged(value);
+  }
+
   // Método para precargar todas las configuraciones del editor
   static Future<void> preloadSettings() async {
     await EditorSettingsCache.instance.initialize();
@@ -655,6 +691,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
   bool _expandNotebooksOnNoteOpen = true;
   bool _expandNotebooksOnLinkOpen = true;
   double _wordsPerSecond = 5.0;
+  double _splitViewUpdateDelay = 500.0;
   bool _showBottomBar = true;
   bool _isLoading = true;
 
@@ -683,6 +720,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
     final expandNotebooksOnLinkOpen =
         await EditorSettings.getExpandNotebooksOnLinkOpen();
     final wordsPerSecond = await EditorSettings.getWordsPerSecond();
+    final splitViewUpdateDelay = await EditorSettings.getSplitViewUpdateDelay();
     final showBottomBar = await EditorSettings.getShowBottomBar();
     setState(() {
       _fontSize = fontSize;
@@ -700,6 +738,7 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
       _expandNotebooksOnNoteOpen = expandNotebooksOnNoteOpen;
       _expandNotebooksOnLinkOpen = expandNotebooksOnLinkOpen;
       _wordsPerSecond = wordsPerSecond;
+      _splitViewUpdateDelay = splitViewUpdateDelay;
       _showBottomBar = showBottomBar;
       _isLoading = false;
     });
@@ -795,6 +834,12 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
     setState(() => _wordsPerSecond = value);
     await EditorSettings.setWordsPerSecond(value);
     EditorSettingsEvents.notifyWordsPerSecondChanged(value);
+  }
+
+  Future<void> _updateSplitViewUpdateDelay(double value) async {
+    setState(() => _splitViewUpdateDelay = value);
+    await EditorSettings.setSplitViewUpdateDelay(value);
+    EditorSettingsEvents.notifySplitViewUpdateDelayChanged(value);
   }
 
   Future<void> _updateShowBottomBar(bool value) async {
@@ -1186,6 +1231,46 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                             max: 10.0,
                             divisions: 90,
                             onChanged: _updateWordsPerSecond,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Preview Update Delay
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Preview update delay', style: textStyle),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Adjust how fast the split view preview updates while typing',
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Text(
+                          '${(_splitViewUpdateDelay / 1000).toStringAsFixed(2)} s',
+                          style: TextStyle(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Expanded(
+                          child: Slider(
+                            value: _splitViewUpdateDelay,
+                            min: 0,
+                            max: 2000,
+                            divisions: 40,
+                            label: '${(_splitViewUpdateDelay / 1000).toStringAsFixed(2)} s',
+                            onChanged: _updateSplitViewUpdateDelay,
                           ),
                         ),
                       ],
