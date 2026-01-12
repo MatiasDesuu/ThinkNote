@@ -891,9 +891,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                             ? GestureDetector(
                                 key: const ValueKey('fab_active'),
                                 onTapDown: (_) {
-                                  if (_selectedIndex != 2) {
-                                    _scaleController.forward();
-                                  }
+                                  _scaleController.forward();
                                 },
                                 onTapUp: (_) {
                                   HapticFeedback.lightImpact();
@@ -904,27 +902,25 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                   } else if (_selectedIndex == 3) {
                                     _bookmarksKey.currentState?.showAddDialog();
                                   }
-                                  if (_selectedIndex != 2) {
-                                    _scaleController.reverse();
-                                  }
+                                  _scaleController.reverse();
                                 },
                                 onTapCancel: () {
-                                  if (_selectedIndex != 2) {
-                                    _scaleController.reverse();
-                                  }
+                                  _scaleController.reverse();
                                 },
                                 onLongPressStart: (_) {
-                                  if (_selectedIndex == 0) {
-                                    _scaleController.forward();
-                                  } else if (_selectedIndex == 3) {
-                                    _scaleController.forward();
-                                  }
+                                  _scaleController.forward();
                                 },
                                 onLongPress: () {
+                                  HapticFeedback.mediumImpact();
                                   if (_selectedIndex == 0 &&
                                       _scaleController.status ==
                                           AnimationStatus.completed) {
                                     _showThinksScreen();
+                                  } else if (_selectedIndex == 2 &&
+                                      _scaleController.status ==
+                                          AnimationStatus.completed) {
+                                    _tasksKey.currentState?.toggleTabs();
+                                    _scaleController.reverse();
                                   } else if (_selectedIndex == 3 &&
                                       _scaleController.status ==
                                           AnimationStatus.completed) {
@@ -933,10 +929,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                   }
                                 },
                                 onLongPressEnd: (_) {
-                                  if (_selectedIndex == 0 ||
-                                      _selectedIndex == 3) {
-                                    _scaleController.reverse();
-                                  }
+                                  _scaleController.reverse();
                                 },
                                 child: ScaleTransition(
                                   scale: _scaleController.drive(

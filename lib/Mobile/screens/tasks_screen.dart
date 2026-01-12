@@ -23,6 +23,7 @@ class TasksScreenState extends State<TasksScreen>
   String? _selectedTag;
   List<String> _allTags = [];
   bool _isLoading = false;
+  late TabController _tabController;
 
   // Controladores
   final TextEditingController _nameController = TextEditingController();
@@ -38,6 +39,7 @@ class TasksScreenState extends State<TasksScreen>
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadSavedSettings();
     _loadTasks();
 
@@ -59,6 +61,7 @@ class TasksScreenState extends State<TasksScreen>
     _editingController.dispose();
     _editingFocusNode.dispose();
     _debounceTimer?.cancel();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -334,9 +337,7 @@ class TasksScreenState extends State<TasksScreen>
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
+    return Scaffold(
         appBar: AppBar(
           toolbarHeight: 0,
           scrolledUnderElevation: 0,
@@ -402,6 +403,7 @@ class TasksScreenState extends State<TasksScreen>
                   child: SizedBox(
                     height: 36,
                     child: TabBar(
+                      controller: _tabController,
                       tabAlignment: TabAlignment.fill,
                       labelPadding: EdgeInsets.zero,
                       indicatorSize: TabBarIndicatorSize.tab,
@@ -455,6 +457,7 @@ class TasksScreenState extends State<TasksScreen>
             _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : TabBarView(
+                  controller: _tabController,
                   children: [
                     RefreshIndicator(
                       onRefresh: () async {
@@ -516,8 +519,7 @@ class TasksScreenState extends State<TasksScreen>
                   ],
                 ),
         floatingActionButton: null,
-      ),
-    );
+      );
   }
 
   Widget _buildTaskItem(Task task) {
@@ -884,5 +886,14 @@ class TasksScreenState extends State<TasksScreen>
   // Hacer público el método
   Future<void> createNewTask() async {
     await _createNewTask();
+  }
+
+  // Método para alternar entre tabs
+  void toggleTabs() {
+    if (_tabController.index == 0) {
+      _tabController.animateTo(1);
+    } else {
+      _tabController.animateTo(0);
+    }
   }
 }
