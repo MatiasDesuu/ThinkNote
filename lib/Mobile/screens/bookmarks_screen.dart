@@ -920,6 +920,10 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                                     .split(',')
                                     .map((e) => e.trim())
                                     .where((e) => e.isNotEmpty)
+                                    .map((tag) {
+                                      if (tag.isEmpty) return tag;
+                                      return tag[0].toLowerCase() + tag.substring(1);
+                                    })
                                     .toList(),
                           );
 
