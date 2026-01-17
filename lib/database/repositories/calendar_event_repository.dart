@@ -161,4 +161,23 @@ class CalendarEventRepository {
       stmt.dispose();
     }
   }
+
+  Future<List<CalendarEvent>> getUnassignedCalendarEvents() async {
+    final db = await _dbHelper.database;
+    final result = db.select('''
+      SELECT * FROM ${config.DatabaseConfig.tableCalendarEvents}
+      WHERE ${config.DatabaseConfig.columnCalendarEventStatus} IS NULL
+      ORDER BY ${config.DatabaseConfig.columnCalendarEventOrderIndex} ASC
+    ''');
+
+    final events = result.map((row) => CalendarEvent.fromMap(row)).toList();
+
+    // Cargar las notas asociadas
+    for (var i = 0; i < events.length; i++) {
+      final note = await _noteRepository.getNote(events[i].noteId);
+      events[i] = events[i].copyWith(note: note);
+    }
+
+    return events;
+  }
 }

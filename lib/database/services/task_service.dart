@@ -44,6 +44,10 @@ class TaskService {
     return await _taskRepository.getTasksWithDeadlines();
   }
 
+  Future<List<Task>> getUnassignedTasks() async {
+    return await _taskRepository.getUnassignedTasks();
+  }
+
   Future<void> updateTask(Task task) async {
     // Crear una nueva tarea con todos los campos explícitamente
     final updatedTask = Task(
@@ -168,7 +172,11 @@ class TaskService {
   }
 
   // Habit completion helpers
-  Future<void> setHabitCompletion(int subtaskId, String isoDate, bool completed) async {
+  Future<void> setHabitCompletion(
+    int subtaskId,
+    String isoDate,
+    bool completed,
+  ) async {
     await _taskRepository.setHabitCompletion(subtaskId, isoDate, completed);
   }
 

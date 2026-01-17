@@ -354,32 +354,43 @@ class TaskRepository {
   }
 
   // Habit completions stored per (subtask_id, date) as ISO yyyy-MM-dd strings
-  Future<void> setHabitCompletion(int subtaskId, String isoDate, bool completed) async {
+  Future<void> setHabitCompletion(
+    int subtaskId,
+    String isoDate,
+    bool completed,
+  ) async {
     final db = await _dbHelper.database;
     if (completed) {
-      final stmt = db.prepare('INSERT OR IGNORE INTO habit_completions (subtask_id, date) VALUES (?, ?)');
+      final stmt = db.prepare(
+        'INSERT OR IGNORE INTO habit_completions (subtask_id, date) VALUES (?, ?)',
+      );
       try {
         stmt.execute([subtaskId, isoDate]);
       } finally {
         stmt.dispose();
       }
     } else {
-      final stmt = db.prepare('DELETE FROM habit_completions WHERE subtask_id = ? AND date = ?');
+      final stmt = db.prepare(
+        'DELETE FROM habit_completions WHERE subtask_id = ? AND date = ?',
+      );
       try {
         stmt.execute([subtaskId, isoDate]);
       } finally {
         stmt.dispose();
       }
     }
-  // Update the sync timestamp so WebDAV detects the change and uploads the DB.
-  // Other mutating methods call _updateSyncTimestamp; keep habit completions consistent.
-  await _updateSyncTimestamp(db);
-  DatabaseHelper.notifyDatabaseChanged();
+    // Update the sync timestamp so WebDAV detects the change and uploads the DB.
+    // Other mutating methods call _updateSyncTimestamp; keep habit completions consistent.
+    await _updateSyncTimestamp(db);
+    DatabaseHelper.notifyDatabaseChanged();
   }
 
   Future<List<String>> getHabitCompletionsForSubtask(int subtaskId) async {
     final db = await _dbHelper.database;
-    final result = db.select('SELECT date FROM habit_completions WHERE subtask_id = ?', [subtaskId]);
+    final result = db.select(
+      'SELECT date FROM habit_completions WHERE subtask_id = ?',
+      [subtaskId],
+    );
     return result.map((r) => r['date'] as String).toList();
   }
 
@@ -387,12 +398,15 @@ class TaskRepository {
   /// Returns a map of subtask_id -> list of ISO date strings.
   Future<Map<int, List<String>>> getHabitCompletionsForTask(int taskId) async {
     final db = await _dbHelper.database;
-    final result = db.select('''
+    final result = db.select(
+      '''
       SELECT hc.subtask_id as subtask_id, hc.date as date
       FROM habit_completions hc
       JOIN ${config.DatabaseConfig.tableSubtasks} s ON hc.subtask_id = s.${config.DatabaseConfig.columnId}
       WHERE s.${config.DatabaseConfig.columnTaskId} = ?
-    ''', [taskId]);
+    ''',
+      [taskId],
+    );
 
     final Map<int, List<String>> map = {};
     for (final row in result) {
@@ -539,6 +553,18 @@ class TaskRepository {
       ''',
       [tagName],
     );
+    return result.map((row) => Task.fromMap(row)).toList();
+  }
+
+  Future<List<Task>> getUnassignedTasks() async {
+    final db = await _dbHelper.database;
+    final result = db.select('''
+      SELECT * FROM ${config.DatabaseConfig.tableTasks}
+      WHERE ${config.DatabaseConfig.columnTaskDate} IS NOT NULL
+      AND ${config.DatabaseConfig.columnTaskState} = 3
+      AND ${config.DatabaseConfig.columnDeletedAt} IS NULL
+      ORDER BY ${config.DatabaseConfig.columnTaskDate} ASC
+      ''');
     return result.map((row) => Task.fromMap(row)).toList();
   }
 }

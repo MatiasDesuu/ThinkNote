@@ -30,7 +30,8 @@ class CalendarScreen extends StatefulWidget {
 
 class CalendarScreenState extends State<CalendarScreen> {
   static const String _calendarExpandedKey = 'calendar_expanded';
-  static const String _showCombinedEventsKey = 'calendar_mobile_show_combined_events';
+  static const String _showCombinedEventsKey =
+      'calendar_mobile_show_combined_events';
   final DatabaseService _databaseService = DatabaseService();
   late CalendarEventRepository _calendarEventRepository;
   late CalendarEventStatusRepository _statusRepository;
@@ -47,6 +48,9 @@ class CalendarScreenState extends State<CalendarScreen> {
   StreamSubscription? _dbSubscription;
   StreamSubscription? _dbHelperSubscription;
   bool _isUpdatingManually = false;
+  bool _isShowingUnassigned = false;
+  List<CalendarEvent> _unassignedEvents = [];
+  List<Task> _unassignedTasks = [];
 
   @override
   void initState() {
@@ -62,6 +66,7 @@ class CalendarScreenState extends State<CalendarScreen> {
     _setupDatabaseListener();
     _loadEvents();
     _loadStatuses();
+    _loadUnassignedItems();
   }
 
   Future<void> _loadCalendarState() async {
@@ -112,6 +117,7 @@ class CalendarScreenState extends State<CalendarScreen> {
     _dbSubscription = DatabaseService().onDatabaseChanged.listen((_) {
       if (!_isUpdatingManually && mounted) {
         _loadEvents();
+        _loadUnassignedItems();
         if (_showCombinedEvents) {
           _loadTasksWithDeadlines();
         }
@@ -121,6 +127,7 @@ class CalendarScreenState extends State<CalendarScreen> {
     _dbHelperSubscription = DatabaseHelper.onDatabaseChanged.listen((_) {
       if (!_isUpdatingManually && mounted) {
         _loadEvents();
+        _loadUnassignedItems();
         if (_showCombinedEvents) {
           _loadTasksWithDeadlines();
         }
@@ -149,13 +156,10 @@ class CalendarScreenState extends State<CalendarScreen> {
         _selectedMonth.month + 1,
         1,
       );
-      final previousEvents =
-          await _calendarEventRepository.getCalendarEventsByMonth(
-            previousMonth,
-          );
-      final nextEvents = await _calendarEventRepository.getCalendarEventsByMonth(
-        nextMonth,
-      );
+      final previousEvents = await _calendarEventRepository
+          .getCalendarEventsByMonth(previousMonth);
+      final nextEvents = await _calendarEventRepository
+          .getCalendarEventsByMonth(nextMonth);
       if (mounted) {
         setState(() {
           _events = [...previousEvents, ...events, ...nextEvents];
@@ -254,7 +258,8 @@ class CalendarScreenState extends State<CalendarScreen> {
     if (!mounted) return;
 
     try {
-      final tasksWithDates = await DatabaseService().taskService.getTasksWithDeadlines();
+      final tasksWithDates =
+          await DatabaseService().taskService.getTasksWithDeadlines();
       if (mounted) {
         setState(() {
           _tasksWithDeadlines = tasksWithDates;
@@ -262,6 +267,24 @@ class CalendarScreenState extends State<CalendarScreen> {
       }
     } catch (e) {
       print('Error loading tasks with deadlines: $e');
+    }
+  }
+
+  Future<void> _loadUnassignedItems() async {
+    if (!mounted) return;
+    try {
+      final unassignedEvents =
+          await _calendarEventRepository.getUnassignedCalendarEvents();
+      final unassignedTasks =
+          await _databaseService.taskService.getUnassignedTasks();
+      if (mounted) {
+        setState(() {
+          _unassignedEvents = unassignedEvents;
+          _unassignedTasks = unassignedTasks;
+        });
+      }
+    } catch (e) {
+      print('Error loading unassigned items: $e');
     }
   }
 
@@ -356,6 +379,7 @@ class CalendarScreenState extends State<CalendarScreen> {
       await _calendarEventRepository.createCalendarEvent(event);
       DatabaseService().notifyDatabaseChanged();
       await _loadEvents();
+      await _loadUnassignedItems();
       _isUpdatingManually = false;
     } catch (e) {
       print('Error adding note to calendar: $e');
@@ -375,6 +399,7 @@ class CalendarScreenState extends State<CalendarScreen> {
       await _calendarEventRepository.deleteCalendarEvent(event.id);
       DatabaseService().notifyDatabaseChanged();
       await _loadEvents();
+      await _loadUnassignedItems();
       _isUpdatingManually = false;
     } catch (e) {
       _isUpdatingManually = false;
@@ -395,6 +420,7 @@ class CalendarScreenState extends State<CalendarScreen> {
       await _databaseService.taskService.updateTaskDate(task.id!, null);
       DatabaseService().notifyDatabaseChanged();
       await _loadTasksWithDeadlines();
+      await _loadUnassignedItems();
       _isUpdatingManually = false;
     } catch (e) {
       _isUpdatingManually = false;
@@ -426,6 +452,7 @@ class CalendarScreenState extends State<CalendarScreen> {
       await _calendarEventRepository.updateCalendarEvent(updatedEvent);
       DatabaseService().notifyDatabaseChanged();
       await _loadEvents();
+      await _loadUnassignedItems();
       _isUpdatingManually = false;
     } catch (e) {
       _isUpdatingManually = false;
@@ -542,14 +569,15 @@ class CalendarScreenState extends State<CalendarScreen> {
         final updatedEvent = event.copyWith(date: selectedDate);
         await _calendarEventRepository.updateCalendarEvent(updatedEvent);
         DatabaseService().notifyDatabaseChanged();
-        
+
         await _loadEvents();
         _isUpdatingManually = false;
 
         if (mounted) {
           CustomSnackbar.show(
             context: context,
-            message: 'Event moved to ${DateFormat('MMMM d, y').format(selectedDate)}',
+            message:
+                'Event moved to ${DateFormat('MMMM d, y').format(selectedDate)}',
             type: CustomSnackbarType.success,
           );
         }
@@ -895,12 +923,14 @@ class CalendarScreenState extends State<CalendarScreen> {
                       event.date.day == date.day,
                 );
 
-                final hasTasks = _showCombinedEvents && _tasksWithDeadlines.any(
-                  (task) =>
-                      task.date?.year == date.year &&
-                      task.date?.month == date.month &&
-                      task.date?.day == date.day,
-                );
+                final hasTasks =
+                    _showCombinedEvents &&
+                    _tasksWithDeadlines.any(
+                      (task) =>
+                          task.date?.year == date.year &&
+                          task.date?.month == date.month &&
+                          task.date?.day == date.day,
+                    );
 
                 final showDot = hasEvents || hasTasks;
 
@@ -935,7 +965,11 @@ class CalendarScreenState extends State<CalendarScreen> {
                                 _selectedDate = date;
                                 if (date.month != _selectedMonth.month ||
                                     date.year != _selectedMonth.year) {
-                                  _selectedMonth = DateTime(date.year, date.month, 1);
+                                  _selectedMonth = DateTime(
+                                    date.year,
+                                    date.month,
+                                    1,
+                                  );
                                 }
                               });
                               _loadEvents();
@@ -1158,12 +1192,14 @@ class CalendarScreenState extends State<CalendarScreen> {
                 event.date.day == day,
           );
 
-          final hasTasks = _showCombinedEvents && _tasksWithDeadlines.any(
-            (task) =>
-                task.date?.year == _selectedMonth.year &&
-                task.date?.month == _selectedMonth.month &&
-                task.date?.day == day,
-          );
+          final hasTasks =
+              _showCombinedEvents &&
+              _tasksWithDeadlines.any(
+                (task) =>
+                    task.date?.year == _selectedMonth.year &&
+                    task.date?.month == _selectedMonth.month &&
+                    task.date?.day == day,
+              );
 
           final showDot = hasEvents || hasTasks;
 
@@ -1287,19 +1323,40 @@ class CalendarScreenState extends State<CalendarScreen> {
 
   Widget _buildEventsPanel() {
     final colorScheme = Theme.of(context).colorScheme;
-    
-    final eventsForSelectedDay = _events.where((event) =>
-        event.date.year == _selectedDate.year &&
-        event.date.month == _selectedDate.month &&
-        event.date.day == _selectedDate.day).toList();
+
+    final eventsForSelectedDay =
+        _events
+            .where(
+              (event) =>
+                  event.date.year == _selectedDate.year &&
+                  event.date.month == _selectedDate.month &&
+                  event.date.day == _selectedDate.day,
+            )
+            .toList();
 
     // Sort events
     eventsForSelectedDay.sort((a, b) {
       if (a.status != null && b.status != null) {
-        final statusA = _statuses.firstWhere((s) => s.name == a.status,
-            orElse: () => CalendarEventStatus(id: 0, name: a.status!, color: '#2196F3', orderIndex: 999));
-        final statusB = _statuses.firstWhere((s) => s.name == b.status,
-            orElse: () => CalendarEventStatus(id: 0, name: b.status!, color: '#2196F3', orderIndex: 999));
+        final statusA = _statuses.firstWhere(
+          (s) => s.name == a.status,
+          orElse:
+              () => CalendarEventStatus(
+                id: 0,
+                name: a.status!,
+                color: '#2196F3',
+                orderIndex: 999,
+              ),
+        );
+        final statusB = _statuses.firstWhere(
+          (s) => s.name == b.status,
+          orElse:
+              () => CalendarEventStatus(
+                id: 0,
+                name: b.status!,
+                color: '#2196F3',
+                orderIndex: 999,
+              ),
+        );
         return statusA.orderIndex.compareTo(statusB.orderIndex);
       }
       if (a.status == null && b.status != null) return 1;
@@ -1307,25 +1364,36 @@ class CalendarScreenState extends State<CalendarScreen> {
       return 0;
     });
 
-    final tasksForSelectedDay = _tasksWithDeadlines.where((task) {
-      if (task.date == null) return false;
-      return task.date!.year == _selectedDate.year &&
-          task.date!.month == _selectedDate.month &&
-          task.date!.day == _selectedDate.day;
-    }).toList();
+    final tasksForSelectedDay =
+        _tasksWithDeadlines.where((task) {
+          if (task.date == null) return false;
+          return task.date!.year == _selectedDate.year &&
+              task.date!.month == _selectedDate.month &&
+              task.date!.day == _selectedDate.day;
+        }).toList();
 
     // Sort tasks
     tasksForSelectedDay.sort((a, b) {
       if (a.completed && !b.completed) return 1;
       if (!a.completed && b.completed) return -1;
-      if (a.state == TaskState.inProgress && b.state != TaskState.inProgress) return -1;
-      if (a.state != TaskState.inProgress && b.state == TaskState.inProgress) return 1;
+      if (a.state == TaskState.inProgress && b.state != TaskState.inProgress)
+        return -1;
+      if (a.state != TaskState.inProgress && b.state == TaskState.inProgress)
+        return 1;
       return a.orderIndex.compareTo(b.orderIndex);
     });
 
-    final List<dynamic> combinedItems = _showCombinedEvents
-        ? [...eventsForSelectedDay, ...tasksForSelectedDay]
-        : eventsForSelectedDay;
+    final itemsForSelectedDay =
+        _showCombinedEvents
+            ? [...eventsForSelectedDay, ...tasksForSelectedDay]
+            : eventsForSelectedDay;
+
+    final combinedItems =
+        _isShowingUnassigned
+            ? (_showCombinedEvents
+                ? [..._unassignedEvents, ..._unassignedTasks]
+                : _unassignedEvents)
+            : itemsForSelectedDay;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1334,26 +1402,60 @@ class CalendarScreenState extends State<CalendarScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              Icon(
-                _showCombinedEvents ? Icons.event_available_rounded : Icons.event_note_rounded,
-                size: 20,
-                color: colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '${_showCombinedEvents ? "Events" : "Notes"} for ${_formattedMonth.split(' ')[0]} ${_selectedDate.day}, ${_selectedDate.year}',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w600,
+              Transform.translate(
+                offset: const Offset(-8, 0),
+                child: IconButton(
+                  icon: Icon(
+                    _isShowingUnassigned
+                        ? Icons.assignment_late_rounded
+                        : (_showCombinedEvents
+                            ? Icons.event_available_rounded
+                            : Icons.event_note_rounded),
+                    color:
+                        _isShowingUnassigned
+                            ? colorScheme.secondary
+                            : colorScheme.primary,
+                    size: 20,
                   ),
-                  overflow: TextOverflow.ellipsis,
+                  onPressed: () {
+                    setState(
+                      () => _isShowingUnassigned = !_isShowingUnassigned,
+                    );
+                    if (_isShowingUnassigned) {
+                      _loadUnassignedItems();
+                    }
+                  },
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+              Expanded(
+                child: Transform.translate(
+                  offset: const Offset(-16, 0),
+                  child: Text(
+                    _isShowingUnassigned
+                        ? 'Unassigned Items'
+                        : '${_showCombinedEvents ? "Events" : "Notes"} for ${_formattedMonth.split(' ')[0]} ${_selectedDate.day}, ${_selectedDate.year}',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
               IconButton(
                 icon: Icon(
-                  _showCombinedEvents ? Icons.layers_rounded : Icons.layers_outlined,
-                  color: _showCombinedEvents ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                  _showCombinedEvents
+                      ? Icons.layers_rounded
+                      : Icons.layers_outlined,
+                  color:
+                      _showCombinedEvents
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
                   size: 20,
                 ),
                 onPressed: _toggleCombinedEvents,
@@ -1364,26 +1466,29 @@ class CalendarScreenState extends State<CalendarScreen> {
           ),
         ),
         Expanded(
-          child: combinedItems.isEmpty
-              ? Center(
-                  child: Text(
-                    'No ${_showCombinedEvents ? "events" : "notes"} for this day',
-                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+          child:
+              combinedItems.isEmpty
+                  ? Center(
+                    child: Text(
+                      _isShowingUnassigned
+                          ? 'No unassigned items'
+                          : 'No ${_showCombinedEvents ? "events" : "notes"} for this day',
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
+                    ),
+                  )
+                  : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    itemCount: combinedItems.length,
+                    itemBuilder: (context, index) {
+                      final item = combinedItems[index];
+                      if (item is CalendarEvent) {
+                        return _buildNoteItem(item, colorScheme);
+                      } else if (item is Task) {
+                        return _buildTaskItem(item, colorScheme);
+                      }
+                      return const SizedBox.shrink();
+                    },
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  itemCount: combinedItems.length,
-                  itemBuilder: (context, index) {
-                    final item = combinedItems[index];
-                    if (item is CalendarEvent) {
-                      return _buildNoteItem(item, colorScheme);
-                    } else if (item is Task) {
-                      return _buildTaskItem(item, colorScheme);
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
         ),
       ],
     );
@@ -1538,7 +1643,10 @@ class CalendarScreenState extends State<CalendarScreen> {
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                color: _getTaskStateColor(task.state, colorScheme),
+                                color: _getTaskStateColor(
+                                  task.state,
+                                  colorScheme,
+                                ),
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -1594,12 +1702,13 @@ class CalendarScreenState extends State<CalendarScreen> {
       context,
       MaterialPageRoute(
         builder:
-            (context) => TaskDetailScreen(
-              task: task,
-              databaseService: _databaseService,
-            ),
+            (context) =>
+                TaskDetailScreen(task: task, databaseService: _databaseService),
       ),
-    ).then((_) => _loadTasksWithDeadlines());
+    ).then((_) {
+      _loadTasksWithDeadlines();
+      _loadUnassignedItems();
+    });
   }
 
   Color _getTaskStateColor(TaskState state, ColorScheme colorScheme) {

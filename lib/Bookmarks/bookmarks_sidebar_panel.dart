@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'bookmarks_handler.dart';
-import '../database/models/bookmark.dart';
 
 class BookmarksSidebarPanel extends StatelessWidget {
   final double width;
@@ -15,7 +14,6 @@ class BookmarksSidebarPanel extends StatelessWidget {
   final Function(DragUpdateDetails) onDragUpdate;
   final VoidCallback onDragEnd;
   final TextEditingController searchController;
-  final Function(Bookmark, String)? onBookmarkDropped;
 
   const BookmarksSidebarPanel({
     super.key,
@@ -31,7 +29,6 @@ class BookmarksSidebarPanel extends StatelessWidget {
     required this.onDragUpdate,
     required this.onDragEnd,
     required this.searchController,
-    this.onBookmarkDropped,
   });
 
   @override
@@ -259,66 +256,48 @@ class BookmarksSidebarPanel extends StatelessWidget {
     required IconData icon,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    return DragTarget<Bookmark>(
-      onWillAcceptWithDetails: (details) {
-        return label != 'All Bookmarks';
-      },
-      onAcceptWithDetails: (details) {
-        onBookmarkDropped?.call(details.data, label);
-      },
-      builder: (context, candidateData, rejectedData) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 2),
-          child: Material(
-            color:
-                candidateData.isNotEmpty
-                    ? colorScheme.primary.withAlpha(40)
-                    : (isSelected
-                        ? colorScheme.surfaceContainerHighest
-                        : Colors.transparent),
-            borderRadius: BorderRadius.circular(8),
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Material(
+        color: isSelected ? colorScheme.surfaceContainerHighest : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
+                  color:
+                      isSelected
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      icon,
-                      size: 18,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
                       color:
                           isSelected
                               ? colorScheme.primary
-                              : colorScheme.onSurfaceVariant,
+                              : colorScheme.onSurface,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.normal,
-                          color:
-                              isSelected
-                                  ? colorScheme.primary
-                                  : colorScheme.onSurface,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
