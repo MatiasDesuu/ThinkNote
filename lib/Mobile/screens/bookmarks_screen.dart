@@ -316,7 +316,10 @@ class BookmarksScreenState extends State<BookmarksScreen> {
     required ColorScheme colorScheme,
   }) {
     return Material(
-      color: isSelected ? colorScheme.primary.withAlpha(25) : colorScheme.surfaceContainerHighest,
+      color:
+          isSelected
+              ? colorScheme.primary.withAlpha(25)
+              : colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
@@ -331,16 +334,16 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                 label == 'All'
                     ? Icons.all_inclusive_rounded
                     : label == BookmarksHandler.hiddenTag
-                        ? (isSelected
-                            ? Icons.visibility_rounded
-                            : Icons.visibility_off_rounded)
-                        : label == 'Untagged'
-                            ? (isSelected
-                                ? Icons.label_off_rounded
-                                : Icons.label_off_outlined)
-                            : (isSelected
-                                ? Icons.label_rounded
-                                : Icons.label_outline_rounded),
+                    ? (isSelected
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded)
+                    : label == 'Untagged'
+                    ? (isSelected
+                        ? Icons.label_off_rounded
+                        : Icons.label_off_outlined)
+                    : (isSelected
+                        ? Icons.label_rounded
+                        : Icons.label_outline_rounded),
                 size: 20,
                 color: colorScheme.primary,
               ),
@@ -349,7 +352,8 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                 label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   height: 1.0,
-                  color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+                  color:
+                      isSelected ? colorScheme.primary : colorScheme.onSurface,
                 ),
               ),
             ],
@@ -586,7 +590,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: tagsController,
-                        textCapitalization: TextCapitalization.sentences,
+                        textCapitalization: TextCapitalization.none,
                         decoration: InputDecoration(
                           labelText: 'Tags',
                           border: OutlineInputBorder(
@@ -618,6 +622,11 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                                   .split(',')
                                   .map((e) => e.trim())
                                   .where((e) => e.isNotEmpty)
+                                  .map((tag) {
+                                    if (tag.isEmpty) return tag;
+                                    return tag[0].toLowerCase() +
+                                        tag.substring(1);
+                                  })
                                   .toList();
 
                           await _handler.updateBookmark(
@@ -699,12 +708,15 @@ class BookmarksScreenState extends State<BookmarksScreen> {
 
         final pathSegments = uri.pathSegments;
         final postIdIndex = pathSegments.indexOf('comments');
-        if (postIdIndex == -1 || postIdIndex + 1 >= pathSegments.length) return null;
+        if (postIdIndex == -1 || postIdIndex + 1 >= pathSegments.length)
+          return null;
 
         final postId = pathSegments[postIdIndex + 1];
         final apiUrl = 'https://www.reddit.com/comments/$postId.json';
 
-        final response = await http.get(Uri.parse(apiUrl)).timeout(const Duration(seconds: 3));
+        final response = await http
+            .get(Uri.parse(apiUrl))
+            .timeout(const Duration(seconds: 3));
         if (response.statusCode == 200) {
           final jsonData = jsonDecode(response.body);
           if (jsonData is List && jsonData.isNotEmpty) {
@@ -732,7 +744,10 @@ class BookmarksScreenState extends State<BookmarksScreen> {
             .timeout(const Duration(seconds: 3));
         if (response.statusCode == 200) {
           final document = html.parse(response.body);
-          final ogTitle = document.querySelector('meta[property="og:title"]')?.attributes['content'];
+          final ogTitle =
+              document
+                  .querySelector('meta[property="og:title"]')
+                  ?.attributes['content'];
           String? pageTitle;
 
           if (ogTitle != null && ogTitle.isNotEmpty) {
@@ -922,7 +937,8 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                                     .where((e) => e.isNotEmpty)
                                     .map((tag) {
                                       if (tag.isEmpty) return tag;
-                                      return tag[0].toLowerCase() + tag.substring(1);
+                                      return tag[0].toLowerCase() +
+                                          tag.substring(1);
                                     })
                                     .toList(),
                           );
@@ -1011,10 +1027,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                         await loadData();
                       }
                     },
-                    tooltip:
-                        _showSearchField
-                            ? 'Hide search'
-                            : 'Show search',
+                    tooltip: _showSearchField ? 'Hide search' : 'Show search',
                   ),
                 ),
                 IconButton(
@@ -1059,12 +1072,15 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 4),
                             child: _buildTagChip(
                               label: 'Untagged',
-                              isSelected: _handler.selectedTag == BookmarksHandler.untaggedTag,
+                              isSelected:
+                                  _handler.selectedTag ==
+                                  BookmarksHandler.untaggedTag,
                               onTap: () async {
                                 _handler.setSelectedTag(
-                                  _handler.selectedTag == BookmarksHandler.untaggedTag 
-                                      ? null 
-                                      : BookmarksHandler.untaggedTag
+                                  _handler.selectedTag ==
+                                          BookmarksHandler.untaggedTag
+                                      ? null
+                                      : BookmarksHandler.untaggedTag,
                                 );
                                 await loadData();
                               },
@@ -1073,13 +1089,15 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                           ),
                           ...tags.map(
                             (tag) => Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
                               child: _buildTagChip(
                                 label: tag,
                                 isSelected: _handler.selectedTag == tag,
                                 onTap: () async {
                                   _handler.setSelectedTag(
-                                    _handler.selectedTag == tag ? null : tag
+                                    _handler.selectedTag == tag ? null : tag,
                                   );
                                   await loadData();
                                 },
@@ -1110,7 +1128,8 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                             onPressed: () async {
                               _handler.setSearchQuery('');
                               _searchController.clear();
-                              final bookmarks = await _handler.getFilteredBookmarks();
+                              final bookmarks =
+                                  await _handler.getFilteredBookmarks();
                               setState(() {
                                 _bookmarks = bookmarks;
                               });
@@ -1232,9 +1251,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
               bookmark.url,
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withAlpha(150),
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1258,36 +1275,38 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                  Expanded(
-                    child: SizedBox(
-                      height: 20,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children:
-                            bookmark.tags.map((tag) {
-                              return Container(
-                                margin: const EdgeInsets.only(right: 6),
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary.withAlpha(20),
-                                  borderRadius: BorderRadius.circular(4),
+                Expanded(
+                  child: SizedBox(
+                    height: 20,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children:
+                          bookmark.tags.map((tag) {
+                            return Container(
+                              margin: const EdgeInsets.only(right: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withAlpha(20),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                tag,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                child: Text(
-                                  tag,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                      ),
+                              ),
+                            );
+                          }).toList(),
                     ),
                   ),
-
+                ),
               ],
             ),
           ],
@@ -1316,7 +1335,7 @@ class _BookmarkIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final uri = Uri.tryParse(url);
     final host = uri?.host.replaceAll('www.', '') ?? '';
-    
+
     if (host.isEmpty) {
       return _buildFallback('?');
     }
@@ -1339,7 +1358,9 @@ class _BookmarkIcon extends StatelessWidget {
           width: size,
           height: size,
           fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => _buildFallback(host[0].toUpperCase()),
+          errorBuilder:
+              (context, error, stackTrace) =>
+                  _buildFallback(host[0].toUpperCase()),
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
             return _buildFallback(host[0].toUpperCase());
@@ -1362,7 +1383,7 @@ class _BookmarkIcon extends StatelessWidget {
       Colors.amber,
       Colors.cyan,
     ];
-    
+
     final colorIndex = initial.codeUnitAt(0) % colors.length;
     final baseColor = colors[colorIndex];
 
@@ -1372,10 +1393,7 @@ class _BookmarkIcon extends StatelessWidget {
       decoration: BoxDecoration(
         color: baseColor.withAlpha(30),
         borderRadius: BorderRadius.circular(size * 0.2),
-        border: Border.all(
-          color: baseColor.withAlpha(50),
-          width: 1,
-        ),
+        border: Border.all(color: baseColor.withAlpha(50), width: 1),
       ),
       child: Center(
         child: Text(

@@ -1376,10 +1376,12 @@ class CalendarScreenState extends State<CalendarScreen> {
     tasksForSelectedDay.sort((a, b) {
       if (a.completed && !b.completed) return 1;
       if (!a.completed && b.completed) return -1;
-      if (a.state == TaskState.inProgress && b.state != TaskState.inProgress)
+      if (a.state == TaskState.inProgress && b.state != TaskState.inProgress) {
         return -1;
-      if (a.state != TaskState.inProgress && b.state == TaskState.inProgress)
+      }
+      if (a.state != TaskState.inProgress && b.state == TaskState.inProgress) {
         return 1;
+      }
       return a.orderIndex.compareTo(b.orderIndex);
     });
 
