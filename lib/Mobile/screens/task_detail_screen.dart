@@ -43,6 +43,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
   StreamSubscription<void>? _dbChangeSubscription;
   final Set<String> _expandedSubtasks = <String>{};
   late TabController _subtasksTabController;
+  int _subtasksLoadGeneration = 0;
 
   @override
   void initState() {
@@ -84,6 +85,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
 
   Future<void> _prefetchSubtasks() async {
     if (_task.id == null) return;
+    final generation = ++_subtasksLoadGeneration;
     try {
       final subs =
           _task.sortByPriority
@@ -99,7 +101,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
       } catch (_) {
         _cachedHabitCompletions = null;
       }
-      if (!mounted) return;
+      if (!mounted || generation != _subtasksLoadGeneration) return;
       setState(() {
         _cachedSubtasks = subs;
       });
@@ -226,23 +228,34 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
   }
 
   Future<void> _toggleSubtask(Subtask subtask) async {
+    setState(() {
+      if (_cachedSubtasks != null) {
+        final index = _cachedSubtasks!.indexWhere((s) => s.id == subtask.id);
+        if (index != -1) {
+          _cachedSubtasks![index] = subtask.copyWith(
+            completed: !subtask.completed,
+          );
+        }
+      }
+      _taskChanged = true;
+    });
+
     try {
       await widget.databaseService.taskService.toggleSubtaskCompleted(
         subtask,
         !subtask.completed,
       );
       if (!mounted) return;
-      setState(() {
-        _taskChanged = true;
-      });
+
       await _saveTask();
 
-      // Notify database changed to refresh cached subtasks
+      // Notify database changed to refresh other screens
       try {
         widget.databaseService.notifyDatabaseChanged();
       } catch (_) {}
     } catch (e) {
       print('Error toggling subtask: $e');
+      await _refreshCachedSubtasks();
       if (!mounted) return;
       CustomSnackbar.show(
         context: context,
@@ -298,19 +311,17 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
       });
 
       // Actualizar base de datos en segundo plano
-      unawaited(
-        () async {
-          try {
-            for (final subtask in subtasksToUpdate) {
-              await widget.databaseService.taskService.updateSubtask(subtask);
-            }
-            await _saveTask();
-            widget.databaseService.notifyDatabaseChanged();
-          } catch (e) {
-            print('Error updating subtasks in background: $e');
+      unawaited(() async {
+        try {
+          for (final subtask in subtasksToUpdate) {
+            await widget.databaseService.taskService.updateSubtask(subtask);
           }
-        }(),
-      );
+          await _saveTask();
+          widget.databaseService.notifyDatabaseChanged();
+        } catch (e) {
+          print('Error updating subtasks in background: $e');
+        }
+      }());
     } catch (e) {
       print('Error reordering subtasks: $e');
       if (!mounted) return;
@@ -385,15 +396,24 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
   Future<void> _saveSubtaskEditing(Subtask subtask) async {
     if (_editingController.text.trim().isEmpty) return;
 
+    final updatedSubtask = subtask.copyWith(
+      text: _editingController.text.trim(),
+    );
+
+    // Optimistic update
+    setState(() {
+      if (_cachedSubtasks != null) {
+        final index = _cachedSubtasks!.indexWhere((s) => s.id == subtask.id);
+        if (index != -1) {
+          _cachedSubtasks![index] = updatedSubtask;
+        }
+      }
+      _editingSubtaskId = null;
+      _taskChanged = true;
+    });
+
     try {
-      final updatedSubtask = subtask.copyWith(
-        text: _editingController.text.trim(),
-      );
       await widget.databaseService.taskService.updateSubtask(updatedSubtask);
-      setState(() {
-        _editingSubtaskId = null;
-        _taskChanged = true;
-      });
       await _saveTask();
 
       // Notify database changed to refresh cached subtasks
@@ -402,6 +422,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
       } catch (_) {}
     } catch (e) {
       print('Error saving subtask edit: $e');
+      await _refreshCachedSubtasks();
       if (!mounted) return;
       CustomSnackbar.show(
         context: context,
@@ -421,14 +442,36 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     Subtask subtask,
     SubtaskPriority priority,
   ) async {
+    final updatedSubtask = subtask.copyWith(priority: priority);
+
+    // Optimistic update
+    setState(() {
+      if (_cachedSubtasks != null) {
+        final index = _cachedSubtasks!.indexWhere((s) => s.id == subtask.id);
+        if (index != -1) {
+          _cachedSubtasks![index] = updatedSubtask;
+          // Re-sort if needed and we are sorting by priority
+          if (_task.sortByPriority) {
+            _cachedSubtasks!.sort((a, b) {
+              if (a.completed != b.completed) {
+                return a.completed ? 1 : -1;
+              }
+              if (a.priority != b.priority) {
+                return b.priority.index.compareTo(a.priority.index);
+              }
+              return a.orderIndex.compareTo(b.orderIndex);
+            });
+          }
+        }
+      }
+      _taskChanged = true;
+    });
+
     try {
       await widget.databaseService.taskService.updateSubtaskPriority(
         subtask,
         priority,
       );
-      setState(() {
-        _taskChanged = true;
-      });
       await _saveTask();
 
       // Notify database changed to refresh cached subtasks
@@ -437,6 +480,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
       } catch (_) {}
     } catch (e) {
       print('Error updating subtask priority: $e');
+      await _refreshCachedSubtasks();
       if (!mounted) return;
       CustomSnackbar.show(
         context: context,
@@ -1266,11 +1310,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
               child: StreamBuilder<void>(
                 stream: widget.databaseService.onDatabaseChanged,
                 builder: (context, snapshot) {
-                  // If we received a DB change event, refresh the cached subtasks.
-                  if (snapshot.hasData) {
-                    // fire-and-forget refresh
-                    _refreshCachedSubtasks();
-                  }
+                  // We don't call _refreshCachedSubtasks() here because it's already handled
+                  // by the listener in initState(). The StreamBuilder here just triggers
+                  // a rebuild when the database changes.
 
                   final subtasks = _cachedSubtasks ?? <Subtask>[];
                   // If this task is a Habits task, render the HabitsTracker instead of the normal subtasks list

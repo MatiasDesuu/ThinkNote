@@ -51,6 +51,8 @@ class _HabitsTrackerState extends State<HabitsTracker> {
   int _weekOffset = 0;
   // _isWeekHover removed: desktop uses the same OutlinedButton as mobile
   StreamSubscription<void>? _dbSubscription;
+  int _dataLoadGeneration = 0;
+  int _subsLoadGeneration = 0;
 
   @override
   void initState() {
@@ -123,29 +125,44 @@ class _HabitsTrackerState extends State<HabitsTracker> {
   }
 
   Future<void> _loadData() async {
+    final generation = ++_dataLoadGeneration;
     // Load completions for all subtasks in a single DB query for instant rendering.
-    _data = {};
     try {
       final completionsMap = await widget.databaseService.taskService
           .getHabitCompletionsForTask(widget.taskId);
+      if (generation != _dataLoadGeneration) return;
+
+      final Map<String, List<String>> newData = {};
       // Initialize map entries for known subtasks and fill from results.
       for (final sub in _localSubtasks) {
         final key = sub.id?.toString() ?? '';
         if (sub.id != null) {
           final list = completionsMap[sub.id!] ?? <String>[];
-          _data[key] = List<String>.from(list);
+          newData[key] = List<String>.from(list);
         } else {
-          _data[key] = [];
+          newData[key] = [];
         }
       }
+
+      if (mounted) {
+        setState(() {
+          _data = newData;
+        });
+      }
     } catch (e) {
+      if (generation != _dataLoadGeneration) return;
       // Fallback: ensure every subtask has an entry
+      final Map<String, List<String>> fallbackData = {};
       for (final sub in _localSubtasks) {
         final key = sub.id?.toString() ?? '';
-        _data[key] = [];
+        fallbackData[key] = [];
+      }
+      if (mounted) {
+        setState(() {
+          _data = fallbackData;
+        });
       }
     }
-    if (mounted) setState(() {});
   }
 
   // Persistence handled by database methods; no local save method required.
@@ -161,6 +178,17 @@ class _HabitsTrackerState extends State<HabitsTracker> {
     final iso = DateFormat('yyyy-MM-dd').format(DateUtils.dateOnly(day));
     final list = _data[subtaskId] ?? [];
     final wasCompleted = list.contains(iso);
+
+    // Optimistic update
+    setState(() {
+      if (wasCompleted) {
+        list.remove(iso);
+      } else {
+        list.add(iso);
+      }
+      _data[subtaskId] = list;
+    });
+
     try {
       final numericId = int.tryParse(subtaskId);
       if (numericId != null) {
@@ -169,25 +197,22 @@ class _HabitsTrackerState extends State<HabitsTracker> {
           iso,
           !wasCompleted,
         );
-        if (wasCompleted) {
-          list.remove(iso);
-        } else {
-          list.add(iso);
-        }
-        _data[subtaskId] = list;
-        if (mounted) setState(() {});
+        // notifyDatabaseChanged is called inside setHabitCompletion/repository
       }
     } catch (e) {
-      // ignore
+      print('Error toggling habit completion: $e');
+      // Revert on error
+      await _loadData();
     }
   }
 
   Future<void> _refreshLocalSubtasks() async {
+    final generation = ++_subsLoadGeneration;
     try {
       final subs = await widget.databaseService.taskService.getSubtasksByTaskId(
         widget.taskId,
       );
-      if (mounted) {
+      if (mounted && generation == _subsLoadGeneration) {
         setState(() {
           _localSubtasks = subs;
         });
@@ -306,7 +331,10 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                         color: Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         child: InkWell(
-                          onTap: _weekOffset != 0 ? () => setState(() => _weekOffset = 0) : null,
+                          onTap:
+                              _weekOffset != 0
+                                  ? () => setState(() => _weekOffset = 0)
+                                  : null,
                           borderRadius: BorderRadius.circular(8),
                           child: Container(
                             height: 36,
