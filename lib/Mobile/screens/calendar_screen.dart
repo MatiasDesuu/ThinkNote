@@ -1401,52 +1401,55 @@ class CalendarScreenState extends State<CalendarScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
           child: Row(
             children: [
-              Transform.translate(
-                offset: const Offset(-8, 0),
-                child: IconButton(
-                  icon: Icon(
+              Icon(
+                _isShowingUnassigned
+                    ? Icons.assignment_late_rounded
+                    : (_showCombinedEvents
+                        ? Icons.event_available_rounded
+                        : Icons.event_note_rounded),
+                color:
                     _isShowingUnassigned
-                        ? Icons.assignment_late_rounded
-                        : (_showCombinedEvents
-                            ? Icons.event_available_rounded
-                            : Icons.event_note_rounded),
-                    color:
-                        _isShowingUnassigned
-                            ? colorScheme.secondary
-                            : colorScheme.primary,
-                    size: 20,
+                        ? colorScheme.secondary
+                        : colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _isShowingUnassigned
+                      ? 'Unassigned Items'
+                      : '${_showCombinedEvents ? "Events" : "Notes"} for ${DateFormat('EEEE').format(_selectedDate)} ${_selectedDate.day}',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
                   ),
-                  onPressed: () {
-                    setState(
-                      () => _isShowingUnassigned = !_isShowingUnassigned,
-                    );
-                    if (_isShowingUnassigned) {
-                      _loadUnassignedItems();
-                    }
-                  },
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  padding: EdgeInsets.zero,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Expanded(
-                child: Transform.translate(
-                  offset: const Offset(-16, 0),
-                  child: Text(
-                    _isShowingUnassigned
-                        ? 'Unassigned Items'
-                        : '${_showCombinedEvents ? "Events" : "Notes"} for ${_formattedMonth.split(' ')[0]} ${_selectedDate.day}, ${_selectedDate.year}',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+              IconButton(
+                icon: Icon(
+                  _isShowingUnassigned
+                      ? Icons.assignment_late_rounded
+                      : Icons.assignment_late_outlined,
+                  color:
+                      _isShowingUnassigned
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                  size: 20,
+                ),
+                onPressed: () {
+                  setState(() => _isShowingUnassigned = !_isShowingUnassigned);
+                  if (_isShowingUnassigned) {
+                    _loadUnassignedItems();
+                  }
+                },
+                style: IconButton.styleFrom(
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  minimumSize: const Size(32, 32),
+                  padding: EdgeInsets.zero,
                 ),
               ),
               IconButton(
@@ -1461,8 +1464,11 @@ class CalendarScreenState extends State<CalendarScreen> {
                   size: 20,
                 ),
                 onPressed: _toggleCombinedEvents,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                padding: EdgeInsets.zero,
+                style: IconButton.styleFrom(
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  minimumSize: const Size(32, 32),
+                  padding: EdgeInsets.zero,
+                ),
               ),
             ],
           ),

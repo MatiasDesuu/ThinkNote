@@ -19,6 +19,8 @@ import '../context_menu.dart';
 import '../custom_tooltip.dart';
 import '../../Tasks/tasks_screen_details.dart';
 
+import 'package:intl/intl.dart';
+
 /// Mode for the calendar panel - determines what type of items to display
 enum CalendarPanelMode {
   notes, // Default mode - shows notes assigned to calendar
@@ -352,9 +354,6 @@ class CalendarPanelState extends State<CalendarPanel>
     });
 
     try {
-      // Load events for the displayed month, adjacent months, and the month
-      // containing the currently selected date so the selected day's events
-      // don't disappear when the user navigates multiple months away.
       final displayedMonthStart = DateTime(
         _selectedMonth.year,
         _selectedMonth.month,
@@ -892,64 +891,31 @@ class CalendarPanelState extends State<CalendarPanel>
                                 (details) =>
                                     _handleUnassignOnDrop(details.data),
                             builder: (context, candidateData, rejectedData) {
-                              return CustomTooltip(
-                                message:
-                                    _isShowingUnassigned
-                                        ? 'Show daily items'
-                                        : 'Show unassigned items',
-                                builder:
-                                    (
-                                      context,
-                                      isHovering,
-                                    ) => Transform.translate(
-                                      offset: const Offset(-4, 0),
-                                      child: IconButton(
-                                        icon: Icon(
-                                          _isShowingUnassigned
-                                              ? Icons.assignment_late_rounded
-                                              : (_showCombinedEvents
-                                                  ? Icons
-                                                      .event_available_rounded
-                                                  : Icons.event_note_rounded),
-                                          size: 20,
-                                          color:
-                                              candidateData.isNotEmpty
-                                                  ? colorScheme.error
-                                                  : (_isShowingUnassigned
-                                                      ? colorScheme.secondary
-                                                      : colorScheme.primary),
-                                        ),
-                                        onPressed: () {
-                                          setState(
-                                            () =>
-                                                _isShowingUnassigned =
-                                                    !_isShowingUnassigned,
-                                          );
-                                          if (_isShowingUnassigned) {
-                                            _loadUnassignedItems();
-                                          }
-                                        },
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(
-                                          minWidth: 32,
-                                          minHeight: 32,
-                                        ),
-                                      ),
-                                    ),
+                              return Icon(
+                                _isShowingUnassigned
+                                    ? Icons.assignment_late_rounded
+                                    : (_showCombinedEvents
+                                        ? Icons.event_available_rounded
+                                        : Icons.event_note_rounded),
+                                size: 20,
+                                color:
+                                    candidateData.isNotEmpty
+                                        ? colorScheme.error
+                                        : (_isShowingUnassigned
+                                            ? colorScheme.secondary
+                                            : colorScheme.primary),
                               );
                             },
                           ),
+                          const SizedBox(width: 8),
                           Expanded(
-                            child: Transform.translate(
-                              offset: const Offset(-4, 0),
-                              child: Text(
-                                _isShowingUnassigned
-                                    ? 'Unassigned Items'
-                                    : '${_showCombinedEvents ? "Events" : "Notes"} for ${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}',
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(color: colorScheme.onSurface),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                            child: Text(
+                              _isShowingUnassigned
+                                  ? 'Unassigned Items'
+                                  : '${_showCombinedEvents ? "Events" : "Notes"} for ${DateFormat('EEEE').format(_selectedDate)} ${_selectedDate.day}',
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(color: colorScheme.onSurface),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -957,6 +923,39 @@ class CalendarPanelState extends State<CalendarPanel>
                     ),
                     Row(
                       children: [
+                        CustomTooltip(
+                          message:
+                              _isShowingUnassigned
+                                  ? 'Show daily items'
+                                  : 'Show unassigned items',
+                          builder:
+                              (context, isHovering) => IconButton(
+                                icon: Icon(
+                                  _isShowingUnassigned
+                                      ? Icons.assignment_late_rounded
+                                      : Icons.assignment_late_outlined,
+                                  color:
+                                      _isShowingUnassigned
+                                          ? colorScheme.primary
+                                          : colorScheme.onSurfaceVariant,
+                                ),
+                                onPressed: () {
+                                  setState(
+                                    () =>
+                                        _isShowingUnassigned =
+                                            !_isShowingUnassigned,
+                                  );
+                                  if (_isShowingUnassigned) {
+                                    _loadUnassignedItems();
+                                  }
+                                },
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
+                                padding: EdgeInsets.zero,
+                              ),
+                        ),
                         CustomTooltip(
                           message:
                               _showCombinedEvents
@@ -1364,62 +1363,65 @@ class CalendarPanelState extends State<CalendarPanel>
                       onAcceptWithDetails:
                           (details) => _handleUnassignOnDrop(details.data),
                       builder: (context, candidateData, rejectedData) {
-                        return CustomTooltip(
-                          message:
-                              _isShowingUnassigned
-                                  ? 'Show daily items'
-                                  : 'Show unassigned items',
-                          builder:
-                              (context, isHovering) => Transform.translate(
-                                offset: const Offset(-4, 0),
-                                child: IconButton(
-                                  icon: Icon(
-                                    _isShowingUnassigned
-                                        ? Icons.assignment_late_rounded
-                                        : (_showCombinedEvents
-                                            ? Icons.event_available_rounded
-                                            : Icons.task_alt_rounded),
-                                    size: 20,
-                                    color:
-                                        candidateData.isNotEmpty
-                                            ? colorScheme.error
-                                            : (_isShowingUnassigned
-                                                ? colorScheme.secondary
-                                                : colorScheme.primary),
-                                  ),
-                                  onPressed: () {
-                                    setState(
-                                      () =>
-                                          _isShowingUnassigned =
-                                              !_isShowingUnassigned,
-                                    );
-                                    if (_isShowingUnassigned) {
-                                      _loadUnassignedItems();
-                                    }
-                                  },
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(
-                                    minWidth: 32,
-                                    minHeight: 32,
-                                  ),
-                                ),
-                              ),
+                        return Icon(
+                          _isShowingUnassigned
+                              ? Icons.assignment_late_rounded
+                              : (_showCombinedEvents
+                                  ? Icons.event_available_rounded
+                                  : Icons.task_alt_rounded),
+                          size: 20,
+                          color:
+                              candidateData.isNotEmpty
+                                  ? colorScheme.error
+                                  : (_isShowingUnassigned
+                                      ? colorScheme.secondary
+                                      : colorScheme.primary),
                         );
                       },
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Transform.translate(
-                        offset: const Offset(-4, 0),
-                        child: Text(
-                          _isShowingUnassigned
-                              ? 'Unassigned Items'
-                              : '${_showCombinedEvents ? "Events" : "Tasks"} for ${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}',
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(color: colorScheme.onSurface),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                      child: Text(
+                        _isShowingUnassigned
+                            ? 'Unassigned Items'
+                            : '${_showCombinedEvents ? "Events" : "Tasks"} for ${DateFormat('EEEE').format(_selectedDate)} ${_selectedDate.day}',
+                        style: Theme.of(context).textTheme.titleSmall
+                            ?.copyWith(color: colorScheme.onSurface),
+                        overflow: TextOverflow.ellipsis,
                       ),
+                    ),
+                    CustomTooltip(
+                      message:
+                          _isShowingUnassigned
+                              ? 'Show daily items'
+                              : 'Show unassigned items',
+                      builder:
+                          (context, isHovering) => IconButton(
+                            icon: Icon(
+                              _isShowingUnassigned
+                                  ? Icons.assignment_late_rounded
+                                  : Icons.assignment_late_outlined,
+                              color:
+                                  _isShowingUnassigned
+                                      ? colorScheme.primary
+                                      : colorScheme.onSurfaceVariant,
+                            ),
+                            onPressed: () {
+                              setState(
+                                () =>
+                                    _isShowingUnassigned =
+                                        !_isShowingUnassigned,
+                              );
+                              if (_isShowingUnassigned) {
+                                _loadUnassignedItems();
+                              }
+                            },
+                            constraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32,
+                            ),
+                            padding: EdgeInsets.zero,
+                          ),
                     ),
                     CustomTooltip(
                       message:
@@ -1899,18 +1901,13 @@ class CalendarPanelState extends State<CalendarPanel>
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () async {
-                              // Always select the tapped date but do not change the displayed month.
                               setState(() {
                                 _selectedDate = date;
                               });
 
-                              // In tasks mode, just select the date - no need to fetch events
                               if (widget.mode == CalendarPanelMode.tasks) {
                                 return;
                               }
-
-                              // If the tapped date belongs to a different month, fetch events for that
-                              // month as well so indicators and the events list update correctly.
                               final tappedMonthStart = DateTime(
                                 date.year,
                                 date.month,
@@ -1935,7 +1932,6 @@ class CalendarPanelState extends State<CalendarPanel>
 
                                   if (!mounted) return;
 
-                                  // Merge tappedEvents into _events avoiding duplicates (by id)
                                   final Map<int, CalendarEvent> combined = {};
                                   for (final e in _events) {
                                     combined[e.id] = e;
@@ -1947,7 +1943,6 @@ class CalendarPanelState extends State<CalendarPanel>
                                   setState(() {
                                     _events = combined.values.toList();
                                   });
-                                  // Emit updated events so the events panel (StreamBuilder) updates
                                   if (!_eventsController.isClosed) {
                                     _eventsController.add(_events);
                                   }
