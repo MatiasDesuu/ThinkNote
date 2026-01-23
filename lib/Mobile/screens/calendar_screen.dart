@@ -1406,7 +1406,7 @@ class CalendarScreenState extends State<CalendarScreen> {
             children: [
               Icon(
                 _isShowingUnassigned
-                    ? Icons.assignment_late_rounded
+                    ? Icons.inbox_rounded
                     : (_showCombinedEvents
                         ? Icons.event_available_rounded
                         : Icons.event_note_rounded),
@@ -1432,8 +1432,8 @@ class CalendarScreenState extends State<CalendarScreen> {
               IconButton(
                 icon: Icon(
                   _isShowingUnassigned
-                      ? Icons.assignment_late_rounded
-                      : Icons.assignment_late_outlined,
+                      ? Icons.inbox_rounded
+                      : Icons.inbox_outlined,
                   color:
                       _isShowingUnassigned
                           ? colorScheme.primary

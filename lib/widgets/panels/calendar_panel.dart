@@ -932,8 +932,8 @@ class CalendarPanelState extends State<CalendarPanel>
                               (context, isHovering) => IconButton(
                                 icon: Icon(
                                   _isShowingUnassigned
-                                      ? Icons.assignment_late_rounded
-                                      : Icons.assignment_late_outlined,
+                                      ? Icons.inbox_rounded
+                                      : Icons.inbox_outlined,
                                   color:
                                       _isShowingUnassigned
                                           ? colorScheme.primary
@@ -1399,8 +1399,8 @@ class CalendarPanelState extends State<CalendarPanel>
                           (context, isHovering) => IconButton(
                             icon: Icon(
                               _isShowingUnassigned
-                                  ? Icons.assignment_late_rounded
-                                  : Icons.assignment_late_outlined,
+                                  ? Icons.inbox_rounded
+                                  : Icons.inbox_outlined,
                               color:
                                   _isShowingUnassigned
                                       ? colorScheme.primary
