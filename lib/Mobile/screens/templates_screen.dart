@@ -237,7 +237,6 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
           fontWeight: FontWeight.w500,
         ),
       ),
-      subtitle: isStack ? const Text('Stack Template') : null,
       trailing: const Icon(Icons.chevron_right_rounded),
       onTap: () {
         widget.onTemplateApplied(note);
