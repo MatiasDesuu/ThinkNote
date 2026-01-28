@@ -210,15 +210,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         );
       }
 
-      await _syncService.forceSync();
+      await _syncService.forceSync(isManual: true);
 
       if (!mounted) return;
-
-      CustomSnackbar.show(
-        context: context,
-        message: 'Synchronization completed successfully',
-        type: CustomSnackbarType.success,
-      );
     } catch (e) {
       if (mounted) {
         CustomSnackbar.show(

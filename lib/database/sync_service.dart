@@ -4,6 +4,33 @@ import 'database_helper.dart';
 import '../Mobile/services/webdav_service.dart';
 import 'dart:developer' as developer;
 
+enum SyncStep {
+  initializing,
+  checkingRemote,
+  comparing,
+  uploading,
+  downloading,
+  finalizing,
+  completed,
+  failed,
+  idle,
+}
+
+class SyncStatus {
+  final SyncStep step;
+  final double progress;
+  final String message;
+
+  SyncStatus({
+    required this.step,
+    required this.progress,
+    required this.message,
+  });
+
+  factory SyncStatus.idle() =>
+      SyncStatus(step: SyncStep.idle, progress: 0.0, message: '');
+}
+
 class SyncService {
   static final SyncService _instance = SyncService._internal();
   final WebDAVService _webdavService = WebDAVService();
@@ -20,6 +47,21 @@ class SyncService {
   factory SyncService() => _instance;
 
   SyncService._internal();
+
+  final StreamController<SyncStatus> _statusController =
+      StreamController<SyncStatus>.broadcast();
+  Stream<SyncStatus> get statusStream => _statusController.stream;
+  SyncStatus _currentStatus = SyncStatus.idle();
+  SyncStatus get currentStatus => _currentStatus;
+
+  void _updateStatus(SyncStep step, double progress, String message) {
+    _currentStatus = SyncStatus(
+      step: step,
+      progress: progress,
+      message: message,
+    );
+    _statusController.add(_currentStatus);
+  }
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -71,39 +113,88 @@ class SyncService {
     });
   }
 
-  Future<void> _performSync() async {
+  Future<void> _performSync({bool isManual = false}) async {
     if (_isSyncing || !_isInitialized) return;
 
     try {
       _isSyncing = true;
       _ignoreChanges = true;
-      await _webdavService.sync();
+
+      if (isManual) {
+        _updateStatus(SyncStep.initializing, 0.1, 'Connecting to server...');
+      }
+
+      await _webdavService.sync(
+        onProgress:
+            isManual
+                ? (step, progress, message) {
+                  SyncStep syncStep;
+                  switch (step) {
+                    case 'comparing':
+                      syncStep = SyncStep.comparing;
+                      break;
+                    case 'uploading':
+                      syncStep = SyncStep.uploading;
+                      break;
+                    case 'downloading':
+                      syncStep = SyncStep.downloading;
+                      break;
+                    case 'checking_remote':
+                      syncStep = SyncStep.checkingRemote;
+                      break;
+                    default:
+                      syncStep = SyncStep.initializing;
+                  }
+                  _updateStatus(syncStep, progress, message);
+                }
+                : null,
+      );
+
       _lastSyncTime = DateTime.now();
       _changeCount = 0;
 
+      if (isManual) {
+        _updateStatus(SyncStep.completed, 1.0, 'Sync completed');
+        // Reset to idle after a delay
+        Future.delayed(const Duration(seconds: 2), () {
+          _updateStatus(SyncStep.idle, 0.0, '');
+        });
+      }
     } catch (e) {
       developer.log('Error during sync: $e', name: 'SyncService');
+      if (isManual) {
+        _updateStatus(SyncStep.failed, 0.0, 'Error: ${e.toString()}');
+        Future.delayed(const Duration(seconds: 3), () {
+          _updateStatus(SyncStep.idle, 0.0, '');
+        });
+      }
     } finally {
       _isSyncing = false;
       _ignoreChanges = false;
     }
   }
 
-  Future<void> forceSync() async {
+  Future<void> forceSync({bool isManual = false}) async {
     if (!_isInitialized) {
       try {
+        if (isManual) {
+          _updateStatus(SyncStep.initializing, 0.05, 'Initializing...');
+        }
         await initialize();
       } catch (e) {
         developer.log(
           'Error initializing sync service for force sync: $e',
           name: 'SyncService',
         );
+        if (isManual) {
+          _updateStatus(SyncStep.failed, 0.0, 'Initialization failed');
+        }
         rethrow;
       }
     }
 
     _changeCount = _minChangesForSync; // Forzar al menos un cambio
-    await _performSync();
+    await _performSync(isManual: isManual);
   }
 
   Future<Map<String, dynamic>> getSettings() async {
@@ -167,7 +258,10 @@ class SyncService {
     try {
       _ignoreChanges = true;
       await _webdavService.uploadLocalDatabase();
-      developer.log('Local database uploaded successfully', name: 'SyncService');
+      developer.log(
+        'Local database uploaded successfully',
+        name: 'SyncService',
+      );
     } catch (e) {
       developer.log('Error uploading local database: $e', name: 'SyncService');
       rethrow;
@@ -184,11 +278,20 @@ class SyncService {
 
     try {
       _ignoreChanges = true;
-      developer.log('Starting forced download from server...', name: 'SyncService');
+      developer.log(
+        'Starting forced download from server...',
+        name: 'SyncService',
+      );
       await _webdavService.downloadRemoteDatabase();
-      developer.log('Remote database downloaded and applied successfully', name: 'SyncService');
+      developer.log(
+        'Remote database downloaded and applied successfully',
+        name: 'SyncService',
+      );
     } catch (e) {
-      developer.log('Error downloading remote database: $e', name: 'SyncService');
+      developer.log(
+        'Error downloading remote database: $e',
+        name: 'SyncService',
+      );
       rethrow;
     } finally {
       _ignoreChanges = false;

@@ -2431,18 +2431,12 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
   void _forceSync() async {
     try {
-      await _syncService.forceSync();
+      await _syncService.forceSync(isManual: true);
 
       if (!mounted) return;
 
       // Refresh all panels after successful sync
       await _refreshAllPanels();
-
-      CustomSnackbar.show(
-        context: context,
-        message: 'Synchronization completed successfully',
-        type: CustomSnackbarType.success,
-      );
     } catch (e) {
       if (mounted) {
         CustomSnackbar.show(

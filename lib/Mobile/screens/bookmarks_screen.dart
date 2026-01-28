@@ -319,15 +319,9 @@ class BookmarksScreenState extends State<BookmarksScreen> {
         );
       }
 
-      await _syncService.forceSync();
+      await _syncService.forceSync(isManual: true);
 
       if (!mounted) return;
-
-      CustomSnackbar.show(
-        context: context,
-        message: 'Synchronization completed successfully',
-        type: CustomSnackbarType.success,
-      );
     } catch (e) {
       if (mounted) {
         CustomSnackbar.show(

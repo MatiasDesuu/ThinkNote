@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'dart:io';
+import 'dart:async';
 import '../Settings/settings_screen.dart';
 import '../Tasks/tasks_screen.dart';
 import '../Bookmarks/bookmarks_screen.dart';
 import '../Thinks/thinks_screen.dart';
 import '../database/sync_service.dart';
+import '../services/immersive_mode_service.dart';
 import 'custom_snackbar.dart';
+import 'sync_progress_overlay.dart';
 import 'search_screen_desktop.dart';
 import '../database/models/note.dart';
 import '../database/models/notebook.dart';
 import '../database/models/task.dart';
-import '../services/immersive_mode_service.dart';
 
 class IconSidebarButton {
   final IconData icon;
@@ -263,6 +265,7 @@ class IconSidebarState extends State<IconSidebar>
   late ImmersiveModeService _immersiveModeService;
   final GlobalKey<_HoverMenuOverlayState> _menuOverlayKey =
       GlobalKey<_HoverMenuOverlayState>();
+  late SyncProgressOverlayManager _syncOverlayManager;
 
   @override
   void initState() {
@@ -270,11 +273,15 @@ class IconSidebarState extends State<IconSidebar>
     _immersiveModeService = ImmersiveModeService();
     _immersiveModeService.initialize();
     _immersiveModeService.addListener(_onImmersiveModeChanged);
+
+    _syncOverlayManager = SyncProgressOverlayManager(context: context);
+    _syncOverlayManager.initialize();
   }
 
   @override
   void dispose() {
     _immersiveModeService.removeListener(_onImmersiveModeChanged);
+    _syncOverlayManager.dispose();
     super.dispose();
   }
 
@@ -289,7 +296,7 @@ class IconSidebarState extends State<IconSidebar>
 
     try {
       final syncService = SyncService();
-      await syncService.forceSync();
+      await syncService.forceSync(isManual: true);
     } catch (e) {
       if (mounted) {
         CustomSnackbar.show(
@@ -304,18 +311,12 @@ class IconSidebarState extends State<IconSidebar>
   void _forceSync() async {
     try {
       final syncService = SyncService();
-      await syncService.forceSync();
+      await syncService.forceSync(isManual: true);
 
       if (!mounted) return;
 
       // Notify parent to refresh all panels after successful sync
       widget.onForceSync?.call();
-
-      CustomSnackbar.show(
-        context: context,
-        message: 'Synchronization completed successfully',
-        type: CustomSnackbarType.success,
-      );
     } catch (e) {
       if (mounted) {
         CustomSnackbar.show(
@@ -441,7 +442,7 @@ class IconSidebarState extends State<IconSidebar>
 
       try {
         final syncService = SyncService();
-        await syncService.forceSync();
+        await syncService.forceSync(isManual: true);
 
         if (mounted) {
           // Recargar el panel después de la sincronización
@@ -469,7 +470,7 @@ class IconSidebarState extends State<IconSidebar>
 
       try {
         final syncService = SyncService();
-        await syncService.forceSync();
+        await syncService.forceSync(isManual: true);
 
         if (mounted) {
           // Recargar el panel después de la sincronización
@@ -763,36 +764,35 @@ class IconSidebarState extends State<IconSidebar>
           ),
           Column(
             children:
-                bottomButtons
-                    .map(
-                      (button) => IconButton(
-                        icon: Icon(
-                          button.icon,
-                          size: widget.iconSize,
-                          color: button.color ?? colorScheme.primary,
-                        ),
-                        onPressed: () {
-                          if (button.onPressed is Function(BuildContext)) {
-                            button.onPressed(context);
-                          } else {
-                            button.onPressed();
-                          }
-                        },
-                        style: IconButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          minimumSize: Size(
-                            widget.iconSize + 16,
-                            widget.iconSize + 16,
-                          ),
-                          hoverColor: colorScheme.primary.withAlpha(20),
-                          focusColor: colorScheme.primary.withAlpha(31),
-                          highlightColor: colorScheme.primary.withAlpha(31),
-                        ),
+                bottomButtons.map((button) {
+                  if (button.child != null) return button.child!;
+                  return IconButton(
+                    icon: Icon(
+                      button.icon,
+                      size: widget.iconSize,
+                      color: button.color ?? colorScheme.primary,
+                    ),
+                    onPressed: () {
+                      if (button.onPressed is Function(BuildContext)) {
+                        button.onPressed(context);
+                      } else {
+                        button.onPressed();
+                      }
+                    },
+                    style: IconButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    )
-                    .toList(),
+                      minimumSize: Size(
+                        widget.iconSize + 16,
+                        widget.iconSize + 16,
+                      ),
+                      hoverColor: colorScheme.primary.withAlpha(20),
+                      focusColor: colorScheme.primary.withAlpha(31),
+                      highlightColor: colorScheme.primary.withAlpha(31),
+                    ),
+                  );
+                }).toList(),
           ),
         ],
       ),

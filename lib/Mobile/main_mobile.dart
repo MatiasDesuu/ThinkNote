@@ -23,10 +23,12 @@ import '../database/repositories/think_repository.dart';
 import '../database/services/think_service.dart';
 import 'services/webdav_service.dart';
 import 'services/bookmark_sharing_handler.dart';
+import '../database/sync_service.dart';
 import '../widgets/custom_snackbar.dart';
 import 'dart:async';
 import 'widgets/think_editor.dart';
 import 'screens/calendar_screen.dart';
+import '../widgets/sync_progress_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThinkNoteMobile extends StatefulWidget {
@@ -60,6 +62,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
   Timer? _debounceTitle;
   late final AnimationController _scaleController;
   final GlobalKey<BookmarksScreenState> _bookmarksKey = GlobalKey();
+  late SyncProgressOverlayManager _syncOverlayManager;
 
   late List<Widget> _screens;
 
@@ -76,6 +79,12 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
     _initializeScreens();
     _initializeWebDAV();
     _initializeSharing();
+
+    _syncOverlayManager = SyncProgressOverlayManager(
+      context: context,
+      isMobile: true,
+    );
+    _syncOverlayManager.initialize();
   }
 
   Future<void> _initializeWebDAV() async {
@@ -152,6 +161,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
     _debounceTitle?.cancel();
     _noteController.removeListener(_onNoteChanged);
     _titleController.removeListener(_onTitleChanged);
+    _syncOverlayManager.dispose();
     _contentFocusNode.dispose();
     _noteController.dispose();
     _titleController.dispose();
@@ -599,6 +609,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                 ),
                 home: Builder(
                   builder: (context) {
+                    _syncOverlayManager.context = context;
                     final colorScheme = Theme.of(context).colorScheme;
                     final isKeyboardVisible =
                         MediaQuery.of(context).viewInsets.bottom > 0;
@@ -694,15 +705,9 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                               ),
                               onPressed: () async {
                                 try {
-                                  final webdavService = WebDAVService();
-                                  await webdavService.sync();
+                                  final syncService = SyncService();
+                                  await syncService.forceSync(isManual: true);
                                   if (!mounted) return;
-                                  CustomSnackbar.show(
-                                    context: context,
-                                    message:
-                                        'Synchronization completed successfully',
-                                    type: CustomSnackbarType.success,
-                                  );
                                 } catch (e) {
                                   if (!mounted) return;
                                   CustomSnackbar.show(

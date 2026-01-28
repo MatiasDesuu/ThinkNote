@@ -56,7 +56,9 @@ class WebDAVService {
     return difference.inSeconds <= _syncToleranceSeconds;
   }
 
-  Future<void> sync() async {
+  Future<void> sync({
+    void Function(String step, double progress, String message)? onProgress,
+  }) async {
     if (!await _checkConnectivity()) {
       return;
     }
@@ -70,9 +72,13 @@ class WebDAVService {
 
       final remoteFile = await _getRemoteFile();
       if (remoteFile == null) {
+        onProgress?.call('uploading', 0.5, 'Uploading local database...');
         await _uploadLocalFile(dbPath);
+        onProgress?.call('finalizing', 0.9, 'Finalizing...');
         return;
       }
+
+      onProgress?.call('comparing', 0.3, 'Comparing versions...');
 
       final localLastModified = await _dbHelper.getLastModified();
       final tempPath = '$dbPath.temp';
@@ -88,8 +94,10 @@ class WebDAVService {
         }
 
         if (localLastModified.isAfter(remoteLastModified)) {
+          onProgress?.call('uploading', 0.6, 'Uploading changes...');
           await _uploadLocalFile(dbPath);
         } else if (remoteLastModified.isAfter(localLastModified)) {
+          onProgress?.call('downloading', 0.6, 'Downloading changes...');
           await _downloadRemoteFile(dbPath);
 
           await _dbHelper.dispose();
@@ -103,6 +111,7 @@ class WebDAVService {
             throw Exception('Database initialized but sync_info is empty');
           }
         }
+        onProgress?.call('finalizing', 0.9, 'Finalizing...');
       } finally {
         if (tempDb != null) {
           await tempDb.close();
@@ -235,7 +244,7 @@ class WebDAVService {
     }
 
     final dbPath = await _getDatabasePath();
-    
+
     // Check if remote file exists
     final remoteFile = await _getRemoteFile();
     if (remoteFile == null) {
@@ -244,14 +253,14 @@ class WebDAVService {
 
     // Force download without backup - close database first
     await _dbHelper.close();
-    
+
     try {
       // Download directly, overwriting local file
       await _client.read2File('/$_dbFileName', dbPath);
-      
+
       // Reinitialize database helper with the new file
       await _dbHelper.initialize(dbPath);
-      
+
       // Verify the download was successful
       final localFile = io.File(dbPath);
       if (!await localFile.exists()) {
@@ -272,7 +281,9 @@ class WebDAVService {
         await _dbHelper.initialize(dbPath);
       } catch (initError) {
         // If that fails too, this is a serious error
-        throw Exception('Error downloading remote file and failed to recover: $e');
+        throw Exception(
+          'Error downloading remote file and failed to recover: $e',
+        );
       }
       throw Exception('Error downloading remote file: $e');
     }
