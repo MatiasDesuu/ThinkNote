@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'dart:io';
-import '../animations/animations_handler.dart';
 import '../Settings/settings_screen.dart';
 import '../Tasks/tasks_screen.dart';
 import '../Bookmarks/bookmarks_screen.dart';
@@ -261,7 +260,6 @@ class IconSidebar extends StatefulWidget {
 
 class IconSidebarState extends State<IconSidebar>
     with SingleTickerProviderStateMixin {
-  late SyncAnimationController _syncController;
   late ImmersiveModeService _immersiveModeService;
   final GlobalKey<_HoverMenuOverlayState> _menuOverlayKey =
       GlobalKey<_HoverMenuOverlayState>();
@@ -269,7 +267,6 @@ class IconSidebarState extends State<IconSidebar>
   @override
   void initState() {
     super.initState();
-    _syncController = SyncAnimationController(vsync: this);
     _immersiveModeService = ImmersiveModeService();
     _immersiveModeService.initialize();
     _immersiveModeService.addListener(_onImmersiveModeChanged);
@@ -277,7 +274,6 @@ class IconSidebarState extends State<IconSidebar>
 
   @override
   void dispose() {
-    _syncController.dispose();
     _immersiveModeService.removeListener(_onImmersiveModeChanged);
     super.dispose();
   }
@@ -288,25 +284,8 @@ class IconSidebarState extends State<IconSidebar>
     }
   }
 
-  void startSyncAnimation() {
-    setState(() {
-      _syncController.start();
-    });
-  }
-
-  void stopSyncAnimation() {
-    setState(() {
-      _syncController.stop();
-    });
-  }
-
   void _performBackgroundSync() async {
     // Mostrar indicador de sincronización
-    if (mounted) {
-      setState(() {
-        _syncController.start();
-      });
-    }
 
     try {
       final syncService = SyncService();
@@ -319,20 +298,10 @@ class IconSidebarState extends State<IconSidebar>
           type: CustomSnackbarType.error,
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _syncController.stop();
-        });
-      }
-    }
+    } finally {}
   }
 
   void _forceSync() async {
-    setState(() {
-      _syncController.start();
-    });
-
     try {
       final syncService = SyncService();
       await syncService.forceSync();
@@ -355,13 +324,7 @@ class IconSidebarState extends State<IconSidebar>
           type: CustomSnackbarType.error,
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _syncController.stop();
-        });
-      }
-    }
+    } finally {}
   }
 
   void openTasksScreen({Task? initialTask}) {
@@ -475,11 +438,6 @@ class IconSidebarState extends State<IconSidebar>
     // Hacer la sincronización en segundo plano
     Future(() async {
       // Mostrar indicador de sincronización
-      if (mounted) {
-        setState(() {
-          _syncController.start();
-        });
-      }
 
       try {
         final syncService = SyncService();
@@ -497,13 +455,7 @@ class IconSidebarState extends State<IconSidebar>
             type: CustomSnackbarType.error,
           );
         }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _syncController.stop();
-          });
-        }
-      }
+      } finally {}
     });
   }
 
@@ -514,11 +466,6 @@ class IconSidebarState extends State<IconSidebar>
     // Hacer la sincronización en segundo plano
     Future(() async {
       // Mostrar indicador de sincronización
-      if (mounted) {
-        setState(() {
-          _syncController.start();
-        });
-      }
 
       try {
         final syncService = SyncService();
@@ -536,19 +483,14 @@ class IconSidebarState extends State<IconSidebar>
             type: CustomSnackbarType.error,
           );
         }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _syncController.stop();
-          });
-        }
-      }
+      } finally {}
     });
   }
 
   void _toggleImmersiveMode() async {
     await _immersiveModeService.enterImmersiveMode();
   }
+
   IconSidebarButton _buildNewNoteMenuButton() {
     return IconSidebarButton(
       icon: Icons.note_add_rounded,
@@ -617,131 +559,121 @@ class IconSidebarState extends State<IconSidebar>
           showInBookmarks: true,
         ),
       // Botones para otras pantallas
-        if (!isBookmarksScreen &&
-            !widget.isTasksScreen &&
-            !widget.isThinksScreen &&
-            !widget.isSettingsScreen)
-          IconSidebarButton(
-            icon: Icons.search_rounded,
-            onPressed: _openSearchScreen,
-          ),
-        // Botón combinado de New Note + New Todo con menú desplegable
-        if (!widget.isTasksScreen &&
-            (widget.onCreateNewNote != null || widget.onCreateNewTodo != null))
-          _buildNewNoteMenuButton(),
-        // Botón simple de New Task para la pantalla de tareas
-        if (widget.isTasksScreen && widget.onCreateNewTodo != null)
-          IconSidebarButton(
-            icon: Icons.add_task_rounded,
-            onPressed: widget.onCreateNewTodo!,
-          ),
-        if (widget.onCreateNewNotebook != null)
-          IconSidebarButton(
-            icon: Icons.create_new_folder_rounded,
-            onPressed: widget.onCreateNewNotebook!,
-          ),
-        if (widget.onShowManageTags != null)
-          IconSidebarButton(
-            icon: Icons.label_rounded,
-            onPressed: widget.onShowManageTags!,
-          ),
-        if (widget.onCreateThink != null)
-          IconSidebarButton(
-            icon: Icons.add_circle_outline_rounded,
-            onPressed: widget.onCreateThink!,
-          ),
-        if (!isBookmarksScreen &&
-            !widget.isTasksScreen &&
-            !widget.isThinksScreen &&
-            !widget.isSettingsScreen)
-          IconSidebarButton(
-            icon: Symbols.neurology,
-            onPressed: _openThinksScreen,
-            showInBookmarks: true,
-          ),
-        if (!isBookmarksScreen &&
-            !widget.isTasksScreen &&
-            !widget.isThinksScreen &&
-            !widget.isSettingsScreen)
-          IconSidebarButton(
-            icon: Icons.task_alt_rounded,
-            onPressed: _openToDoScreen,
-            showInBookmarks: true,
-          ),
-        if (!isBookmarksScreen &&
-            !widget.isTasksScreen &&
-            !widget.isThinksScreen &&
-            !widget.isSettingsScreen)
-          IconSidebarButton(
-            icon: Icons.bookmarks_rounded,
-            onPressed: _openBookmarksScreen,
-          ),
-        if (isBookmarksScreen && widget.onAddBookmark != null)
-          IconSidebarButton(
-            icon: Icons.add_rounded,
-            onPressed: widget.onAddBookmark!,
-            showInBookmarks: true,
-          ),
-        if (isBookmarksScreen && widget.onManageTags != null)
-          IconSidebarButton(
-            icon: Icons.label_rounded,
-            onPressed: widget.onManageTags!,
-            showInBookmarks: true,
-          ),
-        // Calendar toggle button - show in main screen and tasks screen when callback is provided
-        if ((!isBookmarksScreen &&
-            !widget.isThinksScreen &&
-            !widget.isSettingsScreen) &&
-            (!widget.isTasksScreen || widget.onToggleCalendar != null))
-          IconSidebarButton(
-            icon: Icons.calendar_month_rounded,
-            onPressed: () {
-              // If onToggleCalendar is provided (tasks screen), use it
-              if (widget.onToggleCalendar != null) {
-                widget.onToggleCalendar!();
-                return;
-              }
-              
-              // Otherwise, use the calendarPanelKey (main screen)
-              final state = widget.calendarPanelKey?.currentState;
-              if (state != null) {
-                // Try calling known API methods if available. Use `togglePanel`
-                // if present to mirror previous behavior, otherwise try
-                // `showPanel`/`hidePanel` fallbacks.
-                try {
-                  // Prefer togglePanel
-                  final toggle = state.togglePanel;
-                  if (toggle is Function) {
-                    toggle();
-                    return;
-                  }
-                } catch (_) {}
+      if (!isBookmarksScreen &&
+          !widget.isTasksScreen &&
+          !widget.isThinksScreen &&
+          !widget.isSettingsScreen)
+        IconSidebarButton(
+          icon: Icons.search_rounded,
+          onPressed: _openSearchScreen,
+        ),
+      // Botón combinado de New Note + New Todo con menú desplegable
+      if (!widget.isTasksScreen &&
+          (widget.onCreateNewNote != null || widget.onCreateNewTodo != null))
+        _buildNewNoteMenuButton(),
+      // Botón simple de New Task para la pantalla de tareas
+      if (widget.isTasksScreen && widget.onCreateNewTodo != null)
+        IconSidebarButton(
+          icon: Icons.add_task_rounded,
+          onPressed: widget.onCreateNewTodo!,
+        ),
+      if (widget.onCreateNewNotebook != null)
+        IconSidebarButton(
+          icon: Icons.create_new_folder_rounded,
+          onPressed: widget.onCreateNewNotebook!,
+        ),
+      if (widget.onShowManageTags != null)
+        IconSidebarButton(
+          icon: Icons.label_rounded,
+          onPressed: widget.onShowManageTags!,
+        ),
+      if (widget.onCreateThink != null)
+        IconSidebarButton(
+          icon: Icons.add_circle_outline_rounded,
+          onPressed: widget.onCreateThink!,
+        ),
+      if (!isBookmarksScreen &&
+          !widget.isTasksScreen &&
+          !widget.isThinksScreen &&
+          !widget.isSettingsScreen)
+        IconSidebarButton(
+          icon: Symbols.neurology,
+          onPressed: _openThinksScreen,
+          showInBookmarks: true,
+        ),
+      if (!isBookmarksScreen &&
+          !widget.isTasksScreen &&
+          !widget.isThinksScreen &&
+          !widget.isSettingsScreen)
+        IconSidebarButton(
+          icon: Icons.task_alt_rounded,
+          onPressed: _openToDoScreen,
+          showInBookmarks: true,
+        ),
+      if (!isBookmarksScreen &&
+          !widget.isTasksScreen &&
+          !widget.isThinksScreen &&
+          !widget.isSettingsScreen)
+        IconSidebarButton(
+          icon: Icons.bookmarks_rounded,
+          onPressed: _openBookmarksScreen,
+        ),
+      if (isBookmarksScreen && widget.onAddBookmark != null)
+        IconSidebarButton(
+          icon: Icons.add_rounded,
+          onPressed: widget.onAddBookmark!,
+          showInBookmarks: true,
+        ),
+      if (isBookmarksScreen && widget.onManageTags != null)
+        IconSidebarButton(
+          icon: Icons.label_rounded,
+          onPressed: widget.onManageTags!,
+          showInBookmarks: true,
+        ),
+      // Calendar toggle button - show in main screen and tasks screen when callback is provided
+      if ((!isBookmarksScreen &&
+              !widget.isThinksScreen &&
+              !widget.isSettingsScreen) &&
+          (!widget.isTasksScreen || widget.onToggleCalendar != null))
+        IconSidebarButton(
+          icon: Icons.calendar_month_rounded,
+          onPressed: () {
+            if (widget.onToggleCalendar != null) {
+              widget.onToggleCalendar!();
+              return;
+            }
 
-                try {
-                  // Fallback: if panel exposes show/hide use them
-                  final hide = state.hidePanel;
-                  final show = state.showPanel;
-                  if (hide is Function && show is Function) {
-                    // If currently visible, hide, otherwise show. We don't have
-                    // direct access to visibility flag here, so call toggle if
-                    // available; otherwise call show then hide as a safe noop.
-                    hide();
-                    return;
-                  }
-                } catch (_) {}
-              }
-            },
-            showInBookmarks: true,
-          ),
-        if (!isBookmarksScreen &&
-            !widget.isTasksScreen &&
-            !widget.isThinksScreen &&
-            !widget.isSettingsScreen)
-          IconSidebarButton(
-            icon: Icons.fullscreen_rounded,
-            onPressed: _toggleImmersiveMode,
-            showInBookmarks: true,
-          ),
+            final state = widget.calendarPanelKey?.currentState;
+            if (state != null) {
+              try {
+                final toggle = state.togglePanel;
+                if (toggle is Function) {
+                  toggle();
+                  return;
+                }
+              } catch (_) {}
+
+              try {
+                final hide = state.hidePanel;
+                final show = state.showPanel;
+                if (hide is Function && show is Function) {
+                  hide();
+                  return;
+                }
+              } catch (_) {}
+            }
+          },
+          showInBookmarks: true,
+        ),
+      if (!isBookmarksScreen &&
+          !widget.isTasksScreen &&
+          !widget.isThinksScreen &&
+          !widget.isSettingsScreen)
+        IconSidebarButton(
+          icon: Icons.fullscreen_rounded,
+          onPressed: _toggleImmersiveMode,
+          showInBookmarks: true,
+        ),
     ];
   }
 
@@ -754,17 +686,7 @@ class IconSidebarState extends State<IconSidebar>
     List<IconSidebarButton> buttons = _getButtons();
 
     final bottomButtons = [
-      IconSidebarButton(
-        icon: Icons.cloud_sync_rounded,
-        onPressed: _forceSync,
-        child:
-            _syncController.isAnimating
-                ? SyncIcon(
-                  animationController: _syncController,
-                  color: colorScheme.primary,
-                )
-                : null,
-      ),
+      IconSidebarButton(icon: Icons.sync_rounded, onPressed: _forceSync),
       if (widget.onOpenFavorites != null)
         IconSidebarButton(
           icon: Icons.favorite_rounded,

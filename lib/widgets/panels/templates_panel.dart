@@ -69,13 +69,11 @@ class TemplatesPanelState extends State<TemplatesPanel> {
     try {
       final allNotebooks = await _notebookRepository.getAllNotebooks();
       final templateNotebooks =
-          allNotebooks
-              .where((n) {
-                final name = n.name.toLowerCase();
-                return name.startsWith('#templates') ||
-                    name.startsWith('#category');
-              })
-              .toList();
+          allNotebooks.where((n) {
+            final name = n.name.toLowerCase();
+            return name.startsWith('#templates') ||
+                name.startsWith('#category');
+          }).toList();
 
       final notebookTemplates =
           allNotebooks
@@ -148,7 +146,9 @@ class TemplatesPanelState extends State<TemplatesPanel> {
         widget.selectedNotebookId!,
       );
       notebookName = notebook?.name;
-      final existingNotes = await _noteRepository.getNotesByNotebookId(widget.selectedNotebookId!);
+      final existingNotes = await _noteRepository.getNotesByNotebookId(
+        widget.selectedNotebookId!,
+      );
       existingTitles = existingNotes.map((note) => note.title).toList();
     }
 
@@ -188,20 +188,28 @@ class TemplatesPanelState extends State<TemplatesPanel> {
     final regExp = RegExp(r'\{\{([^}]+)\}\}');
     final match = regExp.firstMatch(template.content);
     if (match == null) {
-      throw Exception('Stack template must contain {{note1, note2, ...}} in content');
+      throw Exception(
+        'Stack template must contain {{note1, note2, ...}} in content',
+      );
     }
 
     final noteNamesString = match.group(1)!;
-    final noteNames = noteNamesString.split(',').map((name) => name.trim()).toList();
+    final noteNames =
+        noteNamesString.split(',').map((name) => name.trim()).toList();
 
     // Get all notes from the template's notebook
-    final templateNotes = await _noteRepository.getNotesByNotebookId(template.notebookId);
+    final templateNotes = await _noteRepository.getNotesByNotebookId(
+      template.notebookId,
+    );
     final templateNoteMap = {for (var note in templateNotes) note.title: note};
 
     // Check if all specified notes exist
-    final missingNotes = noteNames.where((name) => !templateNoteMap.containsKey(name)).toList();
+    final missingNotes =
+        noteNames.where((name) => !templateNoteMap.containsKey(name)).toList();
     if (missingNotes.isNotEmpty) {
-      throw Exception('The following notes are missing in the template notebook: ${missingNotes.join(', ')}');
+      throw Exception(
+        'The following notes are missing in the template notebook: ${missingNotes.join(', ')}',
+      );
     }
 
     // Get target notebook info
@@ -212,14 +220,16 @@ class TemplatesPanelState extends State<TemplatesPanel> {
         widget.selectedNotebookId!,
       );
       notebookName = notebook?.name;
-      final existingNotes = await _noteRepository.getNotesByNotebookId(widget.selectedNotebookId!);
+      final existingNotes = await _noteRepository.getNotesByNotebookId(
+        widget.selectedNotebookId!,
+      );
       existingTitles = existingNotes.map((note) => note.title).toList();
     }
 
     // Create each note
     for (final noteName in noteNames) {
       final sourceNote = templateNoteMap[noteName]!;
-      
+
       final processedTitle = TemplateVariableProcessor.process(
         sourceNote.title,
         notebookName: notebookName,
@@ -410,7 +420,9 @@ class TemplatesPanelState extends State<TemplatesPanel> {
             ),
           ),
         ),
-        ..._notebookTemplates.map((notebook) => _buildNotebookTemplateItem(notebook)),
+        ..._notebookTemplates.map(
+          (notebook) => _buildNotebookTemplateItem(notebook),
+        ),
       ],
     );
   }
@@ -537,10 +549,10 @@ class TemplatesPanelState extends State<TemplatesPanel> {
                   children: [
                     Icon(
                       note.title.toLowerCase().contains('#stack')
-                          ? Icons.library_add_rounded
+                          ? Icons.library_books_rounded
                           : note.isTask
-                              ? Icons.add_task_rounded
-                              : Icons.description_outlined,
+                          ? Icons.add_task_rounded
+                          : Icons.description_outlined,
                       color: colorScheme.primary,
                       size: 18,
                     ),

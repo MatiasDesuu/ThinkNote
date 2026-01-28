@@ -201,7 +201,10 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                     debugPrint('Error pre-fetching notes: $e');
                   }
 
-                  _handleNotebookSelected(notebook, initialNotes: preloadedNotes);
+                  _handleNotebookSelected(
+                    notebook,
+                    initialNotes: preloadedNotes,
+                  );
                   setState(() {
                     _selectedIndex = 0;
                   });
@@ -613,8 +616,9 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                   List<Note> preloadedNotes = [];
                                   try {
                                     final dbHelper = DatabaseHelper();
-                                    final noteRepository =
-                                        NoteRepository(dbHelper);
+                                    final noteRepository = NoteRepository(
+                                      dbHelper,
+                                    );
                                     preloadedNotes = await noteRepository
                                         .getNotesByNotebookId(notebook.id ?? 0);
                                   } catch (e) {
@@ -629,8 +633,8 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                   // Pre-fetch notes for instant display
                                   List<Note> preloadedNotes = [];
                                   try {
-                                    preloadedNotes =
-                                        await TagsService().getNotesByTag(tag);
+                                    preloadedNotes = await TagsService()
+                                        .getNotesByTag(tag);
                                   } catch (e) {
                                     debugPrint('Error pre-fetching notes: $e');
                                   }
@@ -642,10 +646,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                 selectedNotebook: _selectedNotebook,
                                 scaffoldKey: _scaffoldKey,
                               ),
-                      drawerEdgeDragWidth:
-                          _selectedIndex != 0
-                              ? 0
-                              : 150,
+                      drawerEdgeDragWidth: _selectedIndex != 0 ? 0 : 150,
                       onDrawerChanged: (isOpened) {
                         if (isOpened) {
                           FocusManager.instance.primaryFocus?.unfocus();
@@ -688,7 +689,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                           if (_selectedIndex == 0 || _selectedIndex == 1)
                             IconButton(
                               icon: Icon(
-                                Icons.cloud_sync_rounded,
+                                Icons.sync_rounded,
                                 color: colorScheme.primary,
                               ),
                               onPressed: () async {
@@ -865,9 +866,8 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                           ),
                         ],
                         backgroundColor: colorScheme.surfaceContainer,
-                        indicatorColor: monochromeMode
-                            ? colorScheme.primary
-                            : null,
+                        indicatorColor:
+                            monochromeMode ? colorScheme.primary : null,
                         surfaceTintColor: Colors.transparent,
                         labelBehavior:
                             NavigationDestinationLabelBehavior.onlyShowSelected,
@@ -876,7 +876,10 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                         duration: const Duration(milliseconds: 200),
                         switchInCurve: Curves.easeOutCubic,
                         switchOutCurve: Curves.easeInCubic,
-                        transitionBuilder: (Widget child, Animation<double> animation) {
+                        transitionBuilder: (
+                          Widget child,
+                          Animation<double> animation,
+                        ) {
                           return ScaleTransition(
                             scale: animation,
                             child: FadeTransition(
@@ -885,101 +888,111 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                             ),
                           );
                         },
-                        child: !isKeyboardVisible &&
-                                !_isImmersiveMode &&
-                                _selectedIndex != 1
-                            ? GestureDetector(
-                                key: const ValueKey('fab_active'),
-                                onTapDown: (_) {
-                                  _scaleController.forward();
-                                },
-                                onTapUp: (_) {
-                                  HapticFeedback.lightImpact();
-                                  if (_selectedIndex == 0) {
-                                    _createNewThink();
-                                  } else if (_selectedIndex == 2) {
-                                    _tasksKey.currentState?.createNewTask();
-                                  } else if (_selectedIndex == 3) {
-                                    _bookmarksKey.currentState?.showAddDialog();
-                                  }
-                                  _scaleController.reverse();
-                                },
-                                onTapCancel: () {
-                                  _scaleController.reverse();
-                                },
-                                onLongPressStart: (_) {
-                                  _scaleController.forward();
-                                },
-                                onLongPress: () {
-                                  HapticFeedback.mediumImpact();
-                                  if (_selectedIndex == 0 &&
-                                      _scaleController.status ==
-                                          AnimationStatus.completed) {
-                                    _showThinksScreen();
-                                  } else if (_selectedIndex == 2 &&
-                                      _scaleController.status ==
-                                          AnimationStatus.completed) {
-                                    _tasksKey.currentState?.toggleTabs();
+                        child:
+                            !isKeyboardVisible &&
+                                    !_isImmersiveMode &&
+                                    _selectedIndex != 1
+                                ? GestureDetector(
+                                  key: const ValueKey('fab_active'),
+                                  onTapDown: (_) {
+                                    _scaleController.forward();
+                                  },
+                                  onTapUp: (_) {
+                                    HapticFeedback.lightImpact();
+                                    if (_selectedIndex == 0) {
+                                      _createNewThink();
+                                    } else if (_selectedIndex == 2) {
+                                      _tasksKey.currentState?.createNewTask();
+                                    } else if (_selectedIndex == 3) {
+                                      _bookmarksKey.currentState
+                                          ?.showAddDialog();
+                                    }
                                     _scaleController.reverse();
-                                  } else if (_selectedIndex == 3 &&
-                                      _scaleController.status ==
-                                          AnimationStatus.completed) {
-                                    _bookmarksKey.currentState?.showSearch();
+                                  },
+                                  onTapCancel: () {
                                     _scaleController.reverse();
-                                  }
-                                },
-                                onLongPressEnd: (_) {
-                                  _scaleController.reverse();
-                                },
-                                child: ScaleTransition(
-                                  scale: _scaleController.drive(
-                                    Tween<double>(begin: 1.0, end: 1.1).chain(
-                                      CurveTween(curve: Curves.easeOutCubic),
-                                    ),
-                                  ),
-                                  child: RotationTransition(
-                                    turns: _scaleController.drive(
-                                      Tween<double>(begin: 0.0, end: 0.01).chain(
+                                  },
+                                  onLongPressStart: (_) {
+                                    _scaleController.forward();
+                                  },
+                                  onLongPress: () {
+                                    HapticFeedback.mediumImpact();
+                                    if (_selectedIndex == 0 &&
+                                        _scaleController.status ==
+                                            AnimationStatus.completed) {
+                                      _showThinksScreen();
+                                    } else if (_selectedIndex == 2 &&
+                                        _scaleController.status ==
+                                            AnimationStatus.completed) {
+                                      _tasksKey.currentState?.toggleTabs();
+                                      _scaleController.reverse();
+                                    } else if (_selectedIndex == 3 &&
+                                        _scaleController.status ==
+                                            AnimationStatus.completed) {
+                                      _bookmarksKey.currentState?.showSearch();
+                                      _scaleController.reverse();
+                                    }
+                                  },
+                                  onLongPressEnd: (_) {
+                                    _scaleController.reverse();
+                                  },
+                                  child: ScaleTransition(
+                                    scale: _scaleController.drive(
+                                      Tween<double>(begin: 1.0, end: 1.1).chain(
                                         CurveTween(curve: Curves.easeOutCubic),
                                       ),
                                     ),
-                                    child: FloatingActionButton(
-                                      heroTag: 'main_fab',
-                                      onPressed: null,
-                                      backgroundColor: colorScheme.primary,
-                                      foregroundColor: colorScheme.onPrimary,
-                                      elevation: 4,
-                                      child: AnimatedSwitcher(
-                                        duration:
-                                            const Duration(milliseconds: 300),
-                                        transitionBuilder: (
-                                          Widget child,
-                                          Animation<double> animation,
-                                        ) {
-                                          return FadeTransition(
-                                            opacity: animation,
-                                            child: ScaleTransition(
-                                              scale: animation,
-                                              child: child,
-                                            ),
-                                          );
-                                        },
-                                        child: Icon(
-                                          _selectedIndex == 0
-                                              ? Symbols.neurology_rounded
-                                              : _selectedIndex == 2
-                                              ? Symbols.add_task_rounded
-                                              : Icons.bookmark_add_rounded,
-                                          key: ValueKey<int>(_selectedIndex),
-                                          size: 36,
-                                          grade: 200,
+                                    child: RotationTransition(
+                                      turns: _scaleController.drive(
+                                        Tween<double>(
+                                          begin: 0.0,
+                                          end: 0.01,
+                                        ).chain(
+                                          CurveTween(
+                                            curve: Curves.easeOutCubic,
+                                          ),
+                                        ),
+                                      ),
+                                      child: FloatingActionButton(
+                                        heroTag: 'main_fab',
+                                        onPressed: null,
+                                        backgroundColor: colorScheme.primary,
+                                        foregroundColor: colorScheme.onPrimary,
+                                        elevation: 4,
+                                        child: AnimatedSwitcher(
+                                          duration: const Duration(
+                                            milliseconds: 300,
+                                          ),
+                                          transitionBuilder: (
+                                            Widget child,
+                                            Animation<double> animation,
+                                          ) {
+                                            return FadeTransition(
+                                              opacity: animation,
+                                              child: ScaleTransition(
+                                                scale: animation,
+                                                child: child,
+                                              ),
+                                            );
+                                          },
+                                          child: Icon(
+                                            _selectedIndex == 0
+                                                ? Symbols.neurology_rounded
+                                                : _selectedIndex == 2
+                                                ? Symbols.add_task_rounded
+                                                : Icons.bookmark_add_rounded,
+                                            key: ValueKey<int>(_selectedIndex),
+                                            size: 36,
+                                            grade: 200,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
+                                )
+                                : const SizedBox.shrink(
+                                  key: ValueKey('fab_hidden'),
                                 ),
-                              )
-                            : const SizedBox.shrink(key: ValueKey('fab_hidden')),
                       ),
                       floatingActionButtonLocation:
                           FloatingActionButtonLocation.centerDocked,

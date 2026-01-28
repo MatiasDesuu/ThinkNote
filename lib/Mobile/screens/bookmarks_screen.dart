@@ -11,6 +11,8 @@ import '../../Bookmarks/bookmarks_handler.dart';
 import '../../Bookmarks/bookmarks_tags_handler.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/confirmation_dialogue.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../database/sync_service.dart';
 
 class BookmarksHandler {
   static final BookmarksHandler _instance = BookmarksHandler._internal();
@@ -279,6 +281,7 @@ class BookmarksScreenState extends State<BookmarksScreen> {
   final BookmarksHandler _handler = BookmarksHandler();
   bool _showSearchField = false;
   List<Bookmark> _bookmarks = [];
+  late final SyncService _syncService;
 
   // Métodos públicos para control externo desde main_mobile.dart
   void showAddDialog() => _showAddDialog();
@@ -298,7 +301,46 @@ class BookmarksScreenState extends State<BookmarksScreen> {
   void initState() {
     super.initState();
     currentState = this;
+    _syncService = SyncService();
     loadData();
+  }
+
+  Future<void> _performManualSync() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isEnabled = prefs.getBool('webdav_enabled') ?? false;
+      final url = prefs.getString('webdav_url') ?? '';
+      final username = prefs.getString('webdav_username') ?? '';
+      final password = prefs.getString('webdav_password') ?? '';
+
+      if (!isEnabled || url.isEmpty || username.isEmpty || password.isEmpty) {
+        throw Exception(
+          'WebDAV not configured. Please configure WebDAV settings first.',
+        );
+      }
+
+      await _syncService.forceSync();
+
+      if (!mounted) return;
+
+      CustomSnackbar.show(
+        context: context,
+        message: 'Synchronization completed successfully',
+        type: CustomSnackbarType.success,
+      );
+    } catch (e) {
+      if (mounted) {
+        CustomSnackbar.show(
+          context: context,
+          message: 'Error synchronizing: ${e.toString()}',
+          type: CustomSnackbarType.error,
+        );
+      }
+    } finally {
+      if (mounted) {
+        await loadData();
+      }
+    }
   }
 
   @override
@@ -1151,23 +1193,32 @@ class BookmarksScreenState extends State<BookmarksScreen> {
               ),
             ),
           Expanded(
-            child:
-                _bookmarks.isEmpty
-                    ? Center(
-                      child: Text(
-                        _handler.searchQuery.isNotEmpty
-                            ? 'No results found for "${_handler.searchQuery}"'
-                            : 'No bookmarks saved',
-                        style: Theme.of(context).textTheme.bodyLarge,
+            child: RefreshIndicator(
+              onRefresh: _performManualSync,
+              child:
+                  _bookmarks.isEmpty
+                      ? SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Container(
+                          height: MediaQuery.of(context).size.height * 0.7,
+                          alignment: Alignment.center,
+                          child: Text(
+                            _handler.searchQuery.isNotEmpty
+                                ? 'No results found for "${_handler.searchQuery}"'
+                                : 'No bookmarks saved',
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        ),
+                      )
+                      : ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: _bookmarks.length,
+                        itemBuilder: (context, index) {
+                          final bookmark = _bookmarks[index];
+                          return _buildBookmarkCard(bookmark);
+                        },
                       ),
-                    )
-                    : ListView.builder(
-                      itemCount: _bookmarks.length,
-                      itemBuilder: (context, index) {
-                        final bookmark = _bookmarks[index];
-                        return _buildBookmarkCard(bookmark);
-                      },
-                    ),
+            ),
           ),
         ],
       ),

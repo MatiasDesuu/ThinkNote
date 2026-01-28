@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../animations/animations_handler.dart';
 import 'dart:async';
 import '../database/database_service.dart';
 import '../database/models/task.dart';
@@ -64,7 +63,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   final FocusNode _editingFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
   final ScrollController _tagsScrollController = ScrollController();
-  late SyncAnimationController _syncController;
   late TabController _tasksTabController;
   late TabController _subtasksTabController;
   final TextEditingController _searchController = TextEditingController();
@@ -100,7 +98,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   @override
   void initState() {
     super.initState();
-    _syncController = SyncAnimationController(vsync: this);
     _tasksTabController = TabController(length: 2, vsync: this);
     _subtasksTabController = TabController(length: 2, vsync: this);
 
@@ -115,11 +112,11 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     );
 
     _loadSavedSettings();
-    
+
     if (widget.initialTask != null) {
       _selectTask(widget.initialTask!);
     }
-    
+
     _loadTasks();
 
     // Agregar listener para el título
@@ -144,7 +141,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     _editingController.dispose();
     _editingFocusNode.dispose();
     _debounceTimer?.cancel();
-    _syncController.dispose();
+
     _tasksTabController.dispose();
     _subtasksTabController.dispose();
     _searchController.dispose();
@@ -454,7 +451,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   }
 
   void _updateDragTargetFromGlobalPosition(Offset globalPosition) {
-    final currentList = _tasksTabController.index == 0 ? _tasks : _completedTasks;
+    final currentList =
+        _tasksTabController.index == 0 ? _tasks : _completedTasks;
     for (int i = 0; i < currentList.length; i++) {
       final bounds = _elementBounds[i];
       if (bounds != null && bounds.contains(globalPosition)) {
@@ -491,14 +489,16 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   }
 
   Future<void> _moveTask(Task draggedTask, int targetIndex) async {
-    final currentList = _tasksTabController.index == 0 ? _tasks : _completedTasks;
+    final currentList =
+        _tasksTabController.index == 0 ? _tasks : _completedTasks;
     if (targetIndex < 0 || targetIndex > currentList.length) return;
 
     final currentIndex = currentList.indexWhere((t) => t.id == draggedTask.id);
     if (currentIndex == -1) return;
 
     setState(() {
-      final finalTargetIndex = targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
+      final finalTargetIndex =
+          targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
       final newList = List<Task>.from(currentList);
       newList.removeAt(currentIndex);
       newList.insert(finalTargetIndex, draggedTask);
@@ -513,7 +513,9 @@ class _TodoScreenDBState extends State<TodoScreenDB>
       final newList = _tasksTabController.index == 0 ? _tasks : _completedTasks;
       for (int i = 0; i < newList.length; i++) {
         if (newList[i].orderIndex != i) {
-          await _databaseService.taskService.updateTask(newList[i].copyWith(orderIndex: i));
+          await _databaseService.taskService.updateTask(
+            newList[i].copyWith(orderIndex: i),
+          );
         }
       }
       _databaseService.notifyDatabaseChanged();
@@ -1080,7 +1082,13 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                     // TabBarView for tasks content
                                     Expanded(
                                       child: Listener(
-                                        onPointerMove: _isDraggingTask ? (event) => _updateDragTargetFromGlobalPosition(event.position) : null,
+                                        onPointerMove:
+                                            _isDraggingTask
+                                                ? (event) =>
+                                                    _updateDragTargetFromGlobalPosition(
+                                                      event.position,
+                                                    )
+                                                : null,
                                         child: TabBarView(
                                           controller: _tasksTabController,
                                           children: [
@@ -1089,7 +1097,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                                 ? Center(
                                                   child: Column(
                                                     mainAxisAlignment:
-                                                        MainAxisAlignment.center,
+                                                        MainAxisAlignment
+                                                            .center,
                                                     children: [
                                                       Icon(
                                                         Icons
@@ -1099,7 +1108,9 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                                             .onSurfaceVariant
                                                             .withAlpha(100),
                                                       ),
-                                                      const SizedBox(height: 16),
+                                                      const SizedBox(
+                                                        height: 16,
+                                                      ),
                                                       Text(
                                                         'No pending tasks',
                                                         style: TextStyle(
@@ -1110,12 +1121,14 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                                       ),
                                                       const SizedBox(height: 8),
                                                       TextButton.icon(
-                                                        onPressed: _createNewTask,
+                                                        onPressed:
+                                                            _createNewTask,
                                                         icon: Icon(
                                                           Icons.add_rounded,
                                                           size: 18,
                                                           color:
-                                                              colorScheme.primary,
+                                                              colorScheme
+                                                                  .primary,
                                                         ),
                                                         label: Text(
                                                           'Create task',
@@ -1130,55 +1143,135 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                                   ),
                                                 )
                                                 : ListView.builder(
-                                                  padding: const EdgeInsets.only(
-                                                    bottom: 8,
-                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        bottom: 8,
+                                                      ),
                                                   itemCount: _tasks.length + 2,
-                                                  itemBuilder: (context, index) {
+                                                  itemBuilder: (
+                                                    context,
+                                                    index,
+                                                  ) {
                                                     if (index == 0) {
                                                       return DragTarget<Object>(
-                                                        onWillAcceptWithDetails: (details) {
-                                                          return details.data is Task;
-                                                        },
-                                                        onAcceptWithDetails: (details) async {
-                                                          if (details.data is Task) {
-                                                            await _moveTask(details.data as Task, 0);
+                                                        onWillAcceptWithDetails:
+                                                            (details) {
+                                                              return details
+                                                                      .data
+                                                                  is Task;
+                                                            },
+                                                        onAcceptWithDetails: (
+                                                          details,
+                                                        ) async {
+                                                          if (details.data
+                                                              is Task) {
+                                                            await _moveTask(
+                                                              details.data
+                                                                  as Task,
+                                                              0,
+                                                            );
                                                           }
                                                         },
-                                                        builder: (context, candidateData, rejectedData) {
+                                                        builder: (
+                                                          context,
+                                                          candidateData,
+                                                          rejectedData,
+                                                        ) {
                                                           return Container(
-                                                            height: candidateData.isNotEmpty ? 4 : 0,
-                                                            margin: EdgeInsets.symmetric(horizontal: candidateData.isNotEmpty ? 8 : 0),
+                                                            height:
+                                                                candidateData
+                                                                        .isNotEmpty
+                                                                    ? 4
+                                                                    : 0,
+                                                            margin: EdgeInsets.symmetric(
+                                                              horizontal:
+                                                                  candidateData
+                                                                          .isNotEmpty
+                                                                      ? 8
+                                                                      : 0,
+                                                            ),
                                                             decoration: BoxDecoration(
-                                                              color: candidateData.isNotEmpty ? colorScheme.primary : Colors.transparent,
-                                                              borderRadius: candidateData.isNotEmpty ? BorderRadius.circular(2) : null,
+                                                              color:
+                                                                  candidateData
+                                                                          .isNotEmpty
+                                                                      ? colorScheme
+                                                                          .primary
+                                                                      : Colors
+                                                                          .transparent,
+                                                              borderRadius:
+                                                                  candidateData
+                                                                          .isNotEmpty
+                                                                      ? BorderRadius.circular(
+                                                                        2,
+                                                                      )
+                                                                      : null,
                                                             ),
                                                           );
                                                         },
                                                       );
-                                                    } else if (index == _tasks.length + 1) {
+                                                    } else if (index ==
+                                                        _tasks.length + 1) {
                                                       return DragTarget<Object>(
-                                                        onWillAcceptWithDetails: (details) {
-                                                          return details.data is Task;
-                                                        },
-                                                        onAcceptWithDetails: (details) async {
-                                                          if (details.data is Task) {
-                                                            await _moveTask(details.data as Task, _tasks.length);
+                                                        onWillAcceptWithDetails:
+                                                            (details) {
+                                                              return details
+                                                                      .data
+                                                                  is Task;
+                                                            },
+                                                        onAcceptWithDetails: (
+                                                          details,
+                                                        ) async {
+                                                          if (details.data
+                                                              is Task) {
+                                                            await _moveTask(
+                                                              details.data
+                                                                  as Task,
+                                                              _tasks.length,
+                                                            );
                                                           }
                                                         },
-                                                        builder: (context, candidateData, rejectedData) {
+                                                        builder: (
+                                                          context,
+                                                          candidateData,
+                                                          rejectedData,
+                                                        ) {
                                                           return Container(
-                                                            height: candidateData.isNotEmpty ? 4 : 0,
-                                                            margin: EdgeInsets.symmetric(horizontal: candidateData.isNotEmpty ? 8 : 0),
+                                                            height:
+                                                                candidateData
+                                                                        .isNotEmpty
+                                                                    ? 4
+                                                                    : 0,
+                                                            margin: EdgeInsets.symmetric(
+                                                              horizontal:
+                                                                  candidateData
+                                                                          .isNotEmpty
+                                                                      ? 8
+                                                                      : 0,
+                                                            ),
                                                             decoration: BoxDecoration(
-                                                              color: candidateData.isNotEmpty ? colorScheme.primary : Colors.transparent,
-                                                              borderRadius: candidateData.isNotEmpty ? BorderRadius.circular(2) : null,
+                                                              color:
+                                                                  candidateData
+                                                                          .isNotEmpty
+                                                                      ? colorScheme
+                                                                          .primary
+                                                                      : Colors
+                                                                          .transparent,
+                                                              borderRadius:
+                                                                  candidateData
+                                                                          .isNotEmpty
+                                                                      ? BorderRadius.circular(
+                                                                        2,
+                                                                      )
+                                                                      : null,
                                                             ),
                                                           );
                                                         },
                                                       );
                                                     }
-                                                    return _buildTaskWithDropZone(_tasks[index - 1], index - 1);
+                                                    return _buildTaskWithDropZone(
+                                                      _tasks[index - 1],
+                                                      index - 1,
+                                                    );
                                                   },
                                                 ),
                                             // Completed tasks tab
@@ -1194,12 +1287,16 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                                   ),
                                                 )
                                                 : ListView.builder(
-                                                  padding: const EdgeInsets.only(
-                                                    bottom: 8,
-                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        bottom: 8,
+                                                      ),
                                                   itemCount:
                                                       _completedTasks.length,
-                                                  itemBuilder: (context, index) {
+                                                  itemBuilder: (
+                                                    context,
+                                                    index,
+                                                  ) {
                                                     return _buildTaskItem(
                                                       _completedTasks[index],
                                                     );
@@ -1467,11 +1564,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.task_alt_rounded,
-              color: colorScheme.primary,
-              size: 20,
-            ),
+            Icon(Icons.task_alt_rounded, color: colorScheme.primary, size: 20),
             const SizedBox(width: 8),
             Text(
               task.name,
@@ -1540,7 +1633,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
       onAcceptWithDetails: (details) async {
         final data = details.data;
         if (data is Task) {
-          final currentList = _tasksTabController.index == 0 ? _tasks : _completedTasks;
+          final currentList =
+              _tasksTabController.index == 0 ? _tasks : _completedTasks;
           final currentIndex = currentList.indexWhere((t) => t.id == data.id);
           if (currentIndex == -1) return;
 
@@ -1564,7 +1658,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
           builder: (context, constraints) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
-                final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
+                final RenderBox? renderBox =
+                    context.findRenderObject() as RenderBox?;
                 if (renderBox != null) {
                   final position = renderBox.localToGlobal(Offset.zero);
                   final size = renderBox.size;
@@ -1582,19 +1677,39 @@ class _TodoScreenDBState extends State<TodoScreenDB>
               children: [
                 Container(
                   height: isTarget && _dragTargetIsAbove ? 4 : 0,
-                  margin: EdgeInsets.symmetric(horizontal: isTarget && _dragTargetIsAbove ? 8 : 0),
+                  margin: EdgeInsets.symmetric(
+                    horizontal: isTarget && _dragTargetIsAbove ? 8 : 0,
+                  ),
                   decoration: BoxDecoration(
-                    color: isTarget && _dragTargetIsAbove ? Theme.of(context).colorScheme.primary.withAlpha(60) : Colors.transparent,
-                    borderRadius: isTarget && _dragTargetIsAbove ? BorderRadius.circular(2) : null,
+                    color:
+                        isTarget && _dragTargetIsAbove
+                            ? Theme.of(
+                              context,
+                            ).colorScheme.primary.withAlpha(60)
+                            : Colors.transparent,
+                    borderRadius:
+                        isTarget && _dragTargetIsAbove
+                            ? BorderRadius.circular(2)
+                            : null,
                   ),
                 ),
                 _buildDraggableTask(task),
                 Container(
                   height: isTarget && !_dragTargetIsAbove ? 4 : 0,
-                  margin: EdgeInsets.symmetric(horizontal: isTarget && !_dragTargetIsAbove ? 8 : 0),
+                  margin: EdgeInsets.symmetric(
+                    horizontal: isTarget && !_dragTargetIsAbove ? 8 : 0,
+                  ),
                   decoration: BoxDecoration(
-                    color: isTarget && !_dragTargetIsAbove ? Theme.of(context).colorScheme.primary.withAlpha(60) : Colors.transparent,
-                    borderRadius: isTarget && !_dragTargetIsAbove ? BorderRadius.circular(2) : null,
+                    color:
+                        isTarget && !_dragTargetIsAbove
+                            ? Theme.of(
+                              context,
+                            ).colorScheme.primary.withAlpha(60)
+                            : Colors.transparent,
+                    borderRadius:
+                        isTarget && !_dragTargetIsAbove
+                            ? BorderRadius.circular(2)
+                            : null,
                   ),
                 ),
               ],
@@ -1696,8 +1811,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                       task.state == TaskState.completed
                                           ? TextDecoration.lineThrough
                                           : null,
-                                  decorationColor: colorScheme
-                                      .onSurfaceVariant
+                                  decorationColor: colorScheme.onSurfaceVariant
                                       .withAlpha(150),
                                 ),
                               ),
@@ -1734,8 +1848,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                           color:
                                               _isDateOverdue(task.date!)
                                                   ? colorScheme.error
-                                                  : colorScheme
-                                                      .onSurfaceVariant
+                                                  : colorScheme.onSurfaceVariant
                                                       .withAlpha(180),
                                         ),
                                       ),
@@ -1852,7 +1965,10 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   }
 
   Widget _buildTaskItem(Task task) {
-    return _buildTaskWithDropZone(task, (_tasksTabController.index == 0 ? _tasks : _completedTasks).indexOf(task));
+    return _buildTaskWithDropZone(
+      task,
+      (_tasksTabController.index == 0 ? _tasks : _completedTasks).indexOf(task),
+    );
   }
 
   Widget _buildStateIndicator(TaskState state, ColorScheme colorScheme) {

@@ -14,7 +14,6 @@ import 'package:collection/collection.dart';
 import 'shortcuts_handler.dart';
 import 'theme_handler.dart';
 import 'widgets/Editor/editor_screen.dart';
-import 'animations/animations_handler.dart';
 import 'widgets/panels/notebooks_panel.dart';
 import 'widgets/panels/resizable_panel.dart';
 import 'widgets/panels/trash_panel.dart';
@@ -728,7 +727,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       GlobalKey<TemplatesPanelState>();
   final GlobalKey<EditorTabsState> _editorTabsKey =
       GlobalKey<EditorTabsState>();
-  late SyncAnimationController _syncController;
   late final SyncService _syncService;
 
   static const String _lastSelectedNotebookIdKey = 'last_selected_notebook_id';
@@ -744,7 +742,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   @override
   void initState() {
     super.initState();
-    _syncController = SyncAnimationController(vsync: this);
     _noteController = SearchTextEditingController();
     _titleController = TextEditingController();
     // Listeners are handled in each tab individually
@@ -1520,7 +1517,11 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     if (mounted && _editorTabsKey.currentState != null) {
       _editorTabsKey.currentState!.suppressNextUpdateAnimations();
     }
-    _onNoteSelected(notes[nextIndex], forceSameTab: true, skipNotebookSync: true);
+    _onNoteSelected(
+      notes[nextIndex],
+      forceSameTab: true,
+      skipNotebookSync: true,
+    );
   }
 
   void _navigateToPreviousNote() async {
@@ -1543,7 +1544,11 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     if (mounted && _editorTabsKey.currentState != null) {
       _editorTabsKey.currentState!.suppressNextUpdateAnimations();
     }
-    _onNoteSelected(notes[prevIndex], forceSameTab: true, skipNotebookSync: true);
+    _onNoteSelected(
+      notes[prevIndex],
+      forceSameTab: true,
+      skipNotebookSync: true,
+    );
   }
 
   void _onNoteSelected(
@@ -1606,7 +1611,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     try {
       final dbHelper = DatabaseHelper();
       final notebookRepository = NotebookRepository(dbHelper);
-      final parentNotebook = await notebookRepository.getNotebook(note.notebookId);
+      final parentNotebook = await notebookRepository.getNotebook(
+        note.notebookId,
+      );
       if (parentNotebook != null) {
         _onNotebookSelected(parentNotebook);
       }
@@ -1650,10 +1657,18 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     }
   }
 
-  void _openNoteInTabWithSearch(Note note, String searchQuery, bool isAdvancedSearch) {
+  void _openNoteInTabWithSearch(
+    Note note,
+    String searchQuery,
+    bool isAdvancedSearch,
+  ) {
     final activeTab = _tabManager.activeTab;
     if (activeTab == null || activeTab.isPinned) {
-      _tabManager.openTab(note, searchQuery: searchQuery, isAdvancedSearch: isAdvancedSearch);
+      _tabManager.openTab(
+        note,
+        searchQuery: searchQuery,
+        isAdvancedSearch: isAdvancedSearch,
+      );
       return;
     }
 
@@ -1680,14 +1695,20 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     );
   }
 
-  void _onNotebookSelected(Notebook notebook) =>
-      _selectNotebook(notebook, getExpandSetting: EditorSettings.getExpandNotebooksOnNoteOpen);
+  void _onNotebookSelected(Notebook notebook) => _selectNotebook(
+    notebook,
+    getExpandSetting: EditorSettings.getExpandNotebooksOnNoteOpen,
+  );
 
-  void _onNotebookSelectedFromFavorite(Notebook notebook) =>
-      _selectNotebook(notebook, getExpandSetting: EditorSettings.getExpandNotebooksOnSelection);
+  void _onNotebookSelectedFromFavorite(Notebook notebook) => _selectNotebook(
+    notebook,
+    getExpandSetting: EditorSettings.getExpandNotebooksOnSelection,
+  );
 
-  void _onNotebookSelectedFromLink(Notebook notebook) =>
-      _selectNotebook(notebook, getExpandSetting: EditorSettings.getExpandNotebooksOnLinkOpen);
+  void _onNotebookSelectedFromLink(Notebook notebook) => _selectNotebook(
+    notebook,
+    getExpandSetting: EditorSettings.getExpandNotebooksOnLinkOpen,
+  );
 
   void _onTrashUpdated() {
     _databaseSidebarKey.currentState?.reloadSidebar();
@@ -1890,7 +1911,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     _titleController.dispose();
 
     _appFocusNode.dispose();
-    _syncController.dispose();
 
     _syncService.dispose();
     _autoSyncTimer?.cancel();
@@ -2324,7 +2344,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       await dbHelper.database;
       _syncService = SyncService();
       await _syncService.initialize();
-
     } catch (e) {
       debugPrint('Error initializing repositories: $e');
       if (mounted) {
@@ -2332,8 +2351,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       }
     }
   }
-
-
 
   Future<void> _loadLastSelectedNotebook() async {
     try {
@@ -2413,10 +2430,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   }
 
   void _forceSync() async {
-    setState(() {
-      _syncController.start();
-    });
-
     try {
       await _syncService.forceSync();
 
@@ -2438,13 +2451,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
           type: CustomSnackbarType.error,
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _syncController.stop();
-        });
-      }
-    }
+    } finally {}
   }
 
   void _openGlobalSearchScreen() => _openSearchScreen();

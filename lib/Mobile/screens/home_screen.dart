@@ -18,7 +18,6 @@ import '../widgets/note_editor.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/confirmation_dialogue.dart';
 import '../../database/sync_service.dart';
-import '../../animations/animations_handler.dart';
 import '../../services/tags_service.dart';
 import '../../widgets/custom_date_picker_dialog.dart';
 import '../../database/database_service.dart';
@@ -73,7 +72,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final NoteRepository _noteRepository;
   late final CalendarEventRepository _calendarEventRepository;
-  late final SyncAnimationController _syncController;
   late final SyncService _syncService;
   bool _isInitialLoad = true;
   bool _isInitialized = false;
@@ -102,7 +100,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _syncController = SyncAnimationController(vsync: this);
     _syncService = SyncService();
     _initializationFuture = _initializeRepository();
     _loadSortPreference();
@@ -152,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _completionDebounceTimer?.cancel();
     _showNoteIconsSubscription?.cancel();
     _dbSubscription?.cancel();
-    _syncController.dispose();
+
     super.dispose();
   }
 
@@ -199,10 +196,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _performManualSync() async {
-    setState(() {
-      _syncController.start();
-    });
-
     try {
       // Verificar si WebDAV está habilitado antes de intentar sincronizar
       final prefs = await SharedPreferences.getInstance();
@@ -236,9 +229,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _syncController.stop();
-        });
         _loadNotes();
       }
     }
@@ -629,13 +619,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       final allNotebooks = await notebookRepository.getAllNotebooks();
       final templateNotebooks =
-          allNotebooks
-              .where((n) {
-                final name = n.name.toLowerCase();
-                return name.startsWith('#templates') ||
-                    name.startsWith('#category');
-              })
-              .toList();
+          allNotebooks.where((n) {
+            final name = n.name.toLowerCase();
+            return name.startsWith('#templates') ||
+                name.startsWith('#category');
+          }).toList();
 
       preloadedNotebookTemplates =
           allNotebooks

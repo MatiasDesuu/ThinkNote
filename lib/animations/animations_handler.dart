@@ -1,59 +1,5 @@
 import 'package:flutter/material.dart';
 
-class SyncAnimationController {
-  late AnimationController _controller;
-  final TickerProvider vsync;
-
-  SyncAnimationController({required this.vsync}) {
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 700),
-      vsync: vsync,
-    );
-  }
-
-  bool get isAnimating => _controller.isAnimating;
-  AnimationController get controller => _controller;
-
-  void start() {
-    if (!_controller.isAnimating) {
-      _controller.repeat();
-    }
-  }
-
-  void stop() {
-    if (_controller.isAnimating) {
-      _controller.stop();
-      _controller.reset();
-    }
-  }
-
-  void dispose() {
-    _controller.dispose();
-  }
-}
-
-class SyncIcon extends StatelessWidget {
-  final SyncAnimationController animationController;
-  final Color color;
-
-  const SyncIcon({
-    super.key,
-    required this.animationController,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return RotationTransition(
-      turns: Tween(
-        begin: 0.0,
-        end: 1.0,
-      ).animate(animationController.controller),
-      child: Icon(Icons.autorenew_rounded, size: 24, color: color),
-    );
-  }
-}
-
 class SaveAnimationController {
   late AnimationController _controller;
   late Animation<double> _fadeOutIconAnimation;
