@@ -156,7 +156,7 @@ class SyncService {
       if (isManual) {
         _updateStatus(SyncStep.completed, 1.0, 'Sync completed');
         // Reset to idle after a delay
-        Future.delayed(const Duration(seconds: 2), () {
+        Future.delayed(const Duration(milliseconds: 500), () {
           _updateStatus(SyncStep.idle, 0.0, '');
         });
       }

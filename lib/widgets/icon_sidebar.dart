@@ -292,11 +292,9 @@ class IconSidebarState extends State<IconSidebar>
   }
 
   void _performBackgroundSync() async {
-    // Mostrar indicador de sincronización
-
     try {
       final syncService = SyncService();
-      await syncService.forceSync(isManual: true);
+      await syncService.forceSync(isManual: false);
     } catch (e) {
       if (mounted) {
         CustomSnackbar.show(
