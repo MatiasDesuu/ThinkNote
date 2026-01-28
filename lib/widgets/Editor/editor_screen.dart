@@ -204,8 +204,12 @@ class _NotaEditorState extends State<NotaEditor>
     _saveController = SaveAnimationController(vsync: this);
     widget.noteController.addListener(_onContentChanged);
     widget.titleController.addListener(_onTitleChanged);
-    _scrollController.addListener(() => _syncScroll(_scrollController, _previewScrollController));
-    _previewScrollController.addListener(() => _syncScroll(_previewScrollController, _scrollController));
+    _scrollController.addListener(
+      () => _syncScroll(_scrollController, _previewScrollController),
+    );
+    _previewScrollController.addListener(
+      () => _syncScroll(_previewScrollController, _scrollController),
+    );
     _findController.addListener(() {
       if (_isRestoringSearch) return;
       final query = _findController.text;
@@ -305,7 +309,8 @@ class _NotaEditorState extends State<NotaEditor>
       }
 
       // Sync split view with the new tab's state
-      if (widget.initialSplitView != oldWidget.initialSplitView || noteChanged) {
+      if (widget.initialSplitView != oldWidget.initialSplitView ||
+          noteChanged) {
         setState(() {
           _isSplitView = widget.initialSplitView;
           _splitViewPreviewText = widget.noteController.text;
@@ -425,7 +430,9 @@ class _NotaEditorState extends State<NotaEditor>
     if (!source.hasClients || !destination.hasClients) return;
 
     _isSyncingScroll = true;
-    destination.jumpTo(source.offset.clamp(0.0, destination.position.maxScrollExtent));
+    destination.jumpTo(
+      source.offset.clamp(0.0, destination.position.maxScrollExtent),
+    );
     _isSyncingScroll = false;
   }
 
@@ -443,7 +450,10 @@ class _NotaEditorState extends State<NotaEditor>
     }
   }
 
-  void _updateControllerAndSplitView(String newText, {TextSelection? selection}) {
+  void _updateControllerAndSplitView(
+    String newText, {
+    TextSelection? selection,
+  }) {
     if (_isSplitView) {
       setState(() {
         _splitViewPreviewText = newText;
@@ -1102,7 +1112,10 @@ class _NotaEditorState extends State<NotaEditor>
           newText,
           selection: TextSelection(
             baseOffset: selection.start,
-            extentOffset: selection.start + (newText.length - (text.length - (selection.end - selection.start))),
+            extentOffset:
+                selection.start +
+                (newText.length -
+                    (text.length - (selection.end - selection.start))),
           ),
         );
         widget.onContentChanged();
@@ -1524,13 +1537,17 @@ class _NotaEditorState extends State<NotaEditor>
                   Container(
                     padding: EdgeInsets.only(
                       left:
-                          !_isSplitView && _isEditorCentered && constraints.maxWidth >= 600
+                          !_isSplitView &&
+                                  _isEditorCentered &&
+                                  constraints.maxWidth >= 600
                               ? _calculateCenteredPaddingForEditor(
                                 constraints.maxWidth,
                               )
                               : 0,
                       right:
-                          !_isSplitView && _isEditorCentered && constraints.maxWidth >= 600
+                          !_isSplitView &&
+                                  _isEditorCentered &&
+                                  constraints.maxWidth >= 600
                               ? _calculateCenteredPaddingForEditor(
                                 constraints.maxWidth,
                               )
@@ -1571,12 +1588,22 @@ class _NotaEditorState extends State<NotaEditor>
                                             .isControlPressed) {
                                       return KeyEventResult.ignored;
                                     }
-                                    // Ctrl+S is handled by the Shortcuts widget with SaveIntent
-                                    // Don't propagate it to global handlers to preserve focus
+                                    if (event.logicalKey ==
+                                        LogicalKeyboardKey.tab) {
+                                      if (!_isReadMode) {
+                                        _editorFocusNode.requestFocus();
+                                        widget.noteController.selection =
+                                            const TextSelection.collapsed(
+                                              offset: 0,
+                                            );
+                                        return KeyEventResult.handled;
+                                      }
+                                    }
                                   }
                                   return KeyEventResult.ignored;
                                 },
                                 child: TextField(
+                                  autofocus: true,
                                   controller: widget.titleController,
                                   decoration: const InputDecoration(
                                     hintText: 'Title',
@@ -1587,12 +1614,10 @@ class _NotaEditorState extends State<NotaEditor>
                                     ),
                                     isDense: true,
                                   ),
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.headlineSmall?.copyWith(
-                                    height:
-                                        1.2, // Reduce line height to prevent vertical cutoff
-                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(height: 1.2),
                                   onChanged: (_) => widget.onTitleChanged(),
                                   readOnly: _isReadMode,
                                   maxLines: 1,
@@ -1618,87 +1643,109 @@ class _NotaEditorState extends State<NotaEditor>
                               ),
                             CustomTooltip(
                               message: 'Save note',
-                              builder: (context, isHovering) => SaveButton(
-                                controller: _saveController,
-                                onPressed: () {
-                                  _handleSave();
-                                },
-                              ),
+                              builder:
+                                  (context, isHovering) => SaveButton(
+                                    controller: _saveController,
+                                    onPressed: () {
+                                      _handleSave();
+                                    },
+                                  ),
                             ),
                             CustomTooltip(
-                              message: _isReadMode ? 'Edit mode (Ctrl+P)' : 'Read mode (Ctrl+P)',
-                              builder: (context, isHovering) => IconButton(
-                                icon: Icon(
+                              message:
                                   _isReadMode
-                                      ? Icons.edit_rounded
-                                      : Icons.visibility_rounded,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                onPressed: _toggleReadMode,
-                              ),
+                                      ? 'Edit mode (Ctrl+P)'
+                                      : 'Read mode (Ctrl+P)',
+                              builder:
+                                  (context, isHovering) => IconButton(
+                                    icon: Icon(
+                                      _isReadMode
+                                          ? Icons.edit_rounded
+                                          : Icons.visibility_rounded,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                    onPressed: _toggleReadMode,
+                                  ),
                             ),
                             CustomTooltip(
                               message: 'Split view (Ctrl+Shift+P)',
-                              builder: (context, isHovering) => IconButton(
-                                icon: Icon(
-                                  _isSplitView
-                                      ? Symbols.split_scene_right_rounded
-                                      : Symbols.split_scene_rounded,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                onPressed: _toggleSplitView,
-                              ),
+                              builder:
+                                  (context, isHovering) => IconButton(
+                                    icon: Icon(
+                                      _isSplitView
+                                          ? Symbols.split_scene_right_rounded
+                                          : Symbols.split_scene_rounded,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                    onPressed: _toggleSplitView,
+                                  ),
                             ),
                             CustomTooltip(
-                              message: _isEditorCentered ? 'Disable centered layout (F1)' : 'Enable centered layout (F1)',
-                              builder: (context, isHovering) => IconButton(
-                                icon: Icon(
+                              message:
                                   _isEditorCentered
-                                      ? Icons.format_align_justify_rounded
-                                      : Icons.format_align_center_rounded,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                onPressed: _toggleEditorCentered,
-                              ),
+                                      ? 'Disable centered layout (F1)'
+                                      : 'Enable centered layout (F1)',
+                              builder:
+                                  (context, isHovering) => IconButton(
+                                    icon: Icon(
+                                      _isEditorCentered
+                                          ? Icons.format_align_justify_rounded
+                                          : Icons.format_align_center_rounded,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                    onPressed: _toggleEditorCentered,
+                                  ),
                             ),
                             CustomTooltip(
-                              message: _showBottomBar ? 'Hide formatting bar' : 'Show formatting bar',
-                              builder: (context, isHovering) => IconButton(
-                                icon: Icon(
+                              message:
                                   _showBottomBar
-                                      ? Icons.keyboard_arrow_up_rounded
-                                      : Icons.keyboard_arrow_down_rounded,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                onPressed: () {
-                                  EditorSettings.setShowBottomBar(
-                                    !_showBottomBar,
-                                  );
-                                },
-                              ),
+                                      ? 'Hide formatting bar'
+                                      : 'Show formatting bar',
+                              builder:
+                                  (context, isHovering) => IconButton(
+                                    icon: Icon(
+                                      _showBottomBar
+                                          ? Icons.keyboard_arrow_up_rounded
+                                          : Icons.keyboard_arrow_down_rounded,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                    onPressed: () {
+                                      EditorSettings.setShowBottomBar(
+                                        !_showBottomBar,
+                                      );
+                                    },
+                                  ),
                             ),
                             if (_immersiveModeService.isImmersiveMode)
                               CustomTooltip(
                                 message: 'Exit immersive mode (F4)',
-                                builder: (context, isHovering) => IconButton(
-                                  icon: Icon(
-                                    Icons.fullscreen_exit_rounded,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                                  onPressed:
-                                      () =>
-                                          _immersiveModeService
-                                              .exitImmersiveMode(),
-                                ),
+                                builder:
+                                    (context, isHovering) => IconButton(
+                                      icon: Icon(
+                                        Icons.fullscreen_exit_rounded,
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                      ),
+                                      onPressed:
+                                          () =>
+                                              _immersiveModeService
+                                                  .exitImmersiveMode(),
+                                    ),
                               ),
-                              IconButton(
-                                key: _exportButtonKey,
-                                icon: Icon(
-                                  Icons.more_vert_rounded,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                onPressed: _showExportMenu,
+                            IconButton(
+                              key: _exportButtonKey,
+                              icon: Icon(
+                                Icons.more_vert_rounded,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
+                              onPressed: _showExportMenu,
+                            ),
                           ],
                         ),
                       ),
@@ -1708,13 +1755,17 @@ class _NotaEditorState extends State<NotaEditor>
                     Container(
                       padding: EdgeInsets.only(
                         left:
-                            !_isSplitView && _isEditorCentered && constraints.maxWidth >= 600
+                            !_isSplitView &&
+                                    _isEditorCentered &&
+                                    constraints.maxWidth >= 600
                                 ? _calculateCenteredPaddingForEditor(
                                   constraints.maxWidth,
                                 )
                                 : 0,
                         right:
-                            !_isSplitView && _isEditorCentered && constraints.maxWidth >= 600
+                            !_isSplitView &&
+                                    _isEditorCentered &&
+                                    constraints.maxWidth >= 600
                                 ? _calculateCenteredPaddingForEditor(
                                   constraints.maxWidth,
                                 )
@@ -1746,13 +1797,17 @@ class _NotaEditorState extends State<NotaEditor>
                     child: Container(
                       padding: EdgeInsets.only(
                         left:
-                            !_isSplitView && _isEditorCentered && constraints.maxWidth >= 600
+                            !_isSplitView &&
+                                    _isEditorCentered &&
+                                    constraints.maxWidth >= 600
                                 ? _calculateCenteredPaddingForEditor(
                                   constraints.maxWidth,
                                 )
                                 : 0,
                         right:
-                            !_isSplitView && _isEditorCentered && constraints.maxWidth >= 600
+                            !_isSplitView &&
+                                    _isEditorCentered &&
+                                    constraints.maxWidth >= 600
                                 ? _calculateCenteredPaddingForEditor(
                                   constraints.maxWidth,
                                 )
@@ -1773,50 +1828,79 @@ class _NotaEditorState extends State<NotaEditor>
                                         _handleNoteLinkTap(note, isMiddleClick);
                                       },
                                       onTextChanged: (newText) {
-                                        widget.noteController.value = widget.noteController.value.copyWith(
-                                          text: newText,
-                                          selection: widget.noteController.selection,
-                                        );
+                                        widget.noteController.value = widget
+                                            .noteController
+                                            .value
+                                            .copyWith(
+                                              text: newText,
+                                              selection:
+                                                  widget
+                                                      .noteController
+                                                      .selection,
+                                            );
                                       },
                                       controller: _previewScrollController,
                                     )
-                                    : _buildNoteReadPreview(context, controller: _previewScrollController)
+                                    : _buildNoteReadPreview(
+                                      context,
+                                      controller: _previewScrollController,
+                                    )
                                 : _isSplitView
-                                    ? Row(
-                                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                                        children: [
-                                          Expanded(
-                                            child: _buildHighlightedTextField(),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          VerticalDivider(
-                                            width: 1,
-                                            thickness: 1,
-                                            color: Theme.of(context).colorScheme.outline.withAlpha(128),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          Expanded(
-                                            child: _isScript
-                                                ? ScriptModeHandlerDesktop.buildScriptPreview(
-                                                    context,
+                                ? Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(
+                                      child: _buildHighlightedTextField(),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    VerticalDivider(
+                                      width: 1,
+                                      thickness: 1,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.outline.withAlpha(128),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child:
+                                          _isScript
+                                              ? ScriptModeHandlerDesktop.buildScriptPreview(
+                                                context,
+                                                _splitViewPreviewText,
+                                                textStyle: _textStyle,
+                                                onNoteLinkTap: (
+                                                  note,
+                                                  isMiddleClick,
+                                                ) {
+                                                  _handleNoteLinkTap(
+                                                    note,
+                                                    isMiddleClick,
+                                                  );
+                                                },
+                                                onTextChanged: (newText) {
+                                                  _updateControllerAndSplitView(
+                                                    newText,
+                                                    selection:
+                                                        widget
+                                                            .noteController
+                                                            .selection,
+                                                  );
+                                                },
+                                                controller:
+                                                    _previewScrollController,
+                                              )
+                                              : _buildNoteReadPreview(
+                                                context,
+                                                overrideText:
                                                     _splitViewPreviewText,
-                                                    textStyle: _textStyle,
-                                                    onNoteLinkTap: (note, isMiddleClick) {
-                                                      _handleNoteLinkTap(note, isMiddleClick);
-                                                    },
-                                                    onTextChanged: (newText) {
-                                                      _updateControllerAndSplitView(
-                                                        newText,
-                                                        selection: widget.noteController.selection,
-                                                      );
-                                                    },
-                                                    controller: _previewScrollController,
-                                                  )
-                                                : _buildNoteReadPreview(context, overrideText: _splitViewPreviewText, controller: _previewScrollController),
-                                          ),
-                                        ],
-                                      )
-                                    : _buildHighlightedTextField(),
+                                                controller:
+                                                    _previewScrollController,
+                                              ),
+                                    ),
+                                  ],
+                                )
+                                : _buildHighlightedTextField(),
 
                             // Find bar as floating overlay
                             if (_showFindBar)
@@ -1927,22 +2011,29 @@ class _NotaEditorState extends State<NotaEditor>
                 final newText = text.replaceRange(lineStart, lineStart, '\t');
                 controller.value = controller.value.copyWith(
                   text: newText,
-                  selection:
-                      TextSelection.collapsed(offset: cursorPosition + 1),
+                  selection: TextSelection.collapsed(
+                    offset: cursorPosition + 1,
+                  ),
                 );
               } else {
                 // Outdent list item: remove tab or 4 spaces at line start
-                final indentMatch =
-                    RegExp(r'^(\t|    )').firstMatch(currentLine);
+                final indentMatch = RegExp(
+                  r'^(\t|    )',
+                ).firstMatch(currentLine);
                 if (indentMatch != null) {
                   final indentLength = indentMatch.group(0)!.length;
-                  final newText =
-                      text.replaceRange(lineStart, lineStart + indentLength, '');
+                  final newText = text.replaceRange(
+                    lineStart,
+                    lineStart + indentLength,
+                    '',
+                  );
                   controller.value = controller.value.copyWith(
                     text: newText,
                     selection: TextSelection.collapsed(
-                      offset: (cursorPosition - indentLength)
-                          .clamp(lineStart, newText.length),
+                      offset: (cursorPosition - indentLength).clamp(
+                        lineStart,
+                        newText.length,
+                      ),
                     ),
                   );
                 }
@@ -2019,46 +2110,48 @@ class _NotaEditorState extends State<NotaEditor>
     );
   }
 
-  Widget _buildNoteReadPreview(BuildContext context, {String? overrideText, ScrollController? controller}) {
+  Widget _buildNoteReadPreview(
+    BuildContext context, {
+    String? overrideText,
+    ScrollController? controller,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
     final text = overrideText ?? widget.noteController.text;
     // Use the same color as the first script mode block
     final backgroundColor = colorScheme.surfaceContainerLow;
 
-    final content = text.isEmpty
-        ? Text(
-          'No content to display',
-          style: _textStyle,
-          textAlign: TextAlign.start,
-        )
-        : UnifiedTextHandler(
-          text: text,
-          textStyle: _textStyle,
-          enableNoteLinkDetection: true,
-          enableLinkDetection: true,
-          enableListDetection: true,
-          enableFormatDetection: true,
-          showNoteLinkBrackets: false,
-          onNoteLinkTap: (note, isMiddleClick) {
-            _handleNoteLinkTap(note, isMiddleClick);
-          },
-          onNotebookLinkTap: (notebook, isMiddleClick) {
-            _handleNotebookLinkTap(notebook, isMiddleClick);
-          },
-          onTextChanged: (newText) {
-            _updateControllerAndSplitView(
-              newText,
-              selection: widget.noteController.selection,
+    final content =
+        text.isEmpty
+            ? Text(
+              'No content to display',
+              style: _textStyle,
+              textAlign: TextAlign.start,
+            )
+            : UnifiedTextHandler(
+              text: text,
+              textStyle: _textStyle,
+              enableNoteLinkDetection: true,
+              enableLinkDetection: true,
+              enableListDetection: true,
+              enableFormatDetection: true,
+              showNoteLinkBrackets: false,
+              onNoteLinkTap: (note, isMiddleClick) {
+                _handleNoteLinkTap(note, isMiddleClick);
+              },
+              onNotebookLinkTap: (notebook, isMiddleClick) {
+                _handleNotebookLinkTap(notebook, isMiddleClick);
+              },
+              onTextChanged: (newText) {
+                _updateControllerAndSplitView(
+                  newText,
+                  selection: widget.noteController.selection,
+                );
+              },
             );
-          },
-        );
 
     // In split view (when overrideText is provided), don't use the container styling
     if (overrideText != null) {
-      return SingleChildScrollView(
-        controller: controller,
-        child: content,
-      );
+      return SingleChildScrollView(controller: controller, child: content);
     }
 
     return SingleChildScrollView(
