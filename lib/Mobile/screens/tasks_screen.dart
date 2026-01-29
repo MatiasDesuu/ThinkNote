@@ -6,6 +6,8 @@ import 'task_detail_screen.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/confirmation_dialogue.dart';
 import 'package:intl/intl.dart';
+import '../../database/sync_service.dart';
+import '../theme_handler.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -23,6 +25,7 @@ class TasksScreenState extends State<TasksScreen>
   String? _selectedTag;
   List<String> _allTags = [];
   bool _isLoading = false;
+  bool _isEInkMode = false;
   late TabController _tabController;
 
   // Controladores
@@ -50,6 +53,12 @@ class TasksScreenState extends State<TasksScreen>
     _databaseService.onDatabaseChanged.listen((_) {
       _loadTasks();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadSavedSettings();
   }
 
   @override
@@ -86,7 +95,12 @@ class TasksScreenState extends State<TasksScreen>
   }
 
   Future<void> _loadSavedSettings() async {
-    // Implementar si es necesario
+    final einkEnabled = await ThemeManager.getEInkEnabled();
+    if (mounted) {
+      setState(() {
+        _isEInkMode = einkEnabled;
+      });
+    }
   }
 
   Future<void> _loadTasks() async {
@@ -302,8 +316,18 @@ class TasksScreenState extends State<TasksScreen>
     required ColorScheme colorScheme,
   }) {
     return Material(
-      color: isSelected ? colorScheme.primary.withAlpha(25) : colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(8),
+      color:
+          isSelected
+              ? colorScheme.primary.withAlpha(25)
+              : colorScheme.surfaceContainerHighest,
+      // borderRadius property removed as it conflicts with shape
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side:
+            _isEInkMode
+                ? BorderSide(color: colorScheme.onSurface, width: 1)
+                : BorderSide.none,
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
@@ -323,7 +347,8 @@ class TasksScreenState extends State<TasksScreen>
                 label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   height: 1.0,
-                  color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+                  color:
+                      isSelected ? colorScheme.primary : colorScheme.onSurface,
                 ),
               ),
             ],
@@ -338,188 +363,211 @@ class TasksScreenState extends State<TasksScreen>
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-        appBar: AppBar(
-          toolbarHeight: 0,
-          scrolledUnderElevation: 0,
-          surfaceTintColor: Colors.transparent,
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          automaticallyImplyLeading: false,
-          bottom: PreferredSize(
-            preferredSize: Size.fromHeight(_allTags.isNotEmpty ? 88 : 48),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_allTags.isNotEmpty)
-                  Container(
-                    height: 36,
-                    margin: const EdgeInsets.only(bottom: 4),
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      itemCount: _allTags.length + 1,
-                      itemBuilder: (context, index) {
-                        if (index == 0) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: _buildTagChip(
-                              label: 'All',
-                              isSelected: _selectedTag == null,
-                              onTap: () {
-                                setState(() {
-                                  _selectedTag = null;
-                                });
-                                _loadTasks();
-                              },
-                              colorScheme: colorScheme,
-                            ),
-                          );
-                        }
-                        final tag = _allTags[index - 1];
+      appBar: AppBar(
+        toolbarHeight: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        automaticallyImplyLeading: false,
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(_allTags.isNotEmpty ? 88 : 48),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_allTags.isNotEmpty)
+                Container(
+                  height: 36,
+                  margin: const EdgeInsets.only(bottom: 4),
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    itemCount: _allTags.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
                         return Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: _buildTagChip(
-                            label: tag,
-                            isSelected: _selectedTag == tag,
+                            label: 'All',
+                            isSelected: _selectedTag == null,
                             onTap: () {
                               setState(() {
-                                _selectedTag = _selectedTag == tag ? null : tag;
+                                _selectedTag = null;
                               });
                               _loadTasks();
                             },
                             colorScheme: colorScheme,
                           ),
                         );
-                      },
-                    ),
-                  ),
-                // Modern tabs
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: SizedBox(
-                    height: 36,
-                    child: TabBar(
-                      controller: _tabController,
-                      tabAlignment: TabAlignment.fill,
-                      labelPadding: EdgeInsets.zero,
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      dividerColor: Colors.transparent,
-                      splashFactory: NoSplash.splashFactory,
-                      overlayColor: WidgetStateProperty.all(Colors.transparent),
-                      indicator: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      tabs: [
-                        Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.pending_actions_rounded, size: 16),
-                              const SizedBox(width: 6),
-                              Text('Pending', overflow: TextOverflow.ellipsis),
-                              const SizedBox(width: 4),
-                              Text(
-                                '(${_tasks.length})',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: colorScheme.primary,
-                                ),
-                              ),
-                            ],
-                          ),
+                      }
+                      final tag = _allTags[index - 1];
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: _buildTagChip(
+                          label: tag,
+                          isSelected: _selectedTag == tag,
+                          onTap: () {
+                            setState(() {
+                              _selectedTag = _selectedTag == tag ? null : tag;
+                            });
+                            _loadTasks();
+                          },
+                          colorScheme: colorScheme,
                         ),
-                        Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.check_circle_rounded, size: 16),
-                              const SizedBox(width: 6),
-                              Text('Completed', overflow: TextOverflow.ellipsis),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ),
-              ],
-            ),
+              // Modern tabs
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: _isEInkMode ? 8 : 4),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border:
+                      _isEInkMode
+                          ? Border.all(color: colorScheme.onSurface, width: 1)
+                          : null,
+                ),
+                child: SizedBox(
+                  height: 36,
+                  child: TabBar(
+                    controller: _tabController,
+                    tabAlignment: TabAlignment.fill,
+                    labelPadding: EdgeInsets.zero,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
+                    splashFactory: NoSplash.splashFactory,
+                    overlayColor: WidgetStateProperty.all(Colors.transparent),
+                    indicator: BoxDecoration(
+                      color:
+                          _isEInkMode
+                              ? Colors.transparent
+                              : colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    tabs: [
+                      Tab(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.pending_actions_rounded, size: 16),
+                            const SizedBox(width: 6),
+                            Text('Pending', overflow: TextOverflow.ellipsis),
+                            const SizedBox(width: 4),
+                            Text(
+                              '(${_tasks.length})',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Tab(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle_rounded, size: 16),
+                            const SizedBox(width: 6),
+                            Text('Completed', overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        body:
-            _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : TabBarView(
-                  controller: _tabController,
-                  children: [
-                    RefreshIndicator(
-                      onRefresh: () async {
-                        await _loadTasks();
-                      },
-                      child:
-                          _tasks.isEmpty
-                              ? SingleChildScrollView(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                controller: _scrollController,
-                                child: SizedBox(
-                                  height:
-                                      MediaQuery.of(context).size.height - 200,
-                                  child: _buildEmptyTasksList(),
-                                ),
-                              )
-                              : ReorderableListView.builder(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-                                itemCount: _tasks.length,
-                                onReorder: _reorderTasks,
-                                itemBuilder: (context, index) {
-                                  return _buildTaskItem(_tasks[index]);
-                                },
+      ),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : TabBarView(
+                controller: _tabController,
+                children: [
+                  RefreshIndicator(
+                    onRefresh: () async {
+                      try {
+                        await SyncService().forceSync(isManual: true);
+                      } catch (e) {
+                        // Ignore sync errors here as they are handled by the service/overlay
+                      }
+                      await _loadTasks();
+                    },
+                    child:
+                        _tasks.isEmpty
+                            ? SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              controller: _scrollController,
+                              child: SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height - 200,
+                                child: _buildEmptyTasksList(),
                               ),
-                    ),
-                    RefreshIndicator(
-                      onRefresh: () async {
-                        await _loadTasks();
-                      },
-                      child:
-                          _completedTasks.isEmpty
-                              ? SingleChildScrollView(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                controller: _scrollController,
-                                child: SizedBox(
-                                  height:
-                                      MediaQuery.of(context).size.height - 200,
-                                  child: Center(
-                                    child: Text(
-                                      'No completed tasks',
-                                      style: TextStyle(
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
+                            )
+                            : ReorderableListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 0,
+                                vertical: 4,
+                              ),
+                              itemCount: _tasks.length,
+                              onReorder: _reorderTasks,
+                              itemBuilder: (context, index) {
+                                return _buildTaskItem(_tasks[index]);
+                              },
+                            ),
+                  ),
+                  RefreshIndicator(
+                    onRefresh: () async {
+                      try {
+                        await SyncService().forceSync(isManual: true);
+                      } catch (e) {
+                        // Ignore sync errors here as they are handled by the service/overlay
+                      }
+                      await _loadTasks();
+                    },
+                    child:
+                        _completedTasks.isEmpty
+                            ? SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              controller: _scrollController,
+                              child: SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height - 200,
+                                child: Center(
+                                  child: Text(
+                                    'No completed tasks',
+                                    style: TextStyle(
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ),
-                              )
-                              : ListView.builder(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                controller: _scrollController,
-                                padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-                                itemCount: _completedTasks.length,
-                                itemBuilder: (context, index) {
-                                  return _buildTaskItem(_completedTasks[index]);
-                                },
                               ),
-                    ),
-                  ],
-                ),
-        floatingActionButton: null,
-      );
+                            )
+                            : ListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              controller: _scrollController,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 0,
+                                vertical: 4,
+                              ),
+                              itemCount: _completedTasks.length,
+                              itemBuilder: (context, index) {
+                                return _buildTaskItem(_completedTasks[index]);
+                              },
+                            ),
+                  ),
+                ],
+              ),
+      floatingActionButton: null,
+    );
   }
 
   Widget _buildTaskItem(Task task) {
@@ -591,6 +639,10 @@ class TasksScreenState extends State<TasksScreen>
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(10),
+          border:
+              _isEInkMode
+                  ? Border.all(color: colorScheme.onSurface, width: 1)
+                  : null,
         ),
         child: Material(
           color: Colors.transparent,
@@ -604,26 +656,37 @@ class TasksScreenState extends State<TasksScreen>
                 children: [
                   // Checkbox minimalista
                   GestureDetector(
-                    onTap: () => _updateTaskState(
-                      task,
-                      task.state == TaskState.completed
-                          ? TaskState.pending
-                          : TaskState.completed,
-                    ),
+                    onTap:
+                        () => _updateTaskState(
+                          task,
+                          task.state == TaskState.completed
+                              ? TaskState.pending
+                              : TaskState.completed,
+                        ),
                     child: Icon(
-                      task.state == TaskState.completed ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                      task.state == TaskState.completed
+                          ? Icons.check_box_rounded
+                          : Icons.check_box_outline_blank_rounded,
                       size: 22,
-                      color: task.state == TaskState.completed ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                      color:
+                          task.state == TaskState.completed
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(width: 14),
                   // Contenido principal
                   Expanded(
                     child: FutureBuilder<List<String>>(
-                      future: _databaseService.taskService.getTagsByTaskId(task.id!),
+                      future: _databaseService.taskService.getTagsByTaskId(
+                        task.id!,
+                      ),
                       builder: (context, snapshot) {
                         final tags = snapshot.data ?? <String>[];
-                        final hasMetadata = task.date != null || tags.isNotEmpty || task.isPinned;
+                        final hasMetadata =
+                            task.date != null ||
+                            tags.isNotEmpty ||
+                            task.isPinned;
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,14 +699,18 @@ class TasksScreenState extends State<TasksScreen>
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontWeight: FontWeight.w500,
-                                color: task.state == TaskState.completed
-                                    ? colorScheme.onSurfaceVariant.withAlpha(150)
-                                    : colorScheme.onSurface,
+                                color:
+                                    task.state == TaskState.completed
+                                        ? colorScheme.onSurfaceVariant
+                                            .withAlpha(150)
+                                        : colorScheme.onSurface,
                                 fontSize: 15,
-                                decoration: task.state == TaskState.completed
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                                decorationColor: colorScheme.onSurfaceVariant.withAlpha(150),
+                                decoration:
+                                    task.state == TaskState.completed
+                                        ? TextDecoration.lineThrough
+                                        : null,
+                                decorationColor: colorScheme.onSurfaceVariant
+                                    .withAlpha(150),
                               ),
                             ),
                             // Metadata row (date, tags, pin)
@@ -657,7 +724,10 @@ class TasksScreenState extends State<TasksScreen>
                                   // Pin indicator
                                   if (task.isPinned)
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
@@ -672,11 +742,19 @@ class TasksScreenState extends State<TasksScreen>
                                   // Date
                                   if (task.date != null)
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: _isDateOverdue(task.date!)
-                                            ? colorScheme.error.withAlpha(20)
-                                            : colorScheme.surfaceContainerHighest.withAlpha(150),
+                                        color:
+                                            _isDateOverdue(task.date!)
+                                                ? colorScheme.error.withAlpha(
+                                                  20,
+                                                )
+                                                : colorScheme
+                                                    .surfaceContainerHighest
+                                                    .withAlpha(150),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Row(
@@ -685,18 +763,22 @@ class TasksScreenState extends State<TasksScreen>
                                           Icon(
                                             Icons.schedule_rounded,
                                             size: 12,
-                                            color: _isDateOverdue(task.date!)
-                                                ? colorScheme.error
-                                                : colorScheme.onSurfaceVariant,
+                                            color:
+                                                _isDateOverdue(task.date!)
+                                                    ? colorScheme.error
+                                                    : colorScheme
+                                                        .onSurfaceVariant,
                                           ),
                                           const SizedBox(width: 3),
                                           Text(
                                             _formatTaskDate(task.date!),
                                             style: TextStyle(
                                               fontSize: 11,
-                                              color: _isDateOverdue(task.date!)
-                                                  ? colorScheme.error
-                                                  : colorScheme.onSurfaceVariant,
+                                              color:
+                                                  _isDateOverdue(task.date!)
+                                                      ? colorScheme.error
+                                                      : colorScheme
+                                                          .onSurfaceVariant,
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
@@ -704,26 +786,31 @@ class TasksScreenState extends State<TasksScreen>
                                       ),
                                     ),
                                   // Tags (show first 2 max)
-                                  ...tags.take(2).map(
-                                    (tag) => Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.primary.withAlpha(20),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        tag,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: colorScheme.primary,
-                                          fontWeight: FontWeight.w500,
+                                  ...tags
+                                      .take(2)
+                                      .map(
+                                        (tag) => Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.primary
+                                                .withAlpha(20),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            tag,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: colorScheme.primary,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ),
                                   if (tags.length > 2)
                                     Container(
                                       padding: const EdgeInsets.symmetric(
@@ -731,7 +818,9 @@ class TasksScreenState extends State<TasksScreen>
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: colorScheme.surfaceContainerHighest.withAlpha(100),
+                                        color: colorScheme
+                                            .surfaceContainerHighest
+                                            .withAlpha(100),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
@@ -753,11 +842,15 @@ class TasksScreenState extends State<TasksScreen>
                   ),
                   const SizedBox(width: 8),
                   // Estado (solo si no es none o completed)
-                  if (task.state != TaskState.none && task.state != TaskState.completed)
+                  if (task.state != TaskState.none &&
+                      task.state != TaskState.completed)
                     FutureBuilder<List<String>>(
-                      future: _databaseService.taskService.getTagsByTaskId(task.id!),
+                      future: _databaseService.taskService.getTagsByTaskId(
+                        task.id!,
+                      ),
                       builder: (context, snapshot) {
-                        final hasHabitsTag = snapshot.data?.contains('Habits') ?? false;
+                        final hasHabitsTag =
+                            snapshot.data?.contains('Habits') ?? false;
                         if (hasHabitsTag) return const SizedBox.shrink();
                         return _buildStateIndicator(task.state, colorScheme);
                       },
@@ -780,16 +873,13 @@ class TasksScreenState extends State<TasksScreen>
   Widget _buildStateIndicator(TaskState state, ColorScheme colorScheme) {
     final color = _getStateIndicatorColor(state, colorScheme);
     final icon = _getStateIndicatorIcon(state);
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withAlpha(20),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: color.withAlpha(50),
-          width: 1,
-        ),
+        border: Border.all(color: color.withAlpha(50), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -9,6 +9,7 @@ import '../../widgets/custom_snackbar.dart';
 import '../../widgets/confirmation_dialogue.dart';
 import '../../Tasks/habits_widget.dart';
 import '../../widgets/custom_date_picker_dialog.dart';
+import '../theme_handler.dart';
 
 class TaskDetailScreen extends StatefulWidget {
   final Task task;
@@ -44,6 +45,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
   final Set<String> _expandedSubtasks = <String>{};
   late TabController _subtasksTabController;
   int _subtasksLoadGeneration = 0;
+  bool _isEInkMode = false;
 
   @override
   void initState() {
@@ -61,6 +63,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
         });
       }
     });
+
+    _loadThemeSettings();
 
     // Guardar inmediatamente al inicio
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -127,6 +131,21 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
       });
     } catch (e) {
       // ignore
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadThemeSettings();
+  }
+
+  Future<void> _loadThemeSettings() async {
+    final einkEnabled = await ThemeManager.getEInkEnabled();
+    if (mounted) {
+      setState(() {
+        _isEInkMode = einkEnabled;
+      });
     }
   }
 
@@ -582,7 +601,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: colorScheme.outlineVariant.withAlpha(100),
+          color:
+              _isEInkMode
+                  ? colorScheme.onSurface
+                  : colorScheme.outlineVariant.withAlpha(100),
           width: 1,
         ),
       ),
@@ -590,7 +612,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
         children: [
           // Add button
           Material(
-            color: colorScheme.primaryContainer.withAlpha(80),
+            color:
+                _isEInkMode
+                    ? colorScheme.onSurface
+                    : colorScheme.primaryContainer.withAlpha(80),
             borderRadius: BorderRadius.circular(8),
             child: InkWell(
               onTap: _addSubtask,
@@ -600,7 +625,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                 height: 40,
                 child: Icon(
                   Icons.add_rounded,
-                  color: colorScheme.primary,
+                  color:
+                      _isEInkMode ? colorScheme.surface : colorScheme.primary,
                   size: 22,
                 ),
               ),
@@ -792,6 +818,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(10),
+          border:
+              _isEInkMode
+                  ? Border.all(color: colorScheme.onSurface, width: 1)
+                  : null,
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1021,6 +1051,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(16),
+                border:
+                    _isEInkMode
+                        ? Border.all(color: colorScheme.onSurface, width: 1)
+                        : null,
               ),
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -1342,6 +1376,13 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                         decoration: BoxDecoration(
                           color: colorScheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(12),
+                          border:
+                              _isEInkMode
+                                  ? Border.all(
+                                    color: colorScheme.onSurface,
+                                    width: 1,
+                                  )
+                                  : null,
                         ),
                         padding: const EdgeInsets.all(4),
                         child: SizedBox(

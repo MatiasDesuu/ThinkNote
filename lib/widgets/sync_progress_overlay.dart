@@ -136,13 +136,7 @@ class SyncProgressPopup extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (status.step == SyncStep.completed)
-                  const Icon(
-                    Icons.check_circle_rounded,
-                    size: 16,
-                    color: Colors.green,
-                  )
-                else if (status.step == SyncStep.failed)
+                if (status.step == SyncStep.failed)
                   Icon(Icons.error_rounded, size: 16, color: colorScheme.error),
               ],
             ),

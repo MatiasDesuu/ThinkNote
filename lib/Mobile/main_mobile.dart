@@ -697,7 +697,10 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                           ],
                         ),
                         actions: [
-                          if (_selectedIndex == 0 || _selectedIndex == 1)
+                          if (_selectedIndex == 0 ||
+                              _selectedIndex == 1 ||
+                              _selectedIndex == 2 ||
+                              _selectedIndex == 3)
                             IconButton(
                               icon: Icon(
                                 Icons.sync_rounded,
