@@ -175,6 +175,40 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     }
   }
 
+  Future<void> _handleBookmarkDropOnTag(Bookmark bookmark, String tag) async {
+    if (bookmark.id == null) return;
+
+    final List<String> currentTags;
+
+    if (tag == 'Untagged') {
+      if (bookmark.tags.isEmpty) return;
+      currentTags = [];
+    } else {
+      currentTags = List<String>.from(bookmark.tags);
+      if (currentTags.contains(tag)) return;
+      currentTags.add(tag);
+    }
+
+    try {
+      await _linksHandler.updateBookmark(
+        id: bookmark.id!,
+        newTitle: bookmark.title,
+        newUrl: bookmark.url,
+        newDescription: bookmark.description,
+        newTags: currentTags,
+      );
+      await _loadBookmarks();
+    } catch (e) {
+      if (mounted) {
+        CustomSnackbar.show(
+          context: context,
+          message: 'Error updating bookmark tags: $e',
+          type: CustomSnackbarType.error,
+        );
+      }
+    }
+  }
+
   Future<void> _loadRootDir() async {
     final prefs = await SharedPreferences.getInstance();
     final dirPath = prefs.getString('notes_directory');
@@ -293,6 +327,7 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                   },
                   onDragUpdate: _onDragUpdate,
                   onDragEnd: _onDragEnd,
+                  onBookmarkDropped: _handleBookmarkDropOnTag,
                 ),
               ),
 
@@ -673,215 +708,264 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
     final date = DateTime.parse(widget.bookmark.timestamp);
     final formattedDate = DateFormat("dd/MMM/yyyy - HH:mm").format(date);
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
-        decoration: BoxDecoration(
-          color:
-              _isHovering
-                  ? widget.colorScheme.surfaceContainerHighest
-                  : widget.colorScheme.surface,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
+    return Draggable<Bookmark>(
+      data: widget.bookmark,
+      dragAnchorStrategy: pointerDragAnchorStrategy,
+      feedback: Material(
+        color: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          constraints: const BoxConstraints(maxWidth: 250),
+          decoration: BoxDecoration(
+            color: widget.colorScheme.surfaceContainerHighest.withAlpha(230),
             borderRadius: BorderRadius.circular(10),
-            onTap: widget.onTap,
-            onSecondaryTapDown: (details) {
-              ContextMenuOverlay.show(
-                context: context,
-                tapPosition: details.globalPosition,
-                items: [
-                  ContextMenuItem(
-                    icon: Icons.edit_rounded,
-                    label: 'Edit',
-                    onTap: widget.onEdit,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(51),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _BookmarkIcon(
+                url: widget.bookmark.url,
+                size: 24,
+                colorScheme: widget.colorScheme,
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  widget.bookmark.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: widget.colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
                   ),
-                  ContextMenuItem(
-                    icon: Icons.copy_rounded,
-                    label: 'Copy Link',
-                    onTap: widget.onCopy,
-                  ),
-                  ContextMenuItem(
-                    icon: Icons.delete_forever_rounded,
-                    label: 'Delete',
-                    iconColor: Theme.of(context).colorScheme.error,
-                    onTap: widget.onDelete,
-                  ),
-                ],
-              );
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Ícono de bookmark (favicon)
-                  _BookmarkIcon(
-                    url: widget.bookmark.url,
-                    size: 32,
-                    colorScheme: widget.colorScheme,
-                  ),
-                  const SizedBox(width: 16),
-                  // Título y detalles
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.bookmark.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: widget.colorScheme.onSurface,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          widget.bookmark.url,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: widget.colorScheme.onSurface.withAlpha(130),
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.access_time_rounded,
-                              size: 14,
-                              color: widget.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovering = true),
+        onExit: (_) => setState(() => _isHovering = false),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
+          decoration: BoxDecoration(
+            color:
+                _isHovering
+                    ? widget.colorScheme.surfaceContainerHighest
+                    : widget.colorScheme.surface,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: widget.onTap,
+              onSecondaryTapDown: (details) {
+                ContextMenuOverlay.show(
+                  context: context,
+                  tapPosition: details.globalPosition,
+                  items: [
+                    ContextMenuItem(
+                      icon: Icons.edit_rounded,
+                      label: 'Edit',
+                      onTap: widget.onEdit,
+                    ),
+                    ContextMenuItem(
+                      icon: Icons.copy_rounded,
+                      label: 'Copy Link',
+                      onTap: widget.onCopy,
+                    ),
+                    ContextMenuItem(
+                      icon: Icons.delete_forever_rounded,
+                      label: 'Delete',
+                      iconColor: Theme.of(context).colorScheme.error,
+                      onTap: widget.onDelete,
+                    ),
+                  ],
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Ícono de bookmark (favicon)
+                    _BookmarkIcon(
+                      url: widget.bookmark.url,
+                      size: 32,
+                      colorScheme: widget.colorScheme,
+                    ),
+                    const SizedBox(width: 16),
+                    // Título y detalles
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.bookmark.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: widget.colorScheme.onSurface,
+                              fontSize: 15,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              formattedDate,
-                              style: TextStyle(
-                                color: widget.colorScheme.onSurface.withAlpha(
-                                  130,
-                                ),
-                                fontSize: 11,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.bookmark.url,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: widget.colorScheme.onSurface.withAlpha(
+                                130,
                               ),
+                              fontSize: 12,
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: SizedBox(
-                                height: 20,
-                                child: ListView(
-                                  scrollDirection: Axis.horizontal,
-                                  children:
-                                      widget.bookmark.tags
-                                          .map(
-                                            (tag) => Container(
-                                              margin: const EdgeInsets.only(
-                                                right: 6,
-                                              ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 6,
-                                                    vertical: 2,
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time_rounded,
+                                size: 14,
+                                color: widget.colorScheme.primary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                formattedDate,
+                                style: TextStyle(
+                                  color: widget.colorScheme.onSurface.withAlpha(
+                                    130,
+                                  ),
+                                  fontSize: 11,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: SizedBox(
+                                  height: 20,
+                                  child: ListView(
+                                    scrollDirection: Axis.horizontal,
+                                    children:
+                                        widget.bookmark.tags
+                                            .map(
+                                              (tag) => Container(
+                                                margin: const EdgeInsets.only(
+                                                  right: 6,
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: widget
+                                                      .colorScheme
+                                                      .primary
+                                                      .withAlpha(20),
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
+                                                child: Text(
+                                                  tag,
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    color:
+                                                        widget
+                                                            .colorScheme
+                                                            .primary,
+                                                    fontWeight: FontWeight.w600,
                                                   ),
-                                              decoration: BoxDecoration(
-                                                color: widget
-                                                    .colorScheme
-                                                    .primary
-                                                    .withAlpha(20),
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
-                                              child: Text(
-                                                tag,
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  color:
-                                                      widget
-                                                          .colorScheme
-                                                          .primary,
-                                                  fontWeight: FontWeight.w600,
                                                 ),
                                               ),
-                                            ),
-                                          )
-                                          .toList(),
+                                            )
+                                            .toList(),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Botón eliminar
-                  Opacity(
-                    opacity: _isHovering ? 1.0 : 0.0,
-                    child: IgnorePointer(
-                      ignoring: !_isHovering,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CustomTooltip(
-                            message: 'Edit',
-                            builder:
-                                (context, isHovering) => IconButton(
-                                  icon: Icon(
-                                    Icons.edit_rounded,
-                                    color: widget.colorScheme.primary,
-                                    size: 18,
-                                  ),
-                                  onPressed: widget.onEdit,
-                                  constraints: const BoxConstraints(
-                                    minWidth: 32,
-                                    minHeight: 32,
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                ),
-                          ),
-                          CustomTooltip(
-                            message: 'Copy Link',
-                            builder:
-                                (context, isHovering) => IconButton(
-                                  icon: Icon(
-                                    Icons.copy_rounded,
-                                    color: widget.colorScheme.primary,
-                                    size: 18,
-                                  ),
-                                  onPressed: widget.onCopy,
-                                  constraints: const BoxConstraints(
-                                    minWidth: 32,
-                                    minHeight: 32,
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                ),
-                          ),
-                          CustomTooltip(
-                            message: 'Delete',
-                            builder:
-                                (context, isHovering) => IconButton(
-                                  icon: Icon(
-                                    Icons.delete_forever_rounded,
-                                    color: widget.colorScheme.error,
-                                    size: 18,
-                                  ),
-                                  onPressed: widget.onDelete,
-                                  constraints: const BoxConstraints(
-                                    minWidth: 32,
-                                    minHeight: 32,
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    // Botón eliminar
+                    Opacity(
+                      opacity: _isHovering ? 1.0 : 0.0,
+                      child: IgnorePointer(
+                        ignoring: !_isHovering,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CustomTooltip(
+                              message: 'Edit',
+                              builder:
+                                  (context, isHovering) => IconButton(
+                                    icon: Icon(
+                                      Icons.edit_rounded,
+                                      color: widget.colorScheme.primary,
+                                      size: 18,
+                                    ),
+                                    onPressed: widget.onEdit,
+                                    constraints: const BoxConstraints(
+                                      minWidth: 32,
+                                      minHeight: 32,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                            ),
+                            CustomTooltip(
+                              message: 'Copy Link',
+                              builder:
+                                  (context, isHovering) => IconButton(
+                                    icon: Icon(
+                                      Icons.copy_rounded,
+                                      color: widget.colorScheme.primary,
+                                      size: 18,
+                                    ),
+                                    onPressed: widget.onCopy,
+                                    constraints: const BoxConstraints(
+                                      minWidth: 32,
+                                      minHeight: 32,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                            ),
+                            CustomTooltip(
+                              message: 'Delete',
+                              builder:
+                                  (context, isHovering) => IconButton(
+                                    icon: Icon(
+                                      Icons.delete_forever_rounded,
+                                      color: widget.colorScheme.error,
+                                      size: 18,
+                                    ),
+                                    onPressed: widget.onDelete,
+                                    constraints: const BoxConstraints(
+                                      minWidth: 32,
+                                      minHeight: 32,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
