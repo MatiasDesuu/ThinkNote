@@ -19,8 +19,24 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isEnabled = false;
+  bool _autoSyncEnabled = true;
+  int _autoSyncIntervalMinutes = 60; // Default 1 hour
+  bool _screenOpenAutoSyncEnabled = true; // Default enabled
   bool _isLoading = true;
   bool _isTesting = false;
+
+  String _formatInterval(int minutes) {
+    if (minutes < 60) {
+      return '$minutes min';
+    } else {
+      final hours = minutes / 60;
+      if (hours == 1) {
+        return '1 hour';
+      } else {
+        return '${hours.toStringAsFixed(1)} hours';
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -40,11 +56,17 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
     setState(() => _isLoading = true);
     try {
       final settings = await SyncService().getSettings();
+      final autoSyncEnabled = await SyncService().getAutoSyncEnabled();
+      final autoSyncInterval = await SyncService().getAutoSyncInterval();
+      final screenOpenAutoSyncEnabled = await SyncService().getScreenOpenAutoSyncEnabled();
       setState(() {
         _urlController.text = settings['url'] as String;
         _usernameController.text = settings['username'] as String;
         _passwordController.text = settings['password'] as String;
         _isEnabled = settings['enabled'] as bool;
+        _autoSyncEnabled = autoSyncEnabled;
+        _autoSyncIntervalMinutes = autoSyncInterval.inMinutes;
+        _screenOpenAutoSyncEnabled = screenOpenAutoSyncEnabled;
         _isLoading = false;
       });
     } catch (e) {
@@ -88,6 +110,26 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
         );
       }
     }
+  }
+
+  Future<void> _updateAutoSyncEnabled(bool enabled) async {
+    setState(() => _autoSyncEnabled = enabled);
+    await SyncService().setAutoSyncEnabled(enabled);
+    
+    // Notify main app to update auto sync timer
+    // This will be handled by the main app listening to settings changes
+  }
+
+  Future<void> _updateAutoSyncInterval(int minutes) async {
+    setState(() => _autoSyncIntervalMinutes = minutes);
+    await SyncService().setAutoSyncInterval(Duration(minutes: minutes));
+    
+    // The main app will automatically update the timer through the stream listener
+  }
+
+  Future<void> _updateScreenOpenAutoSyncEnabled(bool enabled) async {
+    setState(() => _screenOpenAutoSyncEnabled = enabled);
+    await SyncService().setScreenOpenAutoSyncEnabled(enabled);
   }
 
   Future<void> _showSyncDialog() async {
@@ -263,6 +305,131 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
                           setState(() => _isEnabled = value);
                           _saveSettings();
                         },
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Auto Sync Background Switch
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.schedule_rounded,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Auto sync in background', style: textStyle),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Automatically sync at regular intervals',
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _autoSyncEnabled,
+                        onChanged: _updateAutoSyncEnabled,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Auto Sync Interval Slider
+                  if (_autoSyncEnabled) ...[
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.timer_rounded,
+                              size: 20,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 12),
+                            Text('Auto sync interval', style: textStyle),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 32.0),
+                          child: Text(
+                            'Adjust how often automatic sync occurs',
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const SizedBox(width: 32),
+                            Text(
+                              _formatInterval(_autoSyncIntervalMinutes),
+                              style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Expanded(
+                              child: Slider(
+                                value: _autoSyncIntervalMinutes.toDouble(),
+                                min: 5,
+                                max: 720,
+                                divisions: 143,
+                                label: _formatInterval(_autoSyncIntervalMinutes),
+                                onChanged: (value) {
+                                  _updateAutoSyncInterval(value.round());
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Screen Open Auto Sync Toggle
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.visibility_rounded,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Auto sync when opening screens', style: textStyle),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Automatically sync when opening Tasks, Bookmarks, or Thinks screens',
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _screenOpenAutoSyncEnabled,
+                        onChanged: _updateScreenOpenAutoSyncEnabled,
                       ),
                     ],
                   ),

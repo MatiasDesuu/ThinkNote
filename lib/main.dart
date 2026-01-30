@@ -805,7 +805,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     _loadSavedTabs();
     _initializeRepositories();
     _loadLastSelectedNotebook();
-    _startAutoSyncTimer();
     _initializeImmersiveMode();
     _setupEditorSettingsListeners();
     _setupDatabaseChangeListener();
@@ -925,10 +924,39 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     }
   }
 
-  void _startAutoSyncTimer() {
-    _autoSyncTimer = Timer.periodic(const Duration(minutes: 30), (timer) {
-      _performAutoSync();
+  void _setupAutoSyncListener() {
+    _syncService.autoSyncEnabledStream.listen((enabled) {
+      if (enabled) {
+        _startAutoSyncTimer();
+      } else {
+        _stopAutoSyncTimer();
+      }
     });
+
+    _syncService.autoSyncIntervalStream.listen((interval) {
+      // Restart timer with new interval
+      _startAutoSyncTimer();
+    });
+  }
+
+  void _startAutoSyncTimer() {
+    // Cancel any existing timer first
+    _autoSyncTimer?.cancel();
+    
+    // Only start timer if auto sync is enabled
+    _syncService.getAutoSyncEnabled().then((enabled) async {
+      if (enabled) {
+        final interval = await _syncService.getAutoSyncInterval();
+        _autoSyncTimer = Timer.periodic(interval, (timer) {
+          _performAutoSync();
+        });
+      }
+    });
+  }
+
+  void _stopAutoSyncTimer() {
+    _autoSyncTimer?.cancel();
+    _autoSyncTimer = null;
   }
 
   Future<void> _performAutoSync() async {
@@ -2344,6 +2372,10 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       await dbHelper.database;
       _syncService = SyncService();
       await _syncService.initialize();
+      
+      // Initialize auto sync timer and listener after sync service is ready
+      _startAutoSyncTimer();
+      _setupAutoSyncListener();
     } catch (e) {
       debugPrint('Error initializing repositories: $e');
       if (mounted) {

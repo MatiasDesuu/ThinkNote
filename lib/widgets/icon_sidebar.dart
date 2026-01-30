@@ -293,7 +293,14 @@ class IconSidebarState extends State<IconSidebar>
 
   void _performBackgroundSync() async {
     try {
+      // Check if screen open auto sync is enabled
       final syncService = SyncService();
+      final isEnabled = await syncService.getScreenOpenAutoSyncEnabled();
+      
+      if (!isEnabled) {
+        return; // Skip sync if disabled
+      }
+      
       await syncService.forceSync(isManual: false);
     } catch (e) {
       if (mounted) {
@@ -362,7 +369,7 @@ class IconSidebarState extends State<IconSidebar>
     );
   }
 
-  void _openBookmarksScreen() {
+  void _openBookmarksScreen() async {
     if (widget.rootDir == null) return;
 
     showDialog(
@@ -377,10 +384,15 @@ class IconSidebarState extends State<IconSidebar>
           ),
     );
 
-    _performBackgroundSync();
+    // Check if screen open auto sync is enabled before performing sync
+    final syncService = SyncService();
+    final isEnabled = await syncService.getScreenOpenAutoSyncEnabled();
+    if (isEnabled) {
+      _performBackgroundSync();
+    }
   }
 
-  void _openThinksScreen() {
+  void _openThinksScreen() async {
     if (widget.rootDir == null) return;
 
     showDialog(
@@ -396,7 +408,12 @@ class IconSidebarState extends State<IconSidebar>
           ),
     );
 
-    _performBackgroundSync();
+    // Check if screen open auto sync is enabled before performing sync
+    final syncService = SyncService();
+    final isEnabled = await syncService.getScreenOpenAutoSyncEnabled();
+    if (isEnabled) {
+      _performBackgroundSync();
+    }
   }
 
   void _openSearchScreen() {
