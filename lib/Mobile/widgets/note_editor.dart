@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:dynamic_color/dynamic_color.dart';
 import '../../database/models/note.dart';
+import '../../database/models/notebook.dart';
 import '../../database/database_helper.dart';
 import '../animations/animations_handler.dart';
 import '../scriptmode_handler.dart';
@@ -10,6 +11,9 @@ import '../theme_handler.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../Settings/editor_settings_panel.dart';
 import '../../widgets/Editor/list_continuation_handler.dart';
+import '../../widgets/Editor/editor_tool_bar.dart';
+import '../../widgets/Editor/format_handler.dart';
+import '../../widgets/Editor/unified_text_handler.dart';
 
 class NoteEditor extends StatefulWidget {
   final Note selectedNote;
@@ -23,6 +27,10 @@ class NoteEditor extends StatefulWidget {
   final VoidCallback onTitleChanged;
   final VoidCallback onContentChanged;
   final Function(bool) onToggleImmersiveMode;
+  final VoidCallback? onNextNote;
+  final VoidCallback? onPreviousNote;
+  final Function(Note)? onNoteLinkTap;
+  final Function(Notebook)? onNotebookLinkTap;
 
   const NoteEditor({
     super.key,
@@ -36,7 +44,12 @@ class NoteEditor extends StatefulWidget {
     required this.onToggleEditing,
     required this.onTitleChanged,
     required this.onContentChanged,
+
     required this.onToggleImmersiveMode,
+    this.onNextNote,
+    this.onPreviousNote,
+    this.onNoteLinkTap,
+    this.onNotebookLinkTap,
   });
 
   @override
@@ -51,12 +64,15 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
   Timer? _autoSaveDebounce;
   late SaveAnimationController _saveController;
   final ValueNotifier<int> _currentBlockIndex = ValueNotifier<int>(0);
+  final UndoHistoryController _undoController = UndoHistoryController();
   bool _isImmersiveMode = false;
   late Future<bool> _brightnessFuture;
   late Future<bool> _colorModeFuture;
   late Future<bool> _monochromeFuture;
   late Future<bool> _einkFuture;
   String _lastTextContent = '';
+  bool _isHandlingContentChange = false;
+  bool _isNavigatingAway = false;
 
   @override
   void initState() {
@@ -67,7 +83,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
     );
     _saveController = SaveAnimationController(vsync: this);
     _lastTextContent = widget.contentController.text;
-    widget.contentController.addListener(_onContentChanged);
+    _lastTextContent = widget.contentController.text;
     widget.titleController.addListener(_onTitleChanged);
     _detectScriptMode();
     _loadThemePreferences();
@@ -90,16 +106,50 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
   }
 
   void _onContentChanged() {
-    final currentText = widget.contentController.text;
+    if (_isHandlingContentChange) return;
+    _isHandlingContentChange = true;
 
-    // Only trigger updates if the actual text changed, not just selection
-    if (currentText == _lastTextContent) {
-      return;
+    try {
+      final currentText = widget.contentController.text;
+
+      // Only trigger updates if the actual text changed, not just selection
+      if (currentText == _lastTextContent) {
+        return;
+      }
+
+      // Check for newline insertion from virtual keyboard
+      if (currentText.length == _lastTextContent.length + 1) {
+        final selection = widget.contentController.selection;
+        if (selection.isValid &&
+            selection.isCollapsed &&
+            selection.baseOffset > 0) {
+          final insertedChar = currentText[selection.baseOffset - 1];
+          if (insertedChar == '\n') {
+            // Attempt to handle list continuation based on the new state
+            if (ListContinuationHandler.handleVirtualKeyboardEnter(
+              widget.contentController,
+            )) {
+              // Update _lastTextContent to the handled text so we don't re-process
+              _lastTextContent = widget.contentController.text;
+              widget.onContentChanged();
+              _resetDebouncers();
+              return;
+            }
+          }
+        }
+      }
+
+      _lastTextContent = currentText;
+
+      widget.onContentChanged();
+
+      _resetDebouncers();
+    } finally {
+      _isHandlingContentChange = false;
     }
-    _lastTextContent = currentText;
+  }
 
-    widget.onContentChanged();
-
+  void _resetDebouncers() {
     _scriptDetectionDebouncer?.cancel();
     _scriptDetectionDebouncer = Timer(const Duration(milliseconds: 300), () {
       if (mounted) {
@@ -190,6 +240,9 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
 
   Future<void> _handleBackNavigation() async {
     if (!mounted) return;
+    setState(() {
+      _isNavigatingAway = true;
+    });
 
     try {
       await widget.onSaveNote();
@@ -203,6 +256,306 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
     }
   }
 
+  Future<void> _handleNextNote() async {
+    setState(() {
+      _isNavigatingAway = true;
+    });
+    await _handleSave();
+    widget.onNextNote?.call();
+  }
+
+  Future<void> _handlePreviousNote() async {
+    setState(() {
+      _isNavigatingAway = true;
+    });
+    await _handleSave();
+    widget.onPreviousNote?.call();
+  }
+
+  void _handleCreateScriptBlock() {
+    final selection = widget.contentController.selection;
+    if (selection.isValid && !selection.isCollapsed) {
+      final text = widget.contentController.text;
+      final selectedText = text.substring(selection.start, selection.end);
+
+      final lines = text.split('\n');
+
+      // Find the block number where the selection starts
+      int currentPosition = 0;
+      int selectionLineIndex = 0;
+      List<int> blockNumbers = [];
+      int? previousBlockNumber;
+      int? nextBlockNumber;
+
+      // First pass: collect block numbers and find the position
+      for (int i = 0; i < lines.length; i++) {
+        final line = lines[i];
+
+        // Check for block numbers in the entire line
+        final blockMatches = RegExp(r'#(\d+)').allMatches(line);
+        for (final match in blockMatches) {
+          final blockNumber = int.tryParse(match.group(1) ?? '1') ?? 1;
+          blockNumbers.add(blockNumber);
+
+          if (currentPosition + match.start <= selection.start) {
+            previousBlockNumber = blockNumber;
+          } else {
+            nextBlockNumber ??= blockNumber;
+          }
+        }
+
+        if (currentPosition <= selection.start) {
+          selectionLineIndex = i;
+        }
+        currentPosition += line.length + 1; // +1 for the newline
+      }
+
+      // Determine the new block number
+      int newBlockNumber;
+      if (previousBlockNumber != null && nextBlockNumber != null) {
+        // If we're between two blocks, use the next number after the previous block
+        newBlockNumber = previousBlockNumber + 1;
+      } else if (previousBlockNumber != null) {
+        // If we're at the end, use the next number after the last block
+        newBlockNumber = previousBlockNumber + 1;
+      } else if (nextBlockNumber != null) {
+        // If we're at the start, use 1
+        newBlockNumber = 1;
+      } else {
+        // If there are no blocks, start with 1
+        newBlockNumber = 1;
+      }
+
+      // Second pass: update block numbers after the insertion
+      final updatedLines = List<String>.from(lines);
+      int currentNumber = newBlockNumber + 1;
+
+      for (int i = 0; i < updatedLines.length; i++) {
+        final line = updatedLines[i];
+        if (i > selectionLineIndex) {
+          // Replace all block numbers in the line
+          updatedLines[i] = line.replaceAllMapped(
+            RegExp(r'#\d+'),
+            (match) => '#$currentNumber',
+          );
+          if (line.contains(RegExp(r'#\d+'))) {
+            currentNumber++;
+          }
+        }
+      }
+
+      // Check if we need to add newlines
+      final textBeforeSelection = text.substring(0, selection.start);
+      final textAfterSelection = text.substring(selection.end);
+      final isAtStart = selection.start == 0;
+      final isAtEnd = selection.end == text.length;
+      final isInMiddleOfSentence =
+          !textBeforeSelection.endsWith('.') &&
+          !textBeforeSelection.endsWith('!') &&
+          !textBeforeSelection.endsWith('?');
+      final needsNewlineBefore =
+          !isAtStart &&
+          !textBeforeSelection.endsWith('\n') &&
+          !isInMiddleOfSentence;
+      final needsNewlineAfter =
+          !isAtEnd &&
+          !textAfterSelection.startsWith('\n') &&
+          !isInMiddleOfSentence;
+
+      // Create the new text with the block
+      final newText = updatedLines
+          .join('\n')
+          .replaceRange(
+            selection.start,
+            selection.end,
+            '${needsNewlineBefore ? '\n' : ''}#$newBlockNumber\n$selectedText${needsNewlineAfter ? '\n' : ''}',
+          );
+
+      // Update the text controller
+      widget.contentController.text = newText;
+
+      // Update the selection to include the new block header
+      final selectionOffset = needsNewlineBefore ? 1 : 0;
+      widget.contentController.selection = TextSelection(
+        baseOffset: selection.start + selectionOffset,
+        extentOffset:
+            selection.start +
+            selectionOffset +
+            '#$newBlockNumber\n'.length +
+            selectedText.length +
+            (needsNewlineAfter ? 1 : 0),
+      );
+
+      // Trigger content changed
+      widget.onContentChanged();
+    }
+  }
+
+  void _handleFormat(FormatType type) {
+    if (_isReadMode) return;
+
+    final controller = widget.contentController;
+
+    if (type == FormatType.insertScript) {
+      final text = controller.text;
+      if (text.startsWith('#script')) {
+        // Remove #script and any following newline
+        String newText = text.replaceFirst(RegExp(r'^#script\n?'), '');
+        controller.text = newText;
+        widget.onContentChanged();
+      } else {
+        controller.text = '#script\n$text';
+        widget.onContentChanged();
+      }
+      widget.contentFocusNode.requestFocus();
+      return;
+    }
+
+    if (type == FormatType.convertToScript) {
+      _handleCreateScriptBlock();
+      widget.contentFocusNode.requestFocus();
+      return;
+    }
+
+    final text = controller.text;
+    final selection = controller.selection;
+
+    if (selection.start < 0) {
+      widget.contentFocusNode.requestFocus();
+      return;
+    }
+
+    String newText = text;
+    TextSelection newSelection = selection;
+
+    if (selection.isCollapsed) {
+      // Insert mode
+      final cursor = selection.start;
+      String insertion = "";
+      int cursorOffset = 0;
+
+      // Check for line-based formats
+      if (_isLineFormat(type)) {
+        // Get current line start
+        int lineStart = 0;
+        if (cursor > 0) {
+          lineStart = text.lastIndexOf('\n', cursor - 1) + 1;
+          if (lineStart < 0) lineStart = 0;
+        }
+
+        String prefix = _getLinePrefix(type);
+        // Insert at line start
+        newText =
+            text.substring(0, lineStart) + prefix + text.substring(lineStart);
+        newSelection = TextSelection.collapsed(offset: cursor + prefix.length);
+      } else {
+        // Inline formats
+        switch (type) {
+          case FormatType.bold:
+            insertion = "****";
+            cursorOffset = 2;
+            break;
+          case FormatType.italic:
+            insertion = "**";
+            cursorOffset = 1;
+            break;
+          case FormatType.strikethrough:
+            insertion = "~~~~";
+            cursorOffset = 2;
+            break;
+          case FormatType.code:
+            insertion = "``";
+            cursorOffset = 1;
+            break;
+          case FormatType.link:
+            insertion = "[]()";
+            cursorOffset = 1;
+            break;
+          case FormatType.noteLink:
+            insertion = "[[note:]]";
+            cursorOffset = 7;
+            break;
+          case FormatType.notebookLink:
+            insertion = "[[notebook:]]";
+            cursorOffset = 11;
+            break;
+          case FormatType.taggedCode:
+            insertion = "[]";
+            cursorOffset = 1;
+            break;
+          default:
+            break;
+        }
+        if (insertion.isNotEmpty) {
+          newText =
+              text.substring(0, cursor) + insertion + text.substring(cursor);
+          newSelection = TextSelection.collapsed(offset: cursor + cursorOffset);
+        }
+      }
+    } else {
+      // Selection mode - use existing util
+      final start = selection.start;
+      final end = selection.end;
+      newText = FormatUtils.toggleFormat(text, start, end, type);
+
+      // Attempt to keep selection at the end of the modified block
+      // To improve this we would need FormatUtils to return where the new selection should be.
+      // For now, collapsing to end of modification is safe.
+      int newLen = newText.length;
+      int diff = newLen - text.length;
+      newSelection = TextSelection.collapsed(offset: end + diff);
+    }
+
+    if (newText != text) {
+      controller.value = TextEditingValue(
+        text: newText,
+        selection: newSelection,
+        composing: TextRange.empty,
+      );
+      widget.onContentChanged();
+    }
+
+    // Ensure focus and prevent keyboard closing
+    widget.contentFocusNode.requestFocus();
+  }
+
+  bool _isLineFormat(FormatType type) {
+    return type == FormatType.heading1 ||
+        type == FormatType.heading2 ||
+        type == FormatType.heading3 ||
+        type == FormatType.heading4 ||
+        type == FormatType.heading5 ||
+        type == FormatType.numbered ||
+        type == FormatType.bullet ||
+        type == FormatType.checkboxUnchecked ||
+        type == FormatType.checkboxChecked;
+  }
+
+  String _getLinePrefix(FormatType type) {
+    switch (type) {
+      case FormatType.heading1:
+        return "# ";
+      case FormatType.heading2:
+        return "## ";
+      case FormatType.heading3:
+        return "### ";
+      case FormatType.heading4:
+        return "#### ";
+      case FormatType.heading5:
+        return "##### ";
+      case FormatType.numbered:
+        return "1. ";
+      case FormatType.bullet:
+        return "- ";
+      case FormatType.checkboxUnchecked:
+        return "- [ ] ";
+      case FormatType.checkboxChecked:
+        return "- [x] ";
+      default:
+        return "";
+    }
+  }
+
   @override
   void dispose() {
     widget.contentController.removeListener(_onContentChanged);
@@ -213,6 +566,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
     _scaleController.dispose();
     _currentBlockIndex.dispose();
     widget.contentFocusNode.dispose();
+    _undoController.dispose();
     super.dispose();
   }
 
@@ -348,7 +702,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                               content:
                                                   widget.contentController.text,
                                             )
-                                        : widget.isEditing
+                                        : widget.isEditing && !_isReadMode
                                         ? Padding(
                                           padding: const EdgeInsets.only(
                                             top: 8,
@@ -384,6 +738,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                             child: TextField(
                                               controller:
                                                   widget.contentController,
+                                              undoController: _undoController,
                                               autofocus:
                                                   widget.selectedNote.id !=
                                                   null,
@@ -413,8 +768,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                                 contentPadding: EdgeInsets.zero,
                                               ),
                                               onChanged:
-                                                  (_) =>
-                                                      widget.onContentChanged(),
+                                                  (_) => _onContentChanged(),
                                               readOnly: _isReadMode,
                                               contextMenuBuilder: (
                                                 context,
@@ -481,18 +835,62 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                             top: 8,
                                             left: 8,
                                             right: 8,
+                                            bottom:
+                                                80, // Add padding for bottom bar/FloatingActionButton
                                           ),
-                                          child: Text(
-                                            widget.contentController.text,
-                                            style: theme.textTheme.bodyLarge,
+                                          child: Align(
+                                            alignment: Alignment.topLeft,
+                                            child: UnifiedTextHandler(
+                                              text:
+                                                  widget.contentController.text,
+                                              textStyle: TextStyle(
+                                                fontSize: 18,
+                                                height: 1.4,
+                                                color:
+                                                    theme.colorScheme.onSurface,
+                                              ),
+                                              onNoteLinkTap: (note, _) {
+                                                setState(() {
+                                                  _isNavigatingAway = true;
+                                                });
+                                                widget.onNoteLinkTap?.call(
+                                                  note,
+                                                );
+                                              },
+                                              onNotebookLinkTap: (notebook, _) {
+                                                setState(() {
+                                                  _isNavigatingAway = true;
+                                                });
+                                                widget.onNotebookLinkTap?.call(
+                                                  notebook,
+                                                );
+                                              },
+                                              onTextChanged: (newText) {
+                                                widget.contentController.text =
+                                                    newText;
+                                                widget.onContentChanged();
+                                              },
+                                              showNoteLinkBrackets: false,
+                                            ),
                                           ),
                                         ),
                               ),
+                              if (widget.isEditing && !_isReadMode)
+                                EditorBottomBar(
+                                  onUndo: _undoController.undo,
+                                  onRedo: _undoController.redo,
+                                  onNextNote: _handleNextNote,
+                                  onPreviousNote: _handlePreviousNote,
+                                  onFormatTap: _handleFormat,
+                                  isReadMode: _isReadMode,
+                                ),
                             ],
                           ),
-                          if (!_isImmersiveMode)
+                          if (!_isImmersiveMode && !_isNavigatingAway)
                             Positioned(
-                              bottom: 16,
+                              bottom:
+                                  16 +
+                                  (widget.isEditing && !_isReadMode ? 40 : 0),
                               right: 16,
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -501,7 +899,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                   if (widget.isEditing && !_isReadMode) ...[
                                     FloatingActionButton(
                                       key: const ValueKey('save'),
-                                      heroTag: 'saveButton',
+                                      heroTag: null,
                                       onPressed: () => _handleSave(),
                                       elevation: 4,
                                       child: const Icon(Icons.save_rounded),
@@ -521,7 +919,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                     ),
                                     child: FloatingActionButton(
                                       key: ValueKey('editButton_$_isReadMode'),
-                                      heroTag: 'editButton',
+                                      heroTag: null,
                                       onPressed: _toggleReadMode,
                                       elevation: 4,
                                       child: Icon(

@@ -37,13 +37,15 @@ class LinkDetector {
 
     final markdownMatches = _markdownLinkRegex.allMatches(text);
     for (final match in markdownMatches) {
-      links.add(LinkMatch(
-        url: match.group(2)!,
-        originalText: match.group(0)!,
-        displayText: match.group(1)!,
-        start: match.start,
-        end: match.end,
-      ));
+      links.add(
+        LinkMatch(
+          url: match.group(2)!,
+          originalText: match.group(0)!,
+          displayText: match.group(1)!,
+          start: match.start,
+          end: match.end,
+        ),
+      );
     }
 
     final urlMatches = _extendedUrlRegex.allMatches(text);
@@ -64,12 +66,14 @@ class LinkDetector {
           url = 'https://$url';
         }
 
-        links.add(LinkMatch(
-          url: url,
-          originalText: match.group(0)!,
-          start: match.start,
-          end: match.end,
-        ));
+        links.add(
+          LinkMatch(
+            url: url,
+            originalText: match.group(0)!,
+            start: match.start,
+            end: match.end,
+          ),
+        );
       }
     }
 
@@ -95,40 +99,20 @@ class LinkDetector {
 class LinkLauncher {
   static Future<void> launchURL(String url) async {
     try {
-      String formattedUrl = url;
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        formattedUrl = 'https://$url';
+      String formattedUrl = url.trim();
+      if (!formattedUrl.startsWith('http://') &&
+          !formattedUrl.startsWith('https://')) {
+        formattedUrl = 'https://$formattedUrl';
       }
 
       final uri = Uri.parse(formattedUrl);
-      bool launched = false;
 
-      try {
-        if (await canLaunchUrl(uri)) {
-          launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-        }
-      } catch (e) {
-        debugPrint('External launch failed: $e');
-      }
+      // Try default launch first as it works in other parts of the app
+      bool launched = await launchUrl(uri);
 
       if (!launched) {
-        try {
-          if (await canLaunchUrl(uri)) {
-            launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
-          }
-        } catch (e) {
-          debugPrint('Platform default launch failed: $e');
-        }
-      }
-
-      if (!launched) {
-        try {
-          if (await canLaunchUrl(uri)) {
-            launched = await launchUrl(uri);
-          }
-        } catch (e) {
-          debugPrint('System launch failed: $e');
-        }
+        // Fallback to external application
+        launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
 
       if (!launched) {
@@ -148,10 +132,7 @@ class LinkLauncher {
         throw 'Could not launch $url';
       }
 
-      await launchUrl(
-        uri,
-        mode: LaunchMode.inAppWebView,
-      );
+      await launchUrl(uri, mode: LaunchMode.inAppWebView);
     } catch (e) {
       debugPrint('Error launching URL in app: $e');
       await launchURL(url);

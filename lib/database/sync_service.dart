@@ -42,20 +42,27 @@ class SyncService {
   DateTime? _lastSyncTime;
   static const Duration _minSyncInterval = Duration(seconds: 10);
   static const int _minChangesForSync = 1;
-  static const Duration defaultAutoSyncInterval = Duration(minutes: 60); // 1 hour default
+  static const Duration defaultAutoSyncInterval = Duration(
+    minutes: 60,
+  ); // 1 hour default
   bool _ignoreChanges = false;
 
   // Stream for auto sync configuration changes
-  final StreamController<bool> _autoSyncEnabledController = StreamController<bool>.broadcast();
+  final StreamController<bool> _autoSyncEnabledController =
+      StreamController<bool>.broadcast();
   Stream<bool> get autoSyncEnabledStream => _autoSyncEnabledController.stream;
 
   // Stream for auto sync interval changes
-  final StreamController<Duration> _autoSyncIntervalController = StreamController<Duration>.broadcast();
-  Stream<Duration> get autoSyncIntervalStream => _autoSyncIntervalController.stream;
+  final StreamController<Duration> _autoSyncIntervalController =
+      StreamController<Duration>.broadcast();
+  Stream<Duration> get autoSyncIntervalStream =>
+      _autoSyncIntervalController.stream;
 
   // Stream for screen open auto sync changes
-  final StreamController<bool> _screenOpenAutoSyncController = StreamController<bool>.broadcast();
-  Stream<bool> get screenOpenAutoSyncStream => _screenOpenAutoSyncController.stream;
+  final StreamController<bool> _screenOpenAutoSyncController =
+      StreamController<bool>.broadcast();
+  Stream<bool> get screenOpenAutoSyncStream =>
+      _screenOpenAutoSyncController.stream;
 
   factory SyncService() => _instance;
 
@@ -218,8 +225,11 @@ class SyncService {
       'password': prefs.getString('webdav_password') ?? '',
       'enabled': prefs.getBool('webdav_enabled') ?? false,
       'autoSyncEnabled': prefs.getBool('webdav_auto_sync_enabled') ?? true,
-      'autoSyncIntervalMinutes': prefs.getInt('webdav_auto_sync_interval_minutes') ?? defaultAutoSyncInterval.inMinutes,
-      'screenOpenAutoSyncEnabled': prefs.getBool('webdav_screen_open_auto_sync_enabled') ?? true,
+      'autoSyncIntervalMinutes':
+          prefs.getInt('webdav_auto_sync_interval_minutes') ??
+          defaultAutoSyncInterval.inMinutes,
+      'screenOpenAutoSyncEnabled':
+          prefs.getBool('webdav_screen_open_auto_sync_enabled') ?? true,
     };
   }
 
@@ -253,7 +263,9 @@ class SyncService {
 
   Future<Duration> getAutoSyncInterval() async {
     final prefs = await SharedPreferences.getInstance();
-    final minutes = prefs.getInt('webdav_auto_sync_interval_minutes') ?? defaultAutoSyncInterval.inMinutes;
+    final minutes =
+        prefs.getInt('webdav_auto_sync_interval_minutes') ??
+        defaultAutoSyncInterval.inMinutes;
     return Duration(minutes: minutes);
   }
 

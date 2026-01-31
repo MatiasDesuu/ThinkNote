@@ -942,7 +942,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   void _startAutoSyncTimer() {
     // Cancel any existing timer first
     _autoSyncTimer?.cancel();
-    
+
     // Only start timer if auto sync is enabled
     _syncService.getAutoSyncEnabled().then((enabled) async {
       if (enabled) {
@@ -2372,7 +2372,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       await dbHelper.database;
       _syncService = SyncService();
       await _syncService.initialize();
-      
+
       // Initialize auto sync timer and listener after sync service is ready
       _startAutoSyncTimer();
       _setupAutoSyncListener();

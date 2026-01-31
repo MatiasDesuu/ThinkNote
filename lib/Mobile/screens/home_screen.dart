@@ -768,64 +768,92 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (widget.onNoteSelected != null) {
       widget.onNoteSelected!(note);
     } else {
-      final editorTitleController = TextEditingController(text: note.title);
-      final editorContentController = TextEditingController(text: note.content);
-      final editorFocusNode = FocusNode();
-
       Navigator.of(context)
-          .push(
-            MaterialPageRoute(
-              builder:
-                  (context) => NoteEditor(
-                    selectedNote: note,
-                    titleController: editorTitleController,
-                    contentController: editorContentController,
-                    contentFocusNode: editorFocusNode,
-                    isEditing: widget.isEditing,
-                    isImmersiveMode: widget.isImmersiveMode,
-                    onSaveNote: () async {
-                      try {
-                        final dbHelper = DatabaseHelper();
-                        final noteRepository = NoteRepository(dbHelper);
-
-                        final updatedNote = note.copyWith(
-                          title: editorTitleController.text.trim(),
-                          content: editorContentController.text,
-                          updatedAt: DateTime.now(),
-                        );
-
-                        final result = await noteRepository.updateNote(
-                          updatedNote,
-                        );
-                        if (result > 0) {
-                          DatabaseHelper.notifyDatabaseChanged();
-                        }
-                      } catch (e) {
-                        debugPrint('Error saving note: $e');
-                        if (mounted) {
-                          CustomSnackbar.show(
-                            context: context,
-                            message: 'Error saving note: ${e.toString()}',
-                            type: CustomSnackbarType.error,
-                          );
-                        }
-                      }
-                    },
-                    onToggleEditing: widget.onToggleEditing,
-                    onTitleChanged: () {
-                      widget.onTitleChanged();
-                    },
-                    onContentChanged: () {
-                      widget.onContentChanged();
-                    },
-                    onToggleImmersiveMode: widget.onToggleImmersiveMode,
-                  ),
-            ),
-          )
+          .push(MaterialPageRoute(builder: (context) => _buildNoteEditor(note)))
           .then((_) {
             _loadNotes();
           });
     }
+  }
+
+  Widget _buildNoteEditor(Note note) {
+    final editorTitleController = TextEditingController(text: note.title);
+    final editorContentController = TextEditingController(text: note.content);
+    final editorFocusNode = FocusNode();
+
+    return NoteEditor(
+      selectedNote: note,
+      titleController: editorTitleController,
+      contentController: editorContentController,
+      contentFocusNode: editorFocusNode,
+      isEditing: widget.isEditing,
+      isImmersiveMode: widget.isImmersiveMode,
+      onSaveNote: () async {
+        try {
+          final dbHelper = DatabaseHelper();
+          final noteRepository = NoteRepository(dbHelper);
+
+          final updatedNote = note.copyWith(
+            title: editorTitleController.text.trim(),
+            content: editorContentController.text,
+            updatedAt: DateTime.now(),
+          );
+
+          final result = await noteRepository.updateNote(updatedNote);
+          if (result > 0) {
+            DatabaseHelper.notifyDatabaseChanged();
+          }
+        } catch (e) {
+          debugPrint('Error saving note: $e');
+          if (mounted) {
+            CustomSnackbar.show(
+              context: context,
+              message: 'Error saving note: ${e.toString()}',
+              type: CustomSnackbarType.error,
+            );
+          }
+        }
+      },
+      onToggleEditing: widget.onToggleEditing,
+      onTitleChanged: () {
+        widget.onTitleChanged();
+      },
+      onContentChanged: () {
+        widget.onContentChanged();
+      },
+      onToggleImmersiveMode: widget.onToggleImmersiveMode,
+      onNextNote: () {
+        final index = _notes.indexWhere((n) => n.id == note.id);
+        if (index != -1 && index < _notes.length - 1) {
+          final nextNote = _notes[index + 1];
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => _buildNoteEditor(nextNote)),
+          );
+        }
+      },
+      onPreviousNote: () {
+        final index = _notes.indexWhere((n) => n.id == note.id);
+        if (index > 0) {
+          final prevNote = _notes[index - 1];
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => _buildNoteEditor(prevNote)),
+          );
+        }
+      },
+      onNoteLinkTap: (Note linkedNote) {
+        // Open the linked note by pushing a new editor on top
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => _buildNoteEditor(linkedNote)));
+      },
+      onNotebookLinkTap: (Notebook linkedNotebook) {
+        // Switch notebook and go back to list
+        if (widget.onNotebookSelected != null) {
+          widget.onNotebookSelected!(linkedNotebook);
+        }
+        Navigator.of(context).pop();
+      },
+    );
   }
 
   Future<void> _loadSortPreference() async {

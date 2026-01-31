@@ -962,7 +962,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                         ),
                                       ),
                                       child: FloatingActionButton(
-                                        heroTag: 'main_fab',
+                                        heroTag: null,
                                         onPressed: null,
                                         backgroundColor: colorScheme.primary,
                                         foregroundColor: colorScheme.onPrimary,

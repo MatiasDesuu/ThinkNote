@@ -64,11 +64,19 @@
             android:value="2" />
     </application>
 
-    <!-- Requerido para consultar actividades que pueden procesar texto -->
+    <!-- Requerido para consultar actividades que pueden procesar texto y lanzar URLs -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
         </intent>
     </queries>
 </manifest>
