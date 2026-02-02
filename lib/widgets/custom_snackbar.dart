@@ -42,36 +42,52 @@ class CustomSnackbar extends StatelessWidget {
           bottom: 16,
         ),
         dismissDirection: DismissDirection.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.only(left: 16, right: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         backgroundColor: _getBackgroundColor(context, type),
         duration: duration,
-        content: Row(
-          children: [
-            Icon(_getIcon(type), color: _getTextColor(context, type)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: TextStyle(color: _getTextColor(context, type)),
+        content: SizedBox(
+          height: 48,
+          child: Row(
+            children: [
+              Icon(_getIcon(type), color: _getTextColor(context, type)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(color: _getTextColor(context, type)),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-            if (onActionPressed != null && actionLabel != null) ...[
-              const SizedBox(width: 8),
-              TextButton(
+              if (onActionPressed != null && actionLabel != null) ...[
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    onActionPressed();
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: _getTextColor(context, type),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    minimumSize: const Size(0, 32),
+                  ),
+                  child: Text(actionLabel),
+                ),
+              ],
+              IconButton(
+                icon: Icon(
+                  Icons.close,
+                  color: _getTextColor(context, type),
+                  size: 20,
+                ),
                 onPressed: () {
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  onActionPressed();
                 },
-                style: TextButton.styleFrom(
-                  foregroundColor: _getTextColor(context, type),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  minimumSize: const Size(0, 32),
-                ),
-                child: Text(actionLabel),
+                splashRadius: 20,
               ),
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -126,36 +142,52 @@ class CustomSnackbar extends StatelessWidget {
         bottom: 16,
       ),
       dismissDirection: DismissDirection.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.only(left: 16, right: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       backgroundColor: _getBackgroundColor(context, type),
       duration: duration,
-      content: Row(
-        children: [
-          Icon(_getIcon(type), color: _getTextColor(context, type)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(color: _getTextColor(context, type)),
+      content: SizedBox(
+        height: 48,
+        child: Row(
+          children: [
+            Icon(_getIcon(type), color: _getTextColor(context, type)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(color: _getTextColor(context, type)),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          if (onActionPressed != null && actionLabel != null) ...[
-            const SizedBox(width: 8),
-            TextButton(
+            if (onActionPressed != null && actionLabel != null) ...[
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  onActionPressed!();
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: _getTextColor(context, type),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  minimumSize: const Size(0, 32),
+                ),
+                child: Text(actionLabel!),
+              ),
+            ],
+            IconButton(
+              icon: Icon(
+                Icons.close,
+                color: _getTextColor(context, type),
+                size: 20,
+              ),
               onPressed: () {
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                onActionPressed!();
               },
-              style: TextButton.styleFrom(
-                foregroundColor: _getTextColor(context, type),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                minimumSize: const Size(0, 32),
-              ),
-              child: Text(actionLabel!),
+              splashRadius: 20,
             ),
           ],
-        ],
+        ),
       ),
     );
   }
