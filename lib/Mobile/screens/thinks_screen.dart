@@ -15,7 +15,7 @@ import '../../database/repositories/notebook_repository.dart';
 import '../../database/repositories/note_repository.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/confirmation_dialogue.dart';
-import '../widgets/think_editor.dart';
+import '../widgets/note_editor.dart';
 import '../theme_handler.dart';
 
 class ThinksScreen extends StatefulWidget {
@@ -251,14 +251,14 @@ class _ThinksScreenState extends State<ThinksScreen> {
                               monochromeEnabled: monochromeMode,
                               einkEnabled: einkMode,
                             ),
-                            child: ThinkEditor(
+                            child: NoteEditor(
                               selectedThink: think,
                               titleController: editorTitleController,
                               contentController: editorContentController,
                               contentFocusNode: editorFocusNode,
                               isEditing: true,
                               isImmersiveMode: false,
-                              onSaveThink: () async {
+                              onSave: () async {
                                 try {
                                   final dbHelper = DatabaseHelper();
                                   final thinkRepository = ThinkRepository(

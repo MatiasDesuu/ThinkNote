@@ -788,7 +788,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       contentFocusNode: editorFocusNode,
       isEditing: widget.isEditing,
       isImmersiveMode: widget.isImmersiveMode,
-      onSaveNote: () async {
+      onSave: () async {
         try {
           final dbHelper = DatabaseHelper();
           final noteRepository = NoteRepository(dbHelper);

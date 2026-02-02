@@ -26,7 +26,7 @@ import 'services/bookmark_sharing_handler.dart';
 import '../database/sync_service.dart';
 import '../widgets/custom_snackbar.dart';
 import 'dart:async';
-import 'widgets/think_editor.dart';
+import 'widgets/note_editor.dart';
 import 'screens/calendar_screen.dart';
 import '../widgets/sync_progress_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -497,14 +497,14 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                               monochromeEnabled: monochromeMode,
                               einkEnabled: einkMode,
                             ),
-                            child: ThinkEditor(
+                            child: NoteEditor(
                               selectedThink: createdThink,
                               titleController: titleController,
                               contentController: contentController,
                               contentFocusNode: FocusNode(),
                               isEditing: true,
                               isImmersiveMode: false,
-                              onSaveThink: () async {
+                              onSave: () async {
                                 try {
                                   final updatedThink = Think(
                                     id: createdThink.id,

@@ -117,7 +117,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   contentFocusNode: editorFocusNode,
                   isEditing: true,
                   isImmersiveMode: false,
-                  onSaveNote: () async {
+                  onSave: () async {
                     try {
                       final updatedNote = Note(
                         id: item.id,

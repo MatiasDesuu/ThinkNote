@@ -777,7 +777,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                   contentFocusNode: editorFocusNode,
                   isEditing: true,
                   isImmersiveMode: false,
-                  onSaveNote: () async {
+                  onSave: () async {
                     try {
                       final dbHelper = DatabaseHelper();
                       final noteRepository = NoteRepository(dbHelper);

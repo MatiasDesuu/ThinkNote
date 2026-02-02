@@ -66,7 +66,7 @@ class SyncProgressOverlayManager {
                                   : 0.0;
                           return Positioned(
                             left: leftOffset + 10,
-                            bottom: 20,
+                            bottom: 16,
                             child: SyncProgressPopup(status: _currentStatus!),
                           );
                         },

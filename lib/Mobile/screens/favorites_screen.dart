@@ -8,7 +8,6 @@ import '../../database/repositories/note_repository.dart';
 import '../../database/repositories/think_repository.dart';
 import '../../database/database_helper.dart';
 import '../../widgets/custom_snackbar.dart';
-import '../widgets/think_editor.dart';
 import '../widgets/note_editor.dart';
 
 class FavoritesScreen extends StatefulWidget {
@@ -278,7 +277,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         contentFocusNode: editorFocusNode,
                         isEditing: true,
                         isImmersiveMode: false,
-                        onSaveNote: () async {
+                        onSave: () async {
                           try {
                             final updatedNote = Note(
                               id: item.id,
@@ -332,14 +331,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 context,
                 MaterialPageRoute(
                   builder:
-                      (context) => ThinkEditor(
+                      (context) => NoteEditor(
                         selectedThink: item,
                         titleController: editorTitleController,
                         contentController: editorContentController,
                         contentFocusNode: editorFocusNode,
                         isEditing: true,
                         isImmersiveMode: false,
-                        onSaveThink: () async {
+                        onSave: () async {
                           try {
                             final updatedThink = Think(
                               id: item.id,

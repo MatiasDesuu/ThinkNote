@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:dynamic_color/dynamic_color.dart';
 import '../../database/models/note.dart';
 import '../../database/models/notebook.dart';
+import '../../database/models/think.dart';
 import '../../database/database_helper.dart';
 import '../animations/animations_handler.dart';
 import '../scriptmode_handler.dart';
@@ -16,13 +17,14 @@ import '../../widgets/Editor/format_handler.dart';
 import '../../widgets/Editor/unified_text_handler.dart';
 
 class NoteEditor extends StatefulWidget {
-  final Note selectedNote;
+  final Note? selectedNote;
+  final Think? selectedThink;
   final TextEditingController titleController;
   final TextEditingController contentController;
   final FocusNode contentFocusNode;
   final bool isEditing;
   final bool isImmersiveMode;
-  final Future<void> Function() onSaveNote;
+  final Future<void> Function() onSave;
   final VoidCallback onToggleEditing;
   final VoidCallback onTitleChanged;
   final VoidCallback onContentChanged;
@@ -34,13 +36,14 @@ class NoteEditor extends StatefulWidget {
 
   const NoteEditor({
     super.key,
-    required this.selectedNote,
+    this.selectedNote,
+    this.selectedThink,
     required this.titleController,
     required this.contentController,
     required this.contentFocusNode,
     required this.isEditing,
     required this.isImmersiveMode,
-    required this.onSaveNote,
+    required this.onSave,
     required this.onToggleEditing,
     required this.onTitleChanged,
     required this.onContentChanged,
@@ -50,7 +53,7 @@ class NoteEditor extends StatefulWidget {
     this.onPreviousNote,
     this.onNoteLinkTap,
     this.onNotebookLinkTap,
-  });
+  }) : assert(selectedNote != null || selectedThink != null);
 
   @override
   State<NoteEditor> createState() => _NoteEditorState();
@@ -200,7 +203,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
     if (!mounted) return;
 
     if (isAutoSave && _saveController.isAnimating) {
-      await widget.onSaveNote();
+      await widget.onSave();
       return;
     }
 
@@ -208,7 +211,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
       _saveController.start();
       final startTime = DateTime.now();
 
-      await widget.onSaveNote();
+      await widget.onSave();
       DatabaseHelper.notifyDatabaseChanged();
 
       final elapsedTime = DateTime.now().difference(startTime).inMilliseconds;
@@ -245,7 +248,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
     });
 
     try {
-      await widget.onSaveNote();
+      await widget.onSave();
       DatabaseHelper.notifyDatabaseChanged();
     } catch (e) {
       debugPrint('Error saving note: $e');
@@ -631,9 +634,9 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                 fontSize: 18,
                               ),
                               textCapitalization: TextCapitalization.sentences,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 border: InputBorder.none,
-                                hintText: 'Note title',
+                                hintText: widget.selectedThink != null ? 'Think title' : 'Note title',
                                 contentPadding: EdgeInsets.zero,
                               ),
                               enabled: widget.isEditing && !_isReadMode,
@@ -740,7 +743,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                                   widget.contentController,
                                               undoController: _undoController,
                                               autofocus:
-                                                  widget.selectedNote.id !=
+                                                  (widget.selectedNote?.id ?? widget.selectedThink?.id) !=
                                                   null,
                                               focusNode:
                                                   widget.contentFocusNode,
@@ -762,9 +765,9 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                               ),
                                               keyboardType:
                                                   TextInputType.multiline,
-                                              decoration: const InputDecoration(
+                                              decoration: InputDecoration(
                                                 border: InputBorder.none,
-                                                hintText: 'Start writing...',
+                                                hintText: widget.selectedThink != null ? 'Start thinking...' : 'Start writing...',
                                                 contentPadding: EdgeInsets.zero,
                                               ),
                                               onChanged:
