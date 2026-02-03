@@ -38,14 +38,15 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
 
   Widget _buildTooltipIconButton(
     BuildContext context, {
-    required Icon icon,
+    required IconData iconData,
     required VoidCallback onPressed,
     required String tooltipMessage,
+    double iconSize = 20,
   }) {
     return CustomTooltip(
       message: tooltipMessage,
       builder: (context, isHovering) => IconButton(
-        icon: icon,
+        icon: Icon(iconData, size: iconSize),
         onPressed: onPressed,
         visualDensity: VisualDensity.compact,
       ),
@@ -85,9 +86,13 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
   Widget build(BuildContext context) {
     if (widget.isReadMode) return const SizedBox.shrink();
 
+    bool isMobile = MediaQuery.of(context).size.width < 600;
+    double toolbarHeight = isMobile ? 40 : 40;
+    double iconSize = isMobile ? 24 : 20;
+
     return SizedBox(
       width: double.infinity,
-      height: 40,
+      height: toolbarHeight,
       child: Listener(
         onPointerSignal: (pointerSignal) {
           if (pointerSignal is PointerScrollEvent) {
@@ -109,87 +114,97 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
               children: [
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Icons.undo_rounded, size: 20),
+                  iconData: Icons.undo_rounded,
                   onPressed: widget.onUndo,
                   tooltipMessage: 'Undo (Ctrl+Z)',
+                  iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Icons.redo_rounded, size: 20),
+                  iconData: Icons.redo_rounded,
                   onPressed: widget.onRedo,
                   tooltipMessage: 'Redo (Ctrl+Shift+Z)',
+                  iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Icons.keyboard_arrow_up_rounded, size: 20),
+                  iconData: Icons.keyboard_arrow_up_rounded,
                   onPressed: widget.onPreviousNote,
                   tooltipMessage: 'Previous Note',
+                  iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+                  iconData: Icons.keyboard_arrow_down_rounded,
                   onPressed: widget.onNextNote,
                   tooltipMessage: 'Next Note',
+                  iconSize: iconSize,
                 ),
                 const VerticalDivider(width: 16, indent: 8, endIndent: 8),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Icons.format_bold_rounded, size: 20),
+                  iconData: Icons.format_bold_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.bold),
                   tooltipMessage: 'Bold',
+                  iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Icons.format_italic_rounded, size: 20),
+                  iconData: Icons.format_italic_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.italic),
                   tooltipMessage: 'Italic',
+                  iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(
-                    Icons.format_strikethrough_rounded,
-                    size: 20,
-                  ),
+                  iconData: Icons.format_strikethrough_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.strikethrough),
                   tooltipMessage: 'Strikethrough',
+                  iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Icons.code_rounded, size: 20),
+                  iconData: Icons.code_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.code),
                   tooltipMessage: 'Inline Code',
+                  iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Icons.copy_all_rounded, size: 20),
+                  iconData: Icons.copy_all_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.taggedCode),
                   tooltipMessage: 'Copy Block',
+                  iconSize: iconSize,
                 ),
                 const VerticalDivider(width: 16, indent: 8, endIndent: 8),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Icons.file_present_rounded, size: 20),
+                  iconData: Icons.file_present_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.noteLink),
                   tooltipMessage: 'Note Link',
+                  iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Icons.book_rounded, size: 20),
+                  iconData: Icons.book_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.notebookLink),
                   tooltipMessage: 'Notebook Link',
+                  iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Icons.link_rounded, size: 20),
+                  iconData: Icons.link_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.link),
                   tooltipMessage: 'Hyperlink',
+                  iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Icons.horizontal_rule_rounded, size: 20),
+                  iconData: Icons.horizontal_rule_rounded,
                   onPressed:
                       () => widget.onFormatTap(FormatType.horizontalRule),
                   tooltipMessage: 'Horizontal Divider',
+                  iconSize: iconSize,
                 ),
                 const VerticalDivider(width: 16, indent: 8, endIndent: 8),
                 GestureDetector(
@@ -199,50 +214,50 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                       _showHeadingsMenu(context, details.globalPosition),
                   child: _buildTooltipIconButton(
                     context,
-                    icon: const Icon(Symbols.format_h1_rounded, size: 20),
+                    iconData: Symbols.format_h1_rounded,
                     onPressed: () => widget.onFormatTap(FormatType.heading1),
                     tooltipMessage: 'Heading 1 (Right click for more)',
+                    iconSize: iconSize,
                   ),
                 ),
                 const VerticalDivider(width: 16, indent: 8, endIndent: 8),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(
-                    Icons.format_list_numbered_rounded,
-                    size: 20,
-                  ),
+                  iconData: Icons.format_list_numbered_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.numbered),
                   tooltipMessage: 'Numbered List',
+                  iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(
-                    Icons.format_list_bulleted_rounded,
-                    size: 20,
-                  ),
+                  iconData: Icons.format_list_bulleted_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.bullet),
                   tooltipMessage: 'Bullet List',
+                  iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Icons.checklist_rounded, size: 20),
+                  iconData: Icons.checklist_rounded,
                   onPressed:
                       () => widget.onFormatTap(FormatType.checkboxUnchecked),
                   tooltipMessage: 'Checkbox List',
+                  iconSize: iconSize,
                 ),
                 const VerticalDivider(width: 16, indent: 8, endIndent: 8),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Icons.text_snippet_rounded, size: 20),
+                  iconData: Icons.text_snippet_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.insertScript),
                   tooltipMessage: 'Insert #script',
+                  iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
                   context,
-                  icon: const Icon(Symbols.code_blocks_rounded, size: 20),
+                  iconData: Symbols.code_blocks_rounded,
                   onPressed:
                       () => widget.onFormatTap(FormatType.convertToScript),
                   tooltipMessage: 'Convert to Script Block',
+                  iconSize: iconSize,
                 ),
               ],
             ),

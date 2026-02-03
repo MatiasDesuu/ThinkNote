@@ -210,8 +210,22 @@ class _ThinksScreenState extends State<ThinksScreen> {
     }
   }
 
-  void _handleThinkSelected(Think think) {
+  void _handleThinkSelected(Think think) async {
     try {
+      final themeResults = await Future.wait([
+        ThemeManager.getThemeBrightness(),
+        ThemeManager.getColorModeEnabled(),
+        ThemeManager.getMonochromeEnabled(),
+        ThemeManager.getEInkEnabled(),
+      ]);
+
+      if (!mounted) return;
+
+      final isDarkMode = themeResults[0];
+      final colorMode = themeResults[1];
+      final monochromeMode = themeResults[2];
+      final einkMode = themeResults[3];
+
       final editorTitleController = TextEditingController(text: think.title);
       final editorContentController = TextEditingController(
         text: think.content,
@@ -227,78 +241,61 @@ class _ThinksScreenState extends State<ThinksScreen> {
                       ColorScheme? lightDynamic,
                       ColorScheme? darkDynamic,
                     ) {
-                      return FutureBuilder(
-                        future: Future.wait([
-                          ThemeManager.getThemeBrightness(),
-                          ThemeManager.getColorModeEnabled(),
-                          ThemeManager.getMonochromeEnabled(),
-                          ThemeManager.getEInkEnabled(),
-                        ]),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData) return const SizedBox.shrink();
+                      return Theme(
+                        data: ThemeManager.buildTheme(
+                          lightDynamic: lightDynamic,
+                          darkDynamic: darkDynamic,
+                          isDarkMode: isDarkMode,
+                          colorModeEnabled: colorMode,
+                          monochromeEnabled: monochromeMode,
+                          einkEnabled: einkMode,
+                        ),
+                        child: NoteEditor(
+                          selectedThink: think,
+                          titleController: editorTitleController,
+                          contentController: editorContentController,
+                          contentFocusNode: editorFocusNode,
+                          isEditing: true,
+                          isImmersiveMode: false,
+                          onSave: () async {
+                            try {
+                              final dbHelper = DatabaseHelper();
+                              final thinkRepository = ThinkRepository(
+                                dbHelper,
+                              );
 
-                          final isDarkMode = snapshot.data![0];
-                          final colorMode = snapshot.data![1];
-                          final monochromeMode = snapshot.data![2];
-                          final einkMode = snapshot.data![3];
+                              final updatedThink = Think(
+                                id: think.id,
+                                title: editorTitleController.text.trim(),
+                                content: editorContentController.text,
+                                createdAt: think.createdAt,
+                                updatedAt: DateTime.now(),
+                                isFavorite: think.isFavorite,
+                                orderIndex: think.orderIndex,
+                                tags: think.tags,
+                              );
 
-                          return Theme(
-                            data: ThemeManager.buildTheme(
-                              lightDynamic: lightDynamic,
-                              darkDynamic: darkDynamic,
-                              isDarkMode: isDarkMode,
-                              colorModeEnabled: colorMode,
-                              monochromeEnabled: monochromeMode,
-                              einkEnabled: einkMode,
-                            ),
-                            child: NoteEditor(
-                              selectedThink: think,
-                              titleController: editorTitleController,
-                              contentController: editorContentController,
-                              contentFocusNode: editorFocusNode,
-                              isEditing: true,
-                              isImmersiveMode: false,
-                              onSave: () async {
-                                try {
-                                  final dbHelper = DatabaseHelper();
-                                  final thinkRepository = ThinkRepository(
-                                    dbHelper,
-                                  );
-
-                                  final updatedThink = Think(
-                                    id: think.id,
-                                    title: editorTitleController.text.trim(),
-                                    content: editorContentController.text,
-                                    createdAt: think.createdAt,
-                                    updatedAt: DateTime.now(),
-                                    isFavorite: think.isFavorite,
-                                    orderIndex: think.orderIndex,
-                                    tags: think.tags,
-                                  );
-
-                                  await thinkRepository.updateThink(
-                                    updatedThink,
-                                  );
-                                  DatabaseHelper.notifyDatabaseChanged();
-                                } catch (e) {
-                                  debugPrint('Error saving think: $e');
-                                  if (mounted) {
-                                    CustomSnackbar.show(
-                                      context: context,
-                                      message:
-                                          'Error saving think: ${e.toString()}',
-                                      type: CustomSnackbarType.error,
-                                    );
-                                  }
-                                }
-                              },
-                              onToggleEditing: () {},
-                              onTitleChanged: () {},
-                              onContentChanged: () {},
-                              onToggleImmersiveMode: (isImmersive) {},
-                            ),
-                          );
-                        },
+                              await thinkRepository.updateThink(
+                                updatedThink,
+                              );
+                              DatabaseHelper.notifyDatabaseChanged();
+                            } catch (e) {
+                              debugPrint('Error saving think: $e');
+                              if (mounted) {
+                                CustomSnackbar.show(
+                                  context: context,
+                                  message:
+                                      'Error saving think: ${e.toString()}',
+                                  type: CustomSnackbarType.error,
+                                );
+                              }
+                            }
+                          },
+                          onToggleEditing: () {},
+                          onTitleChanged: () {},
+                          onContentChanged: () {},
+                          onToggleImmersiveMode: (isImmersive) {},
+                        ),
                       );
                     },
                   ),

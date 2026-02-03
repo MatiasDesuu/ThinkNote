@@ -15,6 +15,7 @@ import '../../widgets/Editor/list_continuation_handler.dart';
 import '../../widgets/Editor/editor_tool_bar.dart';
 import '../../widgets/Editor/format_handler.dart';
 import '../../widgets/Editor/unified_text_handler.dart';
+import 'note_statistics_drawer.dart';
 
 class NoteEditor extends StatefulWidget {
   final Note? selectedNote;
@@ -619,6 +620,12 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                 },
                 child: Scaffold(
                   backgroundColor: theme.colorScheme.surface,
+                  endDrawer: NoteStatisticsDrawer(
+                    note: widget.selectedNote,
+                    think: widget.selectedThink,
+                    currentTitle: widget.titleController.text,
+                    currentContent: widget.contentController.text,
+                  ),
                   appBar:
                       _isImmersiveMode
                           ? null
@@ -636,7 +643,10 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                               textCapitalization: TextCapitalization.sentences,
                               decoration: InputDecoration(
                                 border: InputBorder.none,
-                                hintText: widget.selectedThink != null ? 'Think title' : 'Note title',
+                                hintText:
+                                    widget.selectedThink != null
+                                        ? 'Think title'
+                                        : 'Note title',
                                 contentPadding: EdgeInsets.zero,
                               ),
                               enabled: widget.isEditing && !_isReadMode,
@@ -651,13 +661,21 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                             ),
                             actions: [
                               if (_isScript)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 16.0),
-                                  child: DurationEstimator(
-                                    content: widget.contentController.text,
-                                    controller: widget.contentController,
-                                  ),
+                                DurationEstimator(
+                                  content: widget.contentController.text,
+                                  controller: widget.contentController,
                                 ),
+                              Builder(
+                                builder:
+                                    (context) => IconButton(
+                                      icon: const Icon(
+                                        Icons.analytics_outlined,
+                                      ),
+                                      onPressed: () {
+                                        Scaffold.of(context).openEndDrawer();
+                                      },
+                                    ),
+                              ),
                             ],
                           ),
                   body: SafeArea(
@@ -743,7 +761,10 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                                   widget.contentController,
                                               undoController: _undoController,
                                               autofocus:
-                                                  (widget.selectedNote?.id ?? widget.selectedThink?.id) !=
+                                                  (widget.selectedNote?.id ??
+                                                      widget
+                                                          .selectedThink
+                                                          ?.id) !=
                                                   null,
                                               focusNode:
                                                   widget.contentFocusNode,
@@ -767,7 +788,10 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                                   TextInputType.multiline,
                                               decoration: InputDecoration(
                                                 border: InputBorder.none,
-                                                hintText: widget.selectedThink != null ? 'Start thinking...' : 'Start writing...',
+                                                hintText:
+                                                    widget.selectedThink != null
+                                                        ? 'Start thinking...'
+                                                        : 'Start writing...',
                                                 contentPadding: EdgeInsets.zero,
                                               ),
                                               onChanged:
