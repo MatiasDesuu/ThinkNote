@@ -454,6 +454,20 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
       final thinkRepository = ThinkRepository(dbHelper);
       final thinkService = ThinkService(thinkRepository);
 
+      final themeResults = await Future.wait([
+        _brightnessFuture,
+        _colorModeFuture,
+        _monochromeFuture,
+        _einkFuture,
+      ]);
+
+      if (!mounted) return;
+
+      final isDarkMode = themeResults[0];
+      final colorMode = themeResults[1];
+      final monochromeMode = themeResults[2];
+      final einkMode = themeResults[3];
+
       final createdThink = await thinkService.createThink();
       if (createdThink != null) {
         if (mounted) {
@@ -473,73 +487,54 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                       ColorScheme? lightDynamic,
                       ColorScheme? darkDynamic,
                     ) {
-                      return FutureBuilder(
-                        future: Future.wait([
-                          _brightnessFuture,
-                          _colorModeFuture,
-                          _monochromeFuture,
-                          _einkFuture,
-                        ]),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData) return const SizedBox.shrink();
+                      return Theme(
+                        data: ThemeManager.buildTheme(
+                          lightDynamic: lightDynamic,
+                          darkDynamic: darkDynamic,
+                          isDarkMode: isDarkMode,
+                          colorModeEnabled: colorMode,
+                          monochromeEnabled: monochromeMode,
+                          einkEnabled: einkMode,
+                        ),
+                        child: NoteEditor(
+                          selectedThink: createdThink,
+                          titleController: titleController,
+                          contentController: contentController,
+                          contentFocusNode: FocusNode(),
+                          isEditing: true,
+                          isImmersiveMode: false,
+                          onSave: () async {
+                            try {
+                              final updatedThink = Think(
+                                id: createdThink.id,
+                                title: titleController.text.trim(),
+                                content: contentController.text,
+                                createdAt: createdThink.createdAt,
+                                updatedAt: DateTime.now(),
+                                isFavorite: createdThink.isFavorite,
+                                orderIndex: createdThink.orderIndex,
+                                tags: createdThink.tags,
+                              );
 
-                          final isDarkMode = snapshot.data![0];
-                          final colorMode = snapshot.data![1];
-                          final monochromeMode = snapshot.data![2];
-                          final einkMode = snapshot.data![3];
-
-                          return Theme(
-                            data: ThemeManager.buildTheme(
-                              lightDynamic: lightDynamic,
-                              darkDynamic: darkDynamic,
-                              isDarkMode: isDarkMode,
-                              colorModeEnabled: colorMode,
-                              monochromeEnabled: monochromeMode,
-                              einkEnabled: einkMode,
-                            ),
-                            child: NoteEditor(
-                              selectedThink: createdThink,
-                              titleController: titleController,
-                              contentController: contentController,
-                              contentFocusNode: FocusNode(),
-                              isEditing: true,
-                              isImmersiveMode: false,
-                              onSave: () async {
-                                try {
-                                  final updatedThink = Think(
-                                    id: createdThink.id,
-                                    title: titleController.text.trim(),
-                                    content: contentController.text,
-                                    createdAt: createdThink.createdAt,
-                                    updatedAt: DateTime.now(),
-                                    isFavorite: createdThink.isFavorite,
-                                    orderIndex: createdThink.orderIndex,
-                                    tags: createdThink.tags,
-                                  );
-
-                                  await thinkRepository.updateThink(
-                                    updatedThink,
-                                  );
-                                  DatabaseHelper.notifyDatabaseChanged();
-                                } catch (e) {
-                                  debugPrint('Error saving think: $e');
-                                  if (mounted) {
-                                    CustomSnackbar.show(
-                                      context: context,
-                                      message:
-                                          'Error saving think: ${e.toString()}',
-                                      type: CustomSnackbarType.error,
-                                    );
-                                  }
-                                }
-                              },
-                              onToggleEditing: () {},
-                              onTitleChanged: () {},
-                              onContentChanged: () {},
-                              onToggleImmersiveMode: (isImmersive) {},
-                            ),
-                          );
-                        },
+                              await thinkRepository.updateThink(updatedThink);
+                              DatabaseHelper.notifyDatabaseChanged();
+                            } catch (e) {
+                              debugPrint('Error saving think: $e');
+                              if (mounted) {
+                                CustomSnackbar.show(
+                                  context: context,
+                                  message:
+                                      'Error saving think: ${e.toString()}',
+                                  type: CustomSnackbarType.error,
+                                );
+                              }
+                            }
+                          },
+                          onToggleEditing: () {},
+                          onTitleChanged: () {},
+                          onContentChanged: () {},
+                          onToggleImmersiveMode: (isImmersive) {},
+                        ),
                       );
                     },
                   ),
