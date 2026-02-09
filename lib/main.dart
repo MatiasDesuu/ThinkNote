@@ -23,6 +23,7 @@ import 'database/models/notebook.dart';
 import 'database/models/task.dart';
 import 'database/models/editor_tab.dart';
 import 'database/database_helper.dart';
+import 'database/repositories/calendar_event_repository.dart';
 import 'database/repositories/note_repository.dart';
 import 'database/repositories/notebook_repository.dart';
 import 'database/database_service.dart';
@@ -855,6 +856,39 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     setState(() {
       _selectedNote = note;
     });
+  }
+
+  Future<void> _onLocateNoteInCalendar(Note note) async {
+    if (note.id == null) return;
+
+    try {
+      final calendarEventRepo = CalendarEventRepository(DatabaseHelper());
+      final event = await calendarEventRepo.getCalendarEventByNoteId(note.id!);
+
+      if (event != null && mounted) {
+        if (!(_calendarPanelKey.currentState?.isExpanded ?? false)) {
+          _calendarPanelKey.currentState?.setExpanded(true);
+        }
+
+        _calendarPanelStateKey.currentState?.selectDate(event.date);
+      } else {
+        if (mounted) {
+          CustomSnackbar.show(
+            context: context,
+            message: 'Note not assigned to any calendar day',
+            type: CustomSnackbarType.error,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomSnackbar.show(
+          context: context,
+          message: 'Error locating note in calendar: ${e.toString()}',
+          type: CustomSnackbarType.error,
+        );
+      }
+    }
   }
 
   void _focusEditor() {
@@ -2126,6 +2160,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                       onNoteOpenInNewTab: (note) {
                         _onNoteOpenInNewTab(note);
                       },
+                      onLocateInCalendar: _onLocateNoteInCalendar,
                       onTrashUpdated: () {
                         _isLoadingNoteContent = true;
 

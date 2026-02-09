@@ -225,6 +225,15 @@ class CalendarPanelState extends State<CalendarPanel>
     }
   }
 
+  void selectDate(DateTime date) {
+    setState(() {
+      _selectedDate = date;
+      _selectedMonth = DateTime(date.year, date.month, 1);
+    });
+    _loadEvents();
+    showPanel();
+  }
+
   /// Reloads all calendar data (events, statuses, and favorite notebooks)
   /// Used for refreshing after sync operations
   void reloadCalendar() {

@@ -371,6 +371,29 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     super.dispose();
   }
 
+  void setExpanded(bool expanded) {
+    if (_isExpanded == expanded) return;
+
+    final navigatorContext = context;
+    setState(() {
+      _isExpanded = expanded;
+    });
+    _saveExpandedState(_isExpanded);
+
+    if (_isExpanded) {
+      _animationController.forward();
+    } else {
+      _animationController.reverse();
+    }
+
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!navigatorContext.mounted) return;
+      if (widget.appFocusNode.canRequestFocus) {
+        FocusScope.of(navigatorContext).requestFocus(widget.appFocusNode);
+      }
+    });
+  }
+
   Future<void> _loadSavedSettings() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;

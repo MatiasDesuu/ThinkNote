@@ -24,6 +24,7 @@ class NotesPanel extends StatefulWidget {
   final VoidCallback? onTogglePanel;
   final VoidCallback? onSortChanged;
   final Function(Note)? onNoteDeleted;
+  final Function(Note)? onLocateInCalendar;
   final String? filterByTag;
 
   const NotesPanel({
@@ -37,6 +38,7 @@ class NotesPanel extends StatefulWidget {
     this.onTogglePanel,
     this.onSortChanged,
     this.onNoteDeleted,
+    this.onLocateInCalendar,
     this.filterByTag,
   });
 
@@ -1046,6 +1048,14 @@ class NotesPanelState extends State<NotesPanel> {
                 _isProcessingAction = false;
                 _isContextMenuOpen = false;
               });
+        },
+      ),
+      ContextMenuItem(
+        icon: Icons.calendar_month_rounded,
+        label: 'Locate in Calendar',
+        onTap: () {
+          _isContextMenuOpen = false;
+          widget.onLocateInCalendar?.call(note);
         },
       ),
       ContextMenuItem(

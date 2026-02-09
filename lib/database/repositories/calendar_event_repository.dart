@@ -105,6 +105,22 @@ class CalendarEventRepository {
     return events;
   }
 
+  Future<CalendarEvent?> getCalendarEventByNoteId(int noteId) async {
+    final db = await _dbHelper.database;
+    final result = db.select(
+      '''
+      SELECT * FROM ${config.DatabaseConfig.tableCalendarEvents}
+      WHERE ${config.DatabaseConfig.columnCalendarEventNoteId} = ?
+      ORDER BY ${config.DatabaseConfig.columnCalendarEventDate} DESC
+      LIMIT 1
+    ''',
+      [noteId],
+    );
+
+    if (result.isEmpty) return null;
+    return CalendarEvent.fromMap(result.first);
+  }
+
   Future<int> deleteCalendarEvent(int id) async {
     final db = await _dbHelper.database;
     final stmt = db.prepare('''
