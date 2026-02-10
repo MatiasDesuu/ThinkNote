@@ -66,7 +66,7 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
         if (!_expandedNotebooks.contains(notebook.id)) {
           return false;
         }
-        // Verificar recursivamente los notebooks hijos
+
         for (final child in _childNotebooks[notebook.id!]!) {
           if (!checkNotebookRecursively(child)) {
             return false;
@@ -76,7 +76,6 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
       return true;
     }
 
-    // Verificar todos los notebooks raíz
     for (final notebook in _notebooks) {
       if (!checkNotebookRecursively(notebook)) {
         return false;
@@ -87,26 +86,30 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
 
   Widget buildTrailingButton() {
     return CustomTooltip(
-      message: areAllNotebooksExpanded ? 'Collapse all notebooks' : 'Expand all notebooks',
-      builder: (context, isHovering) => IconButton(
-        icon: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          transitionBuilder: (Widget child, Animation<double> animation) {
-            return ScaleTransition(
-              scale: animation,
-              child: FadeTransition(opacity: animation, child: child),
-            );
-          },
-          child: Icon(
-            areAllNotebooksExpanded
-                ? Icons.unfold_less_rounded
-                : Icons.unfold_more_rounded,
-            size: 16,
-            key: ValueKey<bool>(areAllNotebooksExpanded),
+      message:
+          areAllNotebooksExpanded
+              ? 'Collapse all notebooks'
+              : 'Expand all notebooks',
+      builder:
+          (context, isHovering) => IconButton(
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return ScaleTransition(
+                  scale: animation,
+                  child: FadeTransition(opacity: animation, child: child),
+                );
+              },
+              child: Icon(
+                areAllNotebooksExpanded
+                    ? Icons.unfold_less_rounded
+                    : Icons.unfold_more_rounded,
+                size: 16,
+                key: ValueKey<bool>(areAllNotebooksExpanded),
+              ),
+            ),
+            onPressed: toggleAllNotebooks,
           ),
-        ),
-        onPressed: toggleAllNotebooks,
-      ),
     );
   }
 
@@ -124,19 +127,16 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
           _getAnimationController(notebook.id!).value = 0.0;
         }
 
-        // Procesar recursivamente los notebooks hijos
         for (final child in _childNotebooks[notebook.id!]!) {
           toggleNotebookRecursively(child);
         }
       }
     }
 
-    // Procesar todos los notebooks raíz en una sola pasada
     for (final notebook in _notebooks) {
       toggleNotebookRecursively(notebook);
     }
 
-    // Actualizar el estado una sola vez
     setState(() {
       _expandedNotebooks.clear();
       if (shouldExpand) {
@@ -144,7 +144,6 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
       }
     });
 
-    // Guardar el estado una sola vez al final
     await _saveExpandedState();
     widget.onExpansionChanged?.call();
   }
@@ -165,9 +164,7 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
   @override
   void didUpdateWidget(DatabaseSidebar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.selectedNotebook?.id != oldWidget.selectedNotebook?.id) {
-      // No llamar handleNotebookSelection aquí, se maneja en los métodos de selección
-    }
+    if (widget.selectedNotebook?.id != oldWidget.selectedNotebook?.id) {}
   }
 
   Future<void> handleNotebookSelection(
@@ -178,7 +175,6 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
 
     if (!expand) return;
 
-    // Expandir todas las carpetas padre
     Notebook? currentParent = notebook;
     while (currentParent?.parentId != null) {
       currentParent = _findParentNotebook(currentParent!.parentId, _notebooks);
@@ -303,7 +299,6 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
 
       _childNotebooks.clear();
 
-      // Función recursiva para cargar la estructura completa
       Future<void> loadNotebookStructure(Notebook notebook) async {
         if (notebook.id != null) {
           try {
@@ -320,7 +315,6 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
 
             _childNotebooks[notebook.id!] = children;
 
-            // Cargar recursivamente todos los hijos
             for (final child in children) {
               await loadNotebookStructure(child);
             }
@@ -330,7 +324,6 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
         }
       }
 
-      // Cargar la estructura completa para todos los notebooks raíz
       for (final notebook in notebooks) {
         await loadNotebookStructure(notebook);
       }
@@ -640,10 +633,8 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
     final repo = NotebookRepository(DatabaseHelper());
     final notebooks = await repo.getNotebooksByParentId(parentId);
 
-    // Ordenar los notebooks por su orderIndex actual
     notebooks.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
 
-    // Actualizar el orderIndex de cada notebook
     for (int i = 0; i < notebooks.length; i++) {
       if (notebooks[i].orderIndex != i) {
         await repo.updateNotebook(notebooks[i].copyWith(orderIndex: i));
@@ -658,16 +649,13 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
   ) async {
     final repo = NotebookRepository(DatabaseHelper());
 
-    // Verificar si el movimiento crearía una referencia circular
     bool wouldCreateCircularReference(Notebook notebook, int? targetParentId) {
       if (targetParentId == null) return false;
       if (notebook.id == targetParentId) return true;
 
-      // Obtener el notebook objetivo
       final targetNotebook = _findParentNotebook(targetParentId, _notebooks);
       if (targetNotebook == null) return false;
 
-      // Verificar si el notebook objetivo es un hijo del notebook arrastrado
       Notebook? current = targetNotebook;
       while (current?.parentId != null) {
         if (current?.parentId == notebook.id) return true;
@@ -676,7 +664,6 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
       return false;
     }
 
-    // Si el movimiento crearía una referencia circular, no permitirlo
     if (wouldCreateCircularReference(draggedNotebook, targetNotebook.id)) {
       if (mounted) {
         CustomSnackbar.show(
@@ -688,7 +675,6 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
       return;
     }
 
-    // Obtener todos los notebooks hijos del notebook arrastrado
     List<Notebook> getAllChildren(Notebook parent) {
       List<Notebook> children = [];
       final directChildren = _childNotebooks[parent.id!] ?? [];
@@ -702,14 +688,11 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
     final allChildren =
         draggedNotebook.id != null ? getAllChildren(draggedNotebook) : [];
 
-    // Si estamos moviendo dentro de otro notebook
     if (!isBefore && targetNotebook.id != null) {
-      // Obtener los notebooks hijos del notebook objetivo
       final targetChildren = await repo.getNotebooksByParentId(
         targetNotebook.id,
       );
 
-      // Actualizar el notebook arrastrado
       await repo.updateNotebook(
         draggedNotebook.copyWith(
           parentId: targetNotebook.id,
@@ -717,7 +700,6 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
         ),
       );
 
-      // Actualizar el parentId de todos los hijos del notebook arrastrado
       for (final child in allChildren) {
         if (child.id != null) {
           await repo.updateNotebook(child);
@@ -728,7 +710,7 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
 
       if (mounted) {
         await _loadData();
-        // Solo expandimos el notebook objetivo cuando movemos dentro de él
+
         setState(() {
           _expandedNotebooks.add(targetNotebook.id!);
         });
@@ -736,22 +718,17 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
         controller.forward();
       }
     } else {
-      // Obtener todos los notebooks del mismo nivel
       final siblings = await repo.getNotebooksByParentId(
         targetNotebook.parentId,
       );
 
-      // Ordenar los notebooks por su orderIndex actual
       siblings.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
 
-      // Encontrar el índice del notebook objetivo
       final targetIndex = siblings.indexWhere((n) => n.id == targetNotebook.id);
       if (targetIndex == -1) return;
 
-      // Calcular el nuevo orderIndex
       final newOrderIndex = isBefore ? targetIndex : targetIndex + 1;
 
-      // Actualizar el orderIndex de todos los notebooks afectados
       for (final notebook in siblings) {
         if (notebook.id == draggedNotebook.id) continue;
 
@@ -763,7 +740,6 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
         await repo.updateNotebook(notebook.copyWith(orderIndex: newIndex));
       }
 
-      // Actualizar el notebook arrastrado
       await repo.updateNotebook(
         draggedNotebook.copyWith(
           parentId: targetNotebook.parentId,
@@ -771,12 +747,10 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
         ),
       );
 
-      // Reordenar todos los notebooks para asegurar consistencia
       await _reorderNotebooks(targetNotebook.parentId);
 
       if (mounted) {
         await _loadData();
-        // No expandimos ningún notebook cuando solo reordenamos
       }
     }
   }
@@ -794,7 +768,6 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Indicador de inserción antes del notebook
         DragTarget<Map<String, dynamic>>(
           onWillAcceptWithDetails: (details) {
             final data = details.data;
@@ -950,7 +923,7 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                     isLast: index == children.length - 1,
                   );
                 }),
-                // Indicador de inserción al final de los hijos
+
                 DragTarget<Map<String, dynamic>>(
                   onWillAcceptWithDetails: (details) {
                     final data = details.data;
@@ -1030,7 +1003,7 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
         child: DragTarget<Map<String, dynamic>>(
           onWillAcceptWithDetails: (details) {
             final data = details.data;
-            // Aceptar tanto notebooks como notas
+
             return (data['type'] == 'notebook' &&
                     data['notebook'].id != notebook.id) ||
                 (data['type'] == 'note' && notebook.id != null);
@@ -1049,14 +1022,12 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
               final noteRepo = NoteRepository(DatabaseHelper());
 
               try {
-                // Get the last orderIndex in the target notebook
                 final notesInTarget = await noteRepo.getNotesByNotebookId(
                   notebook.id!,
                 );
                 var nextOrder =
                     notesInTarget.isEmpty ? 0 : notesInTarget.length;
 
-                // Move all selected notes
                 for (final noteData in selectedNotes) {
                   final note = noteData as Note;
                   await noteRepo.updateNote(
@@ -1265,7 +1236,6 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                   final repo = NotebookRepository(DatabaseHelper());
 
                   try {
-                    // Mover a la raíz
                     final updatedNotebook = Notebook(
                       id: draggedNotebook.id,
                       name: draggedNotebook.name,
@@ -1289,7 +1259,6 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                 }
               },
               builder: (context, candidateData, rejectedData) {
-                // Solo mostrar el indicador de "mover al root" si no estamos sobre un notebook
                 final showRootDropIndicator =
                     candidateData.isNotEmpty && !_isDraggingOverNotebook;
                 return Stack(
@@ -1318,7 +1287,7 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                               isLast: index == _notebooks.length - 1,
                             );
                           }),
-                          // Indicador de inserción al final de la lista raíz
+
                           DragTarget<Map<String, dynamic>>(
                             onWillAcceptWithDetails: (details) {
                               final data = details.data;
@@ -1346,7 +1315,6 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                                   DatabaseHelper(),
                                 );
 
-                                // Mover a la raíz al final
                                 final updatedNotebook = Notebook(
                                   id: draggedNotebook.id,
                                   name: draggedNotebook.name,
@@ -1401,7 +1369,6 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
           selectedTag: _selectedTag,
           onTagSelected: (tag) {
             setState(() {
-              // Toggle selection - if same tag clicked, deselect it
               _selectedTag = _selectedTag == tag ? null : tag;
             });
             if (_selectedTag != null) {

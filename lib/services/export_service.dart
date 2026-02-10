@@ -63,7 +63,6 @@ class ExportService {
       if (outputFile != null) {
         final file = File(outputFile);
 
-        // Create a properly formatted HTML document
         final htmlContent = '''
 <!DOCTYPE html>
 <html lang="en">
@@ -150,17 +149,14 @@ class ExportService {
       );
 
       if (outputFile != null) {
-        // Create PDF document
         final pdf = pw.Document();
 
-        // Split content into paragraphs
         final paragraphs =
             content
                 .split('\n')
                 .where((line) => line.trim().isNotEmpty)
                 .toList();
 
-        // Add pages to PDF
         pdf.addPage(
           pw.Page(
             pageFormat: PdfPageFormat.a4,
@@ -169,7 +165,6 @@ class ExportService {
               return pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  // Title
                   pw.Text(
                     cleanTitle,
                     style: pw.TextStyle(
@@ -179,7 +174,7 @@ class ExportService {
                     ),
                   ),
                   pw.SizedBox(height: 20),
-                  // Content
+
                   ...paragraphs.map(
                     (paragraph) => pw.Padding(
                       padding: const pw.EdgeInsets.only(bottom: 12),
@@ -195,7 +190,6 @@ class ExportService {
           ),
         );
 
-        // Save PDF to file
         final bytes = await pdf.save();
         final file = File(outputFile);
         await file.writeAsBytes(bytes);

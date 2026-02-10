@@ -13,7 +13,6 @@ class AppController {
     : _notebookRepository = NotebookRepository(dbHelper),
       _noteRepository = NoteRepository(dbHelper);
 
-  // Notebook operations
   Future<int> createNotebook(String name, {int? parentId}) async {
     final notebook = Notebook(
       name: name,
@@ -69,7 +68,6 @@ class AppController {
     return await _notebookRepository.getFavoriteNotebooks();
   }
 
-  // Note operations
   Future<int> createNote(String title, String content, int notebookId) async {
     final now = DateTime.now();
     final note = Note(

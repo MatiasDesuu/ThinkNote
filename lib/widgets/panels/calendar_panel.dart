@@ -21,7 +21,6 @@ import '../../Tasks/tasks_screen_details.dart';
 
 import 'package:intl/intl.dart';
 
-/// Mode for the calendar panel - determines what type of items to display
 enum CalendarPanelMode {
   notes, // Default mode - shows notes assigned to calendar
   tasks, // Tasks mode - shows tasks with deadlines
@@ -55,8 +54,6 @@ class CalendarPanel extends StatefulWidget {
 
 class CalendarPanelState extends State<CalendarPanel>
     with SingleTickerProviderStateMixin {
-  // When false the panel will be removed from layout (shrinked to nothing)
-  // to avoid internal widgets being squashed during parent width animations.
   bool _isPanelVisible = true;
   late CalendarEventRepository _calendarEventRepository;
   late CalendarEventStatusRepository _statusRepository;
@@ -174,10 +171,6 @@ class CalendarPanelState extends State<CalendarPanel>
     super.dispose();
   }
 
-  // Public API for external controls (e.g. the sidebar) to show/hide the panel
-  // without animating its width down to 0 which causes internal layout
-  // overflow. Callers can use the GlobalKey<State> attached to this widget to
-  // access these methods.
   void togglePanel() {
     setState(() {
       _isPanelVisible = !_isPanelVisible;
@@ -234,8 +227,6 @@ class CalendarPanelState extends State<CalendarPanel>
     showPanel();
   }
 
-  /// Reloads all calendar data (events, statuses, and favorite notebooks)
-  /// Used for refreshing after sync operations
   void reloadCalendar() {
     if (widget.mode == CalendarPanelMode.notes) {
       _loadEvents();
@@ -246,7 +237,6 @@ class CalendarPanelState extends State<CalendarPanel>
     }
   }
 
-  /// Load all tasks that have a deadline date assigned
   Future<void> _loadTasksWithDeadlines() async {
     if (!mounted) return;
 
@@ -295,12 +285,10 @@ class CalendarPanelState extends State<CalendarPanel>
     try {
       if (item is CalendarEvent) {
         if (item.status != null) {
-          // If it has status, remove it
           await _updateEventStatus(item, null);
         }
       } else if (item is Task) {
         if (item.state != TaskState.none) {
-          // If it has state, set to none
           await _databaseService.taskService.updateTaskState(
             item.id!,
             TaskState.none,
@@ -310,7 +298,6 @@ class CalendarPanelState extends State<CalendarPanel>
         }
       }
 
-      // Ensure lists are updated
       await _loadUnassignedItems();
       if (mounted) setState(() {});
     } catch (e) {
@@ -344,7 +331,7 @@ class CalendarPanelState extends State<CalendarPanel>
             return event;
           }).toList();
     });
-    // Emit the updated events list so UI using the stream can update
+
     if (!_eventsController.isClosed) {
       _eventsController.add(_events);
     }
@@ -384,7 +371,6 @@ class CalendarPanelState extends State<CalendarPanel>
         1,
       );
 
-      // Build a list of unique month-starts to fetch
       final Map<String, DateTime> monthsToFetch = {};
       void addMonth(DateTime dt) =>
           monthsToFetch['${dt.year}-${dt.month}'] = dt;
@@ -399,7 +385,6 @@ class CalendarPanelState extends State<CalendarPanel>
         ),
       );
 
-      // Merge results avoiding duplicates (by id)
       final Map<int, CalendarEvent> merged = {};
       for (final list in results) {
         for (final e in list) {
@@ -407,20 +392,17 @@ class CalendarPanelState extends State<CalendarPanel>
         }
       }
 
-      // Ignore results from stale calls (user navigated again before this
-      // call finished).
       if (!mounted || callId != _eventsLoadCounter) return;
 
       setState(() {
         _events = merged.values.toList();
         _isLoading = false;
       });
-      // Emit events for StreamBuilder consumers
+
       if (!_eventsController.isClosed) {
         _eventsController.add(_events);
       }
-      // Only animate the calendar (not the events panel) so the events
-      // list doesn't disappear while switching months.
+
       if (animate) {
         _animationController.forward();
       }
@@ -444,12 +426,11 @@ class CalendarPanelState extends State<CalendarPanel>
         });
       }
 
-      // Initialize default statuses if none exist
       if (statuses.isEmpty) {
         await _initializeDefaultStatuses();
       }
     } catch (e) {
-      // Handle error silently for now
+      // Ignore errors when loading statuses
     }
   }
 
@@ -471,7 +452,7 @@ class CalendarPanelState extends State<CalendarPanel>
               await loadAllNotebooks(child);
             }
           } catch (e) {
-            // Ignore errors
+            // Ignore errors when loading children
           }
         }
       }
@@ -487,7 +468,7 @@ class CalendarPanelState extends State<CalendarPanel>
         });
       }
     } catch (e) {
-      // Handle error silently
+      // Ignore errors when loading favorite notebooks
     }
   }
 
@@ -523,7 +504,7 @@ class CalendarPanelState extends State<CalendarPanel>
       try {
         await _statusRepository.createStatus(status);
       } catch (e) {
-        // Ignore errors for duplicate statuses
+        // Ignore if status already exists
       }
     }
 
@@ -635,7 +616,6 @@ class CalendarPanelState extends State<CalendarPanel>
     DateTime newDate,
   ) async {
     try {
-      // Verificar si ya existe un evento para esta nota en el día destino
       final existingEvent = _events.firstWhere(
         (e) => e.noteId == event.noteId && e.date.isAtSameMomentAs(newDate),
         orElse:
@@ -653,7 +633,6 @@ class CalendarPanelState extends State<CalendarPanel>
         return;
       }
 
-      // Actualizar la fecha del evento
       final updatedEvent = event.copyWith(date: newDate);
       await _calendarEventRepository.updateCalendarEvent(updatedEvent);
       _databaseService.notifyDatabaseChanged();
@@ -672,8 +651,7 @@ class CalendarPanelState extends State<CalendarPanel>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    // If the panel is hidden, return a zero-size widget so parent width
-    // animations don't cause children to compress and overflow.
+
     if (!_isPanelVisible) return const SizedBox.shrink();
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -811,7 +789,6 @@ class CalendarPanelState extends State<CalendarPanel>
             )
             .toList();
 
-    // Sort events
     eventsForSelectedDay.sort((a, b) {
       if (a.status != null && b.status != null) {
         final statusA = _statuses.firstWhere(
@@ -849,7 +826,6 @@ class CalendarPanelState extends State<CalendarPanel>
               task.date!.day == _selectedDate.day;
         }).toList();
 
-    // Sort tasks
     tasksForSelectedDay.sort((a, b) {
       if (a.completed && !b.completed) return 1;
       if (!a.completed && b.completed) return -1;
@@ -1116,8 +1092,6 @@ class CalendarPanelState extends State<CalendarPanel>
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
-                  // Inform parent that the note was selected from the calendar
-                  // so it can suppress tab open/replace animations if desired.
                   if (widget.onNoteSelectedFromPanel != null) {
                     widget.onNoteSelectedFromPanel!(event.note!);
                   }
@@ -1210,7 +1184,7 @@ class CalendarPanelState extends State<CalendarPanel>
                               ],
                             ),
                           ),
-                          // Delete button (only visible on hover)
+
                           Opacity(
                             opacity: isHovering ? 1.0 : 0.0,
                             child: IgnorePointer(
@@ -1344,7 +1318,6 @@ class CalendarPanelState extends State<CalendarPanel>
     );
   }
 
-  /// Build the tasks panel for tasks mode - shows tasks with deadlines on the selected day
   Widget _buildTasksPanel() {
     final colorScheme = Theme.of(context).colorScheme;
     return LayoutBuilder(
@@ -1394,8 +1367,9 @@ class CalendarPanelState extends State<CalendarPanel>
                         _isShowingUnassigned
                             ? 'Unassigned Items'
                             : '${_showCombinedEvents ? "Events" : "Tasks"} for ${DateFormat('EEEE').format(_selectedDate)} ${_selectedDate.day}',
-                        style: Theme.of(context).textTheme.titleSmall
-                            ?.copyWith(color: colorScheme.onSurface),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -1522,7 +1496,6 @@ class CalendarPanelState extends State<CalendarPanel>
     );
   }
 
-  /// Build a single task item for the tasks panel
   Widget _buildTaskItem(Task task) {
     final colorScheme = Theme.of(context).colorScheme;
     final isCompleted = task.completed || task.state == TaskState.completed;
@@ -1660,7 +1633,7 @@ class CalendarPanelState extends State<CalendarPanel>
                           ],
                         ),
                       ),
-                      // Delete button (only visible on hover)
+
                       Opacity(
                         opacity: isHovering ? 1.0 : 0.0,
                         child: IgnorePointer(
@@ -1742,7 +1715,6 @@ class CalendarPanelState extends State<CalendarPanel>
         final firstWeekday = firstDayOfMonth.weekday;
         final daysInMonth = lastDayOfMonth.day;
 
-        // Calculate previous month info
         final prevMonthLastDay = DateTime(
           _selectedMonth.year,
           _selectedMonth.month,
@@ -1752,10 +1724,8 @@ class CalendarPanelState extends State<CalendarPanel>
 
         final List<Widget> calendarRows = [];
 
-        // Generate all days to display (42 days = 6 weeks)
         final List<DateTime> allDays = [];
 
-        // Add days from previous month
         for (int i = firstWeekday - 1; i > 0; i--) {
           allDays.add(
             DateTime(
@@ -1766,12 +1736,10 @@ class CalendarPanelState extends State<CalendarPanel>
           );
         }
 
-        // Add days from current month
         for (int i = 1; i <= daysInMonth; i++) {
           allDays.add(DateTime(_selectedMonth.year, _selectedMonth.month, i));
         }
 
-        // Add days from next month to complete 42 days
         int nextMonthDay = 1;
         while (allDays.length < 42) {
           allDays.add(
@@ -1784,7 +1752,6 @@ class CalendarPanelState extends State<CalendarPanel>
           nextMonthDay++;
         }
 
-        // Build calendar rows
         for (int week = 0; week < 6; week++) {
           final List<Widget> rowChildren = [];
 
@@ -1837,12 +1804,10 @@ class CalendarPanelState extends State<CalendarPanel>
                   onWillAcceptWithDetails: (details) {
                     final data = details.data;
 
-                    // Accept Tasks
                     if (data is Task) {
                       return true;
                     }
 
-                    // Accept Notes (from sidebar/list)
                     if (data is Map<String, dynamic>) {
                       if (data['type'] == 'note') {
                         if (data['isMultiDrag'] == true) {
@@ -1855,7 +1820,6 @@ class CalendarPanelState extends State<CalendarPanel>
                       }
                     }
 
-                    // Accept CalendarEvents (moving existing events)
                     if (data is CalendarEvent) {
                       return data.id != 0;
                     }
@@ -1865,13 +1829,11 @@ class CalendarPanelState extends State<CalendarPanel>
                   onAcceptWithDetails: (details) async {
                     final data = details.data;
 
-                    // Handle Task drop
                     if (data is Task) {
                       await _handleTaskDropWithDate(data, date);
                       return;
                     }
 
-                    // Handle Note drop
                     if (data is Map<String, dynamic> &&
                         data['type'] == 'note') {
                       if (data['isMultiDrag'] == true) {
@@ -1883,9 +1845,7 @@ class CalendarPanelState extends State<CalendarPanel>
                         final note = data['note'] as Note;
                         await _handleNoteDropWithDate(note, date);
                       }
-                    }
-                    // Handle CalendarEvent drop (moving)
-                    else if (data is CalendarEvent) {
+                    } else if (data is CalendarEvent) {
                       await _handleEventDropWithDate(data, date);
                     }
                   },
@@ -1956,7 +1916,7 @@ class CalendarPanelState extends State<CalendarPanel>
                                     _eventsController.add(_events);
                                   }
                                 } catch (e) {
-                                  // ignore errors fetching tapped month events
+                                  // Ignore errors when loading events for new month
                                 }
                               }
                             },
@@ -2117,11 +2077,8 @@ class CalendarPanelState extends State<CalendarPanel>
     await showDialog(
       context: context,
       builder:
-          (context) => CalendarEventStatusManager(
-            onStatusSelected: (status) {
-              // This will be handled by the manager itself
-            },
-          ),
+          (context) =>
+              CalendarEventStatusManager(onStatusSelected: (status) {}),
     );
     await _loadStatuses();
   }
@@ -2146,10 +2103,8 @@ class CalendarPanelState extends State<CalendarPanel>
     try {
       CalendarEvent updatedEvent;
       if (statusName == null) {
-        // Limpiar el status
         updatedEvent = event.copyWith(clearStatus: true);
       } else {
-        // Asignar un status específico
         updatedEvent = event.copyWith(status: statusName);
       }
       await _calendarEventRepository.updateCalendarEvent(updatedEvent);

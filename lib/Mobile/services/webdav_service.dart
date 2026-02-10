@@ -121,7 +121,7 @@ class WebDAVService {
           await tempFile.delete();
         }
       }
-      // Notify database changes after successful sync
+
       DatabaseHelper.notifyDatabaseChanged();
     } catch (e) {
       if (e is io.SocketException) {
@@ -222,7 +222,6 @@ class WebDAVService {
     }
   }
 
-  /// Public method to upload the local database to the WebDAV server
   Future<void> uploadLocalDatabase() async {
     if (!_isInitialized) {
       await initialize();
@@ -232,8 +231,6 @@ class WebDAVService {
     await _uploadLocalFile(dbPath);
   }
 
-  /// Public method to download the database from the WebDAV server
-  /// Forces a download from server to local, similar to sync but prioritizing remote
   Future<void> downloadRemoteDatabase() async {
     if (!_isInitialized) {
       await initialize();
@@ -245,29 +242,23 @@ class WebDAVService {
 
     final dbPath = await _getDatabasePath();
 
-    // Check if remote file exists
     final remoteFile = await _getRemoteFile();
     if (remoteFile == null) {
       throw Exception('No database found on server');
     }
 
-    // Force download without backup - close database first
     await _dbHelper.close();
 
     try {
-      // Download directly, overwriting local file
       await _client.read2File('/$_dbFileName', dbPath);
 
-      // Reinitialize database helper with the new file
       await _dbHelper.initialize(dbPath);
 
-      // Verify the download was successful
       final localFile = io.File(dbPath);
       if (!await localFile.exists()) {
         throw Exception('Downloaded file not found at $dbPath');
       }
 
-      // Verify database integrity
       final db = await _dbHelper.database;
       final result = db.select(
         'SELECT last_modified FROM sync_info WHERE id = 1',
@@ -276,11 +267,9 @@ class WebDAVService {
         throw Exception('Database downloaded but sync_info is empty');
       }
     } catch (e) {
-      // Try to reinitialize with whatever file exists
       try {
         await _dbHelper.initialize(dbPath);
       } catch (initError) {
-        // If that fails too, this is a serious error
         throw Exception(
           'Error downloading remote file and failed to recover: $e',
         );

@@ -4,8 +4,6 @@ import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/tags_service.dart';
 
-/// A panel that displays all available tags as clickable chips
-/// Similar to the Favorite Notebooks panel in the calendar
 class TagsPanel extends StatefulWidget {
   final Function(String tag)? onTagSelected;
   final String? selectedTag;
@@ -48,7 +46,6 @@ class _TagsPanelState extends State<TagsPanel> {
       }
     });
 
-    // Load initial tags
     final tags = await _tagsService.getAllTags();
     if (mounted) {
       setState(() {
@@ -86,7 +83,6 @@ class _TagsPanelState extends State<TagsPanel> {
       return const SizedBox.shrink();
     }
 
-    // Sort tags by count (descending) then alphabetically
     final sortedTags =
         _tags.entries.toList()..sort((a, b) {
           final countCompare = b.value.compareTo(a.value);
@@ -140,7 +136,6 @@ class _TagsPanelState extends State<TagsPanel> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Removed SizedBox(height: 12) as padding is now in header
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 200),
                   child: SingleChildScrollView(

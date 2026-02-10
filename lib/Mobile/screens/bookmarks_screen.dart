@@ -19,7 +19,6 @@ class BookmarksHandler {
   factory BookmarksHandler() => _instance;
   BookmarksHandler._internal();
 
-  // Constant for hidden tag
   static const String hiddenTag = 'hidden';
   static const String untaggedTag = 'untagged_filter';
 
@@ -36,7 +35,6 @@ class BookmarksHandler {
   List<Bookmark> get filteredBookmarks {
     var filtered = List<Bookmark>.from(_bookmarks);
 
-    // Apply search filter
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
       filtered =
@@ -47,7 +45,6 @@ class BookmarksHandler {
           }).toList();
     }
 
-    // Sort by date
     filtered.sort((a, b) {
       final dateA = DateTime.parse(a.timestamp);
       final dateB = DateTime.parse(b.timestamp);
@@ -86,12 +83,10 @@ class BookmarksHandler {
 
   Future<void> loadData() async {
     try {
-      // Solo inicializamos la base de datos si no está inicializada
       if (!DatabaseService().isInitialized) {
         await DatabaseService().initializeDatabase();
       }
 
-      // Cargar datos en paralelo
       await Future.wait([_loadBookmarks(), _tagsHandler.loadPatterns()]);
     } catch (e) {
       print('Error loading bookmarks: $e');
@@ -102,20 +97,16 @@ class BookmarksHandler {
 
   Future<void> _loadBookmarks() async {
     try {
-      // Cargar bookmarks con sus tags
       _bookmarks =
           await DatabaseService().bookmarkService.getAllBookmarksWithTags();
 
-      // Obtener todos los tags únicos de los bookmarks
       final Set<String> activeTags = {};
       for (final bookmark in _bookmarks) {
         activeTags.addAll(bookmark.tags);
       }
 
-      // Convertir el Set a List y ordenar
       _allTags = activeTags.toList()..sort();
 
-      // Mover el tag hidden al final de la lista si existe
       if (_allTags.contains(hiddenTag)) {
         _allTags.remove(hiddenTag);
         _allTags.add(hiddenTag);
@@ -177,7 +168,6 @@ class BookmarksHandler {
     List<String> newTags = const [],
   }) async {
     try {
-      // Actualizar el bookmark
       await DatabaseService().bookmarkService.updateBookmark(
         Bookmark(
           id: id,
@@ -189,10 +179,8 @@ class BookmarksHandler {
         ),
       );
 
-      // Actualizar los tags
       await DatabaseService().bookmarkService.updateBookmarkTags(id, newTags);
 
-      // Recargar los datos
       await loadData();
     } catch (e) {
       print('Error updating bookmark: $e');
@@ -225,14 +213,12 @@ class BookmarksHandler {
     await loadData();
     var filtered = filteredBookmarks;
 
-    // Aplicar filtrado por tag si es necesario
     if (_selectedTag != null) {
       final List<Bookmark> tagFiltered = [];
 
       for (final bookmark in filtered) {
         final tags = bookmark.tags;
 
-        // Si estamos en el filtro "hidden", mostrar solo los que tienen ese tag
         if (_selectedTag == hiddenTag) {
           if (tags.contains(_selectedTag)) {
             tagFiltered.add(bookmark);
@@ -242,7 +228,6 @@ class BookmarksHandler {
             tagFiltered.add(bookmark);
           }
         } else {
-          // Para otros tags, mostrar los que tienen el tag y NO tienen el tag hidden
           if (tags.contains(_selectedTag) && !tags.contains(hiddenTag)) {
             tagFiltered.add(bookmark);
           }
@@ -251,7 +236,6 @@ class BookmarksHandler {
 
       filtered = tagFiltered;
     } else {
-      // Si no hay tag seleccionado (filtro "All"), excluir explícitamente los bookmarks con tag hidden
       final List<Bookmark> nonHiddenBookmarks = [];
 
       for (final bookmark in filtered) {
@@ -283,7 +267,6 @@ class BookmarksScreenState extends State<BookmarksScreen> {
   List<Bookmark> _bookmarks = [];
   late final SyncService _syncService;
 
-  // Métodos públicos para control externo desde main_mobile.dart
   void showAddDialog() => _showAddDialog();
   void showSearch() => setState(() => _showSearchField = true);
 
@@ -518,7 +501,6 @@ class BookmarksScreenState extends State<BookmarksScreen> {
     final tagsController = TextEditingController();
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Cargar los tags del bookmark
     DatabaseService().bookmarkService.getTagsByBookmarkId(bookmark.id!).then((
       tags,
     ) {
@@ -677,7 +659,6 @@ class BookmarksScreenState extends State<BookmarksScreen> {
                             Navigator.pop(dialogContext);
                           }
 
-                          // Actualizar el estado de la pantalla
                           if (mounted) {
                             await loadData();
                           }
@@ -790,7 +771,6 @@ class BookmarksScreenState extends State<BookmarksScreen> {
           if (ogTitle != null && ogTitle.isNotEmpty) {
             pageTitle = ogTitle;
           } else {
-            // Check if it's a Reddit URL and use API
             if (url.contains('reddit.com')) {
               pageTitle = await getRedditTitle(url);
             }

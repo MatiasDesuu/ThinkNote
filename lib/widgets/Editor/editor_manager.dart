@@ -63,17 +63,14 @@ class EditorManager {
     });
   }
 
-  /// Handles note link taps - opens note in current tab or new tab
   static void handleNoteLinkTap(
     Note targetNote,
     bool openInNewTab,
     TabManager tabManager,
   ) {
     if (openInNewTab) {
-      // Open in new tab (middle click or Ctrl+click)
       tabManager.openTab(targetNote);
     } else {
-      // Open in current tab (left click)
       tabManager.replaceNoteInActiveTab(targetNote);
     }
   }

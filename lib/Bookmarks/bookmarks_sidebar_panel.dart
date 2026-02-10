@@ -38,10 +38,9 @@ class BookmarksSidebarPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Ensure controller text matches query if different (to handle external resets)
     if (searchController.text != searchQuery) {
       searchController.text = searchQuery;
-      // move cursor to end
+
       searchController.selection = TextSelection.fromPosition(
         TextPosition(offset: searchController.text.length),
       );
@@ -55,7 +54,6 @@ class BookmarksSidebarPanel extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header: Title and Count (Exactly like Thinks)
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
@@ -82,7 +80,6 @@ class BookmarksSidebarPanel extends StatelessWidget {
                 ),
               ),
 
-              // Search Bar
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -122,7 +119,6 @@ class BookmarksSidebarPanel extends StatelessWidget {
                 ),
               ),
 
-              // Sort Button
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -171,7 +167,6 @@ class BookmarksSidebarPanel extends StatelessWidget {
 
               const Divider(height: 1),
 
-              // Tags Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                 child: Text(
@@ -185,7 +180,6 @@ class BookmarksSidebarPanel extends StatelessWidget {
                 ),
               ),
 
-              // Tags List
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.symmetric(
@@ -232,7 +226,6 @@ class BookmarksSidebarPanel extends StatelessWidget {
             ],
           ),
 
-          // Resize Handle
           Positioned(
             right: 0,
             top: 0,

@@ -178,7 +178,6 @@ class NoteRepository {
         note.id,
       ]);
 
-      // Update last_modified
       db.execute(
         '''
         UPDATE sync_info
@@ -207,7 +206,6 @@ class NoteRepository {
     try {
       stmt.execute([DateTime.now().millisecondsSinceEpoch, id]);
 
-      // Update last_modified
       db.execute(
         '''
         UPDATE sync_info
@@ -283,7 +281,6 @@ class NoteRepository {
       [newOrder, noteId],
     );
 
-    // Update last_modified
     db.execute(
       '''
       UPDATE sync_info
@@ -342,7 +339,6 @@ class NoteRepository {
         noteId,
       ]);
 
-      // Update last_modified
       db.execute(
         '''
         UPDATE sync_info
@@ -380,7 +376,6 @@ class NoteRepository {
         noteId,
       ]);
 
-      // Update last_modified
       db.execute(
         '''
         UPDATE sync_info

@@ -44,7 +44,6 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
     final colorScheme = Theme.of(context).colorScheme;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // Calculate responsive dimensions
     final isMobile = screenWidth < 600;
     final dialogWidth =
         isMobile ? (screenWidth - 32).clamp(280.0, 320.0) : 320.0;
@@ -298,10 +297,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
               child: Container(
                 margin: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
-                  color:
-                      isSelected
-                          ? colorScheme.primaryContainer
-                          : null,
+                  color: isSelected ? colorScheme.primaryContainer : null,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Material(

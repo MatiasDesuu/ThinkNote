@@ -34,7 +34,8 @@ class _ContextMenuState extends State<ContextMenu> {
   }
 
   void _measureMenu() {
-    final RenderBox? renderBox = _menuKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? renderBox =
+        _menuKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox != null && mounted) {
       setState(() {
         _menuWidth = renderBox.size.width;
@@ -47,8 +48,7 @@ class _ContextMenuState extends State<ContextMenu> {
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
-    
-    // Usar dimensiones medidas o estimadas
+
     final double menuWidth = _menuWidth ?? 200.0;
     final double menuHeight = _menuHeight ?? (widget.items.length * 48.0);
 
@@ -59,7 +59,10 @@ class _ContextMenuState extends State<ContextMenu> {
 
     double menuY = widget.tapPosition.dy;
     if (wouldOverflowBottom) {
-      menuY = (widget.tapPosition.dy - menuHeight).clamp(0.0, screenSize.height - menuHeight);
+      menuY = (widget.tapPosition.dy - menuHeight).clamp(
+        0.0,
+        screenSize.height - menuHeight,
+      );
     }
 
     double menuX = widget.tapPosition.dx;
@@ -67,7 +70,6 @@ class _ContextMenuState extends State<ContextMenu> {
       menuX = (screenSize.width - menuWidth - 8).clamp(0.0, screenSize.width);
     }
 
-    // Asegurar que no se salga por la izquierda o arriba
     menuX = menuX.clamp(8.0, screenSize.width - 8);
     menuY = menuY.clamp(8.0, screenSize.height - 8);
 
@@ -102,7 +104,9 @@ class _ContextMenuState extends State<ContextMenu> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.outline.withAlpha(26),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withAlpha(26),
                       ),
                     ),
                     child: Column(
@@ -128,12 +132,13 @@ class _ContextMenuState extends State<ContextMenu> {
       color: Colors.transparent,
       child: Listener(
         onPointerDown: (event) {
-          if (event.buttons == kMiddleMouseButton && item.onMiddleClick != null) {
+          if (event.buttons == kMiddleMouseButton &&
+              item.onMiddleClick != null) {
             widget.onClose();
             try {
               item.onMiddleClick!();
             } catch (e) {
-              // Silently handle errors
+              // Ignore errors when executing onMiddleClick
             }
           }
         },
@@ -143,27 +148,31 @@ class _ContextMenuState extends State<ContextMenu> {
             try {
               item.onTap();
             } catch (e) {
-              // Silently handle errors
+              // Ignore errors when executing onTap
             }
           },
           borderRadius: BorderRadius.circular(8),
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: 16, 
+              horizontal: 16,
               vertical: item.customWidget != null ? 8 : 12,
             ),
-            child: item.customWidget ?? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  item.icon,
-                  size: 20,
-                  color: item.iconColor ?? Theme.of(context).colorScheme.primary,
+            child:
+                item.customWidget ??
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      item.icon,
+                      size: 20,
+                      color:
+                          item.iconColor ??
+                          Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(item.label),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Text(item.label),
-              ],
-            ),
           ),
         ),
       ),
@@ -206,7 +215,7 @@ class ContextMenuOverlay {
         try {
           overlayEntry.remove();
         } catch (e) {
-          // Silently handle errors
+          // Ignore errors when removing overlay
         }
       }
     }
@@ -224,7 +233,7 @@ class ContextMenuOverlay {
     try {
       overlay.insert(overlayEntry);
     } catch (e) {
-      // Silently handle errors
+      // Ignore errors when inserting overlay
     }
   }
 }

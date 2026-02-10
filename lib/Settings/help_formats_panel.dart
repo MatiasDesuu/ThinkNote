@@ -1,6 +1,3 @@
-// help_formats_panel.dart
-// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 
 class HelpFormatsPanel extends StatelessWidget {
@@ -18,7 +15,6 @@ class HelpFormatsPanel extends StatelessWidget {
         ),
         const SizedBox(height: 20),
 
-        // Text Formatting Section
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -85,7 +81,6 @@ class HelpFormatsPanel extends StatelessWidget {
 
         const SizedBox(height: 16),
 
-        // Headings Section
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -147,7 +142,6 @@ class HelpFormatsPanel extends StatelessWidget {
 
         const SizedBox(height: 16),
 
-        // Lists Section
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -203,7 +197,6 @@ class HelpFormatsPanel extends StatelessWidget {
 
         const SizedBox(height: 16),
 
-        // Links Section
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -260,7 +253,6 @@ class HelpFormatsPanel extends StatelessWidget {
 
         const SizedBox(height: 16),
 
-        // Templates Section
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -302,7 +294,10 @@ class HelpFormatsPanel extends StatelessWidget {
                     const SizedBox(width: 8),
                     const Text(
                       'How to Create Templates',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ],
                 ),
@@ -382,7 +377,10 @@ class HelpFormatsPanel extends StatelessWidget {
                     const SizedBox(width: 8),
                     const Text(
                       'How to Use Templates',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ],
                 ),
@@ -462,7 +460,10 @@ class HelpFormatsPanel extends StatelessWidget {
                     const SizedBox(width: 8),
                     const Text(
                       'Stack Templates - Create Multiple Notes at Once',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ],
                 ),
@@ -483,7 +484,10 @@ class HelpFormatsPanel extends StatelessWidget {
                       const SizedBox(height: 8),
                       const Text(
                         'How to Create Stack Templates:',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -590,7 +594,10 @@ class HelpFormatsPanel extends StatelessWidget {
                     const SizedBox(width: 8),
                     const Text(
                       'Dates & Time',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -726,7 +733,10 @@ class HelpFormatsPanel extends StatelessWidget {
                     const SizedBox(width: 8),
                     const Text(
                       'Contextual',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),

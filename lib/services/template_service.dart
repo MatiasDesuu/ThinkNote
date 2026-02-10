@@ -17,7 +17,6 @@ class TemplateService {
     required int targetParentId,
     String? targetNotebookName,
   }) async {
-    // Process the template notebook name
     String newNotebookName = template.name;
     if (newNotebookName.toLowerCase().startsWith('#template_')) {
       newNotebookName = newNotebookName.substring(10);
@@ -42,7 +41,6 @@ class TemplateService {
     required String newName,
     String? targetNotebookName,
   }) async {
-    // 1. Create the notebook
     final newNotebook = Notebook(
       name: newName,
       parentId: targetParentId,
@@ -52,7 +50,6 @@ class TemplateService {
 
     final newNotebookId = await notebookRepository.createNotebook(newNotebook);
 
-    // 2. Copy notes
     final notes = await noteRepository.getNotesByNotebookId(sourceNotebookId);
     for (final note in notes) {
       final processedTitle = TemplateVariableProcessor.process(
@@ -75,7 +72,6 @@ class TemplateService {
       await noteRepository.createNote(newNote);
     }
 
-    // 3. Copy sub-notebooks
     final subNotebooks = await notebookRepository.getNotebooksByParentId(
       sourceNotebookId,
     );

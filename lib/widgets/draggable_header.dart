@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 
-/// Widget reutilizable para crear headers arrastrables en paneles
-///
-/// Este widget combina un header con título y botón trailing opcional,
-/// junto con la funcionalidad de arrastrar la ventana, excluyendo
-/// automáticamente el área del botón trailing.
 class DraggableHeader extends StatelessWidget {
   final String? title;
   final Widget? trailing;
@@ -37,7 +32,6 @@ class DraggableHeader extends StatelessWidget {
 
     return Stack(
       children: [
-        // MoveWindow - excluye el área del botón trailing
         Positioned(
           top: 0,
           left: 0,
@@ -45,7 +39,7 @@ class DraggableHeader extends StatelessWidget {
           height: height,
           child: MoveWindow(),
         ),
-        // Header content - por encima del MoveWindow para que sea interactivo
+
         Container(
           height: height,
           padding: padding,
@@ -66,10 +60,6 @@ class DraggableHeader extends StatelessWidget {
   }
 }
 
-/// Widget reutilizable para crear áreas arrastrables sin título
-///
-/// Este widget proporciona una área transparente que permite
-/// arrastrar la ventana sin mostrar contenido visual.
 class DraggableArea extends StatelessWidget {
   final double height;
   final double? width;

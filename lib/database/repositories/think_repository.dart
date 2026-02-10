@@ -11,7 +11,6 @@ class ThinkRepository {
   Future<int> createThink(Think think) async {
     final db = await _databaseHelper.database;
 
-    // Obtener el siguiente orden
     final result = db.select('''
       SELECT MAX(${config.DatabaseConfig.columnOrderIndex}) as maxOrder
       FROM ${config.DatabaseConfig.tableThinks}
@@ -273,7 +272,6 @@ class ThinkRepository {
     }
   }
 
-  // Función auxiliar para convertir resultados de SQLite a Map
   Map<String, dynamic> _convertResultToMap(Map<String, Object?> row) {
     return {
       'id': row[config.DatabaseConfig.columnId],

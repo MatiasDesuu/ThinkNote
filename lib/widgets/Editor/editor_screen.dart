@@ -29,18 +29,14 @@ import 'note_statistics_dialog.dart';
 import '../custom_tooltip.dart';
 import '../draggable_header.dart';
 
-// Global reference to the current active editor's toggle read mode function
 VoidCallback? _currentActiveEditorToggleReadMode;
 
-// Global reference to the current active editor's toggle split view function
 VoidCallback? _currentActiveEditorToggleSplitView;
 
-// Global function to toggle read mode on the currently active editor
 void toggleActiveEditorReadMode() {
   _currentActiveEditorToggleReadMode?.call();
 }
 
-// Global function to toggle split view on the currently active editor
 void toggleActiveEditorSplitView() {
   _currentActiveEditorToggleSplitView?.call();
 }
@@ -55,16 +51,13 @@ class NotaEditor extends StatefulWidget {
   final String? searchQuery;
   final bool isAdvancedSearch;
   final VoidCallback? onAutoSaveCompleted;
-  final TabManager? tabManager; // Para manejar navegación entre notas
-  final bool initialReadMode; // Estado inicial del modo lectura desde el tab
-  final ValueChanged<bool>?
-  onReadModeChanged; // Callback cuando cambia el modo lectura
-  final bool initialEditorCentered; // Estado inicial del centrado desde el tab
-  final ValueChanged<bool>?
-  onEditorCenteredChanged; // Callback cuando cambia el centrado
-  final bool initialSplitView; // Estado inicial de vista dividida desde el tab
-  final ValueChanged<bool>?
-  onSplitViewChanged; // Callback cuando cambia la vista dividida
+  final TabManager? tabManager;
+  final bool initialReadMode;
+  final ValueChanged<bool>? onReadModeChanged;
+  final bool initialEditorCentered;
+  final ValueChanged<bool>? onEditorCenteredChanged;
+  final bool initialSplitView;
+  final ValueChanged<bool>? onSplitViewChanged;
   final VoidCallback? onNextNote;
   final VoidCallback? onPreviousNote;
   final Function(Notebook)? onNotebookLinkTap;
@@ -104,7 +97,7 @@ class _NotaEditorState extends State<NotaEditor>
   bool _isReadMode = false;
   bool _isSplitView = false;
   String _splitViewPreviewText = '';
-  bool _isEditorCentered = false; // Estado individual de centrado por tab
+  bool _isEditorCentered = false;
   bool _showFindBar = false;
   bool _isRestoringSearch = false;
   bool _isEditorSettingsLoaded = false;
@@ -162,32 +155,24 @@ class _NotaEditorState extends State<NotaEditor>
     final queryIndex = lowerText.indexOf(lowerQuery);
 
     if (queryIndex != -1) {
-      // Use multiple approaches to ensure highlighting works
-
-      // 1. Set selection immediately
       widget.noteController.selection = TextSelection(
         baseOffset: queryIndex,
         extentOffset: queryIndex + widget.searchQuery!.length,
       );
 
-      // 2. Use a timer to ensure the selection is applied after the widget is fully built
       Timer(const Duration(milliseconds: 100), () {
         if (mounted) {
-          // Set selection again to ensure it's applied
           widget.noteController.selection = TextSelection(
             baseOffset: queryIndex,
             extentOffset: queryIndex + widget.searchQuery!.length,
           );
 
-          // Focus the editor to ensure it's visible
           _editorFocusNode.requestFocus();
         }
       });
 
-      // 3. Use another timer with longer delay as backup
       Timer(const Duration(milliseconds: 500), () {
         if (mounted) {
-          // Set selection one more time as backup
           widget.noteController.selection = TextSelection(
             baseOffset: queryIndex,
             extentOffset: queryIndex + widget.searchQuery!.length,
@@ -218,7 +203,7 @@ class _NotaEditorState extends State<NotaEditor>
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               setState(() {});
-              // Update TabManager with the current search query to persist it across tab switches
+
               final activeTab = widget.tabManager?.activeTab;
               if (activeTab != null) {
                 widget.tabManager!.setTabSearchQuery(
@@ -236,21 +221,16 @@ class _NotaEditorState extends State<NotaEditor>
     _setupSettingsListeners();
     _initializeImmersiveMode();
 
-    // Inicializar modo lectura desde el tab
     _isReadMode = widget.initialReadMode;
 
-    // Initialize double view state
     _isSplitView = widget.initialSplitView;
     _splitViewPreviewText = widget.noteController.text;
 
-    // Inicializar centrado desde el tab
     _isEditorCentered = widget.initialEditorCentered;
 
-    // Register this editor as the active one for global toggle function
     _currentActiveEditorToggleReadMode = _toggleReadMode;
     _currentActiveEditorToggleSplitView = _toggleSplitView;
 
-    // Initialize SearchManager
     _searchManager = SearchManager(
       noteController: widget.noteController,
       scrollController: _scrollController,
@@ -261,7 +241,6 @@ class _NotaEditorState extends State<NotaEditor>
       ),
     );
 
-    // Inicializar configuraciones después de que el widget esté completamente montado
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _initializeEditorSettings();
       _highlightSearchText();
@@ -272,7 +251,6 @@ class _NotaEditorState extends State<NotaEditor>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      // Cuando la app vuelve a estar activa, actualizar configuraciones
       _refreshEditorSettings();
     }
   }
@@ -281,8 +259,6 @@ class _NotaEditorState extends State<NotaEditor>
   void didUpdateWidget(NotaEditor oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // If changed note (by ID), reconfigure listeners for new controllers
-    // We use the ID instead of comparing objects because Note does not have operator ==
     final noteChanged = oldWidget.selectedNote.id != widget.selectedNote.id;
     final findBarHadFocus = _findBarFocusNode.hasFocus;
 
@@ -291,13 +267,11 @@ class _NotaEditorState extends State<NotaEditor>
       _detectScriptMode();
       _splitViewUpdateTimer?.cancel();
 
-      // Update the SearchManager with the new controllers
       _searchManager.updateControllers(
         newNoteController: widget.noteController,
         newScrollController: _scrollController,
       );
 
-      // Sync read mode with the new tab's state
       if (widget.initialReadMode != oldWidget.initialReadMode || noteChanged) {
         setState(() {
           _isReadMode = widget.initialReadMode;
@@ -308,7 +282,6 @@ class _NotaEditorState extends State<NotaEditor>
         });
       }
 
-      // Sync split view with the new tab's state
       if (widget.initialSplitView != oldWidget.initialSplitView ||
           noteChanged) {
         setState(() {
@@ -317,21 +290,18 @@ class _NotaEditorState extends State<NotaEditor>
         });
       }
 
-      // Sync split view preview when note changes
       if (_isSplitView && noteChanged) {
         setState(() {
           _splitViewPreviewText = widget.noteController.text;
         });
       }
 
-      // Restore search text and re-run search for the new note
       if (_showFindBar) {
         final newQuery = widget.searchQuery ?? '';
         _isRestoringSearch = true;
         _findController.text = newQuery;
         _isRestoringSearch = false;
 
-        // Re-run search on the new note content and restore focus if needed
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && _showFindBar) {
             _searchManager.performFind(_findController.text, () {
@@ -346,14 +316,12 @@ class _NotaEditorState extends State<NotaEditor>
       }
     }
 
-    // Sync editor centering with the new tab's state (always, not just when the note changes)
     if (widget.initialEditorCentered != oldWidget.initialEditorCentered) {
       setState(() {
         _isEditorCentered = widget.initialEditorCentered;
       });
     }
 
-    // Sync read mode with the new tab's state (always, not just when the note changes)
     if (widget.initialReadMode != oldWidget.initialReadMode) {
       setState(() {
         _isReadMode = widget.initialReadMode;
@@ -364,7 +332,6 @@ class _NotaEditorState extends State<NotaEditor>
       });
     }
 
-    // Sync split view with the new tab's state (always, not just when the note changes)
     if (widget.initialSplitView != oldWidget.initialSplitView) {
       setState(() {
         _isSplitView = widget.initialSplitView;
@@ -374,18 +341,15 @@ class _NotaEditorState extends State<NotaEditor>
 
     if (oldWidget.searchQuery != widget.searchQuery ||
         oldWidget.isAdvancedSearch != widget.isAdvancedSearch) {
-      // Highlight search text when search parameters change
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _highlightSearchText();
       });
     }
 
-    // Only reload settings if they are not loaded
     if (!_isEditorSettingsLoaded) {
       _loadEditorSettings();
     }
 
-    // Force refresh settings when the widget is shown again
     _refreshEditorSettings();
   }
 
@@ -414,7 +378,6 @@ class _NotaEditorState extends State<NotaEditor>
     _scrollController.dispose();
     _previewScrollController.dispose();
 
-    // Clear global reference if this is the active editor
     if (_currentActiveEditorToggleReadMode == _toggleReadMode) {
       _currentActiveEditorToggleReadMode = null;
     }
@@ -436,6 +399,61 @@ class _NotaEditorState extends State<NotaEditor>
     _isSyncingScroll = false;
   }
 
+  void _scrollToCursor() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+
+      final controller = widget.noteController;
+      final selection = controller.selection;
+      if (!selection.isValid) return;
+
+      final text = controller.text;
+      final offset = selection.baseOffset;
+
+      final textBeforeCursor = text.substring(0, offset);
+      final lines = textBeforeCursor.split('\n');
+      final lineNumber = lines.length - 1;
+
+      final effectiveLineHeight =
+          _fontSize * (_lineSpacing > 0 ? _lineSpacing : 1.2);
+      final targetPosition = lineNumber * effectiveLineHeight;
+
+      final currentScroll = _scrollController.offset;
+      final viewportHeight = _scrollController.position.viewportDimension;
+      final maxScroll = _scrollController.position.maxScrollExtent;
+
+      if (offset >= text.length - 10) {
+        if (currentScroll < maxScroll) {
+          _scrollController.animateTo(
+            maxScroll,
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOut,
+          );
+        }
+        return;
+      }
+
+      if (targetPosition + (effectiveLineHeight * 2) >
+          currentScroll + viewportHeight) {
+        final newScrollPos = (targetPosition -
+                viewportHeight +
+                (effectiveLineHeight * 3))
+            .clamp(0.0, maxScroll);
+        _scrollController.animateTo(
+          newScrollPos,
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+        );
+      } else if (targetPosition < currentScroll) {
+        _scrollController.animateTo(
+          targetPosition.clamp(0.0, maxScroll),
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
   void _onTitleChanged() {
     widget.onTitleChanged();
 
@@ -443,7 +461,6 @@ class _NotaEditorState extends State<NotaEditor>
       _autoSaveDebounce?.cancel();
       _autoSaveDebounce = Timer(const Duration(milliseconds: 1000), () {
         if (mounted && _isAutoSaveEnabled) {
-          // Usar método que no afecte el foco para auto-guardado
           _performSilentAutoSave();
         }
       });
@@ -506,7 +523,6 @@ class _NotaEditorState extends State<NotaEditor>
       _autoSaveDebounce?.cancel();
       _autoSaveDebounce = Timer(const Duration(milliseconds: 1000), () {
         if (mounted && _isAutoSaveEnabled) {
-          // Usar método que no afecte el foco para auto-guardado
           _performSilentAutoSave();
         }
       });
@@ -520,15 +536,13 @@ class _NotaEditorState extends State<NotaEditor>
   }
 
   void _reconfigureListeners(NotaEditor oldWidget) {
-    // Remover listeners antiguos de los controladores del componente anterior
     try {
       oldWidget.noteController.removeListener(_onContentChanged);
       oldWidget.titleController.removeListener(_onTitleChanged);
     } catch (e) {
-      // Si ya están dispuestos, ignorar
+      // Ignore errors when removing listeners
     }
 
-    // Agregar listeners a los nuevos controladores
     widget.noteController.addListener(_onContentChanged);
     widget.titleController.addListener(_onTitleChanged);
   }
@@ -543,13 +557,11 @@ class _NotaEditorState extends State<NotaEditor>
       }
     });
 
-    // Notificar al TabManager del cambio de modo lectura
     widget.onReadModeChanged?.call(_isReadMode);
     if (splitViewChanged) {
       widget.onSplitViewChanged?.call(false);
     }
 
-    // Close search when switching to read mode
     if (_isReadMode && _showFindBar) {
       _hideFindBar();
     }
@@ -572,11 +584,7 @@ class _NotaEditorState extends State<NotaEditor>
       widget.onReadModeChanged?.call(false);
     }
 
-    // Notificar al TabManager del cambio de split view
     widget.onSplitViewChanged?.call(_isSplitView);
-
-    // Close search if it might interfere
-    // (Actually split view can have search)
   }
 
   void _toggleEditorCentered() {
@@ -584,19 +592,16 @@ class _NotaEditorState extends State<NotaEditor>
       _isEditorCentered = !_isEditorCentered;
     });
 
-    // Notificar al TabManager del cambio de centrado
     widget.onEditorCenteredChanged?.call(_isEditorCentered);
   }
 
   Future<void> _handleSave({bool isAutoSave = false}) async {
     if (!mounted) return;
 
-    // Guardar el estado del foco y cursor antes del guardado
     final bool hadFocus = _editorFocusNode.hasFocus;
     final TextSelection currentSelection = widget.noteController.selection;
     final int? originalNoteId = widget.selectedNote.id;
 
-    // Para auto-guardado, usar método separado que no interfiera con el foco
     if (isAutoSave) {
       try {
         await _performAutoSave();
@@ -606,20 +611,15 @@ class _NotaEditorState extends State<NotaEditor>
       return;
     }
 
-    // Para guardado manual, ejecutar en background sin afectar el UI
     try {
       if (!mounted) return;
 
-      // Iniciar animación de guardado sin bloquear
       _saveController.start();
 
-      // Ejecutar guardado en background
       await _performBackgroundSave();
 
-      // Completar animación sin reconstruir el widget principal
       await _saveController.complete();
 
-      // Restaurar foco y posición del cursor si se perdieron
       if (hadFocus && !_editorFocusNode.hasFocus) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted &&
@@ -638,7 +638,7 @@ class _NotaEditorState extends State<NotaEditor>
       print('Error in _handleSave: $e');
       if (mounted) {
         _saveController.reset();
-        // Restaurar foco incluso en caso de error
+
         if (hadFocus &&
             originalNoteId != null &&
             widget.selectedNote.id == originalNoteId) {
@@ -657,7 +657,6 @@ class _NotaEditorState extends State<NotaEditor>
   Future<void> _performAutoSave() async {
     if (!mounted) return;
 
-    // Guardar directamente en la base de datos sin reconstruir el widget
     try {
       final dbHelper = DatabaseHelper();
       final noteRepository = NoteRepository(dbHelper);
@@ -668,13 +667,8 @@ class _NotaEditorState extends State<NotaEditor>
         widget.noteController.text,
       );
 
-      // En SQLite con drift/sqlite3, updateNoteTitleAndContent no devuelve un valor,
-      // pero podemos asumir que fue exitoso si no lanzó excepción.
-      // Notificar cambios sin reconstruir el widget
       DatabaseHelper.notifyDatabaseChanged();
 
-      // Actualizar el estado del tab para quitar el indicador dirty
-      // Creamos un objeto Note actualizado para el tab, pero manteniendo la metadata actual
       final updatedNote = widget.selectedNote.copyWith(
         title: widget.titleController.text.trim(),
         content: widget.noteController.text,
@@ -691,8 +685,6 @@ class _NotaEditorState extends State<NotaEditor>
     if (!mounted) return;
 
     try {
-      // Ejecutar el guardado sin afectar el UI
-      // Usar el mismo método de auto-save para mantener consistencia
       await _performAutoSave();
     } catch (e) {
       print('Error in background save: $e');
@@ -704,20 +696,14 @@ class _NotaEditorState extends State<NotaEditor>
     if (!mounted) return;
 
     try {
-      // Ejecutar auto-guardado de forma completamente silenciosa
-      // sin afectar el foco ni el estado del UI
       await _performAutoSave();
     } catch (e) {
       print('Error in silent auto-save: $e');
-      // No propagar el error para evitar interrumpir la experiencia del usuario
     }
   }
 
   void _updateTabStateAfterAutoSave(Note updatedNote) {
-    // Notificar al widget padre que el auto-guardado se completó
-    // sin reconstruir el widget actual
     if (widget.onAutoSaveCompleted != null) {
-      // Usar scheduleMicrotask para evitar interrumpir el ciclo de construcción
       scheduleMicrotask(() {
         if (mounted) {
           widget.onAutoSaveCompleted!();
@@ -738,9 +724,7 @@ class _NotaEditorState extends State<NotaEditor>
     _wordsPerSecondSubscription = EditorSettingsEvents.wordsPerSecondStream
         .listen((wps) {
           if (mounted) {
-            setState(() {
-              // Force rebuild to update duration estimator
-            });
+            setState(() {});
           }
         });
 
@@ -818,22 +802,18 @@ class _NotaEditorState extends State<NotaEditor>
       final text = widget.noteController.text;
       final selectedText = text.substring(selection.start, selection.end);
 
-      // Get all blocks and their positions
       ScriptModeHandlerDesktop.parseScript(text);
       final lines = text.split('\n');
 
-      // Find the block number where the selection starts
       int currentPosition = 0;
       int selectionLineIndex = 0;
       List<int> blockNumbers = [];
       int? previousBlockNumber;
       int? nextBlockNumber;
 
-      // First pass: collect block numbers and find the position
       for (int i = 0; i < lines.length; i++) {
         final line = lines[i];
 
-        // Check for block numbers in the entire line
         final blockMatches = RegExp(r'#(\d+)').allMatches(line);
         for (final match in blockMatches) {
           final blockNumber = int.tryParse(match.group(1) ?? '1') ?? 1;
@@ -849,33 +829,26 @@ class _NotaEditorState extends State<NotaEditor>
         if (currentPosition <= selection.start) {
           selectionLineIndex = i;
         }
-        currentPosition += line.length + 1; // +1 for the newline
+        currentPosition += line.length + 1;
       }
 
-      // Determine the new block number
       int newBlockNumber;
       if (previousBlockNumber != null && nextBlockNumber != null) {
-        // If we're between two blocks, use the next number after the previous block
         newBlockNumber = previousBlockNumber + 1;
       } else if (previousBlockNumber != null) {
-        // If we're at the end, use the next number after the last block
         newBlockNumber = previousBlockNumber + 1;
       } else if (nextBlockNumber != null) {
-        // If we're at the start, use 1
         newBlockNumber = 1;
       } else {
-        // If there are no blocks, start with 1
         newBlockNumber = 1;
       }
 
-      // Second pass: update block numbers after the insertion
       final updatedLines = List<String>.from(lines);
       int currentNumber = newBlockNumber + 1;
 
       for (int i = 0; i < updatedLines.length; i++) {
         final line = updatedLines[i];
         if (i > selectionLineIndex) {
-          // Replace all block numbers in the line
           updatedLines[i] = line.replaceAllMapped(
             RegExp(r'#\d+'),
             (match) => '#$currentNumber',
@@ -886,7 +859,6 @@ class _NotaEditorState extends State<NotaEditor>
         }
       }
 
-      // Check if we need to add newlines
       final textBeforeSelection = text.substring(0, selection.start);
       final textAfterSelection = text.substring(selection.end);
       final isAtStart = selection.start == 0;
@@ -904,7 +876,6 @@ class _NotaEditorState extends State<NotaEditor>
           !textAfterSelection.startsWith('\n') &&
           !isInMiddleOfSentence;
 
-      // Create the new text with the block
       final newText = updatedLines
           .join('\n')
           .replaceRange(
@@ -913,10 +884,8 @@ class _NotaEditorState extends State<NotaEditor>
             '${needsNewlineBefore ? '\n' : ''}#$newBlockNumber\n$selectedText${needsNewlineAfter ? '\n' : ''}',
           );
 
-      // Update the text controller
       widget.noteController.text = newText;
 
-      // Update the selection to include the new block header
       final selectionOffset = needsNewlineBefore ? 1 : 0;
       widget.noteController.selection = TextSelection(
         baseOffset: selection.start + selectionOffset,
@@ -928,7 +897,6 @@ class _NotaEditorState extends State<NotaEditor>
             (needsNewlineAfter ? 1 : 0),
       );
 
-      // Trigger content changed
       widget.onContentChanged();
     }
   }
@@ -951,7 +919,6 @@ class _NotaEditorState extends State<NotaEditor>
     final text = controller.text;
     final cursorPosition = selection.baseOffset;
 
-    // Find the start and end of the current line
     int lineStart =
         cursorPosition > 0 ? text.lastIndexOf('\n', cursorPosition - 1) + 1 : 0;
     int lineEnd = text.indexOf('\n', cursorPosition);
@@ -959,7 +926,6 @@ class _NotaEditorState extends State<NotaEditor>
 
     final currentLine = text.substring(lineStart, lineEnd);
 
-    // Extract leading whitespace to preserve it
     final whitespaceMatch = RegExp(r'^(\s*)').firstMatch(currentLine);
     final leadingWhitespace = whitespaceMatch?.group(1) ?? '';
     final lineWithoutWhitespace = currentLine.substring(
@@ -1016,17 +982,14 @@ class _NotaEditorState extends State<NotaEditor>
     if (isList) {
       final listItem = ListDetector.detectListItem(currentLine);
       if (listItem != null) {
-        // It's already a list item
         if (listItem.type == targetListType) {
-          // Same type, remove it
           newLine = leadingWhitespace + listItem.content;
-          // Calculate how many characters were removed
+
           int removedChars = currentLine.length - newLine.length;
           newCursorOffset = cursorPosition - removedChars;
         } else {
-          // Different type, replace it
           newLine = leadingWhitespace + prefix + listItem.content;
-          // Calculate the difference in prefix length
+
           int oldPrefixLength =
               currentLine.length -
               leadingWhitespace.length -
@@ -1034,29 +997,24 @@ class _NotaEditorState extends State<NotaEditor>
           newCursorOffset = cursorPosition + (prefix.length - oldPrefixLength);
         }
       } else {
-        // Not a list, add it
         newLine = leadingWhitespace + prefix + lineWithoutWhitespace;
         newCursorOffset = cursorPosition + prefix.length;
       }
     } else {
-      // Heading
       final headingMatch = RegExp(
         r'^(#+)\s+(.*)$',
       ).firstMatch(lineWithoutWhitespace);
       if (headingMatch != null) {
         final currentPrefix = '${headingMatch.group(1)!} ';
         if (currentPrefix.trim() == prefix.trim()) {
-          // Same heading level, remove it
           newLine = leadingWhitespace + headingMatch.group(2)!;
           newCursorOffset = cursorPosition - currentPrefix.length;
         } else {
-          // Different heading level, replace it
           newLine = leadingWhitespace + prefix + headingMatch.group(2)!;
           newCursorOffset =
               cursorPosition + (prefix.length - currentPrefix.length);
         }
       } else {
-        // Not a heading, add it
         newLine = leadingWhitespace + prefix + lineWithoutWhitespace;
         newCursorOffset = cursorPosition + prefix.length;
       }
@@ -1081,7 +1039,6 @@ class _NotaEditorState extends State<NotaEditor>
     if (type == FormatType.insertScript) {
       final text = widget.noteController.text;
       if (text.startsWith('#script')) {
-        // Remove #script and any following newline
         String newText = text.replaceFirst(RegExp(r'^#script\n?'), '');
         _updateControllerAndSplitView(newText);
         widget.onContentChanged();
@@ -1121,18 +1078,13 @@ class _NotaEditorState extends State<NotaEditor>
         widget.onContentChanged();
       }
 
-      // Restore focus and selection
       _editorFocusNode.requestFocus();
     } else {
-      // No selection
-
-      // Check if it's a line-level format (list or heading)
       if (_isLineLevelFormat(type)) {
         _toggleLineFormat(type);
         return;
       }
 
-      // No selection, insert empty format markers and place cursor inside
       final text = widget.noteController.text;
       final start = selection.start;
       String prefix = '';
@@ -1217,18 +1169,16 @@ class _NotaEditorState extends State<NotaEditor>
           cursorOffset = 1;
           break;
         case FormatType.horizontalRule:
-          // Insert horizontal rule on a new line
           final currentText = widget.noteController.text;
           String insertText;
           int newCursorOffset;
 
-          // Check if we're at the start of a line or need to add a newline before
           if (start == 0 || currentText[start - 1] == '\n') {
             insertText = '* * *\n';
-            newCursorOffset = 6; // After the newline
+            newCursorOffset = 6;
           } else {
             insertText = '\n* * *\n';
-            newCursorOffset = 7; // After the newline
+            newCursorOffset = 7;
           }
 
           final hrNewText =
@@ -1254,19 +1204,17 @@ class _NotaEditorState extends State<NotaEditor>
       );
       widget.onContentChanged();
 
-      // Ensure editor has focus
       _editorFocusNode.requestFocus();
     }
   }
 
   void _handleFindInEditor() {
-    if (_isReadMode) return; // Don't show find bar in read mode
+    if (_isReadMode) return;
 
     setState(() {
       _showFindBar = true;
     });
 
-    // Focus the find bar after a short delay to ensure it's built
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
         _findBarFocusNode.requestFocus();
@@ -1281,7 +1229,6 @@ class _NotaEditorState extends State<NotaEditor>
           _showFindBar = false;
         });
 
-        // Clear search query in TabManager when closing the find bar
         final activeTab = widget.tabManager?.activeTab;
         if (activeTab != null) {
           widget.tabManager!.setTabSearchQuery(activeTab, null);
@@ -1296,7 +1243,7 @@ class _NotaEditorState extends State<NotaEditor>
     _searchManager.nextMatch(() {
       if (mounted) setState(() {});
     });
-    // Keep focus on find bar
+
     _findBarFocusNode.requestFocus();
   }
 
@@ -1304,7 +1251,7 @@ class _NotaEditorState extends State<NotaEditor>
     _searchManager.previousMatch(() {
       if (mounted) setState(() {});
     });
-    // Keep focus on find bar
+
     _findBarFocusNode.requestFocus();
   }
 
@@ -1322,7 +1269,6 @@ class _NotaEditorState extends State<NotaEditor>
   Future<void> _initializeEditorSettings() async {
     final cache = EditorSettingsCache.instance;
 
-    // Asegurar que el cache esté inicializado
     if (!cache.isInitialized) {
       await cache.initialize();
     }
@@ -1428,14 +1374,12 @@ class _NotaEditorState extends State<NotaEditor>
       ),
     ];
 
-    // Get the position of the specific button using GlobalKey
     final RenderBox? button =
         _exportButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (button != null) {
       final Offset offset = button.localToGlobal(Offset.zero);
       final Size size = button.size;
 
-      // Calculate position to show menu below the button
       final double menuX = offset.dx;
       final double menuY = offset.dy + size.height;
 
@@ -1481,7 +1425,6 @@ class _NotaEditorState extends State<NotaEditor>
         },
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // Update SearchManager's textStyle when building
             _searchManager.updateTextStyle(_textStyle);
 
             return Focus(
@@ -1503,26 +1446,19 @@ class _NotaEditorState extends State<NotaEditor>
                   return KeyEventResult.ignored;
                 }
 
-                // Allow global shortcuts to propagate when not in find mode
-                // Check for Ctrl+T (new tab) and other global shortcuts
                 if (event is KeyDownEvent) {
                   if (event.logicalKey == LogicalKeyboardKey.keyT &&
                       HardwareKeyboard.instance.isControlPressed) {
-                    // Let the global shortcut handler deal with this
                     return KeyEventResult.ignored;
                   }
                   if (event.logicalKey == LogicalKeyboardKey.keyN &&
                       HardwareKeyboard.instance.isControlPressed) {
-                    // Let the global shortcut handler deal with this
                     return KeyEventResult.ignored;
                   }
                   if (event.logicalKey == LogicalKeyboardKey.keyW &&
                       HardwareKeyboard.instance.isControlPressed) {
-                    // Let the global shortcut handler deal with this
                     return KeyEventResult.ignored;
                   }
-                  // Ctrl+S is handled by the Shortcuts widget with SaveIntent
-                  // Don't propagate it to global handlers to preserve focus
                 }
 
                 return KeyEventResult.ignored;
@@ -1533,7 +1469,7 @@ class _NotaEditorState extends State<NotaEditor>
                       !Platform.isLinux &&
                       EditorSettingsCache.instance.hideTabsInImmersive)
                     const DraggableArea(height: 40),
-                  // Title bar - with centered padding when editor is centered
+
                   Container(
                     padding: EdgeInsets.only(
                       left:
@@ -1556,8 +1492,7 @@ class _NotaEditorState extends State<NotaEditor>
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: Container(
-                        height:
-                            44.0, // Slightly increase height to prevent vertical cutoff
+                        height: 44.0,
                         alignment: Alignment.center,
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1565,7 +1500,6 @@ class _NotaEditorState extends State<NotaEditor>
                             Expanded(
                               child: Focus(
                                 onKeyEvent: (node, event) {
-                                  // Allow global shortcuts to propagate
                                   if (event is KeyDownEvent) {
                                     if (event.logicalKey ==
                                             LogicalKeyboardKey.keyT &&
@@ -1792,7 +1726,6 @@ class _NotaEditorState extends State<NotaEditor>
                       ),
                     ),
 
-                  // Editor content - with centered padding when needed
                   Expanded(
                     child: Container(
                       padding: EdgeInsets.only(
@@ -1817,7 +1750,6 @@ class _NotaEditorState extends State<NotaEditor>
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Stack(
                           children: [
-                            // Main editor content
                             _isReadMode
                                 ? _isScript
                                     ? ScriptModeHandlerDesktop.buildScriptPreview(
@@ -1902,7 +1834,6 @@ class _NotaEditorState extends State<NotaEditor>
                                 )
                                 : _buildHighlightedTextField(),
 
-                            // Find bar as floating overlay
                             if (_showFindBar)
                               Positioned(
                                 bottom: 0,
@@ -1940,26 +1871,20 @@ class _NotaEditorState extends State<NotaEditor>
   }
 
   double _calculateCenteredPaddingForEditor(double availableWidth) {
-    // For very small screens, don't center to avoid content cutoff
     if (availableWidth < 600) {
-      return 0.0; // No centering on very small screens
+      return 0.0;
     } else if (availableWidth < 800) {
-      // Small screens: minimal centering with safety margin
-      double minEditorWidth =
-          500.0; // Ensure enough space for title and buttons
+      double minEditorWidth = 500.0;
       double maxPadding = (availableWidth - minEditorWidth) / 2;
-      return maxPadding.clamp(16.0, 32.0); // Very conservative padding
+      return maxPadding.clamp(16.0, 32.0);
     } else if (availableWidth < 1200) {
-      // Medium screens: adaptive width approach
-      double minEditorWidth = 600.0; // More space for title
+      double minEditorWidth = 600.0;
       double maxPadding = (availableWidth - minEditorWidth) / 2;
 
-      // Use proportional padding but respect minimum width
-      double proportionalPadding = availableWidth * 0.10; // 10% padding
+      double proportionalPadding = availableWidth * 0.10;
       return proportionalPadding.clamp(16.0, maxPadding);
     } else {
-      // Large screens: fixed width centering
-      double maxEditorWidth = 800.0; // Optimal reading width
+      double maxEditorWidth = 800.0;
       double padding = (availableWidth - maxEditorWidth) / 2;
       return padding.clamp(100.0, 400.0);
     }
@@ -1968,24 +1893,20 @@ class _NotaEditorState extends State<NotaEditor>
   Widget _buildHighlightedTextField() {
     return Focus(
       onKeyEvent: (node, event) {
-        // Handle Enter key for list continuation
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.enter) {
           final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
 
-          // Try to handle list continuation
           if (ListContinuationHandler.handleEnterKey(
             widget.noteController,
             isShiftPressed,
           )) {
             widget.onContentChanged();
+            _scrollToCursor();
             return KeyEventResult.handled;
           }
-
-          // If not handled by list continuation, let default behavior proceed
         }
 
-        // Handle Tab key
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.tab) {
           final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
@@ -1996,7 +1917,6 @@ class _NotaEditorState extends State<NotaEditor>
             final text = controller.text;
             final cursorPosition = selection.baseOffset;
 
-            // Find current line start and end
             int lineStart = text.lastIndexOf('\n', cursorPosition - 1) + 1;
             if (lineStart < 0) lineStart = 0;
             int lineEnd = text.indexOf('\n', cursorPosition);
@@ -2007,7 +1927,6 @@ class _NotaEditorState extends State<NotaEditor>
 
             if (isListItem) {
               if (!isShiftPressed) {
-                // Indent list item: insert tab at line start
                 final newText = text.replaceRange(lineStart, lineStart, '\t');
                 controller.value = controller.value.copyWith(
                   text: newText,
@@ -2016,7 +1935,6 @@ class _NotaEditorState extends State<NotaEditor>
                   ),
                 );
               } else {
-                // Outdent list item: remove tab or 4 spaces at line start
                 final indentMatch = RegExp(
                   r'^(\t|    )',
                 ).firstMatch(currentLine);
@@ -2039,6 +1957,7 @@ class _NotaEditorState extends State<NotaEditor>
                 }
               }
               widget.onContentChanged();
+              _scrollToCursor();
               return KeyEventResult.handled;
             }
           }
@@ -2062,13 +1981,13 @@ class _NotaEditorState extends State<NotaEditor>
                 selection: newSelection,
               );
               widget.onContentChanged();
+              _scrollToCursor();
             }
           }
-          // Always return handled for Tab to prevent focus traversal
+
           return KeyEventResult.handled;
         }
 
-        // Handle Ctrl+S for manual save (workaround for Linux)
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.keyS &&
             HardwareKeyboard.instance.isControlPressed &&
@@ -2077,7 +1996,6 @@ class _NotaEditorState extends State<NotaEditor>
           return KeyEventResult.handled;
         }
 
-        // Allow global shortcuts to propagate
         if (event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.keyT &&
               HardwareKeyboard.instance.isControlPressed) {
@@ -2091,8 +2009,6 @@ class _NotaEditorState extends State<NotaEditor>
               HardwareKeyboard.instance.isControlPressed) {
             return KeyEventResult.ignored;
           }
-          // Ctrl+S is handled by the Shortcuts widget with SaveIntent
-          // Don't propagate it to global handlers to preserve focus
         }
         return KeyEventResult.ignored;
       },
@@ -2117,7 +2033,7 @@ class _NotaEditorState extends State<NotaEditor>
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     final text = overrideText ?? widget.noteController.text;
-    // Use the same color as the first script mode block
+
     final backgroundColor = colorScheme.surfaceContainerLow;
 
     final content =
@@ -2149,7 +2065,6 @@ class _NotaEditorState extends State<NotaEditor>
               },
             );
 
-    // In split view (when overrideText is provided), don't use the container styling
     if (overrideText != null) {
       return SingleChildScrollView(controller: controller, child: content);
     }
@@ -2175,7 +2090,6 @@ class _NotaEditorState extends State<NotaEditor>
     }
   }
 
-  /// Handles note link taps - opens note in current tab or new tab
   void _handleNoteLinkTap(Note targetNote, bool openInNewTab) {
     if (widget.onNoteLinkTap != null) {
       widget.onNoteLinkTap!(targetNote, openInNewTab);
@@ -2184,16 +2098,13 @@ class _NotaEditorState extends State<NotaEditor>
 
     if (widget.tabManager == null) return;
 
-    // Skip if the note doesn't exist (notebookId -1 indicates a dummy note)
     if (targetNote.notebookId == -1 || targetNote.id == null) {
       return;
     }
 
     if (openInNewTab) {
-      // Open in new tab (middle click or Ctrl+click) and change notebook
       widget.tabManager!.openTabWithNotebookChange(targetNote);
     } else {
-      // Open in current tab (left click) and change notebook
       widget.tabManager!.replaceNoteInActiveTabWithNotebookChange(targetNote);
     }
   }
@@ -2259,8 +2170,7 @@ class DurationEstimatorDesktop extends StatelessWidget {
     } else {
       final wordCount =
           content.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
-      final totalSeconds =
-          (wordCount / 200 * 60).ceil(); // 200 words per minute
+      final totalSeconds = (wordCount / 200 * 60).ceil();
       final minutes = (totalSeconds / 60).floor();
       final seconds = totalSeconds % 60;
       return "${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";
@@ -2268,7 +2178,6 @@ class DurationEstimatorDesktop extends StatelessWidget {
   }
 }
 
-// Class to manage editor settings
 class EditorManager {
   static Future<void> saveNote({
     required File selectedNote,
@@ -2282,13 +2191,11 @@ class EditorManager {
     File currentFile = selectedNote;
 
     try {
-      // First save content before renaming
       await _saveNoteContent(
         selectedNote: currentFile,
         noteController: noteController,
       );
 
-      // Then rename if necessary
       final newPath = await _handleTitleChange(
         selectedNote: currentFile,
         titleController: titleController,
@@ -2296,15 +2203,12 @@ class EditorManager {
       );
 
       if (newPath != null) {
-        // Update reference to current file
         currentFile = File(newPath);
 
-        // Notify path change
         if (onUpdatePath != null) {
           onUpdatePath(selectedNote.path, newPath);
         }
 
-        // If name changed, update file list
         if (p.basename(newPath) != originalName && onUpdateItems != null) {
           await onUpdateItems();
         }
@@ -2327,9 +2231,7 @@ class EditorManager {
       final newName = '$currentTitle.md';
       final newPath = p.join(currentDir.path, newName);
 
-      // Check if destination file already exists
       if (File(newPath).existsSync()) {
-        // If it exists, don't try to rename and return null
         return null;
       }
 

@@ -210,7 +210,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       iconColor = colorScheme.primary;
       title = item.title;
     } else {
-      // Think
       iconData = Icons.lightbulb_outline;
       iconColor = colorScheme.primary;
       title = item.title;
@@ -251,8 +250,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             widget.onNotebookSelected!(item);
             Navigator.pop(context);
           } else if (isNote && widget.onNoteSelected != null) {
-            // Notify parent that this selection came from a panel so it can
-            // suppress tab animations when replacing the active tab.
             try {
               widget.onNoteSelectedFromPanel?.call(item);
             } catch (_) {}

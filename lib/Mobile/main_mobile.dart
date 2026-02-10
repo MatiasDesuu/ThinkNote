@@ -89,7 +89,6 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
 
   Future<void> _initializeWebDAV() async {
     try {
-      // Check WebDAV configuration first (fast operation)
       final prefs = await SharedPreferences.getInstance();
       final isEnabled = prefs.getBool('webdav_enabled') ?? false;
 
@@ -97,12 +96,9 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
         return;
       }
 
-      // Initialize and sync WebDAV in background (don't block UI)
-      // Database and SyncService are already initialized in main()
       final webdavService = WebDAVService();
       await webdavService.initialize();
 
-      // Run sync in background without blocking
       webdavService.sync().catchError((e) {
         print('WebDAV sync error: $e');
       });
@@ -150,7 +146,6 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
   }
 
   void _initializeSharing() {
-    // Inicializar el SharingHandler con el navigatorKey
     BookmarkSharingHandler.initSharingListener(_navigatorKey);
   }
 
@@ -199,7 +194,6 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
               },
               onNotebookSelected: (Notebook notebook) async {
                 if (mounted) {
-                  // Pre-fetch notes for instant display
                   List<Note> preloadedNotes = [];
                   try {
                     final dbHelper = DatabaseHelper();
@@ -373,7 +367,6 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
   Future<void> _showThinksScreen() async {
     _scaleController.reverse();
 
-    // Pre-fetch thinks for instant display
     List<Think> preloadedThinks = [];
     try {
       final dbHelper = DatabaseHelper();
@@ -560,7 +553,6 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
   }
 
   void _handleTrashUpdated() {
-    // Notificar a la pantalla de papelera que debe actualizarse
     DatabaseHelper.notifyDatabaseChanged();
   }
 
@@ -587,7 +579,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
               canPop: true,
               onPopInvokedWithResult: (bool didPop, bool? result) {
                 if (didPop) return;
-                // Si no se pudo hacer pop, verificar si hay algo que cerrar
+
                 if (Navigator.canPop(context)) {
                   Navigator.pop(context);
                 }
@@ -618,7 +610,6 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                 onNavigateBack: () {},
                                 onCreateNewNotebook: () {},
                                 onNotebookSelected: (notebook) async {
-                                  // Pre-fetch notes for instant display
                                   List<Note> preloadedNotes = [];
                                   try {
                                     final dbHelper = DatabaseHelper();
@@ -636,7 +627,6 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                   );
                                 },
                                 onTagSelected: (tag) async {
-                                  // Pre-fetch notes for instant display
                                   List<Note> preloadedNotes = [];
                                   try {
                                     preloadedNotes = await TagsService()
@@ -783,7 +773,6 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                           Notebook notebook,
                                         ) async {
                                           if (mounted) {
-                                            // Pre-fetch notes for instant display
                                             List<Note> preloadedNotes = [];
                                             try {
                                               final dbHelper = DatabaseHelper();

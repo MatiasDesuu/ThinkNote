@@ -293,14 +293,13 @@ class IconSidebarState extends State<IconSidebar>
 
   void _performBackgroundSync() async {
     try {
-      // Check if screen open auto sync is enabled
       final syncService = SyncService();
       final isEnabled = await syncService.getScreenOpenAutoSyncEnabled();
-      
+
       if (!isEnabled) {
         return; // Skip sync if disabled
       }
-      
+
       await syncService.forceSync(isManual: false);
     } catch (e) {
       if (mounted) {
@@ -320,7 +319,6 @@ class IconSidebarState extends State<IconSidebar>
 
       if (!mounted) return;
 
-      // Notify parent to refresh all panels after successful sync
       widget.onForceSync?.call();
     } catch (e) {
       if (mounted) {
@@ -384,7 +382,6 @@ class IconSidebarState extends State<IconSidebar>
           ),
     );
 
-    // Check if screen open auto sync is enabled before performing sync
     final syncService = SyncService();
     final isEnabled = await syncService.getScreenOpenAutoSyncEnabled();
     if (isEnabled) {
@@ -408,7 +405,6 @@ class IconSidebarState extends State<IconSidebar>
           ),
     );
 
-    // Check if screen open auto sync is enabled before performing sync
     final syncService = SyncService();
     final isEnabled = await syncService.getScreenOpenAutoSyncEnabled();
     if (isEnabled) {
@@ -432,7 +428,6 @@ class IconSidebarState extends State<IconSidebar>
               String searchQuery,
               bool isAdvancedSearch,
             ) {
-              // Use the advanced search callback if available, otherwise fallback to regular callback
               if (widget.onNoteSelectedWithSearch != null) {
                 widget.onNoteSelectedWithSearch!(
                   note,
@@ -448,19 +443,14 @@ class IconSidebarState extends State<IconSidebar>
   }
 
   void _openFavoritesScreen() async {
-    // Abrir el panel inmediatamente
     widget.onOpenFavorites?.call();
 
-    // Hacer la sincronización en segundo plano
     Future(() async {
-      // Mostrar indicador de sincronización
-
       try {
         final syncService = SyncService();
         await syncService.forceSync(isManual: true);
 
         if (mounted) {
-          // Recargar el panel después de la sincronización
           widget.onFavoritesReload?.call();
         }
       } catch (e) {
@@ -476,19 +466,14 @@ class IconSidebarState extends State<IconSidebar>
   }
 
   void _openTrashScreen() async {
-    // Abrir el panel inmediatamente
     widget.onOpenTrash?.call();
 
-    // Hacer la sincronización en segundo plano
     Future(() async {
-      // Mostrar indicador de sincronización
-
       try {
         final syncService = SyncService();
         await syncService.forceSync(isManual: true);
 
         if (mounted) {
-          // Recargar el panel después de la sincronización
           widget.onTrashReload?.call();
         }
       } catch (e) {
@@ -574,7 +559,7 @@ class IconSidebarState extends State<IconSidebar>
           onPressed: widget.onBack!,
           showInBookmarks: true,
         ),
-      // Botones para otras pantallas
+
       if (!isBookmarksScreen &&
           !widget.isTasksScreen &&
           !widget.isThinksScreen &&
@@ -583,11 +568,11 @@ class IconSidebarState extends State<IconSidebar>
           icon: Icons.search_rounded,
           onPressed: _openSearchScreen,
         ),
-      // Botón combinado de New Note + New Todo con menú desplegable
+
       if (!widget.isTasksScreen &&
           (widget.onCreateNewNote != null || widget.onCreateNewTodo != null))
         _buildNewNoteMenuButton(),
-      // Botón simple de New Task para la pantalla de tareas
+
       if (widget.isTasksScreen && widget.onCreateNewTodo != null)
         IconSidebarButton(
           icon: Icons.add_task_rounded,
@@ -646,7 +631,7 @@ class IconSidebarState extends State<IconSidebar>
           onPressed: widget.onManageTags!,
           showInBookmarks: true,
         ),
-      // Calendar toggle button - show in main screen and tasks screen when callback is provided
+
       if ((!isBookmarksScreen &&
               !widget.isThinksScreen &&
               !widget.isSettingsScreen) &&
@@ -714,7 +699,7 @@ class IconSidebarState extends State<IconSidebar>
           color: colorScheme.error,
           onPressed: _openTrashScreen,
         ),
-      // Botón para ocultar/mostrar panel lateral en tasks y thinks
+
       if ((widget.isTasksScreen ||
               widget.isThinksScreen ||
               widget.isBookmarksScreen) &&

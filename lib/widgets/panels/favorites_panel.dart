@@ -83,8 +83,6 @@ class FavoritesPanelState extends State<FavoritesPanel> {
     return [...notebooks, ...notes, ...thinks];
   }
 
-  /// Reloads all favorites data
-  /// Used for refreshing after sync operations
   void reloadFavorites() {
     _loadFavorites();
   }
@@ -237,7 +235,6 @@ class FavoritesPanelState extends State<FavoritesPanel> {
       iconData = Icons.description_outlined;
       title = item.title;
     } else {
-      // Think
       iconData = Icons.lightbulb_outline_rounded;
       title = item.title;
     }
@@ -259,8 +256,6 @@ class FavoritesPanelState extends State<FavoritesPanel> {
                 if (isNotebook) {
                   widget.onNotebookSelected(item);
                 } else if (isNote) {
-                  // Notify parent that this selection came from a panel so it can
-                  // suppress tab animations when replacing the active tab.
                   try {
                     widget.onNoteSelectedFromPanel?.call(item);
                   } catch (_) {}
@@ -321,7 +316,7 @@ class FavoritesPanelState extends State<FavoritesPanel> {
                         ],
                       ),
                     ),
-                    // Remove from favorites button (only visible on hover)
+
                     Opacity(
                       opacity: isHovering ? 1.0 : 0.0,
                       child: IgnorePointer(
@@ -370,7 +365,6 @@ class FavoritesPanelState extends State<FavoritesPanel> {
   Future<String> _getItemPath(dynamic item) async {
     try {
       if (item is Notebook) {
-        // Para notebooks, mostrar la ruta del parent
         if (item.parentId != null) {
           final parent = await _notebookRepository.getNotebook(item.parentId!);
           if (parent != null) {
@@ -380,7 +374,6 @@ class FavoritesPanelState extends State<FavoritesPanel> {
         }
         return '';
       } else if (item is Note) {
-        // Para notes, mostrar el notebook donde está
         final notebook = await _notebookRepository.getNotebook(item.notebookId);
         if (notebook != null) {
           final notebookPath = await _getNotebookPath(notebook);
@@ -388,11 +381,10 @@ class FavoritesPanelState extends State<FavoritesPanel> {
         }
         return '';
       } else if (item is Think) {
-        // Para thinks, mostrar "Thinks"
         return 'Thinks';
       }
     } catch (e) {
-      // Ignore errors
+      // Ignore errors when getting item path
     }
     return '';
   }

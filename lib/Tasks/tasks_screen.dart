@@ -45,7 +45,6 @@ class TodoScreenDB extends StatefulWidget {
 
 class _TodoScreenDBState extends State<TodoScreenDB>
     with TickerProviderStateMixin {
-  // Estado
   List<Task> _tasks = [];
   List<Task> _completedTasks = [];
   List<Task> _allPendingTasks = []; // Todas las tareas pendientes sin filtrar
@@ -68,7 +67,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _appFocusNode = FocusNode();
 
-  // Interfaz
   double _sidebarWidth = 240;
   bool _isDragging = false;
   bool _isDraggingTask = false;
@@ -80,19 +78,16 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   Timer? _debounceTimer;
   bool _isUpdatingManually = false;
 
-  // Drag and drop state
   int? _dragTargetIndex;
   bool _dragTargetIsAbove = false;
   final Map<int, Rect> _elementBounds = {};
   double? _currentVisualLineY;
 
-  // Calendar panel
   final GlobalKey<ResizablePanelLeftState> _calendarPanelKey =
       GlobalKey<ResizablePanelLeftState>();
   final GlobalKey<CalendarPanelState> _calendarPanelStateKey =
       GlobalKey<CalendarPanelState>();
 
-  // Servicios
   final DatabaseService _databaseService = DatabaseService();
 
   @override
@@ -101,7 +96,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     _tasksTabController = TabController(length: 2, vsync: this);
     _subtasksTabController = TabController(length: 2, vsync: this);
 
-    // Inicializar animación del sidebar
     _sidebarAnimController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
@@ -119,12 +113,9 @@ class _TodoScreenDBState extends State<TodoScreenDB>
 
     _loadTasks();
 
-    // Agregar listener para el título
     _nameController.addListener(_onNameChanged);
 
-    // Suscribirse a cambios en la base de datos
     _databaseService.onDatabaseChanged.listen((_) {
-      // Solo actualizar si no estamos actualizando manualmente
       if (!_isUpdatingManually) {
         _loadTasks();
       }
@@ -153,10 +144,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   void _onNameChanged() {
     if (_selectedTask == null) return;
 
-    // Cancelar timer anterior si existe
     _debounceTimer?.cancel();
 
-    // Crear nuevo timer
     _debounceTimer = Timer(const Duration(seconds: 1), () async {
       if (_selectedTask != null) {
         final updatedTask = _selectedTask!.copyWith(
@@ -183,7 +172,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   }
 
   Future<void> _updateFilteredTagsForCurrentTab() async {
-    // Usar las listas de tareas sin filtrar para obtener todos los tags disponibles
     final tasksForCurrentTab =
         _tasksTabController.index == 0 ? _allPendingTasks : _allCompletedTasks;
 
@@ -196,7 +184,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
 
     final tagsSet = <String>{};
 
-    // Obtener tags que están presentes en las tareas de la tab actual (sin filtrar por tag)
     for (final task in tasksForCurrentTab) {
       if (task.id != null) {
         final taskTags = await _databaseService.taskService.getTagsByTaskId(
@@ -215,13 +202,11 @@ class _TodoScreenDBState extends State<TodoScreenDB>
 
   Future<void> _filterTasksByTag(String? tag) async {
     if (tag == null) {
-      // Sin filtro - mostrar todas las tareas de cada tab
       setState(() {
         _tasks = List.from(_allPendingTasks);
         _completedTasks = List.from(_allCompletedTasks);
       });
     } else {
-      // Filtrar solo la tab actual
       final currentTabIndex = _tasksTabController.index;
       final tasksToFilter =
           currentTabIndex == 0 ? _allPendingTasks : _allCompletedTasks;
@@ -244,23 +229,18 @@ class _TodoScreenDBState extends State<TodoScreenDB>
       });
     }
 
-    // Actualizar tags filtrados para la tab actual
     await _updateFilteredTagsForCurrentTab();
   }
 
   Future<void> _updateTaskListsOnly() async {
     try {
-      // Cargar tareas pendientes y completadas
       List<Task> pendingTasks =
           await _databaseService.taskService.getPendingTasks();
       List<Task> completedTasks =
           await _databaseService.taskService.getCompletedTasks();
 
-      // Guardar todas las tareas sin filtrar
       final allPendingTasks = List<Task>.from(pendingTasks);
       final allCompletedTasks = List<Task>.from(completedTasks);
-
-      // Cargar todos los tags
 
       if (mounted) {
         setState(() {
@@ -270,7 +250,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
           _allPendingTasks = allPendingTasks;
           _allCompletedTasks = allCompletedTasks;
         });
-        // Aplicar filtro actual si existe
+
         await _filterTasksByTag(_selectedTag);
       }
     } catch (e) {
@@ -287,26 +267,20 @@ class _TodoScreenDBState extends State<TodoScreenDB>
 
   Future<void> _loadTasks() async {
     try {
-      // Cargar tareas pendientes y completadas
       List<Task> pendingTasks =
           await _databaseService.taskService.getPendingTasks();
       List<Task> completedTasks =
           await _databaseService.taskService.getCompletedTasks();
 
-      // Guardar todas las tareas sin filtrar
       final allPendingTasks = List<Task>.from(pendingTasks);
       final allCompletedTasks = List<Task>.from(completedTasks);
 
-      // Cargar todos los tags
-
-      // Cargar subtareas si hay una tarea seleccionada
       List<Subtask> subtasks = [];
       if (_selectedTask != null) {
         subtasks = await _databaseService.taskService.getSubtasksByTaskId(
           _selectedTask!.id!,
         );
 
-        // Obtener la tarea directamente de la base de datos para asegurar que esté actualizada
         final updatedTask = await _databaseService.taskService.getTask(
           _selectedTask!.id!,
         );
@@ -314,7 +288,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
         if (updatedTask != null) {
           _selectedTask = updatedTask;
           _selectedDate = updatedTask.date;
-          // Load selected task tags
+
           await _loadSelectedTaskTags(updatedTask.id!);
         }
       }
@@ -328,9 +302,9 @@ class _TodoScreenDBState extends State<TodoScreenDB>
           _allCompletedTasks = allCompletedTasks;
           _subtasks = subtasks;
         });
-        // Aplicar filtro actual si existe
+
         await _filterTasksByTag(_selectedTag);
-        // Reload calendar panel to show updated tasks
+
         _reloadCalendarPanel();
       }
     } catch (e) {
@@ -347,14 +321,11 @@ class _TodoScreenDBState extends State<TodoScreenDB>
 
   Future<void> _createNewTask() async {
     try {
-      // Crear tarea con valores por defecto
       final newTask = await _databaseService.taskService.createTask("Untitled");
 
       if (newTask != null) {
-        // Recargar la lista de tareas
         await _loadTasks();
 
-        // Seleccionar la nueva tarea
         await _selectTask(newTask);
       }
     } catch (e) {
@@ -370,7 +341,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   }
 
   Future<void> _selectTask(Task task) async {
-    // Cargar subtareas
     final subtasks = await _databaseService.taskService.getSubtasksByTaskId(
       task.id!,
     );
@@ -382,11 +352,10 @@ class _TodoScreenDBState extends State<TodoScreenDB>
       _selectedDate = task.date;
       _subtasks = subtasks;
     });
-    // Load tags for selected task
+
     await _loadSelectedTaskTags(task.id!);
   }
 
-  /// Handles task selection
   void _handleTaskSelection(Task task) {
     if (task.id == null) return;
     _selectTask(task);
@@ -419,7 +388,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     if (confirmed == true) {
       await _databaseService.taskService.deleteTask(task.id!);
 
-      // Actualizar estado
       setState(() {
         if (_selectedTask?.id == task.id) {
           _selectedTask = null;
@@ -533,7 +501,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   Future<void> _onDateChanged(DateTime? fecha) async {
     if (_selectedTask == null) return;
 
-    // Marcar que estamos actualizando manualmente
     _isUpdatingManually = true;
 
     if (fecha != null) {
@@ -552,7 +519,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
 
       setState(() {
         _selectedDate = null;
-        // Crear una nueva tarea con fecha null explícitamente
+
         _selectedTask = Task(
           id: _selectedTask!.id,
           name: _selectedTask!.name,
@@ -570,13 +537,10 @@ class _TodoScreenDBState extends State<TodoScreenDB>
       });
     }
 
-    // Recargar la lista de tareas para actualizar la UI
     await _updateTaskListsOnly();
 
-    // Reload calendar panel to show updated tasks
     _reloadCalendarPanel();
 
-    // Desmarcar la actualización manual
     _isUpdatingManually = false;
   }
 
@@ -604,7 +568,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
       !subtask.completed,
     );
 
-    // Recargar subtareas
     if (_selectedTask != null) {
       final subtasks = await _databaseService.taskService.getSubtasksByTaskId(
         _selectedTask!.id!,
@@ -657,7 +620,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
   }
 
   Future<void> _reorderSubtasks(int oldIndex, int newIndex) async {
-    // Obtener solo las subtareas pendientes
     final pendingSubtasks = _getPendingSubtasks();
 
     if (newIndex > oldIndex) {
@@ -667,7 +629,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     final item = pendingSubtasks.removeAt(oldIndex);
     pendingSubtasks.insert(newIndex, item);
 
-    // Actualizar el orden de todas las subtareas pendientes
     final subtasksToUpdate = <Subtask>[];
     for (int i = 0; i < pendingSubtasks.length; i++) {
       final subtask = pendingSubtasks[i];
@@ -676,13 +637,11 @@ class _TodoScreenDBState extends State<TodoScreenDB>
       }
     }
 
-    // Actualizar la lista completa manteniendo el orden
     final completedSubtasks = _getCompletedSubtasks();
     setState(() {
       _subtasks = [...pendingSubtasks, ...completedSubtasks];
     });
 
-    // Guardar todos los cambios
     for (final updatedSubtask in subtasksToUpdate) {
       await _databaseService.taskService.updateSubtask(updatedSubtask);
     }
@@ -738,14 +697,12 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     final pendingSubtasks = _getPendingSubtasks();
     final completedSubtasks = _getCompletedSubtasks();
 
-    // Ordenar por prioridad (high -> medium -> low)
     pendingSubtasks.sort((a, b) {
       final priorityComp = b.priority.index.compareTo(a.priority.index);
       if (priorityComp != 0) return priorityComp;
       return a.orderIndex.compareTo(b.orderIndex);
     });
 
-    // Actualizar lista completa
     setState(() {
       _subtasks = [...pendingSubtasks, ...completedSubtasks];
     });
@@ -757,10 +714,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     final pendingSubtasks = _getPendingSubtasks();
     final completedSubtasks = _getCompletedSubtasks();
 
-    // Ordenar por orden manual
     pendingSubtasks.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
 
-    // Actualizar lista completa
     setState(() {
       _subtasks = [...pendingSubtasks, ...completedSubtasks];
     });
@@ -826,10 +781,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
           child: Scaffold(
             body: Stack(
               children: [
-                // Main content
                 Row(
                   children: [
-                    // Icon sidebar
                     ResizableIconSidebar(
                       rootDir: widget.rootDir,
                       onOpenNote: (_) {},
@@ -865,7 +818,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                       appFocusNode: _appFocusNode,
                     ),
 
-                    // Animated sidebar
                     AnimatedBuilder(
                       animation: _sidebarWidthAnimation,
                       builder: (context, child) {
@@ -897,7 +849,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                 ).colorScheme.surfaceContainerHighest,
                           ),
 
-                          // Central sidebar with task list (resizable)
                           Container(
                             width: _sidebarWidth,
                             decoration: BoxDecoration(
@@ -908,7 +859,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                 Column(
                                   children: [
                                     const SizedBox(height: 8),
-                                    // Tabs for Pending and Completed tasks
+
                                     Container(
                                       padding: const EdgeInsets.all(4),
                                       decoration: BoxDecoration(
@@ -920,7 +871,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                         child: TabBar(
                                           controller: _tasksTabController,
                                           onTap: (index) {
-                                            // Al cambiar de tab, resetear el filtro de tag y mostrar todas las tareas
                                             setState(() {
                                               _selectedTag = null;
                                               _tasks = List.from(
@@ -930,7 +880,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                                 _allCompletedTasks,
                                               );
                                             });
-                                            // Actualizar tags para la nueva tab después de un pequeño delay
+
                                             Future.delayed(
                                               const Duration(milliseconds: 50),
                                               () {
@@ -1013,7 +963,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                         ),
                                       ),
                                     ),
-                                    // Tag filters (filtered by current tab)
+
                                     if (_filteredTagsForCurrentTab
                                         .isNotEmpty) ...[
                                       const SizedBox(height: 4),
@@ -1079,7 +1029,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                       ),
                                     ],
                                     const SizedBox(height: 8),
-                                    // TabBarView for tasks content
+
                                     Expanded(
                                       child: Listener(
                                         onPointerMove:
@@ -1092,7 +1042,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                         child: TabBarView(
                                           controller: _tasksTabController,
                                           children: [
-                                            // Pending tasks tab
                                             _tasks.isEmpty
                                                 ? Center(
                                                   child: Column(
@@ -1274,7 +1223,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                                     );
                                                   },
                                                 ),
-                                            // Completed tasks tab
+
                                             _completedTasks.isEmpty
                                                 ? Center(
                                                   child: Text(
@@ -1308,7 +1257,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                     ),
                                   ],
                                 ),
-                                // Resize control
+
                                 Positioned(
                                   right: 0,
                                   top: 0,
@@ -1345,7 +1294,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                       ),
                     ),
 
-                    // Right content panel (editor)
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(
@@ -1390,7 +1338,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                       ),
                     ),
 
-                    // Calendar Panel (right side)
                     Padding(
                       padding: const EdgeInsets.only(top: 1.0),
                       child: ResizablePanelLeft(
@@ -1418,7 +1365,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                   ],
                 ),
 
-                // Window controls in top right corner
                 Positioned(
                   top: 0,
                   right: 0,
@@ -1481,7 +1427,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                   ),
                 ),
 
-                // Title drag area - correctly placed
                 Positioned(
                   top: 0,
                   left:
@@ -1753,7 +1698,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Checkbox minimalista
                     MouseRegion(
                       cursor: SystemMouseCursors.click,
                       child: GestureDetector(
@@ -1777,7 +1721,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Contenido principal
+
                     Expanded(
                       child: FutureBuilder<List<String>>(
                         future: _databaseService.taskService.getTagsByTaskId(
@@ -1794,7 +1738,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // Task name
                               Text(
                                 task.name,
                                 maxLines: 1,
@@ -1815,12 +1758,11 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                       .withAlpha(150),
                                 ),
                               ),
-                              // Metadata row (date, tags, pin)
+
                               if (hasMetadata) ...[
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    // Pin indicator
                                     if (task.isPinned) ...[
                                       Icon(
                                         Icons.push_pin_rounded,
@@ -1829,7 +1771,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                       ),
                                       const SizedBox(width: 6),
                                     ],
-                                    // Date
+
                                     if (task.date != null) ...[
                                       Icon(
                                         Icons.schedule_rounded,
@@ -1855,7 +1797,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                                       if (tags.isNotEmpty)
                                         const SizedBox(width: 8),
                                     ],
-                                    // Tags (show first 2 max)
+
                                     ...tags
                                         .take(2)
                                         .map(
@@ -1903,7 +1845,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                         },
                       ),
                     ),
-                    // Estado (solo si no es none y no completed)
+
                     if (task.state != TaskState.none &&
                         task.state != TaskState.completed)
                       FutureBuilder<List<String>>(
@@ -1926,7 +1868,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                           );
                         },
                       ),
-                    // Delete button (siempre presente, opacity controla visibilidad)
+
                     Opacity(
                       opacity: isHovering ? 1.0 : 0.0,
                       child: IgnorePointer(
@@ -2105,7 +2047,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
             databaseService: _databaseService,
             onTagsChanged: () {
               setState(() {
-                // Refresh tags
                 _loadTasks();
               });
             },

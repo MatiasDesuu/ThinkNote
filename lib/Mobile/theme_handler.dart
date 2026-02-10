@@ -55,12 +55,10 @@ class ThemeManager {
     required bool monochromeEnabled,
     required bool einkEnabled,
   }) {
-    // If e-ink mode is enabled, use the e-ink theme
     if (einkEnabled) {
       return EInkTheme.buildEInkTheme(isLightMode: !isDarkMode);
     }
 
-    // Crear esquemas de color predeterminados como respaldo
     final baseLight = ColorScheme.fromSeed(
       seedColor: Colors.deepPurple,
       brightness: Brightness.light,
@@ -71,27 +69,22 @@ class ThemeManager {
       brightness: Brightness.dark,
     );
 
-    // Esquemas finales según modo y disponibilidad
     ColorScheme lightScheme;
     ColorScheme darkScheme;
 
-    // Determinar qué esquemas de colores usar basados en disponibilidad de dynamic colors
     final lightColorScheme = lightDynamic ?? baseLight;
     final darkColorScheme = darkDynamic ?? baseDark;
 
     if (!colorModeEnabled && monochromeEnabled) {
-      // Modo monocromático
       if (isDarkMode) {
         return _buildMonochromeDark();
       } else {
         return _buildMonochromeLight();
       }
     } else if (!colorModeEnabled) {
-      // Modo simple sin monocromático
       lightScheme = _buildSimpleLight(lightColorScheme);
       darkScheme = _buildSimpleDark(darkColorScheme);
     } else {
-      // Modo color completo usando Material You
       lightScheme = ColorScheme.fromSeed(
         seedColor: lightDynamic?.primary ?? Colors.deepPurple,
         brightness: Brightness.light,
@@ -186,7 +179,10 @@ class ThemeManager {
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return const TextStyle(
-                color: Color(0xFF222222), fontWeight: FontWeight.bold, fontSize: 12);
+              color: Color(0xFF222222),
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            );
           }
           return const TextStyle(color: Color(0xFF222222), fontSize: 12);
         }),
@@ -249,7 +245,10 @@ class ThemeManager {
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return const TextStyle(
-                color: Color(0xFFDADADA), fontWeight: FontWeight.bold, fontSize: 12);
+              color: Color(0xFFDADADA),
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            );
           }
           return const TextStyle(color: Color(0xFFDADADA), fontSize: 12);
         }),

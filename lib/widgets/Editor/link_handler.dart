@@ -107,11 +107,9 @@ class LinkLauncher {
 
       final uri = Uri.parse(formattedUrl);
 
-      // Try default launch first as it works in other parts of the app
       bool launched = await launchUrl(uri);
 
       if (!launched) {
-        // Fallback to external application
         launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
 

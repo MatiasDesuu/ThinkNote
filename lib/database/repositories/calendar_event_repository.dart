@@ -70,7 +70,6 @@ class CalendarEventRepository {
 
     final events = result.map((row) => CalendarEvent.fromMap(row)).toList();
 
-    // Cargar las notas asociadas
     for (var i = 0; i < events.length; i++) {
       final note = await _noteRepository.getNote(events[i].noteId);
       events[i] = events[i].copyWith(note: note);
@@ -96,7 +95,6 @@ class CalendarEventRepository {
 
     final events = result.map((row) => CalendarEvent.fromMap(row)).toList();
 
-    // Cargar las notas asociadas
     for (var i = 0; i < events.length; i++) {
       final note = await _noteRepository.getNote(events[i].noteId);
       events[i] = events[i].copyWith(note: note);
@@ -188,7 +186,6 @@ class CalendarEventRepository {
 
     final events = result.map((row) => CalendarEvent.fromMap(row)).toList();
 
-    // Cargar las notas asociadas
     for (var i = 0; i < events.length; i++) {
       final note = await _noteRepository.getNote(events[i].noteId);
       events[i] = events[i].copyWith(note: note);

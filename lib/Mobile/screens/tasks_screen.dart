@@ -18,7 +18,6 @@ class TasksScreen extends StatefulWidget {
 
 class TasksScreenState extends State<TasksScreen>
     with TickerProviderStateMixin {
-  // Estado
   List<Task> _tasks = [];
   List<Task> _completedTasks = [];
   Task? _selectedTask;
@@ -28,7 +27,6 @@ class TasksScreenState extends State<TasksScreen>
   bool _isEInkMode = false;
   late TabController _tabController;
 
-  // Controladores
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _newSubtaskController = TextEditingController();
   final TextEditingController _editingController = TextEditingController();
@@ -36,7 +34,6 @@ class TasksScreenState extends State<TasksScreen>
   final ScrollController _scrollController = ScrollController();
   Timer? _debounceTimer;
 
-  // Servicios
   final DatabaseService _databaseService = DatabaseService();
 
   @override
@@ -46,10 +43,8 @@ class TasksScreenState extends State<TasksScreen>
     _loadSavedSettings();
     _loadTasks();
 
-    // Agregar listener para el título
     _nameController.addListener(_onNameChanged);
 
-    // Suscribirse a cambios en la base de datos
     _databaseService.onDatabaseChanged.listen((_) {
       _loadTasks();
     });
@@ -77,10 +72,8 @@ class TasksScreenState extends State<TasksScreen>
   void _onNameChanged() {
     if (_selectedTask == null) return;
 
-    // Cancelar timer anterior si existe
     _debounceTimer?.cancel();
 
-    // Crear nuevo timer
     _debounceTimer = Timer(const Duration(seconds: 1), () async {
       if (_selectedTask != null) {
         final updatedTask = _selectedTask!.copyWith(
@@ -109,13 +102,11 @@ class TasksScreenState extends State<TasksScreen>
         _isLoading = true;
       });
 
-      // Cargar tareas pendientes y completadas
       List<Task> pendingTasks =
           await _databaseService.taskService.getPendingTasks();
       List<Task> completedTasks =
           await _databaseService.taskService.getCompletedTasks();
 
-      // Cargar todos los tags y filtrar solo los que tienen tareas asignadas
       final allTags = await _databaseService.taskService.getAllTags();
       final tagsWithTasks = <String>[];
 
@@ -128,13 +119,11 @@ class TasksScreenState extends State<TasksScreen>
         }
       }
 
-      // Aplicar filtro por etiqueta si es necesario
       if (_selectedTag != null) {
         final tasksWithTag = await _databaseService.taskService.getTasksByTag(
           _selectedTag!,
         );
 
-        // Filtrar las tareas pendientes y completadas por la etiqueta seleccionada
         pendingTasks =
             pendingTasks
                 .where((task) => tasksWithTag.any((t) => t.id == task.id))
@@ -145,9 +134,7 @@ class TasksScreenState extends State<TasksScreen>
                 .toList();
       }
 
-      // Cargar subtareas si hay una tarea seleccionada
       if (_selectedTask != null) {
-        // Si tenemos una tarea seleccionada, actualiza la referencia
         final updatedTask = pendingTasks.firstWhere(
           (t) => t.id == _selectedTask!.id,
           orElse:
@@ -185,14 +172,11 @@ class TasksScreenState extends State<TasksScreen>
 
   Future<void> _createNewTask() async {
     try {
-      // Crear tarea con valores por defecto
       final newTask = await _databaseService.taskService.createTask("Untitled");
 
       if (newTask != null) {
-        // Recargar la lista de tareas
         await _loadTasks();
 
-        // Seleccionar la nueva tarea
         await _selectTask(newTask);
       }
     } catch (e) {
@@ -208,15 +192,12 @@ class TasksScreenState extends State<TasksScreen>
   }
 
   Future<void> _selectTask(Task task) async {
-    // Cargar subtareas
-
     setState(() {
       _selectedTask = task;
       _nameController.text = task.name;
       _newSubtaskController.clear();
     });
 
-    // Navegar a la pantalla de detalles
     if (mounted) {
       Navigator.push(
         context,
@@ -228,7 +209,6 @@ class TasksScreenState extends State<TasksScreen>
               ),
         ),
       ).then((_) {
-        // Recargar las tareas cuando se regrese de la pantalla de detalles
         _loadTasks();
       });
     }
@@ -269,7 +249,6 @@ class TasksScreenState extends State<TasksScreen>
       final item = _tasks.removeAt(oldIndex);
       _tasks.insert(newIndex, item);
 
-      // Actualizar el orden de todas las tareas en la lista
       final tasksToUpdate = <Task>[];
       for (int i = 0; i < _tasks.length; i++) {
         final task = _tasks[i];
@@ -278,10 +257,8 @@ class TasksScreenState extends State<TasksScreen>
         }
       }
 
-      // Actualizar en la base de datos
       setState(() {}); // Actualizar UI inmediatamente
 
-      // Guardar todos los cambios
       for (final updatedTask in tasksToUpdate) {
         await _databaseService.taskService.updateTask(updatedTask);
       }
@@ -320,7 +297,7 @@ class TasksScreenState extends State<TasksScreen>
           isSelected
               ? colorScheme.primary.withAlpha(25)
               : colorScheme.surfaceContainerHighest,
-      // borderRadius property removed as it conflicts with shape
+
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side:
@@ -417,7 +394,7 @@ class TasksScreenState extends State<TasksScreen>
                     },
                   ),
                 ),
-              // Modern tabs
+
               Container(
                 margin: EdgeInsets.symmetric(horizontal: _isEInkMode ? 8 : 4),
                 padding: const EdgeInsets.all(4),
@@ -496,7 +473,7 @@ class TasksScreenState extends State<TasksScreen>
                       try {
                         await SyncService().forceSync(isManual: true);
                       } catch (e) {
-                        // Ignore sync errors here as they are handled by the service/overlay
+                        // Ignore sync errors on refresh
                       }
                       await _loadTasks();
                     },
@@ -529,7 +506,7 @@ class TasksScreenState extends State<TasksScreen>
                       try {
                         await SyncService().forceSync(isManual: true);
                       } catch (e) {
-                        // Ignore sync errors here as they are handled by the service/overlay
+                        // Ignore sync errors on refresh
                       }
                       await _loadTasks();
                     },
@@ -654,7 +631,6 @@ class TasksScreenState extends State<TasksScreen>
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Checkbox minimalista
                   GestureDetector(
                     onTap:
                         () => _updateTaskState(
@@ -675,7 +651,7 @@ class TasksScreenState extends State<TasksScreen>
                     ),
                   ),
                   const SizedBox(width: 14),
-                  // Contenido principal
+
                   Expanded(
                     child: FutureBuilder<List<String>>(
                       future: _databaseService.taskService.getTagsByTaskId(
@@ -692,7 +668,6 @@ class TasksScreenState extends State<TasksScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Task name
                             Text(
                               task.name,
                               maxLines: 1,
@@ -713,7 +688,7 @@ class TasksScreenState extends State<TasksScreen>
                                     .withAlpha(150),
                               ),
                             ),
-                            // Metadata row (date, tags, pin)
+
                             if (hasMetadata) ...[
                               const SizedBox(height: 6),
                               Wrap(
@@ -721,7 +696,6 @@ class TasksScreenState extends State<TasksScreen>
                                 runSpacing: 4,
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  // Pin indicator
                                   if (task.isPinned)
                                     Container(
                                       padding: const EdgeInsets.symmetric(
@@ -739,7 +713,7 @@ class TasksScreenState extends State<TasksScreen>
                                         ],
                                       ),
                                     ),
-                                  // Date
+
                                   if (task.date != null)
                                     Container(
                                       padding: const EdgeInsets.symmetric(
@@ -785,7 +759,7 @@ class TasksScreenState extends State<TasksScreen>
                                         ],
                                       ),
                                     ),
-                                  // Tags (show first 2 max)
+
                                   ...tags
                                       .take(2)
                                       .map(
@@ -841,7 +815,7 @@ class TasksScreenState extends State<TasksScreen>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Estado (solo si no es none o completed)
+
                   if (task.state != TaskState.none &&
                       task.state != TaskState.completed)
                     FutureBuilder<List<String>>(
@@ -855,7 +829,7 @@ class TasksScreenState extends State<TasksScreen>
                         return _buildStateIndicator(task.state, colorScheme);
                       },
                     ),
-                  // Chevron para indicar navegación
+
                   Icon(
                     Icons.chevron_right_rounded,
                     size: 20,
@@ -973,12 +947,10 @@ class TasksScreenState extends State<TasksScreen>
     );
   }
 
-  // Hacer público el método
   Future<void> createNewTask() async {
     await _createNewTask();
   }
 
-  // Método para alternar entre tabs
   void toggleTabs() {
     if (_tabController.index == 0) {
       _tabController.animateTo(1);

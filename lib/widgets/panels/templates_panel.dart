@@ -120,7 +120,6 @@ class TemplatesPanelState extends State<TemplatesPanel> {
     }
 
     try {
-      // Check if this is a stack template
       if (template.title.toLowerCase().contains('#stack')) {
         await _applyStackTemplate(template);
       } else {
@@ -184,7 +183,6 @@ class TemplatesPanelState extends State<TemplatesPanel> {
   }
 
   Future<void> _applyStackTemplate(Note template) async {
-    // Parse the content for {{note1, note2, ...}}
     final regExp = RegExp(r'\{\{([^}]+)\}\}');
     final match = regExp.firstMatch(template.content);
     if (match == null) {
@@ -197,13 +195,11 @@ class TemplatesPanelState extends State<TemplatesPanel> {
     final noteNames =
         noteNamesString.split(',').map((name) => name.trim()).toList();
 
-    // Get all notes from the template's notebook
     final templateNotes = await _noteRepository.getNotesByNotebookId(
       template.notebookId,
     );
     final templateNoteMap = {for (var note in templateNotes) note.title: note};
 
-    // Check if all specified notes exist
     final missingNotes =
         noteNames.where((name) => !templateNoteMap.containsKey(name)).toList();
     if (missingNotes.isNotEmpty) {
@@ -212,7 +208,6 @@ class TemplatesPanelState extends State<TemplatesPanel> {
       );
     }
 
-    // Get target notebook info
     String? notebookName;
     List<String> existingTitles = [];
     if (widget.selectedNotebookId != null) {
@@ -226,7 +221,6 @@ class TemplatesPanelState extends State<TemplatesPanel> {
       existingTitles = existingNotes.map((note) => note.title).toList();
     }
 
-    // Create each note
     for (final noteName in noteNames) {
       final sourceNote = templateNoteMap[noteName]!;
 
@@ -253,11 +247,10 @@ class TemplatesPanelState extends State<TemplatesPanel> {
       );
 
       await _noteRepository.createNote(newNote);
-      // Update existingTitles for numbering
+
       existingTitles.add(processedTitle);
     }
 
-    // Close the panel after applying stack template
     widget.onClose?.call();
 
     if (mounted) {
@@ -283,7 +276,6 @@ class TemplatesPanelState extends State<TemplatesPanel> {
     setState(() => _isLoading = true);
 
     try {
-      // Get target notebook info for variable processing
       final targetNotebook = await _notebookRepository.getNotebook(
         widget.selectedNotebookId!,
       );
@@ -430,7 +422,6 @@ class TemplatesPanelState extends State<TemplatesPanel> {
   Widget _buildNotebookTemplateItem(Notebook notebook) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Clean up name for display
     String displayName = notebook.name;
     if (displayName.toLowerCase().startsWith('#template_')) {
       displayName = displayName.substring(10).replaceAll('_', ' ');
@@ -492,7 +483,6 @@ class TemplatesPanelState extends State<TemplatesPanel> {
   Widget _buildGroup(Notebook notebook, List<Note> notes) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Clean up notebook name for display (remove #templates or #category prefixes)
     String displayName = notebook.name;
     final lowerName = displayName.toLowerCase();
 

@@ -100,7 +100,6 @@ class _IconSelectorScreenState extends State<IconSelectorScreen> {
               ),
             ),
 
-          // Icons grid
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(16),

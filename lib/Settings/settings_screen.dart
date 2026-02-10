@@ -38,10 +38,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ? Scaffold(
           body: Stack(
             children: [
-              // Main content
               Row(
                 children: [
-                  // Left sidebar with navigation buttons
                   ResizableIconSidebar(
                     rootDir: null,
                     onOpenNote: null,
@@ -76,7 +74,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: colorScheme.surfaceContainerHighest,
                   ),
 
-                  // Central panel with options (resizable)
                   Container(
                     width: 240,
                     decoration: BoxDecoration(
@@ -119,7 +116,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
 
-                  // Right content panel
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(
@@ -134,7 +130,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
 
-              // Window controls in top right corner
               Positioned(
                 top: 0,
                 right: 0,
@@ -197,7 +192,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
 
-              // Title drag area - correctly placed
               Positioned(
                 top: 0,
                 left: 60, // Width of left sidebar

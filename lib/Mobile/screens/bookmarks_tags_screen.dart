@@ -308,7 +308,6 @@ class TagsScreenState extends State<TagsScreen> {
                       child: ListTile(
                         title: Row(
                           children: [
-                            // URL Pattern (primera columna)
                             Expanded(
                               child: Text(
                                 pattern.urlPattern,
@@ -316,7 +315,7 @@ class TagsScreenState extends State<TagsScreen> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            // Flecha (columna central)
+
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -326,7 +325,7 @@ class TagsScreenState extends State<TagsScreen> {
                                 color: colorScheme.primary,
                               ),
                             ),
-                            // Tag (tercera columna)
+
                             Expanded(
                               child: Text(
                                 pattern.tag,

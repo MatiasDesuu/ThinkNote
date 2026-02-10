@@ -36,7 +36,6 @@ class CustomDialog extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header
               Container(
                 height: 56,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -57,9 +56,9 @@ class CustomDialog extends StatelessWidget {
                   ],
                 ),
               ),
-              // Body
+
               Flexible(child: child),
-              // Bottom Bar
+
               if (bottomBar != null) bottomBar!,
             ],
           ),

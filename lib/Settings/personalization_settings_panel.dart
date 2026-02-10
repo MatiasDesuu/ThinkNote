@@ -1,12 +1,7 @@
-// personalization_settings_panel.dart
-// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import '../theme_handler.dart' as theme_handler;
 
-// Material You Colors - Global para reutilizar
 const List<Color> materialYouColors = [
-  // Material Colors - Strong version
   Color(0xFFE53935), // Red
   Color(0xFFD81B60), // Pink
   Color(0xFF8E24AA), // Purple
@@ -25,7 +20,7 @@ const List<Color> materialYouColors = [
   Color(0xFF795548), // Brown
   Color(0xFF757575), // Grey
   Color(0xFF546E7A), // Blue Grey
-  // Material Colors - Soft/Pastel version
+
   Color(0xFFFFABAB), // Soft Red
   Color(0xFFF48FB1), // Soft Pink
   Color(0xFFCE93D8), // Soft Purple
@@ -52,11 +47,11 @@ class PersonalizationSettingsPanel extends StatefulWidget {
   const PersonalizationSettingsPanel({super.key, this.onThemeUpdated});
 
   @override
-  _PersonalizationSettingsPanelState createState() =>
-      _PersonalizationSettingsPanelState();
+  PersonalizationSettingsPanelState createState() =>
+      PersonalizationSettingsPanelState();
 }
 
-class _PersonalizationSettingsPanelState
+class PersonalizationSettingsPanelState
     extends State<PersonalizationSettingsPanel> {
   Color _currentColor = const Color(0xFFC6A0F6);
   bool _isDarkTheme = true;
@@ -86,8 +81,7 @@ class _PersonalizationSettingsPanelState
         await theme_handler.ThemeManager.getCatppuccinFlavor();
     final catppuccinAccent =
         await theme_handler.ThemeManager.getCatppuccinAccent();
-    final einkEnabled =
-        await theme_handler.ThemeManager.getEInkEnabled();
+    final einkEnabled = await theme_handler.ThemeManager.getEInkEnabled();
 
     setState(() {
       _currentColor = color;
@@ -115,7 +109,7 @@ class _PersonalizationSettingsPanelState
   void _toggleColorMode(bool value) {
     setState(() {
       _isColorMode = value;
-      // If color mode is enabled, disable monochrome mode, catppuccin and e-ink
+
       if (value) {
         _isMonochromeEnabled = false;
         _isCatppuccinEnabled = false;
@@ -131,7 +125,7 @@ class _PersonalizationSettingsPanelState
   void _toggleMonochrome(bool value) {
     setState(() {
       _isMonochromeEnabled = value;
-      // If monochrome is enabled, disable color mode, catppuccin and e-ink
+
       if (value) {
         _isColorMode = false;
         _isCatppuccinEnabled = false;
@@ -147,7 +141,7 @@ class _PersonalizationSettingsPanelState
   void _toggleCatppuccin(bool value) {
     setState(() {
       _isCatppuccinEnabled = value;
-      // If catppuccin is enabled, disable color mode, monochrome and e-ink
+
       if (value) {
         _isColorMode = false;
         _isMonochromeEnabled = false;
@@ -163,7 +157,7 @@ class _PersonalizationSettingsPanelState
   void _toggleEInk(bool value) {
     setState(() {
       _isEInkEnabled = value;
-      // If e-ink is enabled, disable color mode, monochrome and catppuccin
+
       if (value) {
         _isColorMode = false;
         _isMonochromeEnabled = false;
@@ -226,7 +220,6 @@ class _PersonalizationSettingsPanelState
         ),
         const SizedBox(height: 20),
 
-        // Catppuccin Theme Section (only visible when E-Ink is disabled)
         if (!_isEInkEnabled) ...[
           Card(
             child: Padding(
@@ -257,7 +250,6 @@ class _PersonalizationSettingsPanelState
                   ),
                   const SizedBox(height: 16),
 
-                  // Catppuccin toggle
                   Row(
                     children: [
                       Icon(
@@ -289,11 +281,9 @@ class _PersonalizationSettingsPanelState
                     ],
                   ),
 
-                  // Catppuccin options (only visible when enabled)
                   if (_isCatppuccinEnabled) ...[
                     const SizedBox(height: 16),
 
-                    // Flavor selector
                     Row(
                       children: [
                         Icon(
@@ -304,7 +294,9 @@ class _PersonalizationSettingsPanelState
                         const SizedBox(width: 12),
                         Text(
                           'Flavor',
-                          style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                          style: textStyle?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -316,7 +308,6 @@ class _PersonalizationSettingsPanelState
 
                     const SizedBox(height: 16),
 
-                    // Accent selector
                     Row(
                       children: [
                         Icon(
@@ -327,7 +318,9 @@ class _PersonalizationSettingsPanelState
                         const SizedBox(width: 12),
                         Text(
                           'Accent Color',
-                          style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                          style: textStyle?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -345,7 +338,6 @@ class _PersonalizationSettingsPanelState
           const SizedBox(height: 16),
         ],
 
-        // Color Selection Section (only visible when Catppuccin and E-Ink are disabled)
         if (!_isCatppuccinEnabled && !_isEInkEnabled) ...[
           Card(
             child: Padding(
@@ -376,7 +368,6 @@ class _PersonalizationSettingsPanelState
                   ),
                   const SizedBox(height: 16),
 
-                  // Strong Colors
                   Row(
                     children: [
                       Icon(
@@ -399,7 +390,6 @@ class _PersonalizationSettingsPanelState
 
                   const SizedBox(height: 16),
 
-                  // Soft Colors
                   Row(
                     children: [
                       Icon(
@@ -427,7 +417,6 @@ class _PersonalizationSettingsPanelState
           const SizedBox(height: 16),
         ],
 
-        // Theme Options Section (only visible when Catppuccin is disabled)
         if (!_isCatppuccinEnabled) ...[
           Card(
             child: Padding(
@@ -458,11 +447,12 @@ class _PersonalizationSettingsPanelState
                   ),
                   const SizedBox(height: 16),
 
-                  // Light/dark theme selector (always visible)
                   Row(
                     children: [
                       Icon(
-                        _isDarkTheme ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                        _isDarkTheme
+                            ? Icons.light_mode_rounded
+                            : Icons.dark_mode_rounded,
                         size: 20,
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -477,7 +467,6 @@ class _PersonalizationSettingsPanelState
 
                   const SizedBox(height: 16),
 
-                  // E-Ink Theme toggle (always visible)
                   Row(
                     children: [
                       Icon(
@@ -502,14 +491,10 @@ class _PersonalizationSettingsPanelState
                           ],
                         ),
                       ),
-                      Switch(
-                        value: _isEInkEnabled,
-                        onChanged: _toggleEInk,
-                      ),
+                      Switch(value: _isEInkEnabled, onChanged: _toggleEInk),
                     ],
                   ),
 
-                  // Color mode selector (only visible when E-Ink is disabled)
                   if (!_isEInkEnabled) ...[
                     const SizedBox(height: 16),
                     Row(
@@ -536,11 +521,13 @@ class _PersonalizationSettingsPanelState
                             ],
                           ),
                         ),
-                        Switch(value: _isColorMode, onChanged: _toggleColorMode),
+                        Switch(
+                          value: _isColorMode,
+                          onChanged: _toggleColorMode,
+                        ),
                       ],
                     ),
 
-                    // Monochrome option (only visible when color mode is disabled and E-Ink is disabled)
                     if (!_isColorMode) ...[
                       const SizedBox(height: 16),
                       Row(
@@ -583,7 +570,6 @@ class _PersonalizationSettingsPanelState
           const SizedBox(height: 16),
         ],
 
-        // Preview Section
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -615,30 +601,30 @@ class _PersonalizationSettingsPanelState
                 _isEInkEnabled
                     ? _buildEInkPreviewSection()
                     : _isCatppuccinEnabled
-                        ? _buildCatppuccinPreviewSection()
-                        : Row(
-                          children: [
-                            Expanded(
-                              child: _buildThemeSection(
-                                'Light',
-                                ColorScheme.fromSeed(
-                                  seedColor: _currentColor,
-                                  brightness: Brightness.light,
-                                ),
-                              ),
+                    ? _buildCatppuccinPreviewSection()
+                    : Row(
+                      children: [
+                        Expanded(
+                          child: _buildThemeSection(
+                            'Light',
+                            ColorScheme.fromSeed(
+                              seedColor: _currentColor,
+                              brightness: Brightness.light,
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _buildThemeSection(
-                                'Dark',
-                                ColorScheme.fromSeed(
-                                  seedColor: _currentColor,
-                                  brightness: Brightness.dark,
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildThemeSection(
+                            'Dark',
+                            ColorScheme.fromSeed(
+                              seedColor: _currentColor,
+                              brightness: Brightness.dark,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
               ],
             ),
           ),
@@ -1008,9 +994,10 @@ class _PersonalizationSettingsPanelState
   }
 
   Widget _buildEInkPreviewSection() {
-    // Determine colors based on light theme setting
-    final backgroundColor = !_isDarkTheme ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
-    final foregroundColor = !_isDarkTheme ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
+    final backgroundColor =
+        !_isDarkTheme ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
+    final foregroundColor =
+        !_isDarkTheme ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
     final modeText = !_isDarkTheme ? 'Light Mode' : 'Dark Mode';
 
     return Column(
@@ -1042,10 +1029,7 @@ class _PersonalizationSettingsPanelState
               const SizedBox(height: 12),
               Text(
                 'Pure black and white theme designed for e-ink displays',
-                style: TextStyle(
-                  color: foregroundColor,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: foregroundColor, fontSize: 14),
               ),
               const SizedBox(height: 12),
               _buildEInkColorRow(
@@ -1060,7 +1044,10 @@ class _PersonalizationSettingsPanelState
               ),
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: foregroundColor,
                   borderRadius: BorderRadius.circular(4),

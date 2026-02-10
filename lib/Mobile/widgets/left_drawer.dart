@@ -367,7 +367,6 @@ class _MobileDrawerState extends State<MobileDrawer>
     final isSelected = widget.selectedNotebook?.id == notebook.id;
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Obtener el icono personalizado o usar el por defecto
     final notebookIcon =
         notebook.iconId != null
             ? NotebookIconsRepository.getIconById(notebook.iconId!)
@@ -462,7 +461,6 @@ class _MobileDrawerState extends State<MobileDrawer>
       final name = await _promptForName('Notebook Name', 'Name');
       if (name == null || name.trim().isEmpty) return;
 
-      // Obtener el último orderIndex
       final notebooks = await _notebookRepository.getNotebooksByParentId(
         widget.selectedNotebook?.id,
       );
@@ -991,7 +989,6 @@ class _MobileDrawerState extends State<MobileDrawer>
             ),
       ),
     ).then((_) {
-      // Asegurarnos de que la sidebar permanezca abierta
       if (mounted) {
         widget.scaffoldKey.currentState?.openDrawer();
       }
@@ -1001,7 +998,6 @@ class _MobileDrawerState extends State<MobileDrawer>
   void _handleOpenTags() {
     final navigator = Navigator.of(context);
 
-    // Close drawer first to avoid "drawer open" flash on return
     navigator.pop();
 
     navigator.push(

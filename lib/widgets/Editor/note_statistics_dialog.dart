@@ -30,7 +30,6 @@ class _NoteStatisticsDialogState extends State<NoteStatisticsDialog> {
     List<String> pathNames = [];
     int? currentNotebookId = widget.note.notebookId;
 
-    // Safety break to prevent infinite loops if DB has circular references
     int depth = 0;
     while (currentNotebookId != null && depth < 20) {
       final notebook = await notebookRepo.getNotebook(currentNotebookId);
@@ -181,7 +180,7 @@ class _NoteStatisticsDialogState extends State<NoteStatisticsDialog> {
 
   int _calculateWordCount(String text) {
     if (text.trim().isEmpty) return 0;
-    // Split by whitespace and filter out empty strings to get accurate word count
+
     return text.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).length;
   }
 }

@@ -59,7 +59,6 @@ class TagsHandlerDB {
     }
   }
 
-  // Migration method
   Future<void> migrateFromJson() async {
     try {
       final jsonPatterns = await _getUrlPatternsFromJsonFile();
@@ -77,7 +76,6 @@ class TagsHandlerDB {
         }
       }
 
-      // Delete the old JSON file after successful migration
       final file = await _getTagsFile();
       if (await file.exists()) {
         await file.delete();

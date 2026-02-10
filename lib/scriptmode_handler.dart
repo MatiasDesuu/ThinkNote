@@ -92,7 +92,6 @@ class ScriptModeHandlerDesktop {
     Function(Note, bool)? onNoteLinkTap,
     Function(String)? onTextChanged,
   }) {
-    // Use the new UnifiedTextHandler that handles ALL formatting types
     return UnifiedTextHandler(
       text: block.content,
       textStyle: textStyle,
@@ -102,29 +101,38 @@ class ScriptModeHandlerDesktop {
       enableFormatDetection: true,
       showNoteLinkBrackets: false,
       onNoteLinkTap: onNoteLinkTap,
-      onTextChanged: onTextChanged != null ? (newBlockContent) {
-        // We need to rebuild the full content with the updated block
-        final lines = fullContent.split('\n');
-        if (lines.isEmpty) return;
+      onTextChanged:
+          onTextChanged != null
+              ? (newBlockContent) {
+                final lines = fullContent.split('\n');
+                if (lines.isEmpty) return;
 
-        final header = lines.first; // #script
-        final blocks = parseScript(fullContent);
-        
-        // Find the block we updated
-        final updatedBlocks = blocks.map((b) => b.number == block.number 
-          ? ScriptBlock(number: b.number, content: newBlockContent) 
-          : b).toList();
-        
-        // Reconstruct full content
-        StringBuffer sb = StringBuffer();
-        sb.writeln(header);
-        for (var b in updatedBlocks) {
-          sb.writeln('#${b.number}');
-          sb.writeln(b.content);
-        }
-        
-        onTextChanged(sb.toString().trimRight());
-      } : null,
+                final header = lines.first; // #script
+                final blocks = parseScript(fullContent);
+
+                final updatedBlocks =
+                    blocks
+                        .map(
+                          (b) =>
+                              b.number == block.number
+                                  ? ScriptBlock(
+                                    number: b.number,
+                                    content: newBlockContent,
+                                  )
+                                  : b,
+                        )
+                        .toList();
+
+                StringBuffer sb = StringBuffer();
+                sb.writeln(header);
+                for (var b in updatedBlocks) {
+                  sb.writeln('#${b.number}');
+                  sb.writeln(b.content);
+                }
+
+                onTextChanged(sb.toString().trimRight());
+              }
+              : null,
     );
   }
 }
@@ -145,7 +153,6 @@ class DurationEstimatorDesktop extends StatelessWidget {
   Widget build(BuildContext context) {
     final blocks = ScriptModeHandlerDesktop.parseScript(content);
 
-    // Same counting logic as in Android
     final totalWords = blocks.fold(
       0,
       (sum, block) =>

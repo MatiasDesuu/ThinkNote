@@ -20,7 +20,6 @@ class _CalendarEventStatusScreenState extends State<CalendarEventStatusScreen> {
   List<CalendarEventStatus> _statuses = [];
   bool _isLoading = true;
 
-  // Material You pastel colors
   static const List<Map<String, dynamic>> _predefinedColors = [
     {'name': 'Coral', 'hex': '#FFB4AB'},
     {'name': 'Peach', 'hex': '#FFB4A1'},
@@ -69,7 +68,6 @@ class _CalendarEventStatusScreenState extends State<CalendarEventStatusScreen> {
         });
       }
 
-      // Initialize default statuses if none exist
       if (statuses.isEmpty) {
         await _initializeDefaultStatuses();
       }
@@ -119,7 +117,7 @@ class _CalendarEventStatusScreenState extends State<CalendarEventStatusScreen> {
       try {
         await _statusRepository.createStatus(status);
       } catch (e) {
-        // Ignore errors for duplicate statuses
+        // Ignore if status already exists
       }
     }
 
@@ -192,7 +190,6 @@ class _CalendarEventStatusScreenState extends State<CalendarEventStatusScreen> {
     final CalendarEventStatus item = reorderedStatuses.removeAt(oldIndex);
     reorderedStatuses.insert(newIndex, item);
 
-    // Actualizar orderIndex de todos los statuses
     try {
       for (int i = 0; i < reorderedStatuses.length; i++) {
         final updatedStatus = reorderedStatuses[i].copyWith(orderIndex: i);

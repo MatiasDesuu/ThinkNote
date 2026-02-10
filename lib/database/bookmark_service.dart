@@ -26,15 +26,12 @@ class BookmarkService {
   Future<void> _initializeTables() async {
     final db = await _dbHelper.database;
 
-    // Verificar si las tablas existen
     final tables = db.select('''
       SELECT name FROM sqlite_master 
       WHERE type='table' AND name IN ('bookmarks', 'bookmarks_tags', 'bookmarks_tag_url_patterns')
     ''');
 
-    // Si no existen todas las tablas, crearlas
     if (tables.length < 3) {
-      // Crear tablas si no existen
       db.execute('''
         CREATE TABLE IF NOT EXISTS bookmarks (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,34 +62,27 @@ class BookmarkService {
     }
   }
 
-  // Método para eliminar la tabla bookmark_tag_mappings
   Future<void> removeBookmarkTagMappingsTable() async {
     final db = await _dbHelper.database;
 
-    // Iniciar transacción
     db.execute('BEGIN TRANSACTION;');
 
     try {
-      // Verificar si la tabla existe
       final tables = db.select(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='bookmark_tag_mappings'",
       );
 
       if (tables.isNotEmpty) {
-        // Eliminar la tabla
         db.execute('DROP TABLE bookmark_tag_mappings;');
       }
 
-      // Confirmar transacción
       db.execute('COMMIT;');
     } catch (e) {
-      // Si hay algún error, revertir la transacción
       db.execute('ROLLBACK;');
       print('Error removing bookmark_tag_mappings table: $e');
     }
   }
 
-  // Bookmark operations
   Future<List<Bookmark>> getAllBookmarks() async {
     await _ensureInitialized();
     final db = await _dbHelper.database;
@@ -272,7 +262,6 @@ class BookmarkService {
     }
   }
 
-  // Tags operations
   Future<List<BookmarkTag>> getAllTags() async {
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> maps = db.select(
@@ -325,7 +314,6 @@ class BookmarkService {
     }
   }
 
-  // Tag mappings
   Future<List<String>> getTagsByBookmarkId(int bookmarkId) async {
     final db = await _dbHelper.database;
     final bookmark = db.select(
@@ -349,7 +337,6 @@ class BookmarkService {
   Future<List<Bookmark>> getBookmarksByTag(String tag) async {
     final db = await _dbHelper.database;
 
-    // Primero obtener el ID del tag
     final tagRecord = db.select('SELECT id FROM bookmarks_tags WHERE tag = ?', [
       tag,
     ]);
@@ -357,7 +344,6 @@ class BookmarkService {
 
     final tagId = tagRecord.first['id'] as int;
 
-    // Buscar bookmarks que contengan este tag_id
     final List<Map<String, dynamic>> maps = db.select(
       'SELECT * FROM bookmarks WHERE json_each.value = ?',
       [tagId],
@@ -382,10 +368,8 @@ class BookmarkService {
   Future<void> updateBookmarkTags(int bookmarkId, List<String> newTags) async {
     final db = await _dbHelper.database;
 
-    // Crear los nuevos tags y obtener sus IDs
     final tagIds = <int>[];
     for (final tag in newTags) {
-      // Primero verificar si el tag ya existe
       final existingTag = db.select(
         'SELECT id FROM bookmarks_tags WHERE tag = ?',
         [tag],
@@ -393,10 +377,8 @@ class BookmarkService {
 
       int tagId;
       if (existingTag.isNotEmpty) {
-        // Si el tag existe, usar su ID
         tagId = existingTag.first['id'] as int;
       } else {
-        // Si el tag no existe, crearlo
         final stmt = db.prepare('''
           INSERT INTO bookmarks_tags (tag)
           VALUES (?)
@@ -411,13 +393,11 @@ class BookmarkService {
       tagIds.add(tagId);
     }
 
-    // Actualizar el bookmark con los nuevos tag_ids
     db.execute('UPDATE bookmarks SET tag_ids = ? WHERE id = ?', [
       json.encode(tagIds),
       bookmarkId,
     ]);
 
-    // Limpiar tags huérfanos
     db.execute('''
       DELETE FROM bookmarks_tags 
       WHERE id NOT IN (
@@ -429,7 +409,6 @@ class BookmarkService {
     _changeController.add(null);
   }
 
-  // URL Pattern Tag operations
   Future<List<TagUrlPattern>> getAllTagUrlPatterns() async {
     final db = await _dbHelper.database;
     final List<Map<String, dynamic>> maps = db.select(
@@ -450,7 +429,6 @@ class BookmarkService {
   Future<int> createTagUrlPattern(String urlPattern, String tag) async {
     final db = await _dbHelper.database;
 
-    // Verificar si ya existe un patrón con la misma URL y tag
     final existingPattern = db.select(
       'SELECT id FROM bookmarks_tag_url_patterns WHERE url_pattern = ? AND tag = ?',
       [urlPattern, tag],
@@ -470,7 +448,6 @@ class BookmarkService {
       DatabaseHelper.notifyDatabaseChanged();
       return db.lastInsertRowId;
     } catch (e) {
-      // Si es un error de constraint UNIQUE, mostrar un mensaje más amigable
       if (e.toString().contains('UNIQUE constraint failed')) {
         throw Exception('A tag pattern with this URL and tag already exists.');
       }
@@ -512,7 +489,6 @@ class BookmarkService {
   Future<List<Bookmark>> getAllBookmarksWithTags() async {
     final db = await _dbHelper.database;
 
-    // Obtener todos los bookmarks con sus tags en una sola consulta usando JOIN
     final List<Map<String, dynamic>> maps = db.select('''
       SELECT 
         b.*,
@@ -542,7 +518,6 @@ class BookmarkService {
     }).toList();
   }
 
-  // Cleanup
   void dispose() {
     _changeController.close();
   }

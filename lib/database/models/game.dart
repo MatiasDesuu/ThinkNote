@@ -12,7 +12,6 @@ class Game {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  // Método estático para formatear fechas en YYYY-MM-DD
   static String? formatDateOnly(DateTime? date) {
     if (date == null) return null;
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';

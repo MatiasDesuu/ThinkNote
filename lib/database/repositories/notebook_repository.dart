@@ -11,7 +11,7 @@ class NotebookRepository {
 
   Future<int> createNotebook(Notebook notebook) async {
     final db = await _dbHelper.database;
-    // Obtener el último orden disponible para el parentId
+
     final result = db.select('''
       SELECT MAX(order_index) as maxOrder
       FROM ${config.DatabaseConfig.tableNotebooks}
@@ -106,12 +106,9 @@ class NotebookRepository {
     final db = await _dbHelper.database;
     final now = DateTime.now().millisecondsSinceEpoch;
 
-    // Primero obtenemos todas las notebooks anidadas
     final nestedNotebooks = await _getNestedNotebooks(id);
 
-    // Eliminamos todas las notebooks anidadas y sus notas
     for (final notebook in nestedNotebooks) {
-      // Eliminamos las notas de cada notebook
       db.execute(
         '''
         UPDATE ${config.DatabaseConfig.tableNotes}
@@ -121,7 +118,6 @@ class NotebookRepository {
         [now, notebook.id],
       );
 
-      // Eliminamos la notebook
       db.execute(
         '''
         UPDATE ${config.DatabaseConfig.tableNotebooks}
@@ -132,7 +128,6 @@ class NotebookRepository {
       );
     }
 
-    // Eliminamos las notas de la notebook principal
     db.execute(
       '''
       UPDATE ${config.DatabaseConfig.tableNotes}
@@ -142,7 +137,6 @@ class NotebookRepository {
       [now, id],
     );
 
-    // Eliminamos la notebook principal
     db.execute(
       '''
       UPDATE ${config.DatabaseConfig.tableNotebooks}
@@ -159,7 +153,6 @@ class NotebookRepository {
     final db = await _dbHelper.database;
     final notebooks = <Notebook>[];
 
-    // Función recursiva para obtener todas las notebooks anidadas
     Future<void> getChildren(int parentId) async {
       final result = db.select(
         '''
@@ -184,12 +177,9 @@ class NotebookRepository {
   Future<void> restoreNotebook(int id) async {
     final db = await _dbHelper.database;
 
-    // Primero obtenemos todas las notebooks anidadas que fueron eliminadas junto con esta
     final nestedNotebooks = await _getDeletedNestedNotebooks(id);
 
-    // Restauramos todas las notebooks anidadas y sus notas
     for (final notebook in nestedNotebooks) {
-      // Restauramos las notas de cada notebook
       db.execute(
         '''
         UPDATE ${config.DatabaseConfig.tableNotes}
@@ -199,7 +189,6 @@ class NotebookRepository {
         [notebook.id],
       );
 
-      // Restauramos la notebook
       db.execute(
         '''
         UPDATE ${config.DatabaseConfig.tableNotebooks}
@@ -210,7 +199,6 @@ class NotebookRepository {
       );
     }
 
-    // Restauramos las notas de la notebook principal
     db.execute(
       '''
       UPDATE ${config.DatabaseConfig.tableNotes}
@@ -220,7 +208,6 @@ class NotebookRepository {
       [id],
     );
 
-    // Restauramos la notebook principal
     db.execute(
       '''
       UPDATE ${config.DatabaseConfig.tableNotebooks}
@@ -235,7 +222,6 @@ class NotebookRepository {
     final db = await _dbHelper.database;
     final notebooks = <Notebook>[];
 
-    // Función recursiva para obtener todas las notebooks anidadas eliminadas
     Future<void> getChildren(int parentId) async {
       final result = db.select(
         '''
@@ -263,7 +249,6 @@ class NotebookRepository {
     final db = await _dbHelper.database;
     final notebooks = <Notebook>[];
 
-    // Función recursiva para obtener todas las notebooks anidadas eliminadas
     Future<void> getChildren(int parentId) async {
       final result = db.select(
         '''
@@ -287,17 +272,14 @@ class NotebookRepository {
   Future<void> hardDeleteNotebook(int id) async {
     final db = await _dbHelper.database;
 
-    // Primero obtenemos todas las notebooks anidadas (tanto eliminadas como no eliminadas)
     final nestedNotebooks = await _getDeletedNestedNotebooksForHardDelete(id);
 
-    // Ordenamos las notebooks por profundidad (las más profundas primero)
     nestedNotebooks.sort((a, b) {
       int depthA = 0;
       int depthB = 0;
       Notebook? currentA = a;
       Notebook? currentB = b;
 
-      // Calculamos la profundidad de A
       while (currentA?.parentId != null) {
         depthA++;
         currentA = nestedNotebooks.firstWhereOrNull(
@@ -306,7 +288,6 @@ class NotebookRepository {
         if (currentA == null) break;
       }
 
-      // Calculamos la profundidad de B
       while (currentB?.parentId != null) {
         depthB++;
         currentB = nestedNotebooks.firstWhereOrNull(
@@ -318,9 +299,7 @@ class NotebookRepository {
       return depthB.compareTo(depthA);
     });
 
-    // Eliminamos todas las notebooks anidadas y sus notas
     for (final notebook in nestedNotebooks) {
-      // Eliminamos las notas de cada notebook
       db.execute(
         '''
         DELETE FROM ${config.DatabaseConfig.tableNotes}
@@ -329,7 +308,6 @@ class NotebookRepository {
         [notebook.id],
       );
 
-      // Eliminamos la notebook
       db.execute(
         '''
         DELETE FROM ${config.DatabaseConfig.tableNotebooks}
@@ -339,7 +317,6 @@ class NotebookRepository {
       );
     }
 
-    // Eliminamos las notas de la notebook principal
     db.execute(
       '''
       DELETE FROM ${config.DatabaseConfig.tableNotes}
@@ -348,7 +325,6 @@ class NotebookRepository {
       [id],
     );
 
-    // Eliminamos la notebook principal
     db.execute(
       '''
       DELETE FROM ${config.DatabaseConfig.tableNotebooks}

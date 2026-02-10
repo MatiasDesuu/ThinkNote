@@ -8,7 +8,6 @@ class TaskService {
 
   TaskService(this._taskRepository);
 
-  // Task methods
   Future<Task?> createTask(String name) async {
     final now = DateTime.now();
     final task = Task(name: name, createdAt: now, updatedAt: now);
@@ -21,7 +20,6 @@ class TaskService {
     final task = await _taskRepository.getTask(id);
     if (task == null) return null;
 
-    // Get the tags for this task
     final tags = await _taskRepository.getTagsByTaskId(id);
     final tagIds = tags.map((tag) => tag.id).whereType<int>().toList();
 
@@ -49,7 +47,6 @@ class TaskService {
   }
 
   Future<void> updateTask(Task task) async {
-    // Crear una nueva tarea con todos los campos explícitamente
     final updatedTask = Task(
       id: task.id,
       name: task.name,
@@ -74,7 +71,6 @@ class TaskService {
       return;
     }
 
-    // Crear una nueva tarea con la fecha específica (puede ser null)
     final updatedTask = Task(
       id: task.id,
       name: task.name,
@@ -123,7 +119,6 @@ class TaskService {
     }
   }
 
-  // Subtask methods
   Future<Subtask?> createSubtask(int taskId, String text) async {
     final subtask = Subtask(taskId: taskId, text: text);
 
@@ -171,7 +166,6 @@ class TaskService {
     await _taskRepository.updateSubtask(updatedSubtask);
   }
 
-  // Habit completion helpers
   Future<void> setHabitCompletion(
     int subtaskId,
     String isoDate,
@@ -188,7 +182,6 @@ class TaskService {
     return await _taskRepository.getHabitCompletionsForTask(taskId);
   }
 
-  // Tag methods
   Future<List<String>> getAllTags() async {
     final tags = await _taskRepository.getAllTags();
     return tags.map((tag) => tag.name).toList();

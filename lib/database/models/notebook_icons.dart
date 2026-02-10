@@ -15,7 +15,6 @@ class NotebookIcon {
 
 class NotebookIconsRepository {
   static const List<NotebookIcon> icons = [
-    // General
     NotebookIcon(id: 1, icon: Icons.folder_rounded, name: 'Folder'),
     NotebookIcon(id: 2, icon: Icons.folder_open_rounded, name: 'Open Folder'),
     NotebookIcon(
@@ -25,7 +24,6 @@ class NotebookIconsRepository {
     ),
     NotebookIcon(id: 4, icon: Icons.folder_zip_rounded, name: 'Archive'),
 
-    // Work
     NotebookIcon(id: 5, icon: Icons.work_rounded, name: 'Work'),
     NotebookIcon(id: 6, icon: Icons.business_rounded, name: 'Business'),
     NotebookIcon(id: 7, icon: Icons.meeting_room_rounded, name: 'Meeting'),
@@ -33,14 +31,12 @@ class NotebookIconsRepository {
     NotebookIcon(id: 9, icon: Icons.description_rounded, name: 'Document'),
     NotebookIcon(id: 10, icon: Icons.article_rounded, name: 'Article'),
 
-    // Personal
     NotebookIcon(id: 11, icon: Icons.person_rounded, name: 'Personal'),
     NotebookIcon(id: 12, icon: Icons.home_rounded, name: 'Home'),
     NotebookIcon(id: 13, icon: Icons.family_restroom_rounded, name: 'Family'),
     NotebookIcon(id: 14, icon: Icons.favorite_rounded, name: 'Favorites'),
     NotebookIcon(id: 15, icon: Icons.favorite_border_rounded, name: 'Love'),
 
-    // Education
     NotebookIcon(id: 16, icon: Icons.school_rounded, name: 'School'),
     NotebookIcon(id: 17, icon: Icons.book_rounded, name: 'Book'),
     NotebookIcon(id: 18, icon: Icons.library_books_rounded, name: 'Library'),
@@ -49,7 +45,6 @@ class NotebookIconsRepository {
     NotebookIcon(id: 21, icon: Icons.history_rounded, name: 'History'),
     NotebookIcon(id: 22, icon: Icons.language_rounded, name: 'Language'),
 
-    // Projects
     NotebookIcon(id: 23, icon: Icons.code_rounded, name: 'Code'),
     NotebookIcon(id: 24, icon: Icons.build_rounded, name: 'Build'),
     NotebookIcon(id: 25, icon: Icons.engineering_rounded, name: 'Engineering'),
@@ -59,7 +54,6 @@ class NotebookIconsRepository {
       name: 'Architecture',
     ),
 
-    // Creativity
     NotebookIcon(id: 27, icon: Icons.brush_rounded, name: 'Art'),
     NotebookIcon(id: 28, icon: Icons.music_note_rounded, name: 'Music'),
     NotebookIcon(id: 29, icon: Icons.camera_alt_rounded, name: 'Photography'),
@@ -67,36 +61,30 @@ class NotebookIconsRepository {
     NotebookIcon(id: 31, icon: Icons.palette_rounded, name: 'Design'),
     NotebookIcon(id: 32, icon: Icons.create_rounded, name: 'Writing'),
 
-    // Health
     NotebookIcon(id: 33, icon: Icons.fitness_center_rounded, name: 'Fitness'),
     NotebookIcon(id: 34, icon: Icons.psychology_rounded, name: 'Psychology'),
     NotebookIcon(id: 35, icon: Icons.spa_rounded, name: 'Wellness'),
 
-    // Finance
     NotebookIcon(id: 36, icon: Icons.account_balance_rounded, name: 'Bank'),
     NotebookIcon(id: 37, icon: Icons.attach_money_rounded, name: 'Money'),
     NotebookIcon(id: 38, icon: Icons.trending_up_rounded, name: 'Investments'),
     NotebookIcon(id: 39, icon: Icons.receipt_rounded, name: 'Expenses'),
 
-    // Travel
     NotebookIcon(id: 40, icon: Icons.flight_rounded, name: 'Travel'),
     NotebookIcon(id: 41, icon: Icons.hotel_rounded, name: 'Hotel'),
     NotebookIcon(id: 42, icon: Icons.map_rounded, name: 'Map'),
     NotebookIcon(id: 43, icon: Icons.explore_rounded, name: 'Explore'),
 
-    // Technology
     NotebookIcon(id: 44, icon: Icons.computer_rounded, name: 'Computer'),
     NotebookIcon(id: 45, icon: Icons.phone_rounded, name: 'Mobile'),
     NotebookIcon(id: 46, icon: Icons.wifi_rounded, name: 'Internet'),
     NotebookIcon(id: 47, icon: Icons.security_rounded, name: 'Security'),
 
-    // Food
     NotebookIcon(id: 48, icon: Icons.restaurant_rounded, name: 'Restaurant'),
     NotebookIcon(id: 49, icon: Icons.kitchen_rounded, name: 'Kitchen'),
     NotebookIcon(id: 50, icon: Icons.local_dining_rounded, name: 'Dining'),
     NotebookIcon(id: 51, icon: Icons.cake_rounded, name: 'Baking'),
 
-    // Sports
     NotebookIcon(id: 52, icon: Icons.sports_soccer_rounded, name: 'Soccer'),
     NotebookIcon(
       id: 53,
@@ -106,17 +94,14 @@ class NotebookIconsRepository {
     NotebookIcon(id: 54, icon: Icons.sports_tennis_rounded, name: 'Tennis'),
     NotebookIcon(id: 55, icon: Icons.directions_run_rounded, name: 'Running'),
 
-    // Pets
     NotebookIcon(id: 56, icon: Icons.pets_rounded, name: 'Pets'),
     NotebookIcon(id: 57, icon: Icons.emoji_nature_rounded, name: 'Nature'),
 
-    // Ideas
     NotebookIcon(id: 58, icon: Icons.lightbulb_rounded, name: 'Ideas'),
     NotebookIcon(id: 59, icon: Icons.psychology_alt_rounded, name: 'Thoughts'),
     NotebookIcon(id: 60, icon: Icons.auto_awesome_rounded, name: 'Inspiration'),
     NotebookIcon(id: 61, icon: Icons.star_rounded, name: 'Important'),
 
-    // Internet
     NotebookIcon(id: 62, icon: Icons.cloud_rounded, name: 'Cloud'),
     NotebookIcon(id: 63, icon: Icons.share_rounded, name: 'Share'),
     NotebookIcon(id: 64, icon: Icons.link_rounded, name: 'Link'),
@@ -128,7 +113,6 @@ class NotebookIconsRepository {
     NotebookIcon(id: 70, icon: Icons.satellite_alt_rounded, name: 'Satellite'),
     NotebookIcon(id: 71, icon: Icons.cell_tower_rounded, name: 'Cell Tower'),
 
-    // Mobile
     NotebookIcon(id: 72, icon: Icons.phone_android_rounded, name: 'Android'),
     NotebookIcon(id: 73, icon: Icons.phone_iphone_rounded, name: 'iPhone'),
     NotebookIcon(id: 74, icon: Icons.tablet_rounded, name: 'Tablet'),
@@ -150,7 +134,6 @@ class NotebookIconsRepository {
       name: 'Battery',
     ),
 
-    // Social
     NotebookIcon(id: 88, icon: Icons.chat_rounded, name: 'Chat'),
     NotebookIcon(id: 89, icon: Icons.task_alt_rounded, name: 'Task'),
     NotebookIcon(id: 90, icon: Icons.email_rounded, name: 'Email'),
@@ -170,7 +153,6 @@ class NotebookIconsRepository {
     NotebookIcon(id: 100, icon: Icons.block_rounded, name: 'Block'),
     NotebookIcon(id: 101, icon: Icons.report_rounded, name: 'Report'),
 
-    // Media
     NotebookIcon(id: 102, icon: Icons.camera_roll_rounded, name: 'Camera Roll'),
     NotebookIcon(
       id: 103,
@@ -205,7 +187,6 @@ class NotebookIconsRepository {
       name: 'Bluetooth Audio',
     ),
 
-    // Content
     NotebookIcon(id: 119, icon: Icons.rate_review_rounded, name: 'Review'),
     NotebookIcon(id: 120, icon: Icons.star_half_rounded, name: 'Half Star'),
     NotebookIcon(id: 121, icon: Icons.star_border_rounded, name: 'Empty Star'),
@@ -247,7 +228,6 @@ class NotebookIconsRepository {
     NotebookIcon(id: 137, icon: Icons.paste_rounded, name: 'Paste'),
     NotebookIcon(id: 138, icon: Icons.edit_rounded, name: 'Edit'),
 
-    // Books
     NotebookIcon(id: 139, icon: Icons.menu_book_rounded, name: 'Menu Book'),
     NotebookIcon(
       id: 140,
@@ -307,7 +287,6 @@ class NotebookIconsRepository {
     NotebookIcon(id: 155, icon: Icons.spellcheck_rounded, name: 'Spellcheck'),
     NotebookIcon(id: 156, icon: Icons.translate_rounded, name: 'Translate'),
 
-    // Gaming
     NotebookIcon(id: 157, icon: Icons.sports_esports_rounded, name: 'Gaming'),
     NotebookIcon(id: 158, icon: Icons.games_rounded, name: 'Games'),
     NotebookIcon(
@@ -469,12 +448,24 @@ class NotebookIconsRepository {
       icon: Icons.arrow_circle_left_rounded,
       name: 'Previous',
     ),
-    NotebookIcon(id: 222, icon: Icons.work_history_rounded, name: 'Work History'),
+    NotebookIcon(
+      id: 222,
+      icon: Icons.work_history_rounded,
+      name: 'Work History',
+    ),
     NotebookIcon(id: 223, icon: Icons.light_mode_rounded, name: 'Light Mode'),
     NotebookIcon(id: 224, icon: Icons.podcasts_rounded, name: 'Podcast'),
     NotebookIcon(id: 225, icon: Icons.web_rounded, name: 'Web'),
-    NotebookIcon(id: 226, icon: Icons.mic_external_on_rounded, name: 'External Mic'),
-    NotebookIcon(id: 227, icon: Icons.image_search_rounded, name: 'Image Search'),
+    NotebookIcon(
+      id: 226,
+      icon: Icons.mic_external_on_rounded,
+      name: 'External Mic',
+    ),
+    NotebookIcon(
+      id: 227,
+      icon: Icons.image_search_rounded,
+      name: 'Image Search',
+    ),
     NotebookIcon(
       id: 228,
       icon: Icons.video_collection_rounded,
@@ -504,9 +495,13 @@ class NotebookIconsRepository {
     NotebookIcon(id: 246, icon: Icons.coffee_rounded, name: 'Coffee'),
     NotebookIcon(id: 247, icon: Icons.newspaper_rounded, name: 'Newspaper'),
     NotebookIcon(id: 248, icon: Icons.calendar_month_rounded, name: 'Calendar'),
-    NotebookIcon(id: 249, icon: Icons.calendar_today_rounded, name: 'Calendar Today'),
-    NotebookIcon(id: 250, icon: Icons.alarm_rounded, name: 'Alarm')
-        ];
+    NotebookIcon(
+      id: 249,
+      icon: Icons.calendar_today_rounded,
+      name: 'Calendar Today',
+    ),
+    NotebookIcon(id: 250, icon: Icons.alarm_rounded, name: 'Alarm'),
+  ];
 
   static NotebookIcon? getIconById(int id) {
     try {

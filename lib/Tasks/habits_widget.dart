@@ -5,10 +5,6 @@ import '../database/models/subtask.dart';
 import '../database/database_service.dart';
 import '../widgets/confirmation_dialogue.dart';
 
-/// Simple habits tracker widget.
-///
-/// Stores completions per subtask in the database table `habit_completions` as
-/// rows of (subtask_id, date) where date is an ISO yyyy-MM-dd string.
 class HabitsTracker extends StatefulWidget {
   final DatabaseService databaseService;
   final List<Subtask> subtasks;
@@ -49,7 +45,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
   String? _originalEditingText;
   late FocusNode _editingFocusNode;
   int _weekOffset = 0;
-  // _isWeekHover removed: desktop uses the same OutlinedButton as mobile
+
   StreamSubscription<void>? _dbSubscription;
   int _dataLoadGeneration = 0;
   int _subsLoadGeneration = 0;
@@ -60,7 +56,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
     _now = DateTime.now();
     _localSubtasks = List.from(widget.subtasks);
     _editingFocusNode = FocusNode();
-    // Seed completions from parent if available for immediate rendering.
+
     if (widget.initialCompletions != null) {
       _data = {};
       for (final sub in _localSubtasks) {
@@ -73,12 +69,12 @@ class _HabitsTrackerState extends State<HabitsTracker> {
         }
       }
       if (mounted) setState(() {});
-      // still load fresh data in background
+
       _loadData();
     } else {
       _loadData();
     }
-    // Listen for external DB changes so the tracker updates immediately.
+
     try {
       _dbSubscription = widget.databaseService.onDatabaseChanged.listen((
         _,
@@ -89,12 +85,10 @@ class _HabitsTrackerState extends State<HabitsTracker> {
     } catch (_) {}
     _editingFocusNode.addListener(() {
       if (!_editingFocusNode.hasFocus && _editingSubtaskId != null) {
-        // small delay to let button handlers run first
         Future.delayed(const Duration(milliseconds: 50), () {
           if (mounted &&
               !_editingFocusNode.hasFocus &&
               _editingSubtaskId != null) {
-            // restore original text and exit edit mode
             _editingController.text =
                 _originalEditingText ?? _editingController.text;
             setState(() => _editingSubtaskId = null);
@@ -107,7 +101,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
   @override
   void didUpdateWidget(covariant HabitsTracker oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If parent provided a new subtasks list, refresh local copy so UI updates immediately.
+
     if (oldWidget.subtasks != widget.subtasks) {
       _localSubtasks = List.from(widget.subtasks);
       if (mounted) setState(() {});
@@ -116,7 +110,6 @@ class _HabitsTrackerState extends State<HabitsTracker> {
 
   @override
   void dispose() {
-    // No need to remove the anonymous listener explicitly; just dispose the FocusNode.
     _editingFocusNode.dispose();
     _editingController.dispose();
     _newSubtaskController.dispose();
@@ -126,14 +119,14 @@ class _HabitsTrackerState extends State<HabitsTracker> {
 
   Future<void> _loadData() async {
     final generation = ++_dataLoadGeneration;
-    // Load completions for all subtasks in a single DB query for instant rendering.
+
     try {
       final completionsMap = await widget.databaseService.taskService
           .getHabitCompletionsForTask(widget.taskId);
       if (generation != _dataLoadGeneration) return;
 
       final Map<String, List<String>> newData = {};
-      // Initialize map entries for known subtasks and fill from results.
+
       for (final sub in _localSubtasks) {
         final key = sub.id?.toString() ?? '';
         if (sub.id != null) {
@@ -151,7 +144,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
       }
     } catch (e) {
       if (generation != _dataLoadGeneration) return;
-      // Fallback: ensure every subtask has an entry
+
       final Map<String, List<String>> fallbackData = {};
       for (final sub in _localSubtasks) {
         final key = sub.id?.toString() ?? '';
@@ -165,8 +158,6 @@ class _HabitsTrackerState extends State<HabitsTracker> {
     }
   }
 
-  // Persistence handled by database methods; no local save method required.
-
   bool _isCompletedOn(String subtaskId, DateTime day) {
     final list = _data[subtaskId];
     if (list == null) return false;
@@ -179,7 +170,6 @@ class _HabitsTrackerState extends State<HabitsTracker> {
     final list = _data[subtaskId] ?? [];
     final wasCompleted = list.contains(iso);
 
-    // Optimistic update
     setState(() {
       if (wasCompleted) {
         list.remove(iso);
@@ -197,11 +187,10 @@ class _HabitsTrackerState extends State<HabitsTracker> {
           iso,
           !wasCompleted,
         );
-        // notifyDatabaseChanged is called inside setHabitCompletion/repository
       }
     } catch (e) {
       print('Error toggling habit completion: $e');
-      // Revert on error
+
       await _loadData();
     }
   }
@@ -218,7 +207,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
         });
       }
     } catch (e) {
-      // ignore
+        // Ignore errors when loading subtasks
     }
   }
 
@@ -233,7 +222,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
       _newSubtaskController.clear();
       await _refreshLocalSubtasks();
     } catch (e) {
-      // ignore
+        // Ignore errors during creation
     }
   }
 
@@ -251,7 +240,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
       await widget.databaseService.taskService.deleteSubtask(sub.id!);
       await _refreshLocalSubtasks();
     } catch (e) {
-      // ignore errors for now
+      // Ignore errors during deletion
     }
   }
 
@@ -266,11 +255,10 @@ class _HabitsTrackerState extends State<HabitsTracker> {
   }
 
   Future<void> _reorderLocalSubtasks(int oldIndex, int newIndex) async {
-    // Adjust for ReorderableListView behavior
     if (newIndex > oldIndex) newIndex -= 1;
     final item = _localSubtasks.removeAt(oldIndex);
     _localSubtasks.insert(newIndex, item);
-    // Update order indexes in DB
+
     await widget.databaseService.taskService.reorderSubtasks(_localSubtasks);
     await _refreshLocalSubtasks();
   }
@@ -281,13 +269,11 @@ class _HabitsTrackerState extends State<HabitsTracker> {
       _now.month,
       _now.day,
     ).add(Duration(days: offset * 7));
-    // Week start Monday
+
     final weekday = base.weekday; // 1..7
     final monday = base.subtract(Duration(days: weekday - 1));
     return List.generate(7, (i) => monday.add(Duration(days: i))).toList();
   }
-
-  // ... no longer using _lastNDays
 
   @override
   Widget build(BuildContext context) {
@@ -297,7 +283,6 @@ class _HabitsTrackerState extends State<HabitsTracker> {
 
     return Column(
       children: [
-        // Week navigation + add habit (can be hidden when parent provides controls)
         if (!widget.hideControls) ...[
           Container(
             decoration: BoxDecoration(
@@ -307,7 +292,6 @@ class _HabitsTrackerState extends State<HabitsTracker> {
             padding: const EdgeInsets.all(12),
             child: Column(
               children: [
-                // Week navigation row
                 Row(
                   children: [
                     Material(
@@ -447,13 +431,8 @@ class _HabitsTrackerState extends State<HabitsTracker> {
           ),
         ],
 
-        // When hideControls is true (used in the mobile task detail screen)
-        // render the list inline so the outer page scrolls as a whole. In
-        // that case we must not use Expanded and the internal list should
-        // use shrinkWrap + NeverScrollableScrollPhysics, matching subtasks.
         Builder(
           builder: (ctx) {
-            // Use inline mode only if hideControls and not allowScroll
             final inline = widget.hideControls == true && !widget.allowScroll;
 
             final listPadding =
@@ -513,7 +492,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                       itemBuilder: (context, index) {
                         final sub = _localSubtasks[index];
                         final id = sub.id?.toString() ?? index.toString();
-                        // compute completed count in the shown window (last N days)
+
                         final int completedCount =
                             days.where((d) => _isCompletedOn(id, d)).length;
                         return ReorderableDelayedDragStartListener(
@@ -539,10 +518,8 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      // Header row: drag + title + streak + actions
                                       Row(
                                         children: [
-                                          // Drag handle
                                           Padding(
                                             padding: const EdgeInsets.only(
                                               right: 8,
@@ -560,7 +537,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                                               size: 18,
                                             ),
                                           ),
-                                          // Title or edit field
+
                                           Expanded(
                                             child:
                                                 _editingSubtaskId ==
@@ -668,7 +645,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                                                       ),
                                                     ),
                                           ),
-                                          // Action buttons (edit/delete first, then streak)
+
                                           if (_editingSubtaskId ==
                                               sub.id?.toString()) ...[
                                             const SizedBox(width: 4),
@@ -748,7 +725,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                                             ),
                                           ],
                                           const SizedBox(width: 4),
-                                          // Streak counter (at the end)
+
                                           Container(
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 8,
@@ -797,7 +774,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                                         ],
                                       ),
                                       const SizedBox(height: 4),
-                                      // Days row - rectangular buttons that fill width
+
                                       Row(
                                         children: List.generate(days.length, (
                                           dayIndex,
@@ -932,9 +909,6 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                       },
                     );
 
-            // If inline, return the list directly (no Expanded). Otherwise keep
-            // previous behavior and wrap in Expanded so standalone tracker fills
-            // available space.
             if (inline) {
               return listView;
             } else {
@@ -967,7 +941,6 @@ class _HabitsTrackerState extends State<HabitsTracker> {
   }
 }
 
-// Widget auxiliar para gestionar el estado de hover en habits
 class _HabitItemHover extends StatefulWidget {
   final Widget Function(BuildContext, bool) builder;
 

@@ -1,4 +1,3 @@
-// search_handler.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
@@ -48,11 +47,9 @@ class SearchHandler {
   }
 
   List<FileSystemEntity> _processResults(List<FileSystemEntity> results) {
-    // Separate directories and files
     final directories = results.whereType<Directory>().toList();
     final files = results.whereType<File>().toList();
 
-    // Sort alphabetically
     directories.sort((a, b) => _cleanName(a).compareTo(_cleanName(b)));
     files.sort((a, b) => _cleanName(a).compareTo(_cleanName(b)));
 
@@ -105,8 +102,6 @@ class SearchHandler {
                     }
                   },
                   onChanged: (value) async {
-                    // If storageDir exists and is a valid directory, use it as search root
-                    // to prioritize results from the Storage folder
                     final searchRoot =
                         (storageDir != null && storageDir.existsSync())
                             ? storageDir

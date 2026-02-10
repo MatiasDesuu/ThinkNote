@@ -53,17 +53,13 @@ class _NotebookSelectorScreenState extends State<NotebookSelectorScreen>
       final dbHelper = DatabaseHelper();
       final notebookRepository = NotebookRepository(dbHelper);
 
-      // Cargar todos los notebooks
       final allNotebooks = await notebookRepository.getAllNotebooks();
 
-      // Crear estructura padre-hijo
       final Map<int, List<Notebook>> structure = {};
 
-      // Obtener notebooks raíz
       final rootNotebooks =
           allNotebooks.where((n) => n.parentId == null).toList();
 
-      // Construir estructura recursivamente
       for (final notebook in rootNotebooks) {
         await _buildNotebookStructure(notebook, allNotebooks, structure);
       }
@@ -93,12 +89,10 @@ class _NotebookSelectorScreenState extends State<NotebookSelectorScreen>
   ) async {
     if (parent.id == null) return;
 
-    // Obtener hijos directos
     final children =
         allNotebooks.where((n) => n.parentId == parent.id).toList();
     structure[parent.id!] = children;
 
-    // Recursivamente construir estructura para cada hijo
     for (final child in children) {
       await _buildNotebookStructure(child, allNotebooks, structure);
     }
@@ -312,7 +306,6 @@ class _NotebookSelectorScreenState extends State<NotebookSelectorScreen>
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Obtener notebooks raíz
     final rootNotebooks =
         _allNotebooks.where((n) => n.parentId == null).toList();
 

@@ -39,7 +39,6 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
     _searchController.addListener(_onSearchChanged);
     _initializeRepositories();
 
-    // Auto-focus on search field when dialog opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _searchFocusNode.requestFocus();
     });
@@ -71,10 +70,8 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
     try {
       List<Note> notes;
       if (_isAdvancedSearchEnabled) {
-        // Advanced search: search in both title and content
         notes = await _noteRepository.searchNotes(query);
       } else {
-        // Basic search: search only in title
         notes = await _noteRepository.searchNotesByTitle(query);
       }
 
@@ -98,7 +95,6 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
   }
 
   void _onSearchChanged() {
-    // Buscar inmediatamente sin debounce
     _performSearch(_searchController.text);
   }
 
@@ -108,18 +104,15 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
           _searchController.text.isNotEmpty &&
           widget.onNoteSelectedWithSearch != null) {
         try {
-          // Pass search information when advanced search is enabled
           widget.onNoteSelectedWithSearch!(
             item,
             _searchController.text,
             _isAdvancedSearchEnabled,
           );
         } catch (e) {
-          // Fallback to regular callback
           widget.onNoteSelected?.call(item);
         }
       } else {
-        // Use regular callback for basic search or when no search info needed
         widget.onNoteSelected?.call(item);
       }
       Navigator.of(context).pop();
@@ -133,7 +126,7 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
     setState(() {
       _isAdvancedSearchEnabled = !_isAdvancedSearchEnabled;
     });
-    // Re-perform search with new setting
+
     if (_searchController.text.isNotEmpty) {
       _performSearch(_searchController.text);
     }
@@ -145,7 +138,6 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
     final screenSize = MediaQuery.of(context).size;
     final hasResults = _searchResults.isNotEmpty;
 
-    // Calcular dimensiones dinámicas
     final dialogWidth =
         screenSize.width * 0.6 > 600 ? 600.0 : screenSize.width * 0.6;
     final dialogHeight =
@@ -155,14 +147,13 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
 
     return Stack(
       children: [
-        // Overlay para cerrar al hacer clic fuera
         Positioned.fill(
           child: GestureDetector(
             onTap: () => Navigator.of(context).pop(),
             child: Container(color: Colors.black.withAlpha(77)),
           ),
         ),
-        // Posicionar el diálogo en la parte superior
+
         Positioned(
           top: 20,
           left: (screenSize.width - dialogWidth) / 2,
@@ -188,7 +179,6 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
                 ),
                 child: Column(
                   children: [
-                    // Search field with close button at the top
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: Row(
@@ -238,24 +228,25 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          // Advanced search toggle button
+
                           CustomTooltip(
                             message:
                                 _isAdvancedSearchEnabled
                                     ? 'Disable advanced search (title only)'
                                     : 'Enable advanced search (title + content)',
-                            builder: (context, isHovering) => IconButton(
-                              icon: Icon(
-                                _isAdvancedSearchEnabled
-                                    ? Icons.insights_rounded
-                                    : Icons.insights_outlined,
-                                color:
+                            builder:
+                                (context, isHovering) => IconButton(
+                                  icon: Icon(
                                     _isAdvancedSearchEnabled
-                                        ? colorScheme.primary
-                                        : colorScheme.onSurface,
-                              ),
-                              onPressed: _toggleAdvancedSearch,
-                            ),
+                                        ? Icons.insights_rounded
+                                        : Icons.insights_outlined,
+                                    color:
+                                        _isAdvancedSearchEnabled
+                                            ? colorScheme.primary
+                                            : colorScheme.onSurface,
+                                  ),
+                                  onPressed: _toggleAdvancedSearch,
+                                ),
                           ),
                           const SizedBox(width: 8),
                           IconButton(
@@ -268,7 +259,7 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
                         ],
                       ),
                     ),
-                    // Results only when they exist
+
                     if (hasResults)
                       Expanded(
                         child: ListView.builder(
@@ -299,17 +290,14 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
     final isNotebook = item is Notebook;
     final hasContent = isNotebook ? false : (item.content.isNotEmpty);
 
-    // Obtener el icono apropiado
     IconData iconData;
     if (isNotebook) {
-      // Para notebooks, usar el icono personalizado o el por defecto
       iconData =
           item.iconId != null
               ? NotebookIconsRepository.getIconById(item.iconId!)?.icon ??
                   Icons.folder_rounded
               : Icons.folder_rounded;
     } else {
-      // Para notas, usar el icono de descripción
       iconData = Icons.description_outlined;
     }
 
@@ -397,7 +385,6 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
       );
     }
 
-    // Find the word in the content (case-insensitive)
     final lowerContent = content.toLowerCase();
     final lowerQuery = searchQuery.toLowerCase();
     final queryIndex = lowerContent.indexOf(lowerQuery);
@@ -414,7 +401,6 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
       );
     }
 
-    // Extract context around the word
     const contextLength = 50;
     final start = (queryIndex - contextLength).clamp(0, content.length);
     final end = (queryIndex + searchQuery.length + contextLength).clamp(
@@ -424,18 +410,15 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
 
     String contextText = content.substring(start, end);
 
-    // Clean up the context: remove line breaks and extra spaces
     contextText =
         contextText
             .replaceAll('\n', ' ')
             .replaceAll(RegExp(r'\s+'), ' ')
             .trim();
 
-    // Add ellipsis
     if (start > 0) contextText = '...$contextText';
     if (end < content.length) contextText = '$contextText...';
 
-    // Find the word in the context
     final lowerContext = contextText.toLowerCase();
     final contextQueryIndex = lowerContext.indexOf(lowerQuery);
 
@@ -451,7 +434,6 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
       );
     }
 
-    // Extract the actual word from the context (preserving original case)
     final actualWord = contextText.substring(
       contextQueryIndex,
       contextQueryIndex + searchQuery.length,

@@ -113,7 +113,6 @@ class CalendarScreenState extends State<CalendarScreen> {
     _dbSubscription?.cancel();
     _dbHelperSubscription?.cancel();
 
-    // Listen to both DatabaseService and DatabaseHelper for maximum compatibility
     _dbSubscription = DatabaseService().onDatabaseChanged.listen((_) {
       if (!_isUpdatingManually && mounted) {
         _loadEvents();
@@ -189,12 +188,11 @@ class CalendarScreenState extends State<CalendarScreen> {
         });
       }
 
-      // Initialize default statuses if none exist
       if (statuses.isEmpty) {
         await _initializeDefaultStatuses();
       }
     } catch (e) {
-      // Handle error silently for now
+      // Ignore errors when loading statuses
     }
   }
 
@@ -230,7 +228,7 @@ class CalendarScreenState extends State<CalendarScreen> {
       try {
         await _statusRepository.createStatus(status);
       } catch (e) {
-        // Ignore errors for duplicate statuses
+        // Ignore if status already exists
       }
     }
 
@@ -443,10 +441,8 @@ class CalendarScreenState extends State<CalendarScreen> {
       _isUpdatingManually = true;
       CalendarEvent updatedEvent;
       if (statusName == null) {
-        // Limpiar el status
         updatedEvent = event.copyWith(clearStatus: true);
       } else {
-        // Asignar un status específico
         updatedEvent = event.copyWith(status: statusName);
       }
       await _calendarEventRepository.updateCalendarEvent(updatedEvent);
@@ -820,9 +816,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                 ),
           ),
         )
-        .then((_) {
-          // No need to manually reload notes, StreamBuilder will handle it
-        });
+        .then((_) {});
   }
 
   Widget _buildWeekView() {
@@ -832,7 +826,6 @@ class CalendarScreenState extends State<CalendarScreen> {
 
     return Column(
       children: [
-        // Month navigation bar - same as expanded view
         Padding(
           padding: const EdgeInsets.only(left: 16),
           child: Row(
@@ -904,7 +897,7 @@ class CalendarScreenState extends State<CalendarScreen> {
             ],
           ),
         ),
-        // Week days row
+
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -1334,7 +1327,6 @@ class CalendarScreenState extends State<CalendarScreen> {
             )
             .toList();
 
-    // Sort events
     eventsForSelectedDay.sort((a, b) {
       if (a.status != null && b.status != null) {
         final statusA = _statuses.firstWhere(
@@ -1372,7 +1364,6 @@ class CalendarScreenState extends State<CalendarScreen> {
               task.date!.day == _selectedDate.day;
         }).toList();
 
-    // Sort tasks
     tasksForSelectedDay.sort((a, b) {
       if (a.completed && !b.completed) return 1;
       if (!a.completed && b.completed) return -1;
@@ -1401,7 +1392,12 @@ class CalendarScreenState extends State<CalendarScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
+          padding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 8,
+            bottom: 8,
+          ),
           child: Row(
             children: [
               Icon(

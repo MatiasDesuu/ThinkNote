@@ -27,7 +27,6 @@ class DatabaseConfig {
   static const String tableCalendarEvents = 'calendar_events';
   static const String tableCalendarEventStatuses = 'calendar_event_statuses';
 
-  // Column for notebooks table
   static const String columnId = 'id';
   static const String columnName = 'name';
   static const String columnParentId = 'parent_id';
@@ -36,7 +35,6 @@ class DatabaseConfig {
   static const String columnOrderIndex = 'order_index';
   static const String columnIconId = 'icon_id';
 
-  // Column for the notes table
   static const String columnTitle = 'title';
   static const String columnContent = 'content';
   static const String columnNotebookId = 'notebook_id';
@@ -50,7 +48,6 @@ class DatabaseConfig {
   static const String columnIsCompleted = 'is_completed';
   static const String columnNoteIsPinned = 'is_pinned';
 
-  // Column for the tasks table
   static const String columnTaskName = 'name';
   static const String columnTaskDate = 'date';
   static const String columnTaskCompleted = 'completed';
@@ -58,17 +55,14 @@ class DatabaseConfig {
   static const String columnTaskSortByPriority = 'sort_by_priority';
   static const String columnTaskIsPinned = 'is_pinned';
 
-  // Column for the subtasks table
   static const String columnSubtaskText = 'text';
   static const String columnSubtaskCompleted = 'completed';
   static const String columnSubtaskPriority = 'priority';
   static const String columnTaskId = 'task_id';
 
-  // Column for the task_tags table
   static const String columnTagName = 'name';
   static const String columnTagTaskId = 'task_id';
 
-  // Column for the calendar_events table
   static const String columnCalendarEventId = 'id';
   static const String columnCalendarEventTitle = 'title';
   static const String columnCalendarEventDescription = 'description';
@@ -81,10 +75,8 @@ class DatabaseConfig {
   static const String columnCalendarEventOrderIndex = 'order_index';
   static const String columnCalendarEventStatus = 'status';
 
-  // Column for the calendar_event_statuses table
   static const String columnCalendarEventStatusId = 'id';
   static const String columnCalendarEventStatusName = 'name';
   static const String columnCalendarEventStatusColor = 'color';
   static const String columnCalendarEventStatusOrderIndex = 'order_index';
-
 }

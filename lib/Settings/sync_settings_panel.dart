@@ -1,6 +1,3 @@
-// sync_settings_panel.dart
-// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import '../database/sync_service.dart';
 import '../widgets/custom_snackbar.dart';
@@ -58,7 +55,8 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
       final settings = await SyncService().getSettings();
       final autoSyncEnabled = await SyncService().getAutoSyncEnabled();
       final autoSyncInterval = await SyncService().getAutoSyncInterval();
-      final screenOpenAutoSyncEnabled = await SyncService().getScreenOpenAutoSyncEnabled();
+      final screenOpenAutoSyncEnabled =
+          await SyncService().getScreenOpenAutoSyncEnabled();
       setState(() {
         _urlController.text = settings['url'] as String;
         _usernameController.text = settings['username'] as String;
@@ -95,7 +93,6 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
           type: CustomSnackbarType.success,
         );
 
-        // Show sync dialog if WebDAV is enabled
         if (_isEnabled) {
           _showSyncDialog();
         }
@@ -115,16 +112,11 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
   Future<void> _updateAutoSyncEnabled(bool enabled) async {
     setState(() => _autoSyncEnabled = enabled);
     await SyncService().setAutoSyncEnabled(enabled);
-    
-    // Notify main app to update auto sync timer
-    // This will be handled by the main app listening to settings changes
   }
 
   Future<void> _updateAutoSyncInterval(int minutes) async {
     setState(() => _autoSyncIntervalMinutes = minutes);
     await SyncService().setAutoSyncInterval(Duration(minutes: minutes));
-    
-    // The main app will automatically update the timer through the stream listener
   }
 
   Future<void> _updateScreenOpenAutoSyncEnabled(bool enabled) async {
@@ -134,13 +126,13 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
 
   Future<void> _showSyncDialog() async {
     final result = await showSyncActionDialog(context: context);
-    
+
     if (!mounted || result == null || result == SyncAction.cancel) {
       return;
     }
 
     setState(() => _isLoading = true);
-    
+
     try {
       switch (result) {
         case SyncAction.uploadLocal:
@@ -189,7 +181,6 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
     });
 
     try {
-      // Guardar temporalmente las credenciales para la prueba
       await SyncService().saveSettings(
         url: _urlController.text,
         username: _usernameController.text,
@@ -261,7 +252,6 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
         ),
         const SizedBox(height: 20),
 
-        // Sync Configuration Section
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -293,7 +283,6 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Enable Switch
                   Row(
                     children: [
                       Expanded(
@@ -311,7 +300,6 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
 
                   const SizedBox(height: 16),
 
-                  // Auto Sync Background Switch
                   Row(
                     children: [
                       Icon(
@@ -345,7 +333,6 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
 
                   const SizedBox(height: 16),
 
-                  // Auto Sync Interval Slider
                   if (_autoSyncEnabled) ...[
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -389,7 +376,9 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
                                 min: 5,
                                 max: 720,
                                 divisions: 143,
-                                label: _formatInterval(_autoSyncIntervalMinutes),
+                                label: _formatInterval(
+                                  _autoSyncIntervalMinutes,
+                                ),
                                 onChanged: (value) {
                                   _updateAutoSyncInterval(value.round());
                                 },
@@ -402,7 +391,6 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
                     const SizedBox(height: 16),
                   ],
 
-                  // Screen Open Auto Sync Toggle
                   Row(
                     children: [
                       Icon(
@@ -415,7 +403,10 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Auto sync when opening screens', style: textStyle),
+                            Text(
+                              'Auto sync when opening screens',
+                              style: textStyle,
+                            ),
                             const SizedBox(height: 4),
                             Text(
                               'Automatically sync when opening Tasks, Bookmarks, or Thinks screens',
@@ -436,7 +427,6 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
 
                   const SizedBox(height: 16),
 
-                  // URL Field
                   TextFormField(
                     controller: _urlController,
                     decoration: InputDecoration(
@@ -462,7 +452,6 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
 
                   const SizedBox(height: 12),
 
-                  // Username Field
                   TextFormField(
                     controller: _usernameController,
                     decoration: InputDecoration(
@@ -487,7 +476,6 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
 
                   const SizedBox(height: 12),
 
-                  // Password Field
                   TextFormField(
                     controller: _passwordController,
                     decoration: InputDecoration(
@@ -513,7 +501,6 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
 
                   const SizedBox(height: 24),
 
-                  // Action Buttons
                   Row(
                     children: [
                       Expanded(

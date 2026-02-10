@@ -40,7 +40,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
   String? _editingSubtaskId;
   final TextEditingController _editingController = TextEditingController();
   int _habitsWeekOffset = 0;
-  // _habitsWeekHover and _habitsWeekPressed removed: we use a plain button now.
+
   StreamSubscription<void>? _dbChangeSubscription;
   final Set<String> _expandedSubtasks = <String>{};
   late TabController _subtasksTabController;
@@ -66,21 +66,17 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
 
     _loadThemeSettings();
 
-    // Guardar inmediatamente al inicio
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _saveTask();
     });
-    // load whether this task is a Habits task and prefetch subtasks
+
     _loadIsHabits();
     _prefetchSubtasks();
 
-    // Listen for external DB changes so tag updates (e.g., adding/removing 'Habits')
-    // are reflected immediately in this screen without requiring navigation.
     try {
       _dbChangeSubscription = widget.databaseService.onDatabaseChanged.listen((
         _,
       ) async {
-        // reload tags and subtasks when DB changes
         await _loadIsHabits();
         await _refreshCachedSubtasks();
       });
@@ -98,7 +94,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
               : await widget.databaseService.taskService.getSubtasksByTaskId(
                 _task.id!,
               );
-      // Also prefetch habit completions for instant rendering in HabitsTracker
+
       try {
         _cachedHabitCompletions = await widget.databaseService.taskService
             .getHabitCompletionsForTask(_task.id!);
@@ -109,13 +105,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
       setState(() {
         _cachedSubtasks = subs;
       });
-    } catch (_) {
-      // ignore
-    }
+    } catch (_) {}
   }
 
   Future<void> _refreshCachedSubtasks() async {
-    // refresh from DB when notified
     await _prefetchSubtasks();
   }
 
@@ -130,7 +123,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
         _isHabits = tags.contains('Habits');
       });
     } catch (e) {
-      // ignore
+      // If there's an error loading tags, default to non-habit behavior
     }
   }
 
@@ -219,16 +212,14 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
 
       if (subtask != null) {
         if (!mounted) return;
-        // Clear input and refresh cached subtasks immediately so the UI shows the new habit.
+
         _newSubtaskController.clear();
         setState(() {
           _taskChanged = true;
         });
 
-        // Refresh the cached subtasks from DB so the HabitsTracker receives updated list.
         await _prefetchSubtasks();
 
-        // Also notify the DatabaseService so other listeners (if any) can react.
         try {
           widget.databaseService.notifyDatabaseChanged();
         } catch (_) {}
@@ -268,7 +259,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
 
       await _saveTask();
 
-      // Notify database changed to refresh other screens
       try {
         widget.databaseService.notifyDatabaseChanged();
       } catch (_) {}
@@ -288,14 +278,12 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     if (_task.sortByPriority) return;
 
     try {
-      // Obtener subtareas actuales del cache o de la base de datos si no hay cache
       List<Subtask> subtasks =
           _cachedSubtasks ??
           await widget.databaseService.taskService.getSubtasksByTaskId(
             _task.id!,
           );
 
-      // Separar pendientes y completadas
       final pendingSubtasks = subtasks.where((s) => !s.completed).toList();
       final completedSubtasks = subtasks.where((s) => s.completed).toList();
 
@@ -303,11 +291,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
         newIndex -= 1;
       }
 
-      // Reordenar solo las pendientes
       final item = pendingSubtasks.removeAt(oldIndex);
       pendingSubtasks.insert(newIndex, item);
 
-      // Actualizar el orden en memoria para las pendientes
       final updatedPending = <Subtask>[];
       final subtasksToUpdate = <Subtask>[];
 
@@ -322,14 +308,12 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
         }
       }
 
-      // Actualizar UI inmediatamente
       if (!mounted) return;
       setState(() {
         _cachedSubtasks = [...updatedPending, ...completedSubtasks];
         _taskChanged = true;
       });
 
-      // Actualizar base de datos en segundo plano
       unawaited(() async {
         try {
           for (final subtask in subtasksToUpdate) {
@@ -419,7 +403,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
       text: _editingController.text.trim(),
     );
 
-    // Optimistic update
     setState(() {
       if (_cachedSubtasks != null) {
         final index = _cachedSubtasks!.indexWhere((s) => s.id == subtask.id);
@@ -435,7 +418,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
       await widget.databaseService.taskService.updateSubtask(updatedSubtask);
       await _saveTask();
 
-      // Notify database changed to refresh cached subtasks
       try {
         widget.databaseService.notifyDatabaseChanged();
       } catch (_) {}
@@ -463,13 +445,12 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
   ) async {
     final updatedSubtask = subtask.copyWith(priority: priority);
 
-    // Optimistic update
     setState(() {
       if (_cachedSubtasks != null) {
         final index = _cachedSubtasks!.indexWhere((s) => s.id == subtask.id);
         if (index != -1) {
           _cachedSubtasks![index] = updatedSubtask;
-          // Re-sort if needed and we are sorting by priority
+
           if (_task.sortByPriority) {
             _cachedSubtasks!.sort((a, b) {
               if (a.completed != b.completed) {
@@ -493,7 +474,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
       );
       await _saveTask();
 
-      // Notify database changed to refresh cached subtasks
       try {
         widget.databaseService.notifyDatabaseChanged();
       } catch (_) {}
@@ -610,7 +590,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
       ),
       child: Row(
         children: [
-          // Add button
           Material(
             color:
                 _isEInkMode
@@ -633,7 +612,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
             ),
           ),
 
-          // Text field
           Expanded(
             child: TextField(
               controller: _newSubtaskController,
@@ -652,7 +630,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
             ),
           ),
 
-          // Sort toggle button
           Material(
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(8),
@@ -780,7 +757,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                 });
                 _saveTask();
 
-                // Notify database changed to refresh cached subtasks
                 try {
                   widget.databaseService.notifyDatabaseChanged();
                 } catch (_) {}
@@ -827,7 +803,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
             children: [
-              // Drag handle (only for pending and manual sort)
               if (!_task.sortByPriority && !isCompleted)
                 ReorderableDragStartListener(
                   index: index,
@@ -841,7 +816,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                   ),
                 ),
 
-              // Custom checkbox
               GestureDetector(
                 onTap: () => _toggleSubtask(subtask),
                 child: Icon(
@@ -858,7 +832,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
 
               const SizedBox(width: 12),
 
-              // Priority indicator (only for pending)
               if (!isCompleted && subtask.priority != SubtaskPriority.medium)
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -872,7 +845,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                   ),
                 ),
 
-              // Title or edit field
               Expanded(
                 child:
                     isEditing
@@ -951,7 +923,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                         ),
               ),
 
-              // Priority button (always visible on mobile)
               if (!isCompleted)
                 Material(
                   color: Colors.transparent,
@@ -1045,7 +1016,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
         ),
         body: Column(
           children: [
-            // Header section
             Container(
               margin: const EdgeInsets.only(left: 8, right: 8, bottom: 4),
               decoration: BoxDecoration(
@@ -1060,7 +1030,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title row
                   Row(
                     children: [
                       Expanded(
@@ -1079,7 +1048,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                           ),
                         ),
                       ),
-                      // Pin button
+
                       Material(
                         color: Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
@@ -1106,12 +1075,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                   ),
 
                   if (!_isHabits) ...[
-                    // Action chips row
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          // Date chip
                           _buildActionChip(
                             icon: Icons.calendar_today_rounded,
                             label:
@@ -1128,7 +1095,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                           ),
                           const SizedBox(width: 4),
 
-                          // Status chip
                           _buildActionChip(
                             icon: _getStateIconData(_task.state),
                             label: _getStateText(_task.state),
@@ -1139,7 +1105,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                           ),
                           const SizedBox(width: 4),
 
-                          // Tags chip
                           FutureBuilder<List<String>>(
                             future: widget.databaseService.taskService
                                 .getTagsByTaskId(_task.id!),
@@ -1166,7 +1131,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                     const SizedBox(height: 8),
                     _buildNewSubtaskInput(colorScheme: colorScheme),
                   ] else ...[
-                    // Tags chip for habits
                     FutureBuilder<List<String>>(
                       future: widget.databaseService.taskService
                           .getTagsByTaskId(_task.id!),
@@ -1191,7 +1155,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
               ),
             ),
 
-            // For Habits mode show week navigation and add row
             if (_isHabits) ...[
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -1202,7 +1165,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   children: [
-                    // Week navigation row
                     Row(
                       children: [
                         Material(
@@ -1278,7 +1240,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                       ],
                     ),
                     const SizedBox(height: 12),
-                    // Add habit input
+
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
@@ -1344,14 +1306,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
               child: StreamBuilder<void>(
                 stream: widget.databaseService.onDatabaseChanged,
                 builder: (context, snapshot) {
-                  // We don't call _refreshCachedSubtasks() here because it's already handled
-                  // by the listener in initState(). The StreamBuilder here just triggers
-                  // a rebuild when the database changes.
-
                   final subtasks = _cachedSubtasks ?? <Subtask>[];
-                  // If this task is a Habits task, render the HabitsTracker instead of the normal subtasks list
+
                   if (_isHabits) {
-                    // Render the HabitsTracker with scrolling enabled
                     return HabitsTracker(
                       databaseService: widget.databaseService,
                       subtasks: subtasks,
@@ -1370,7 +1327,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
 
                   return Column(
                     children: [
-                      // Subtasks tabs
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 8),
                         decoration: BoxDecoration(
@@ -1451,7 +1407,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                           ),
                         ),
                       ),
-                      // Subtasks TabBarView
+
                       Expanded(
                         child: TabBarView(
                           controller: _subtasksTabController,
@@ -1734,8 +1690,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                                               _taskChanged = true;
                                             });
                                           }
-                                          // Notify database change so listeners (including this
-                                          // screen) update immediately when tags change.
+
                                           try {
                                             widget.databaseService
                                                 .notifyDatabaseChanged();

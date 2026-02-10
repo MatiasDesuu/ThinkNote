@@ -10,7 +10,6 @@ import '../widgets/custom_dialog.dart';
 import '../widgets/custom_date_picker_dialog.dart';
 import '../widgets/custom_tooltip.dart';
 
-/// Panel de detalles de una tarea seleccionada
 class TaskDetailsPanel extends StatefulWidget {
   final Task? selectedTask;
   final List<Subtask> subtasks;
@@ -98,12 +97,10 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header section with title and actions
         _buildHeader(colorScheme: colorScheme, isHabits: isHabits),
 
         const SizedBox(height: 4),
 
-        // Subtasks list or Habits view if task has 'Habits' tag
         Expanded(
           child:
               isHabits
@@ -131,7 +128,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title row
           Row(
             children: [
               Expanded(
@@ -149,7 +145,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                   ),
                 ),
               ),
-              // Pin button always visible in header
+
               _buildHeaderIconButton(
                 icon:
                     widget.selectedTask!.isPinned
@@ -164,12 +160,10 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
           ),
 
           if (!isHabits) ...[
-            // Action chips row
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  // Date chip
                   _buildActionChip(
                     icon: Icons.calendar_today_rounded,
                     label:
@@ -188,7 +182,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                   ),
                   const SizedBox(width: 8),
 
-                  // Status chip
                   _buildActionChip(
                     icon: _getStateIcon(widget.selectedTask!.state),
                     label: _getStateText(widget.selectedTask!.state),
@@ -202,7 +195,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                   ),
                   const SizedBox(width: 8),
 
-                  // Tags chip
                   _buildActionChip(
                     icon: Icons.label_outline_rounded,
                     label:
@@ -221,13 +213,10 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
 
             const SizedBox(height: 8),
 
-            // New subtask input
             _buildNewSubtaskInput(colorScheme: colorScheme),
           ],
 
-          // Tag selector for habits
           if (isHabits) ...[
-            // Tags chip for habits
             _buildActionChip(
               icon: Icons.label_outline_rounded,
               label:
@@ -255,24 +244,27 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
   }) {
     return CustomTooltip(
       message: tooltip ?? '',
-      builder: (context, isHovering) => Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: SizedBox(
-            width: 36,
-            height: 36,
-            child: Icon(
-              icon,
-              size: 20,
-              color:
-                  isActive ? colorScheme.primary : colorScheme.onSurfaceVariant,
+      builder:
+          (context, isHovering) => Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                width: 36,
+                height: 36,
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color:
+                      isActive
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
           ),
-        ),
-      ),
     );
   }
 
@@ -343,7 +335,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
       ),
       child: Row(
         children: [
-          // Add button
           Material(
             color: colorScheme.primaryContainer.withAlpha(80),
             borderRadius: BorderRadius.circular(8),
@@ -362,7 +353,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
             ),
           ),
 
-          // Text field
           Expanded(
             child: TextField(
               controller: widget.newSubtaskController,
@@ -380,31 +370,31 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
             ),
           ),
 
-          // Sort toggle button
           CustomTooltip(
             message: ordenarPorPrioridad ? 'Sort manually' : 'Sort by priority',
-            builder: (context, isHovering) => Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-              child: InkWell(
-                onTap: widget.onToggleSortByPriority,
-                borderRadius: BorderRadius.circular(8),
-                child: SizedBox(
-                  width: 36,
-                  height: 36,
-                  child: Icon(
-                    ordenarPorPrioridad
-                        ? Icons.sort_rounded
-                        : Icons.swap_vert_rounded,
-                    color:
+            builder:
+                (context, isHovering) => Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  child: InkWell(
+                    onTap: widget.onToggleSortByPriority,
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: Icon(
                         ordenarPorPrioridad
-                            ? colorScheme.primary
-                            : colorScheme.onSurfaceVariant,
-                    size: 20,
+                            ? Icons.sort_rounded
+                            : Icons.swap_vert_rounded,
+                        color:
+                            ordenarPorPrioridad
+                                ? colorScheme.primary
+                                : colorScheme.onSurfaceVariant,
+                        size: 20,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
           ),
         ],
       ),
@@ -414,7 +404,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
   Widget _buildSubtasksSection({required ColorScheme colorScheme}) {
     return Column(
       children: [
-        // Subtasks tabs
         Container(
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerLow,
@@ -476,12 +465,11 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
             ),
           ),
         ),
-        // Subtasks TabBarView
+
         Expanded(
           child: TabBarView(
             controller: widget.subtasksTabController,
             children: [
-              // Pending subtasks tab
               widget.getPendingSubtasks().isEmpty
                   ? Center(
                     child: Column(
@@ -513,7 +501,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                       return _buildSubtaskItem(subtask, isEditing, colorScheme);
                     },
                   ),
-              // Completed subtasks tab
+
               widget.getCompletedSubtasks().isEmpty
                   ? Center(
                     child: Column(
@@ -633,7 +621,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: Row(
                 children: [
-                  // Drag handle (only for pending and manual sort)
                   if (!ordenarPorPrioridad && !isCompleted)
                     Padding(
                       padding: const EdgeInsets.only(right: 4),
@@ -647,7 +634,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                       ),
                     ),
 
-                  // Custom checkbox
                   MouseRegion(
                     cursor: SystemMouseCursors.click,
                     child: GestureDetector(
@@ -667,7 +653,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
 
                   const SizedBox(width: 10),
 
-                  // Priority indicator (only for pending)
                   if (!isCompleted &&
                       subtask.priority != SubtaskPriority.medium)
                     Padding(
@@ -682,7 +667,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                       ),
                     ),
 
-                  // Title or edit field
                   Expanded(
                     child:
                         isEditing
@@ -764,7 +748,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                             ),
                   ),
 
-                  // Action buttons (always present to maintain size, opacity controls visibility)
                   if (isEditing) ...[
                     _buildSubtaskActionButton(
                       icon: Icons.check_rounded,
@@ -779,7 +762,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                       colorScheme: colorScheme,
                     ),
                   ] else ...[
-                    // Priority button (only for pending)
                     if (!isCompleted)
                       Opacity(
                         opacity: isHovering ? 1.0 : 0.0,
@@ -793,7 +775,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                           ),
                         ),
                       ),
-                    // Edit button
+
                     Opacity(
                       opacity: isHovering ? 1.0 : 0.0,
                       child: IgnorePointer(
@@ -806,7 +788,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                         ),
                       ),
                     ),
-                    // Delete button
+
                     Opacity(
                       opacity: isHovering ? 1.0 : 0.0,
                       child: IgnorePointer(
@@ -912,7 +894,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
   }
 }
 
-// Widget auxiliar para gestionar el estado de hover
 class MouseRegionHoverItem extends StatefulWidget {
   final Widget Function(BuildContext, bool) builder;
 
@@ -935,7 +916,6 @@ class _MouseRegionHoverItemState extends State<MouseRegionHoverItem> {
   }
 }
 
-// Widget auxiliar para gestionar el estado de hover en subtasks
 class _SubtaskItemHover extends StatefulWidget {
   final Widget Function(BuildContext, bool) builder;
 
@@ -958,7 +938,6 @@ class _SubtaskItemHoverState extends State<_SubtaskItemHover> {
   }
 }
 
-// Diálogo para gestionar tags globales
 class TagsManagerDialog extends StatefulWidget {
   final DatabaseService databaseService;
   final VoidCallback onTagsChanged;
@@ -1173,16 +1152,15 @@ class _TagsManagerDialogState extends State<TagsManagerDialog> {
                                         Expanded(
                                           child: Text(
                                             tag,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  color: colorScheme.onSurface,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodyMedium?.copyWith(
+                                              color: colorScheme.onSurface,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
                                         ),
-                                        // Delete button (only visible on hover)
+
                                         Opacity(
                                           opacity: isHovering ? 1.0 : 0.0,
                                           child: IgnorePointer(
@@ -1192,15 +1170,16 @@ class _TagsManagerDialogState extends State<TagsManagerDialog> {
                                               child: GestureDetector(
                                                 onTap: () => _deleteTag(tag),
                                                 child: Container(
-                                                  padding:
-                                                      const EdgeInsets.all(4),
+                                                  padding: const EdgeInsets.all(
+                                                    4,
+                                                  ),
                                                   decoration: BoxDecoration(
                                                     color: colorScheme.error
                                                         .withAlpha(20),
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                      6,
-                                                    ),
+                                                          6,
+                                                        ),
                                                   ),
                                                   child: Icon(
                                                     Icons.close_rounded,
@@ -1229,7 +1208,6 @@ class _TagsManagerDialogState extends State<TagsManagerDialog> {
   }
 }
 
-// Diálogo para seleccionar tags para una tarea
 class TagSelectorDialog extends StatefulWidget {
   final DatabaseService databaseService;
   final Task selectedTask;
@@ -1463,19 +1441,18 @@ class _TagSelectorDialogState extends State<TagSelectorDialog> {
                                     const SizedBox(width: 16),
                                     Text(
                                       tag,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyLarge
-                                          ?.copyWith(
-                                            color:
-                                                isSelected
-                                                    ? colorScheme.primary
-                                                    : colorScheme.onSurface,
-                                            fontWeight:
-                                                isSelected
-                                                    ? FontWeight.w600
-                                                    : FontWeight.normal,
-                                          ),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyLarge?.copyWith(
+                                        color:
+                                            isSelected
+                                                ? colorScheme.primary
+                                                : colorScheme.onSurface,
+                                        fontWeight:
+                                            isSelected
+                                                ? FontWeight.w600
+                                                : FontWeight.normal,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -1492,7 +1469,6 @@ class _TagSelectorDialogState extends State<TagSelectorDialog> {
   }
 }
 
-// Diálogo para seleccionar estado de tarea
 class StatusSelectorDialog extends StatelessWidget {
   final TaskState selectedState;
   final Function(TaskState) onStateSelected;
@@ -1593,7 +1569,6 @@ class StatusSelectorDialog extends StatelessWidget {
   }
 }
 
-// Diálogo para seleccionar prioridad de subtarea
 class PrioritySelectorDialog extends StatelessWidget {
   final SubtaskPriority selectedPriority;
   final Function(SubtaskPriority) onPrioritySelected;

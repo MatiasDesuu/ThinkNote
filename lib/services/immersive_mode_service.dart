@@ -10,7 +10,6 @@ class ImmersiveModeService extends ChangeNotifier {
   bool _isImmersiveMode = false;
   bool _isInitialized = false;
 
-  // Panel states before entering immersive mode
   bool? _wasIconSidebarExpanded;
   bool? _wasNotebooksPanelExpanded;
   bool? _wasNotesPanelExpanded;
@@ -21,7 +20,6 @@ class ImmersiveModeService extends ChangeNotifier {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    // Always start with immersive mode disabled on app restart
     _isImmersiveMode = false;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('immersive_mode_enabled', false);

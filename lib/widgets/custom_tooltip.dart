@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// A custom tooltip that only appears when hovering over the child widget.
-/// This implementation uses a [MouseRegion] to track hover state and 
-/// conditionally wraps the child with a [Tooltip].
 class CustomTooltip extends StatelessWidget {
   final Widget Function(BuildContext context, bool isHovering) builder;
   final String message;
@@ -18,7 +15,7 @@ class CustomTooltip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return MouseRegionHoverItem(
       builder: (context, isHovering) {
         final child = builder(context, isHovering);
@@ -40,7 +37,6 @@ class CustomTooltip extends StatelessWidget {
   }
 }
 
-/// A helper widget that tracks mouse hover state and provides it to a builder.
 class MouseRegionHoverItem extends StatefulWidget {
   final Widget Function(BuildContext context, bool isHovering) builder;
 

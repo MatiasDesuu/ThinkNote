@@ -12,7 +12,6 @@ class DatabaseHelper {
   static bool _isDisposed = false;
   static final List<sqlite.Database> _activeConnections = [];
 
-  // Stream controller para notificar cambios
   static final _onDatabaseChanged = StreamController<void>.broadcast();
   static Stream<void> get onDatabaseChanged => _onDatabaseChanged.stream;
 
@@ -20,7 +19,6 @@ class DatabaseHelper {
 
   DatabaseHelper._internal();
 
-  // Método para notificar cambios
   static void notifyDatabaseChanged() {
     _onDatabaseChanged.add(null);
   }
@@ -40,25 +38,19 @@ class DatabaseHelper {
     try {
       final String dbPath = await config.DatabaseConfig.databasePath;
 
-      // Asegurarse de que el directorio existe
       final dbDir = path.dirname(dbPath);
       await Directory(dbDir).create(recursive: true);
 
-      // Inicializar las bibliotecas de SQLite para Android
       if (Platform.isAndroid) {
         await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
       }
 
-      // Abrir la base de datos
       final db = sqlite.sqlite3.open(dbPath);
 
-      // Habilitar las restricciones de clave foránea
       db.execute('PRAGMA foreign_keys = ON;');
 
-      // Crear tablas si no existen
       _createTables(db);
 
-      // Ejecutar migraciones
       _runMigrations(db);
 
       return db;
@@ -69,7 +61,6 @@ class DatabaseHelper {
   }
 
   void _createTables(sqlite.Database db) {
-    // Crear tabla sync_info si no existe
     db.execute('''
       CREATE TABLE IF NOT EXISTS sync_info (
         id INTEGER PRIMARY KEY,
@@ -77,7 +68,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Insertar registro inicial en sync_info si no existe
     final syncInfoExists = db.select('SELECT 1 FROM sync_info LIMIT 1');
     if (syncInfoExists.isEmpty) {
       db.execute('INSERT INTO sync_info (id, last_modified) VALUES (1, ?)', [
@@ -85,7 +75,6 @@ class DatabaseHelper {
       ]);
     }
 
-    // Tabla notebooks
     db.execute('''
       CREATE TABLE IF NOT EXISTS ${config.DatabaseConfig.tableNotebooks} (
         ${config.DatabaseConfig.columnId} INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -100,7 +89,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabla notes
     db.execute('''
       CREATE TABLE IF NOT EXISTS ${config.DatabaseConfig.tableNotes} (
         ${config.DatabaseConfig.columnId} INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,7 +108,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabla thinks
     db.execute('''
       CREATE TABLE IF NOT EXISTS ${config.DatabaseConfig.tableThinks} (
         ${config.DatabaseConfig.columnId} INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -135,7 +122,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabla tasks
     db.execute('''
       CREATE TABLE IF NOT EXISTS ${config.DatabaseConfig.tableTasks} (
         ${config.DatabaseConfig.columnId} INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -152,7 +138,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabla subtasks
     db.execute('''
       CREATE TABLE IF NOT EXISTS ${config.DatabaseConfig.tableSubtasks} (
         ${config.DatabaseConfig.columnId} INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -165,7 +150,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabla habit_completions: store per-subtask completion dates
     db.execute('''
       CREATE TABLE IF NOT EXISTS habit_completions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -176,8 +160,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabla task_tags
-    // Allow task_id to be nullable so tags can exist globally and be assigned to tasks later.
     db.execute('''
       CREATE TABLE IF NOT EXISTS ${config.DatabaseConfig.tableTaskTags} (
         ${config.DatabaseConfig.columnId} INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -187,7 +169,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabla calendar_event_statuses
     db.execute('''
       CREATE TABLE IF NOT EXISTS ${config.DatabaseConfig.tableCalendarEventStatuses} (
         ${config.DatabaseConfig.columnCalendarEventStatusId} INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -197,7 +178,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabla calendar_events
     db.execute('''
       CREATE TABLE IF NOT EXISTS ${config.DatabaseConfig.tableCalendarEvents} (
         ${config.DatabaseConfig.columnCalendarEventId} INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -209,7 +189,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Tabla bookmarks
     db.execute('''
       CREATE TABLE IF NOT EXISTS bookmarks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -219,7 +198,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Crear triggers para actualizar last_modified automáticamente
     db.execute('''
       CREATE TRIGGER IF NOT EXISTS update_last_modified_notes_insert
       AFTER INSERT ON notes
@@ -244,7 +222,6 @@ class DatabaseHelper {
       END;
     ''');
 
-    // Triggers para notebooks
     db.execute('''
       CREATE TRIGGER IF NOT EXISTS update_last_modified_notebooks_insert
       AFTER INSERT ON notebooks
@@ -269,7 +246,6 @@ class DatabaseHelper {
       END;
     ''');
 
-    // Triggers para tasks
     db.execute('''
       CREATE TRIGGER IF NOT EXISTS update_last_modified_tasks_insert
       AFTER INSERT ON tasks
@@ -294,7 +270,6 @@ class DatabaseHelper {
       END;
     ''');
 
-    // Triggers para thinks
     db.execute('''
       CREATE TRIGGER IF NOT EXISTS update_last_modified_thinks_insert
       AFTER INSERT ON thinks
@@ -319,7 +294,6 @@ class DatabaseHelper {
       END;
     ''');
 
-    // Triggers para bookmarks
     db.execute('''
       CREATE TRIGGER IF NOT EXISTS update_last_modified_bookmarks_insert
       AFTER INSERT ON bookmarks
@@ -344,7 +318,6 @@ class DatabaseHelper {
       END;
     ''');
 
-    // Triggers para calendar_events
     db.execute('''
       CREATE TRIGGER IF NOT EXISTS update_last_modified_calendar_events_insert
       AFTER INSERT ON calendar_events
@@ -369,7 +342,6 @@ class DatabaseHelper {
       END;
     ''');
 
-    // Triggers para calendar_event_statuses
     db.execute('''
       CREATE TRIGGER IF NOT EXISTS update_last_modified_calendar_event_statuses_insert
       AFTER INSERT ON calendar_event_statuses
@@ -397,22 +369,20 @@ class DatabaseHelper {
 
   void _runMigrations(sqlite.Database db) {
     try {
-      // Migración para notebooks - order_index
       try {
         db.execute(
           'ALTER TABLE ${config.DatabaseConfig.tableNotebooks} ADD COLUMN ${config.DatabaseConfig.columnOrderIndex} INTEGER NOT NULL DEFAULT 0;',
         );
       } catch (e) {
-        // Si la columna ya existe, ignorar el error
+        // Ignore if column already exists
       }
 
-      // Migración para notes - order_index
       try {
         db.execute(
           'ALTER TABLE ${config.DatabaseConfig.tableNotes} ADD COLUMN ${config.DatabaseConfig.columnOrderNoteIndex} INTEGER NOT NULL DEFAULT 0;',
         );
       } catch (e) {
-        // Si la columna ya existe, ignorar el error
+        // Ignore if column already exists
       }
       try {
         final result = db.select("PRAGMA table_info(bookmarks)");
@@ -426,7 +396,6 @@ class DatabaseHelper {
 
         final hasTimestamp = result.any((row) => row['name'] == 'timestamp');
         if (!hasTimestamp) {
-          // Add a timestamp column with a safe default to avoid NOT NULL issues on existing rows
           db.execute(
             "ALTER TABLE bookmarks ADD COLUMN timestamp TEXT NOT NULL DEFAULT '';",
           );
@@ -446,64 +415,57 @@ class DatabaseHelper {
           );
         }
       } catch (e) {
-        // Ignorar si alguna columna ya existe o si la migración falla por compatibilidad
+        // Ignore if columns already exist
       }
 
-      // Migración para notebooks - deleted_at
       try {
         db.execute(
           'ALTER TABLE ${config.DatabaseConfig.tableNotebooks} ADD COLUMN ${config.DatabaseConfig.columnDeletedAt} INTEGER;',
         );
       } catch (e) {
-        // Si la columna ya existe, ignorar el error
+        // Ignore if column already exists
       }
 
-      // Migración para notebooks - is_favorite
       try {
         db.execute(
           'ALTER TABLE ${config.DatabaseConfig.tableNotebooks} ADD COLUMN ${config.DatabaseConfig.columnIsFavorite} INTEGER NOT NULL DEFAULT 0;',
         );
       } catch (e) {
-        // Si la columna ya existe, ignorar el error
+        // Ignore if column already exists
       }
 
-      // Migración para notebooks - icon_id
       try {
         db.execute(
           'ALTER TABLE ${config.DatabaseConfig.tableNotebooks} ADD COLUMN ${config.DatabaseConfig.columnIconId} INTEGER;',
         );
       } catch (e) {
-        // Si la columna ya existe, ignorar el error
+        // Ignore if column already exists
       }
 
-      // Migración para notes - is_task
       try {
         db.execute(
           'ALTER TABLE ${config.DatabaseConfig.tableNotes} ADD COLUMN ${config.DatabaseConfig.columnIsTask} INTEGER NOT NULL DEFAULT 0;',
         );
       } catch (e) {
-        // Si la columna ya existe, ignorar el error
+        // Ignore if column already exists
       }
 
-      // Migración para notes - is_completed
       try {
         db.execute(
           'ALTER TABLE ${config.DatabaseConfig.tableNotes} ADD COLUMN ${config.DatabaseConfig.columnIsCompleted} INTEGER NOT NULL DEFAULT 0;',
         );
       } catch (e) {
-        // Si la columna ya existe, ignorar el error
+        // Ignore if column already exists
       }
 
-      // Migración para notes - is_completed
       try {
         db.execute(
           'ALTER TABLE ${config.DatabaseConfig.tableNotes} ADD COLUMN ${config.DatabaseConfig.columnNoteIsPinned} INTEGER NOT NULL DEFAULT 0;',
         );
       } catch (e) {
-        // Si la columna ya existe, ignorar el error
+        // Ignore if column already exists
       }
 
-      // Migración para tasks - is_pinned
       try {
         final result = db.select('''
           PRAGMA table_info(${config.DatabaseConfig.tableTasks})
@@ -520,10 +482,9 @@ class DatabaseHelper {
           ''');
         }
       } catch (e) {
-        // Si la columna ya existe, ignorar el error
+        // Ignore if column already exists
       }
 
-      // Migración para task_tags - asegurarse que task_id sea nullable
       try {
         final result = db.select(
           'PRAGMA table_info(${config.DatabaseConfig.tableTaskTags})',
@@ -539,8 +500,6 @@ class DatabaseHelper {
         if (taskIdRow != null) {
           final notnullValue = taskIdRow['notnull'] as int? ?? 0;
           if (notnullValue == 1) {
-            // La columna task_id existe pero es NOT NULL en una versión previa de la DB.
-            // Recreate the table to allow NULL task_id (can't alter nullability directly).
             db.execute(
               'ALTER TABLE ${config.DatabaseConfig.tableTaskTags} RENAME TO ${config.DatabaseConfig.tableTaskTags}_old;',
             );
@@ -564,10 +523,9 @@ class DatabaseHelper {
           }
         }
       } catch (e) {
-        // If anything fails here, ignore to avoid blocking startup on older DBs
+        // Ignore migration errors
       }
 
-      // Migración para calendar_events - status
       try {
         final result = db.select('''
           PRAGMA table_info(${config.DatabaseConfig.tableCalendarEvents})
@@ -582,7 +540,7 @@ class DatabaseHelper {
           ''');
         }
       } catch (e) {
-        // Si la columna ya existe, ignorar el error
+        // Ignore if column already exists
       }
     } catch (e) {
       developer.log('Error running migrations: $e', name: 'DatabaseHelper');
@@ -592,7 +550,6 @@ class DatabaseHelper {
 
   Future<void> dispose() async {
     try {
-      // Cerrar todas las conexiones activas
       for (final connection in _activeConnections) {
         try {
           connection.dispose();
@@ -616,14 +573,11 @@ class DatabaseHelper {
     try {
       final db = await database;
 
-      // 1. Desactivar las restricciones de clave foránea temporalmente
       db.execute('PRAGMA foreign_keys = OFF;');
 
-      // 2. Iniciar una transacción
       db.execute('BEGIN TRANSACTION;');
 
       try {
-        // 3. Truncar todas las tablas
         db.execute('DELETE FROM ${config.DatabaseConfig.tableNotes};');
         db.execute('DELETE FROM ${config.DatabaseConfig.tableNotebooks};');
         db.execute('DELETE FROM ${config.DatabaseConfig.tableSubtasks};');
@@ -631,7 +585,6 @@ class DatabaseHelper {
         db.execute('DELETE FROM ${config.DatabaseConfig.tableTasks};');
         db.execute('DELETE FROM ${config.DatabaseConfig.tableThinks};');
 
-        // 4. Reiniciar los contadores de autoincremento
         db.execute('DELETE FROM sqlite_sequence WHERE name = ?;', [
           config.DatabaseConfig.tableNotes,
         ]);
@@ -651,17 +604,13 @@ class DatabaseHelper {
           config.DatabaseConfig.tableThinks,
         ]);
 
-        // 5. Confirmar la transacción
         db.execute('COMMIT;');
 
-        // 6. Actualizar last_modified
         await _updateLastModified();
       } catch (e) {
-        // 7. Si algo falla, revertir los cambios
         db.execute('ROLLBACK;');
         rethrow;
       } finally {
-        // 8. Reactivar las restricciones de clave foránea
         db.execute('PRAGMA foreign_keys = ON;');
       }
 
@@ -672,7 +621,6 @@ class DatabaseHelper {
     }
   }
 
-  // Método para actualizar last_modified y notificar cambios
   Future<void> _updateLastModified() async {
     final db = await database;
     db.execute(
@@ -686,7 +634,6 @@ class DatabaseHelper {
     notifyDatabaseChanged();
   }
 
-  // Método para obtener la última modificación
   Future<DateTime> getLastModified() async {
     final db = await database;
     final result = db.select(
@@ -700,7 +647,6 @@ class DatabaseHelper {
     );
   }
 
-  // Método para actualizar la última modificación
   Future<void> updateLastModified() async {
     final db = await database;
     db.execute('UPDATE sync_info SET last_modified = ? WHERE id = 1', [
@@ -708,17 +654,14 @@ class DatabaseHelper {
     ]);
   }
 
-  // Método para notificar cambios en notas
   void notifyNoteChanges() {
     notifyDatabaseChanged();
   }
 
-  // Método para notificar cambios en notebooks
   void notifyNotebookChanges() {
     notifyDatabaseChanged();
   }
 
-  // Método para inicializar la base de datos con una ruta específica
   Future<void> initialize([String? dbPath]) async {
     if (dbPath != null) {
       _database = sqlite.sqlite3.open(dbPath);
@@ -728,7 +671,6 @@ class DatabaseHelper {
     }
   }
 
-  // Método para cerrar la base de datos
   Future<void> close() async {
     for (var connection in _activeConnections) {
       connection.dispose();

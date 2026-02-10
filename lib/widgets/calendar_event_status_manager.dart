@@ -26,7 +26,6 @@ class _CalendarEventStatusManagerState
   List<CalendarEventStatus> _statuses = [];
   bool _isLoading = true;
 
-  // Material You pastel colors
   static const List<Map<String, dynamic>> _predefinedColors = [
     {'name': 'Coral', 'hex': '#FFB4AB'},
     {'name': 'Peach', 'hex': '#FFB4A1'},
@@ -268,7 +267,6 @@ class _CalendarEventStatusManagerState
     final CalendarEventStatus item = reorderedStatuses.removeAt(oldIndex);
     reorderedStatuses.insert(newIndex, item);
 
-    // Actualizar orderIndex de todos los statuses
     try {
       for (int i = 0; i < reorderedStatuses.length; i++) {
         final updatedStatus = reorderedStatuses[i].copyWith(orderIndex: i);
@@ -433,7 +431,7 @@ class _CalendarEventStatusManagerState
                                             size: 18,
                                           ),
                                         ),
-                                      // Delete button (only visible on hover)
+
                                       Opacity(
                                         opacity: isHovering ? 1.0 : 0.0,
                                         child: IgnorePointer(
@@ -441,9 +439,12 @@ class _CalendarEventStatusManagerState
                                           child: MouseRegion(
                                             cursor: SystemMouseCursors.click,
                                             child: GestureDetector(
-                                              onTap: () => _deleteStatus(status),
+                                              onTap:
+                                                  () => _deleteStatus(status),
                                               child: Container(
-                                                padding: const EdgeInsets.all(4),
+                                                padding: const EdgeInsets.all(
+                                                  4,
+                                                ),
                                                 decoration: BoxDecoration(
                                                   color: colorScheme.error
                                                       .withAlpha(20),
@@ -510,4 +511,3 @@ class _MouseRegionHoverItemState extends State<MouseRegionHoverItem> {
     );
   }
 }
-

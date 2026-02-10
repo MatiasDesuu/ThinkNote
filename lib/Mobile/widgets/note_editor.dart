@@ -116,12 +116,10 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
     try {
       final currentText = widget.contentController.text;
 
-      // Only trigger updates if the actual text changed, not just selection
       if (currentText == _lastTextContent) {
         return;
       }
 
-      // Check for newline insertion from virtual keyboard
       if (currentText.length == _lastTextContent.length + 1) {
         final selection = widget.contentController.selection;
         if (selection.isValid &&
@@ -129,11 +127,9 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
             selection.baseOffset > 0) {
           final insertedChar = currentText[selection.baseOffset - 1];
           if (insertedChar == '\n') {
-            // Attempt to handle list continuation based on the new state
             if (ListContinuationHandler.handleVirtualKeyboardEnter(
               widget.contentController,
             )) {
-              // Update _lastTextContent to the handled text so we don't re-process
               _lastTextContent = widget.contentController.text;
               widget.onContentChanged();
               _resetDebouncers();
@@ -284,18 +280,15 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
 
       final lines = text.split('\n');
 
-      // Find the block number where the selection starts
       int currentPosition = 0;
       int selectionLineIndex = 0;
       List<int> blockNumbers = [];
       int? previousBlockNumber;
       int? nextBlockNumber;
 
-      // First pass: collect block numbers and find the position
       for (int i = 0; i < lines.length; i++) {
         final line = lines[i];
 
-        // Check for block numbers in the entire line
         final blockMatches = RegExp(r'#(\d+)').allMatches(line);
         for (final match in blockMatches) {
           final blockNumber = int.tryParse(match.group(1) ?? '1') ?? 1;
@@ -314,30 +307,23 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
         currentPosition += line.length + 1; // +1 for the newline
       }
 
-      // Determine the new block number
       int newBlockNumber;
       if (previousBlockNumber != null && nextBlockNumber != null) {
-        // If we're between two blocks, use the next number after the previous block
         newBlockNumber = previousBlockNumber + 1;
       } else if (previousBlockNumber != null) {
-        // If we're at the end, use the next number after the last block
         newBlockNumber = previousBlockNumber + 1;
       } else if (nextBlockNumber != null) {
-        // If we're at the start, use 1
         newBlockNumber = 1;
       } else {
-        // If there are no blocks, start with 1
         newBlockNumber = 1;
       }
 
-      // Second pass: update block numbers after the insertion
       final updatedLines = List<String>.from(lines);
       int currentNumber = newBlockNumber + 1;
 
       for (int i = 0; i < updatedLines.length; i++) {
         final line = updatedLines[i];
         if (i > selectionLineIndex) {
-          // Replace all block numbers in the line
           updatedLines[i] = line.replaceAllMapped(
             RegExp(r'#\d+'),
             (match) => '#$currentNumber',
@@ -348,7 +334,6 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
         }
       }
 
-      // Check if we need to add newlines
       final textBeforeSelection = text.substring(0, selection.start);
       final textAfterSelection = text.substring(selection.end);
       final isAtStart = selection.start == 0;
@@ -366,7 +351,6 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
           !textAfterSelection.startsWith('\n') &&
           !isInMiddleOfSentence;
 
-      // Create the new text with the block
       final newText = updatedLines
           .join('\n')
           .replaceRange(
@@ -375,10 +359,8 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
             '${needsNewlineBefore ? '\n' : ''}#$newBlockNumber\n$selectedText${needsNewlineAfter ? '\n' : ''}',
           );
 
-      // Update the text controller
       widget.contentController.text = newText;
 
-      // Update the selection to include the new block header
       final selectionOffset = needsNewlineBefore ? 1 : 0;
       widget.contentController.selection = TextSelection(
         baseOffset: selection.start + selectionOffset,
@@ -390,7 +372,6 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
             (needsNewlineAfter ? 1 : 0),
       );
 
-      // Trigger content changed
       widget.onContentChanged();
     }
   }
@@ -403,7 +384,6 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
     if (type == FormatType.insertScript) {
       final text = controller.text;
       if (text.startsWith('#script')) {
-        // Remove #script and any following newline
         String newText = text.replaceFirst(RegExp(r'^#script\n?'), '');
         controller.text = newText;
         widget.onContentChanged();
@@ -433,14 +413,11 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
     TextSelection newSelection = selection;
 
     if (selection.isCollapsed) {
-      // Insert mode
       final cursor = selection.start;
       String insertion = "";
       int cursorOffset = 0;
 
-      // Check for line-based formats
       if (_isLineFormat(type)) {
-        // Get current line start
         int lineStart = 0;
         if (cursor > 0) {
           lineStart = text.lastIndexOf('\n', cursor - 1) + 1;
@@ -448,12 +425,11 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
         }
 
         String prefix = _getLinePrefix(type);
-        // Insert at line start
+
         newText =
             text.substring(0, lineStart) + prefix + text.substring(lineStart);
         newSelection = TextSelection.collapsed(offset: cursor + prefix.length);
       } else {
-        // Inline formats
         switch (type) {
           case FormatType.bold:
             insertion = "****";
@@ -497,14 +473,10 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
         }
       }
     } else {
-      // Selection mode - use existing util
       final start = selection.start;
       final end = selection.end;
       newText = FormatUtils.toggleFormat(text, start, end, type);
 
-      // Attempt to keep selection at the end of the modified block
-      // To improve this we would need FormatUtils to return where the new selection should be.
-      // For now, collapsing to end of modification is safe.
       int newLen = newText.length;
       int diff = newLen - text.length;
       newSelection = TextSelection.collapsed(offset: end + diff);
@@ -519,7 +491,6 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
       widget.onContentChanged();
     }
 
-    // Ensure focus and prevent keyboard closing
     widget.contentFocusNode.requestFocus();
   }
 
@@ -732,7 +703,6 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                           ),
                                           child: Focus(
                                             onKeyEvent: (node, event) {
-                                              // Handle Enter key for list continuation
                                               if (event is KeyDownEvent &&
                                                   event.logicalKey ==
                                                       LogicalKeyboardKey
@@ -742,7 +712,6 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                                         .instance
                                                         .isShiftPressed;
 
-                                                // Try to handle list continuation
                                                 if (ListContinuationHandler.handleEnterKey(
                                                   widget.contentController,
                                                   isShiftPressed,
@@ -750,8 +719,6 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                                   widget.onContentChanged();
                                                   return KeyEventResult.handled;
                                                 }
-
-                                                // If not handled by list continuation, let default behavior proceed
                                               }
 
                                               return KeyEventResult.ignored;
@@ -810,7 +777,6 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                                 final mediaQuery =
                                                     MediaQuery.of(context);
 
-                                                // Define visible bounds
                                                 final topBound =
                                                     mediaQuery.padding.top +
                                                     kToolbarHeight +
@@ -822,13 +788,11 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                                         .bottom -
                                                     20;
 
-                                                // Check if primary anchor is outside visible area
                                                 final primaryY =
                                                     anchors.primaryAnchor.dy;
 
                                                 if (primaryY < topBound ||
                                                     primaryY > bottomBound) {
-                                                  // Clamp to visible area
                                                   final clampedY = primaryY
                                                       .clamp(
                                                         topBound,

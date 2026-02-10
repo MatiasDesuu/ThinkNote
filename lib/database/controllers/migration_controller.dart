@@ -26,7 +26,6 @@ class MigrationController {
   Future<void> _processDirectory(Directory dir, {int? parentNotebookId}) async {
     final entities = await dir.list().toList();
 
-    // Primero procesamos las carpetas
     for (final entity in entities) {
       if (entity is Directory) {
         final notebook = Notebook(
@@ -39,7 +38,6 @@ class MigrationController {
       }
     }
 
-    // Luego procesamos los archivos
     for (final entity in entities) {
       if (entity is File && path.extension(entity.path) == '.md') {
         final content = await entity.readAsString();
@@ -69,14 +67,12 @@ class MigrationController {
       0,
     ); // Obtener todas las notas
 
-    // Crear la estructura de directorios
     for (final notebook in notebooks) {
       final notebookPath = _getNotebookPath(notebook, notebooks);
       final dir = Directory(path.join(rootPath, notebookPath));
       await dir.create(recursive: true);
     }
 
-    // Crear los archivos de notas
     for (final note in notes) {
       final notebook = notebooks.firstWhere((n) => n.id == note.notebookId);
       final notebookPath = _getNotebookPath(notebook, notebooks);

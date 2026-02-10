@@ -1,8 +1,4 @@
-enum ListType {
-  numbered,
-  bullet,
-  checkbox,
-}
+enum ListType { numbered, bullet, checkbox }
 
 class ListItem {
   final ListType type;

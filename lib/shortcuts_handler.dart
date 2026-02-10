@@ -1,24 +1,19 @@
-// shortcuts_handler.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// Intent for creating script block with Ctrl+Shift+D
 class CreateScriptBlockIntent extends Intent {
   const CreateScriptBlockIntent();
 }
 
-// Intent for finding text in editor with Ctrl+F
 class FindInEditorIntent extends Intent {
   const FindInEditorIntent();
 }
 
-// Intent for global search with Ctrl+Shift+S
 class GlobalSearchIntent extends Intent {
   const GlobalSearchIntent();
 }
 
 class ShortcutsHandler {
-  // Global application shortcuts
   static Map<ShortcutActivator, VoidCallback> getAppShortcuts({
     required VoidCallback onCloseDialog,
     required VoidCallback onToggleSidebar,
@@ -89,8 +84,6 @@ class ShortcutsHandler {
     };
   }
 
-  /// Checks if a keyboard event matches a global shortcut and handles it.
-  /// Returns true if the event was handled (to stop propagation).
   static bool handleGlobalKeyEvent(
     KeyEvent event, {
     required VoidCallback onCloseDialog,
@@ -114,7 +107,6 @@ class ShortcutsHandler {
     required VoidCallback onToggleTrashPanel,
     required VoidCallback onToggleTemplatesPanel,
   }) {
-    // Only handle key down events
     if (event is! KeyDownEvent) return false;
 
     final bool isControlPressed = HardwareKeyboard.instance.isControlPressed;
@@ -122,7 +114,6 @@ class ShortcutsHandler {
     final bool isAltPressed = HardwareKeyboard.instance.isAltPressed;
     final LogicalKeyboardKey key = event.logicalKey;
 
-    // Ctrl+Shift combinations (check first as they're more specific)
     if (isControlPressed && isShiftPressed && !isAltPressed) {
       if (key == LogicalKeyboardKey.keyN) {
         onCreateNotebook();
@@ -142,7 +133,6 @@ class ShortcutsHandler {
       }
     }
 
-    // Ctrl combinations (without Shift)
     if (isControlPressed && !isShiftPressed && !isAltPressed) {
       if (key == LogicalKeyboardKey.keyN) {
         onCreateNote();
@@ -156,8 +146,7 @@ class ShortcutsHandler {
         onNewTab();
         return true;
       }
-      // Ctrl+S is NOT handled globally - it's handled by the editor's
-      // Shortcuts widget to preserve focus and cursor position (like Obsidian/Joplin)
+
       if (key == LogicalKeyboardKey.keyW) {
         onCloseTab();
         return true;
@@ -168,7 +157,6 @@ class ShortcutsHandler {
       }
     }
 
-    // Function keys (no modifiers needed)
     if (!isControlPressed && !isShiftPressed && !isAltPressed) {
       if (key == LogicalKeyboardKey.escape) {
         onCloseDialog();
@@ -211,7 +199,6 @@ class ShortcutsHandler {
     return false;
   }
 
-  // Editor shortcuts
   static Map<ShortcutActivator, Intent> getEditorShortcuts({
     required VoidCallback onCreateScriptBlock,
     required VoidCallback onFindInEditor,
@@ -228,7 +215,6 @@ class ShortcutsHandler {
     };
   }
 
-  // Common shortcuts for dialogs
   static Map<ShortcutActivator, VoidCallback> getDialogShortcuts({
     required VoidCallback onConfirm,
     required VoidCallback onCancel,
@@ -239,7 +225,6 @@ class ShortcutsHandler {
     };
   }
 
-  // Specific shortcuts for dialogs with text fields
   static Map<ShortcutActivator, VoidCallback> getInputDialogShortcuts({
     required VoidCallback onSubmit,
     VoidCallback? onCancel,
@@ -272,11 +257,6 @@ class AppShortcuts extends StatelessWidget {
   }
 }
 
-/// A widget that captures keyboard shortcuts globally, regardless of focus.
-/// This ensures shortcuts like Ctrl+N, Ctrl+Shift+N, Ctrl+D, Ctrl+Shift+F
-/// work from anywhere in the application.
-///
-/// The shortcuts only execute when the main screen is active (no dialogs open).
 class GlobalAppShortcuts extends StatefulWidget {
   final Widget child;
   final VoidCallback onCloseDialog;
@@ -300,8 +280,6 @@ class GlobalAppShortcuts extends StatefulWidget {
   final VoidCallback onToggleTrashPanel;
   final VoidCallback onToggleTemplatesPanel;
 
-  /// Optional callback to check if shortcuts should be enabled.
-  /// If null, shortcuts are always enabled when the main route is active.
   final bool Function()? isEnabled;
 
   const GlobalAppShortcuts({
@@ -348,11 +326,9 @@ class _GlobalAppShortcutsState extends State<GlobalAppShortcuts> {
   }
 
   bool _handleKeyEvent(KeyEvent event) {
-    // Check if we're on the main screen (no dialogs or other routes on top)
     final modalRoute = ModalRoute.of(context);
     final isMainRouteActive = modalRoute?.isCurrent ?? false;
 
-    // If isEnabled callback is provided, use it; otherwise check route
     final shouldHandle = widget.isEnabled?.call() ?? isMainRouteActive;
 
     if (!shouldHandle) {

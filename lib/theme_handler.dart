@@ -15,7 +15,6 @@ class ThemeManager {
   static const String _catppuccinAccentKey = 'catppuccin_accent';
   static const String _einkEnabledKey = 'eink_enabled';
 
-  // Catppuccin flavors and their colors
   static const Map<String, Map<String, Color>> catppuccinColors = {
     'latte': {
       'rosewater': Color(0xFFDC8A78),
@@ -83,7 +82,6 @@ class ThemeManager {
     },
   };
 
-  // Catppuccin base colors for each flavor
   static const Map<String, Map<String, Color>> catppuccinBaseColors = {
     'latte': {
       'base': Color(0xFFEFF1F5),
@@ -252,7 +250,6 @@ class ThemeManager {
     required String catppuccinAccent,
     required bool einkEnabled,
   }) {
-    // If e-ink mode is enabled, use the e-ink theme
     if (einkEnabled) {
       return EInkTheme.buildEInkTheme(
         isLightMode: brightness == Brightness.light,
@@ -294,38 +291,43 @@ class ThemeManager {
                 ? const Color.fromRGBO(19, 19, 19, 1)
                 : const Color(0xFF252525),
       ),
-      // NavigationBar theme configuration for monochrome mode
-      navigationBarTheme: monochromeEnabled
-          ? NavigationBarThemeData(
-              backgroundColor: colorScheme.surfaceContainer,
-              indicatorColor: colorScheme.primaryContainer, // Use primaryContainer for high contrast
-              surfaceTintColor: Colors.transparent,
-              overlayColor: WidgetStateProperty.all(Colors.transparent),
-              iconTheme: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
+
+      navigationBarTheme:
+          monochromeEnabled
+              ? NavigationBarThemeData(
+                backgroundColor: colorScheme.surfaceContainer,
+                indicatorColor:
+                    colorScheme
+                        .primaryContainer, // Use primaryContainer for high contrast
+                surfaceTintColor: Colors.transparent,
+                overlayColor: WidgetStateProperty.all(Colors.transparent),
+                iconTheme: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return IconThemeData(
+                      color:
+                          colorScheme
+                              .onPrimaryContainer, // White on black or black on white
+                    );
+                  }
                   return IconThemeData(
-                    color: colorScheme.onPrimaryContainer, // White on black or black on white
+                    color: colorScheme.onSurface, // Unselected icons
                   );
-                }
-                return IconThemeData(
-                  color: colorScheme.onSurface, // Unselected icons
-                );
-              }),
-              labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
+                }),
+                labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    );
+                  }
                   return TextStyle(
-                    color: colorScheme.onSurface,
+                    color: colorScheme.onSurface.withAlpha(153),
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
                   );
-                }
-                return TextStyle(
-                  color: colorScheme.onSurface.withAlpha(153),
-                  fontSize: 12,
-                );
-              }),
-            )
-          : null,
+                }),
+              )
+              : null,
     );
   }
 
@@ -365,7 +367,6 @@ class ThemeManager {
     final colors = catppuccinColors[flavor]!;
     final baseColors = catppuccinBaseColors[flavor]!;
 
-    // Use base colors from the specific flavor
     final base = baseColors['base']!;
     final mantle = baseColors['mantle']!;
     final crust = baseColors['crust']!;
@@ -375,13 +376,10 @@ class ThemeManager {
     final overlay1 = baseColors['overlay1']!;
     final surface0 = baseColors['surface0']!;
 
-    // Get the selected accent color
     final accentColor = colors[accent]!;
 
-    // Create complementary colors based on the accent
     final complementaryColors = _getComplementaryColors(accentColor, colors);
 
-    // Generate subtle divider colors based on Catppuccin palette
     final subtleDividerColor = _getSubtleDividerColor(
       base,
       overlay0,
@@ -390,13 +388,12 @@ class ThemeManager {
 
     return ColorScheme(
       brightness: brightness,
-      // Primary colors using selected accent color
+
       primary: accentColor,
       onPrimary: _getContrastColor(accentColor),
       primaryContainer: accentColor.withAlpha(76),
       onPrimaryContainer: _getContrastColor(accentColor),
 
-      // Secondary colors using complementary colors
       secondary: complementaryColors['secondary']!,
       onSecondary: _getContrastColor(complementaryColors['secondary']!),
       secondaryContainer: complementaryColors['secondary']!.withAlpha(76),
@@ -404,18 +401,15 @@ class ThemeManager {
         complementaryColors['secondary']!,
       ),
 
-      // Tertiary colors using different accent
       tertiary: complementaryColors['tertiary']!,
       onTertiary: _getContrastColor(complementaryColors['tertiary']!),
       tertiaryContainer: complementaryColors['tertiary']!.withAlpha(255),
       onTertiaryContainer: _getContrastColor(complementaryColors['tertiary']!),
 
-      // Surface colors using Catppuccin base colors
       surface: base,
       onSurface: text,
       onSurfaceVariant: subtext0,
 
-      // Surface containers - Using more subtle colors from Catppuccin palette
       surfaceContainerLowest: crust,
       surfaceContainerLow: mantle,
       surfaceContainer: base,
@@ -426,47 +420,39 @@ class ThemeManager {
         brightness,
       ),
 
-      // Error colors
       error: colors['red']!,
       onError: _getContrastColor(colors['red']!),
       errorContainer: colors['red']!.withAlpha(255),
       onErrorContainer: _getContrastColor(colors['red']!),
 
-      // Outline colors - Using subtle divider colors
       outline: subtleDividerColor,
       outlineVariant: overlay1,
 
-      // Inverse colors
       inverseSurface: text,
       onInverseSurface: base,
       inversePrimary: accentColor,
 
-      // Shadow colors
       shadow: Colors.black,
       scrim: Colors.black,
     );
   }
 
-  // Helper method to generate subtle divider colors based on Catppuccin palette
   static Color _getSubtleDividerColor(
     Color base,
     Color overlay0,
     Brightness brightness,
   ) {
-    // For light themes, use a very subtle color
     if (brightness == Brightness.light) {
       return overlay0.withAlpha(40);
     }
-    // For dark themes, use a slightly more visible but still subtle color
+
     return overlay0.withAlpha(60);
   }
 
-  // Helper method to get complementary colors based on the selected accent
   static Map<String, Color> _getComplementaryColors(
     Color accentColor,
     Map<String, Color> colors,
   ) {
-    // Define color relationships for better harmony
     final colorRelationships = {
       'rosewater': ['blue', 'teal'],
       'flamingo': ['sapphire', 'sky'],
@@ -484,7 +470,6 @@ class ThemeManager {
       'lavender': ['peach', 'green'],
     };
 
-    // Find which accent color we're using
     String? accentName;
     for (final entry in colors.entries) {
       if (entry.value.toARGB32() == accentColor.toARGB32()) {
@@ -493,7 +478,6 @@ class ThemeManager {
       }
     }
 
-    // Get complementary colors based on relationships
     final relationships = colorRelationships[accentName] ?? ['blue', 'teal'];
 
     return {
@@ -502,7 +486,6 @@ class ThemeManager {
     };
   }
 
-  // Helper method to get appropriate contrast color
   static Color _getContrastColor(Color color) {
     final luminance = color.computeLuminance();
     return luminance > 0.5 ? Colors.black : Colors.white;
@@ -512,12 +495,10 @@ class ThemeManager {
     final bool isDark = brightness == Brightness.dark;
     final HSLColor hslColor = HSLColor.fromColor(color);
 
-    // Función para ajustar la luminosidad manteniendo el tono y saturación
     Color adjustBrightness(double lightness) {
       return hslColor.withLightness(lightness).toColor();
     }
 
-    // Función para ajustar la saturación manteniendo el tono
     Color adjustSaturation(double saturation, double lightness) {
       return hslColor
           .withSaturation(saturation)
@@ -525,8 +506,6 @@ class ThemeManager {
           .toColor();
     }
 
-    // En modo oscuro, empezamos más oscuro y vamos aumentando la luminosidad
-    // En modo claro, empezamos más claro y vamos disminuyendo la luminosidad
     final surfaceLightness =
         isDark
             ? [
@@ -544,7 +523,6 @@ class ThemeManager {
               0.88, // El más oscuro
             ]; // Modo claro: de más claro a más oscuro
 
-    // La saturación se reduce para hacer los colores más suaves
     final surfaceSaturation =
         isDark
             ? [
@@ -564,31 +542,27 @@ class ThemeManager {
 
     return ColorScheme(
       brightness: brightness,
-      // Colores principales - Mantienen el tono exacto
+
       primary: color,
       onPrimary: isDark ? Colors.black : Colors.white,
       primaryContainer: adjustBrightness(isDark ? 0.3 : 0.8),
       onPrimaryContainer: isDark ? Colors.white : Colors.black,
 
-      // Colores secundarios - Variaciones del mismo tono
       secondary: adjustSaturation(0.6, isDark ? 0.6 : 0.4),
       onSecondary: isDark ? Colors.black : Colors.white,
       secondaryContainer: adjustSaturation(0.3, isDark ? 0.3 : 0.9),
       onSecondaryContainer: isDark ? Colors.white : Colors.black,
 
-      // Colores terciarios - Más variaciones del mismo tono
       tertiary: adjustSaturation(0.8, isDark ? 0.7 : 0.3),
       onTertiary: isDark ? Colors.black : Colors.white,
       tertiaryContainer: adjustSaturation(0.4, isDark ? 0.4 : 0.8),
       onTertiaryContainer: isDark ? Colors.white : Colors.black,
 
-      // Superficies - Versiones más saturadas del color para fondos
       surface: adjustSaturation(surfaceSaturation[0], surfaceLightness[0]),
       onSurface: isDark ? Colors.white : Colors.black,
       onSurfaceVariant:
           isDark ? Colors.white.withAlpha(229) : Colors.black.withAlpha(229),
 
-      // Contenedores - Gradiente de superficies con más saturación
       surfaceContainerLowest: adjustSaturation(
         surfaceSaturation[0],
         surfaceLightness[0],
@@ -615,22 +589,18 @@ class ThemeManager {
           isDark ? const Color(0xFF8B0016) : const Color(0xFFFCD8DF),
       onErrorContainer: isDark ? Colors.white : Colors.black,
 
-      // Colores de borde y estado
       outline: adjustSaturation(0.2, isDark ? 0.6 : 0.4),
       outlineVariant: adjustSaturation(0.15, isDark ? 0.3 : 0.8),
 
-      // Colores inversos
       inverseSurface: adjustSaturation(0.3, isDark ? 0.9 : 0.1),
       onInverseSurface: isDark ? Colors.black : Colors.white,
       inversePrimary: adjustSaturation(0.7, isDark ? 0.4 : 0.6),
 
-      // Sombras
       shadow: Colors.black,
       scrim: Colors.black,
     );
   }
 
-  // Monochrome scheme for light theme (black on white)
   static ColorScheme _buildMonochromeLight() {
     final baseScheme = _defaultColorScheme(
       const Color(0xFF000000),
@@ -638,7 +608,6 @@ class ThemeManager {
     );
 
     return baseScheme.copyWith(
-      // Main accent colors
       primary: const Color(0xFF222222), // Active buttons
       onPrimary: const Color(0xFFFFFFFF),
       secondary: const Color(0xFF858585), // Disabled buttons
@@ -646,19 +615,18 @@ class ThemeManager {
       tertiary: const Color(0xFF222222),
       onTertiary: const Color(0xFFFFFFFF),
 
-      // Containers and backgrounds
-      primaryContainer: const Color(0xFF000000), // Black indicator for selected items
+      primaryContainer: const Color(
+        0xFF000000,
+      ), // Black indicator for selected items
       onPrimaryContainer: const Color(0xFFFFFFFF),
       secondaryContainer: const Color(0xFFF6F6F6), // Elements sidebar
       onSecondaryContainer: const Color(0xFF858585),
       tertiaryContainer: const Color(0xFFF6F6F6),
       onTertiaryContainer: const Color(0xFF222222),
 
-      // Fixed colors
       primaryFixed: const Color(0xFF666666),
       primaryFixedDim: const Color(0xFF444444),
 
-      // Surface colors
       surface: const Color(0xFFFFFFFF), // Editor background
       onSurface: const Color(0xFF222222),
       surfaceContainer: const Color(0xFFFFFFFF), // Bottom bar background
@@ -666,13 +634,11 @@ class ThemeManager {
       surfaceContainerHigh: const Color(0xFFF6F6F6),
       surfaceContainerHighest: const Color(0xFFE0E0E0),
 
-      // Error and outline colors
       error: const Color(0xFFc9184a),
       onError: const Color(0xFFFFFFFF),
       outline: const Color(0xFFB1B1B1),
       outlineVariant: const Color(0xFFE0E0E0),
 
-      // State colors
       errorContainer: const Color(0xFFB00020),
       onErrorContainer: const Color(0xFFFFFFFF),
       inverseSurface: const Color(0xFF222222),
@@ -683,17 +649,13 @@ class ThemeManager {
     );
   }
 
-  // Monochrome scheme for dark theme (white on black)
   static ColorScheme _buildMonochromeDark() {
-    // Start from base scheme for themes without Color Mode
     final baseScheme = _defaultColorScheme(
       const Color(0xFFFFFFFF),
       Brightness.dark,
     );
 
-    // Modify only accent colors, keeping backgrounds the same
     return baseScheme.copyWith(
-      // Main accent colors
       primary: const Color(0xFFDADADA), // Primary color buttons
       onPrimary: const Color(0xFF1E1E1E),
       secondary: const Color(0xFF949494), // Inactive buttons
@@ -701,19 +663,18 @@ class ThemeManager {
       tertiary: const Color(0xFFDADADA),
       onTertiary: const Color(0xFF1E1E1E),
 
-      // Containers and backgrounds
-      primaryContainer: const Color(0xFFFFFFFF), // White indicator for selected items
+      primaryContainer: const Color(
+        0xFFFFFFFF,
+      ), // White indicator for selected items
       onPrimaryContainer: const Color(0xFF000000),
       secondaryContainer: const Color(0xFF262626),
       onSecondaryContainer: const Color(0xFF949494),
       tertiaryContainer: const Color(0xFF363636),
       onTertiaryContainer: const Color(0xFFDADADA),
 
-      // Fixed colors
       primaryFixed: const Color(0xFFAAAAAA),
       primaryFixedDim: const Color(0xFF888888),
 
-      // Surface colors
       surface: const Color(0xFF2D2D2D),
       onSurface: const Color(0xFFDADADA),
       surfaceContainer: const Color(0xFF000000), // Bottom bar background
@@ -721,13 +682,11 @@ class ThemeManager {
       surfaceContainerHigh: const Color(0xFF363636),
       surfaceContainerHighest: const Color(0xFF363636),
 
-      // Error and outline colors
       error: const Color(0xFFff8fa3),
       onError: const Color(0xFF1E1E1E),
       outline: const Color(0xFFA2A2A2),
       outlineVariant: const Color(0xFF262626),
 
-      // State colors
       errorContainer: const Color(0xFFB00020),
       onErrorContainer: const Color(0xFFDADADA),
       inverseSurface: const Color(0xFFDADADA),
@@ -738,7 +697,6 @@ class ThemeManager {
     );
   }
 
-  // Helper method to generate default color scheme
   static ColorScheme _defaultColorScheme(Color color, Brightness brightness) {
     final bool isDark = brightness == Brightness.dark;
     return ColorScheme.fromSeed(
@@ -793,11 +751,10 @@ class ThemeManager {
     Color overlay0,
     Brightness brightness,
   ) {
-    // For light themes, use a very subtle color
     if (brightness == Brightness.light) {
       return overlay0.withAlpha(40);
     }
-    // For dark themes, use a slightly more visible but still subtle color
+
     return overlay0.withAlpha(60);
   }
 }

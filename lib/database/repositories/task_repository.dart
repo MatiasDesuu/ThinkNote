@@ -10,11 +10,9 @@ class TaskRepository {
 
   TaskRepository(this._dbHelper);
 
-  // Operaciones CRUD para tareas
   Future<int> createTask(Task task) async {
     final db = await _dbHelper.database;
 
-    // Obtener el siguiente orden
     final result = db.select('''
       SELECT MAX(order_index) as maxOrder
       FROM ${config.DatabaseConfig.tableTasks}
@@ -170,32 +168,26 @@ class TaskRepository {
   Future<int> deleteTask(int id) async {
     final db = await _dbHelper.database;
 
-    // Primero eliminar las subtareas asociadas
     final stmtSubtasks = db.prepare('''
       DELETE FROM ${config.DatabaseConfig.tableSubtasks}
       WHERE ${config.DatabaseConfig.columnTaskId} = ?
     ''');
 
-    // Luego eliminar los tags asociados
     final stmtTags = db.prepare('''
       DELETE FROM ${config.DatabaseConfig.tableTaskTags}
       WHERE ${config.DatabaseConfig.columnTagTaskId} = ?
     ''');
 
-    // Finalmente eliminar la tarea
     final stmtTask = db.prepare('''
       DELETE FROM ${config.DatabaseConfig.tableTasks}
       WHERE ${config.DatabaseConfig.columnId} = ?
     ''');
 
     try {
-      // Eliminar subtareas
       stmtSubtasks.execute([id]);
 
-      // Eliminar tags
       stmtTags.execute([id]);
 
-      // Eliminar tarea
       stmtTask.execute([id]);
 
       await _updateSyncTimestamp(db);
@@ -235,18 +227,15 @@ class TaskRepository {
     return 1;
   }
 
-  // Método privado para actualizar el timestamp de sincronización
   Future<void> _updateSyncTimestamp(sqlite.Database db) async {
     db.execute('UPDATE sync_info SET last_modified = ? WHERE id = 1', [
       DateTime.now().millisecondsSinceEpoch,
     ]);
   }
 
-  // Operaciones CRUD para subtareas
   Future<int> createSubtask(Subtask subtask) async {
     final db = await _dbHelper.database;
 
-    // Obtener el siguiente orden
     final result = db.select(
       '''
       SELECT MAX(order_index) as maxOrder
@@ -353,7 +342,6 @@ class TaskRepository {
     }
   }
 
-  // Habit completions stored per (subtask_id, date) as ISO yyyy-MM-dd strings
   Future<void> setHabitCompletion(
     int subtaskId,
     String isoDate,
@@ -379,8 +367,7 @@ class TaskRepository {
         stmt.dispose();
       }
     }
-    // Update the sync timestamp so WebDAV detects the change and uploads the DB.
-    // Other mutating methods call _updateSyncTimestamp; keep habit completions consistent.
+
     await _updateSyncTimestamp(db);
     DatabaseHelper.notifyDatabaseChanged();
   }
@@ -394,8 +381,6 @@ class TaskRepository {
     return result.map((r) => r['date'] as String).toList();
   }
 
-  /// Get all habit completions for a given task in a single query.
-  /// Returns a map of subtask_id -> list of ISO date strings.
   Future<Map<int, List<String>>> getHabitCompletionsForTask(int taskId) async {
     final db = await _dbHelper.database;
     final result = db.select(
@@ -432,7 +417,6 @@ class TaskRepository {
     return 1;
   }
 
-  // Operaciones CRUD para tags de tareas
   Future<List<TaskTag>> getAllTags() async {
     final db = await _dbHelper.database;
     final result = db.select('''
@@ -507,7 +491,6 @@ class TaskRepository {
   Future<void> assignTagToTask(String tagName, int taskId) async {
     final db = await _dbHelper.database;
 
-    // Insertar directamente en task_tags
     final stmt = db.prepare('''
       INSERT OR IGNORE INTO ${config.DatabaseConfig.tableTaskTags} (
         ${config.DatabaseConfig.columnTagName},
@@ -526,7 +509,6 @@ class TaskRepository {
   Future<void> removeTagFromTask(String tagName, int taskId) async {
     final db = await _dbHelper.database;
 
-    // Eliminar directamente de task_tags
     final stmt = db.prepare('''
       DELETE FROM ${config.DatabaseConfig.tableTaskTags}
       WHERE ${config.DatabaseConfig.columnTagName} = ?

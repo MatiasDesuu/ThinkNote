@@ -51,13 +51,11 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
     try {
       final allNotebooks = await _notebookRepository.getAllNotebooks();
       final templateNotebooks =
-          allNotebooks
-              .where((n) {
-                final name = n.name.toLowerCase();
-                return name.startsWith('#templates') ||
-                    name.startsWith('#category');
-              })
-              .toList();
+          allNotebooks.where((n) {
+            final name = n.name.toLowerCase();
+            return name.startsWith('#templates') ||
+                name.startsWith('#category');
+          }).toList();
 
       final notebookTemplates =
           allNotebooks
@@ -147,7 +145,9 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
             ),
           ),
         ),
-        ..._notebookTemplates.map((notebook) => _buildNotebookTemplateItem(notebook)),
+        ..._notebookTemplates.map(
+          (notebook) => _buildNotebookTemplateItem(notebook),
+        ),
       ],
     );
   }
@@ -155,17 +155,13 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
   Widget _buildNotebookTemplateItem(Notebook notebook) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Clean up name for display
     String displayName = notebook.name;
     if (displayName.toLowerCase().startsWith('#template_')) {
       displayName = displayName.substring(10).replaceAll('_', ' ');
     }
 
     return ListTile(
-      leading: Icon(
-        Icons.folder_copy_rounded,
-        color: colorScheme.primary,
-      ),
+      leading: Icon(Icons.folder_copy_rounded, color: colorScheme.primary),
       title: Text(
         displayName,
         style: TextStyle(
@@ -226,8 +222,8 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
         isStack
             ? Icons.library_books_rounded
             : note.isTask
-                ? Icons.add_task_rounded
-                : Icons.description_outlined,
+            ? Icons.add_task_rounded
+            : Icons.description_outlined,
         color: colorScheme.primary,
       ),
       title: Text(

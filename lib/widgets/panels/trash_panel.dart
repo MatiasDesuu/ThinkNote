@@ -82,8 +82,6 @@ class TrashPanelState extends State<TrashPanel> {
     return [...notebooks, ...notes, ...thinks];
   }
 
-  /// Reloads all trash data
-  /// Used for refreshing after sync operations
   void reloadTrash() {
     _loadTrash();
   }
@@ -363,7 +361,6 @@ class TrashPanelState extends State<TrashPanel> {
       title = item.title;
       deletedAt = item.deletedAt;
     } else {
-      // Think
       iconData = Icons.lightbulb_outline_rounded;
       title = item.title;
       deletedAt = item.deletedAt;
@@ -416,7 +413,7 @@ class TrashPanelState extends State<TrashPanel> {
                     ],
                   ),
                 ),
-                // Action buttons (only visible on hover)
+
                 Opacity(
                   opacity: isHovering ? 1.0 : 0.0,
                   child: IgnorePointer(
@@ -424,7 +421,6 @@ class TrashPanelState extends State<TrashPanel> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Restore button
                         Padding(
                           padding: const EdgeInsets.only(left: 4),
                           child: MouseRegion(
@@ -454,7 +450,7 @@ class TrashPanelState extends State<TrashPanel> {
                             ),
                           ),
                         ),
-                        // Permanent delete button
+
                         Padding(
                           padding: const EdgeInsets.only(left: 4),
                           child: MouseRegion(

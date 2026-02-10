@@ -46,7 +46,6 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
   List<Bookmark> _filteredBookmarks = [];
   StreamSubscription? _dbSubscription;
 
-  // Variables for resizable panel
   double _sidebarWidth = 240;
   bool _isSidebarVisible = true;
   late AnimationController _sidebarAnimController;
@@ -60,22 +59,20 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
   void initState() {
     super.initState();
     _linksHandler.resetSearch();
-    
-    // Initialize sidebar animation
+
     _sidebarAnimController = AnimationController(
-        duration: const Duration(milliseconds: 200),
-        vsync: this,
-        value: 1.0,
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+      value: 1.0,
     );
     _sidebarWidthAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _sidebarAnimController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _sidebarAnimController, curve: Curves.easeInOut),
     );
-    
+
     _initializeBookmarks();
     _loadRootDir();
     _loadSidebarSettings();
 
-    // Listen to database changes for background sync updates
     _dbSubscription = DatabaseHelper.onDatabaseChanged.listen((_) {
       if (mounted) {
         _loadBookmarks();
@@ -84,13 +81,13 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
   }
 
   Future<void> _loadSidebarSettings() async {
-      final prefs = await SharedPreferences.getInstance();
-      final width = prefs.getDouble('bookmarks_sidebar_width') ?? 240;
-      if (mounted) {
-          setState(() {
-              _sidebarWidth = width;
-          });
-      }
+    final prefs = await SharedPreferences.getInstance();
+    final width = prefs.getDouble('bookmarks_sidebar_width') ?? 240;
+    if (mounted) {
+      setState(() {
+        _sidebarWidth = width;
+      });
+    }
   }
 
   Future<void> _saveSidebarWidth(double width) async {
@@ -139,7 +136,6 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     });
 
     try {
-      // Inicializar la base de datos y cargar datos en paralelo
       await Future.wait([
         DatabaseService().initializeDatabase(),
         _loadBookmarks(),
@@ -158,7 +154,6 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
 
   Future<void> _loadBookmarks() async {
     try {
-      // Cargar bookmarks con filtrado asíncrono
       final bookmarks = await _linksHandler.getFilteredBookmarks();
       if (mounted) {
         setState(() {
@@ -226,10 +221,8 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     return Scaffold(
       body: Stack(
         children: [
-          // Main content
           Row(
             children: [
-              // Left sidebar
               ResizableIconSidebar(
                 rootDir: _rootDir,
                 onOpenNote: (file) {},
@@ -255,20 +248,21 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                 isThinksScreen: false,
                 isSettingsScreen: false,
                 isBookmarksScreen: true,
-                onAddBookmark: () => BookmarksDialogs.showAddBookmarkDialog(
-                  context: context,
-                  linksHandler: _linksHandler,
-                  onSuccess: _loadBookmarks,
-                ),
-                onManageTags: () => BookmarksDialogs.showManageTagsDialog(
-                  context: context,
-                  tagsHandler: _tagsHandler,
-                ),
+                onAddBookmark:
+                    () => BookmarksDialogs.showAddBookmarkDialog(
+                      context: context,
+                      linksHandler: _linksHandler,
+                      onSuccess: _loadBookmarks,
+                    ),
+                onManageTags:
+                    () => BookmarksDialogs.showManageTagsDialog(
+                      context: context,
+                      tagsHandler: _tagsHandler,
+                    ),
                 appFocusNode: _appFocusNode,
                 onToggleSidebar: _toggleSidebar,
               ),
 
-              // Animated Sidebar
               AnimatedBuilder(
                 animation: _sidebarWidthAnimation,
                 builder: (context, child) {
@@ -331,7 +325,6 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                 ),
               ),
 
-              // Main content (List only)
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 40),
@@ -367,7 +360,6 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
             ],
           ),
 
-          // Window controls in top right corner
           Positioned(
             top: 0,
             right: 0,
@@ -430,17 +422,12 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
             ),
           ),
 
-          // Title drag area - correctly placed
           Positioned(
             top: 0,
             left: 60, // Left sidebar width
             right: 138, // Control buttons width
             height: 48,
-            child: MoveWindow(
-                child: Container(
-                  color: Colors.transparent,
-                ),
-            ),
+            child: MoveWindow(child: Container(color: Colors.transparent)),
           ),
         ],
       ),
@@ -490,11 +477,12 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
                 child: TextButton.icon(
                   icon: const Icon(Icons.add_rounded),
                   label: const Text('Add a bookmark'),
-                  onPressed: () => BookmarksDialogs.showAddBookmarkDialog(
-                    context: context,
-                    linksHandler: _linksHandler,
-                    onSuccess: _loadBookmarks,
-                  ),
+                  onPressed:
+                      () => BookmarksDialogs.showAddBookmarkDialog(
+                        context: context,
+                        linksHandler: _linksHandler,
+                        onSuccess: _loadBookmarks,
+                      ),
                 ),
               ),
           ],
@@ -514,12 +502,13 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
           bookmark: bookmark,
           colorScheme: colorScheme,
           onDelete: () => _showDeleteConfirmation(bookmark),
-          onEdit: () => BookmarksDialogs.showEditBookmarkDialog(
-            context: context,
-            linksHandler: _linksHandler,
-            bookmark: bookmark,
-            onSuccess: _loadBookmarks,
-          ),
+          onEdit:
+              () => BookmarksDialogs.showEditBookmarkDialog(
+                context: context,
+                linksHandler: _linksHandler,
+                bookmark: bookmark,
+                onSuccess: _loadBookmarks,
+              ),
           onCopy: () => _copyLinkToClipboard(bookmark.url),
           onTap: () async {
             if (uri != null && await canLaunchUrl(uri)) {
@@ -640,7 +629,6 @@ class _BookmarkIcon extends StatelessWidget {
   }
 
   Widget _buildFallback(String initial) {
-    // Generate a consistent color based on the initial
     final List<Color> colors = [
       Colors.blue,
       Colors.red,
@@ -800,14 +788,13 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Ícono de bookmark (favicon)
                     _BookmarkIcon(
                       url: widget.bookmark.url,
                       size: 32,
                       colorScheme: widget.colorScheme,
                     ),
                     const SizedBox(width: 16),
-                    // Título y detalles
+
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -901,7 +888,7 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // Botón eliminar
+
                     Opacity(
                       opacity: _isHovering ? 1.0 : 0.0,
                       child: IgnorePointer(

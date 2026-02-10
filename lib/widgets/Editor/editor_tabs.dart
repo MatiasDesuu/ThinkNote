@@ -41,21 +41,16 @@ class EditorTabs extends StatefulWidget {
 class EditorTabsState extends State<EditorTabs> {
   final FocusNode _tabsFocusNode = FocusNode();
 
-  // Drag and drop state for horizontal reordering
   int? _dragTargetIndex;
   bool _dragTargetIsLeft = false;
   bool _isDragging = false;
 
-  // Element bounds tracking for horizontal positioning
   final Map<int, Rect> _elementBounds = {};
 
-  // Visual position tracking
   double? _currentVisualLineX;
 
-  // Hover state tracking
   int? _hoveredTabIndex;
 
-  // Animation state for entry/exit of tabs
   final Map<String, bool> _isExpanded = {}; // true = expanded (full width)
   final Map<String, bool> _isClosing =
       {}; // true = currently animating close (shrinking)
@@ -72,18 +67,14 @@ class EditorTabsState extends State<EditorTabs> {
   void initState() {
     super.initState();
 
-    // Add listener to focus node to ensure it works properly
     _tabsFocusNode.addListener(() {
       if (_tabsFocusNode.hasFocus) {
-        // When tabs get focus, ensure the active tab is visible
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _ensureActiveTabVisible();
         });
       }
     });
-    // If tabs are already present at widget construction, skip their expand animations
-    // but keep `_initialPopulation` true until we observe the first non-empty
-    // population from an empty state (this covers cases where tabs load later).
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (widget.tabs.isNotEmpty) {
@@ -100,7 +91,6 @@ class EditorTabsState extends State<EditorTabs> {
     super.dispose();
   }
 
-  // Method to request focus on tabs
   void requestFocus() {
     if (mounted && _tabsFocusNode.canRequestFocus) {
       FocusScope.of(context).requestFocus(_tabsFocusNode);
@@ -111,33 +101,28 @@ class EditorTabsState extends State<EditorTabs> {
   void didUpdateWidget(EditorTabs oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Ensure active tab is visible when it changes
     if (widget.activeTab != oldWidget.activeTab && widget.activeTab != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _ensureActiveTabVisible();
       });
     }
-    // If this is the first time tabs populated (transition empty -> non-empty),
-    // skip animations for this upcoming build so tabs don't briefly show collapsed
-    // then expand.
+
     if (_initialPopulation &&
         oldWidget.tabs.isEmpty &&
         widget.tabs.isNotEmpty) {
       _skipAnimationsThisBuild = true;
       _initialPopulation = false;
-      // Also mark initial expanded state for these keys to avoid scheduling expand callbacks
+
       for (final tab in widget.tabs) {
         final k = _tabKey(tab);
         _isExpanded[k] = true;
         _isClosing.remove(k);
       }
-      // Bail out of further animation scheduling for this update
+
       return;
     }
-    // If parent asked to suppress animations for the next update, ensure
-    // all tabs are marked expanded and skip scheduling animations.
+
     if (_suppressNextUpdateAnimations) {
-      // Mark to skip animations for the upcoming build frame.
       _skipAnimationsThisBuild = true;
       _suppressNextUpdateAnimations = false;
       for (final tab in widget.tabs) {
@@ -145,26 +130,24 @@ class EditorTabsState extends State<EditorTabs> {
         _isExpanded[k] = true;
         _isClosing.remove(k);
       }
-      // Do not schedule any animations for this update.
+
       return;
     }
 
-    // Detect newly added tabs and play expand animation
     final oldKeys = oldWidget.tabs.map((t) => _tabKey(t)).toSet();
 
     for (final tab in widget.tabs) {
       final key = _tabKey(tab);
       if (!oldKeys.contains(key)) {
-        // New tab: start collapsed then expand
         _isExpanded[key] = false;
         _isClosing[key] = false;
-        // If this is the initial population of tabs on app startup, skip the open animation
+
         if (_initialPopulation) {
           _isExpanded[key] = true;
         } else {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
-            // Small delay to ensure AnimatedContainer sees the initial state
+
             Future.delayed(const Duration(milliseconds: 20), () {
               if (!mounted) return;
               setState(() {
@@ -176,7 +159,6 @@ class EditorTabsState extends State<EditorTabs> {
       }
     }
 
-    // Animate when an existing tab transitions from empty -> has a note
     final minLen =
         widget.tabs.length < oldWidget.tabs.length
             ? widget.tabs.length
@@ -190,12 +172,10 @@ class EditorTabsState extends State<EditorTabs> {
       final isNowWithNote = newTab.note != null;
 
       if (wasEmpty && isNowWithNote) {
-        // If suppression is set for this note id, skip the open animation once
         final noteId = newTab.note?.id;
         if (noteId != null && _suppressNextOpen.remove('note-$noteId')) {
           _isExpanded[key] = true;
         } else {
-          // If this transition happens during the initial population, avoid animating
           if (_initialPopulation) {
             _isExpanded[key] = true;
           } else {
@@ -217,46 +197,35 @@ class EditorTabsState extends State<EditorTabs> {
     }
   }
 
-  /// Suppress visual animations for the next widget update.
   void suppressNextUpdateAnimations() {
     _suppressNextUpdateAnimations = true;
   }
 
-  /// Prevent the next open animation for a note that will be assigned to a tab.
-  /// Use this when opening a note from the notes panel onto an already existing tab.
   void suppressNextOpenAnimationForNoteId(int noteId) {
     final key = 'note-$noteId';
     _suppressNextOpen.add(key);
   }
 
-  void _ensureActiveTabVisible() {
-    // In the new system, all tabs are always visible since they adjust their width
-    // This method is kept for compatibility but doesn't need to do anything
-  }
+  void _ensureActiveTabVisible() {}
 
   void _handleTabSelection(EditorTab tab) {
     widget.onTabSelected(tab);
   }
 
   void _updateDragTargetFromGlobalPosition(Offset globalPosition) {
-    // Find which tab element the cursor is over by checking stored bounds
     for (int i = 0; i < widget.tabs.length; i++) {
       final bounds = _elementBounds[i];
       if (bounds != null && bounds.contains(globalPosition)) {
-        // Calculate if cursor is in left or right half
         final localX = globalPosition.dx - bounds.left;
         final isLeft = localX < bounds.width / 2;
 
-        // Calculate the visual line X position
         final visualLineX = isLeft ? bounds.left : bounds.right;
 
-        // Check if we're on the same visual line (within tolerance)
         bool sameVisualLine = false;
         if (_currentVisualLineX != null) {
           sameVisualLine = (visualLineX - _currentVisualLineX!).abs() < 5.0;
         }
 
-        // Only update if we're not on the same visual line
         if (!sameVisualLine) {
           setState(() {
             _dragTargetIndex = i;
@@ -264,7 +233,6 @@ class EditorTabsState extends State<EditorTabs> {
             _currentVisualLineX = visualLineX;
           });
         } else {
-          // Same visual line, just update internal state without setState
           _dragTargetIndex = i;
           _dragTargetIsLeft = isLeft;
           _currentVisualLineX = visualLineX;
@@ -273,7 +241,6 @@ class EditorTabsState extends State<EditorTabs> {
       }
     }
 
-    // If not over any tab, clear the target only if it was set
     if (_dragTargetIndex != null) {
       setState(() {
         _dragTargetIndex = null;
@@ -290,21 +257,16 @@ class EditorTabsState extends State<EditorTabs> {
 
     final isImmersiveMode = ImmersiveModeService().isImmersiveMode;
 
-    // Calculate available width for tabs
     final availableWidth = MediaQuery.of(context).size.width;
     final tabsCount = widget.tabs.length;
 
-    // Tab width configuration
     final minTabWidth = 120.0;
     final maxTabWidth = 200.0;
     final newTabButtonWidth = 40.0; // Approximate width of new tab button
 
-    // In immersive mode, we need to account for window controls width
     final windowControlsWidth = isImmersiveMode ? 138.0 : 0.0;
     final effectiveAvailableWidth = availableWidth - windowControlsWidth;
 
-    // Calculate the actual width each tab should have.
-    // Pinned tabs get a smaller relative width.
     final availableForTabs = effectiveAvailableWidth - newTabButtonWidth;
     final double pinnedRatio = 0.7;
     final double unpinnedRatio = 1.0;
@@ -321,7 +283,6 @@ class EditorTabsState extends State<EditorTabs> {
     final minUnpinnedWidth = minTabWidth;
     final maxUnpinnedWidth = maxTabWidth;
 
-    // Determine display mode based on average tab width (keeps previous behavior)
     final actualTabWidth = (availableForTabs / tabsCount).clamp(
       minTabWidth,
       maxTabWidth,
@@ -339,7 +300,6 @@ class EditorTabsState extends State<EditorTabs> {
       displayMode = TabDisplayMode.icon; // Show only icon
     }
 
-    // Initialize animation state for current tabs (preserve existing flags)
     for (final tab in widget.tabs) {
       final key = _tabKey(tab);
       _isExpanded.putIfAbsent(key, () => true);
@@ -350,13 +310,11 @@ class EditorTabsState extends State<EditorTabs> {
       height: 40,
       child: Stack(
         children: [
-          // Level 3: Background (bottom layer)
           Container(
             height: 40,
             color: Theme.of(context).colorScheme.surfaceContainerLow,
           ),
 
-          // Level 2: MoveWindow (middle layer) - adjusted for immersive mode
           if (!isImmersiveMode)
             Positioned(
               top: 0,
@@ -366,7 +324,6 @@ class EditorTabsState extends State<EditorTabs> {
               child: MoveWindow(),
             )
           else
-            // In immersive mode, MoveWindow only covers the tabs area, not the window controls
             Positioned(
               top: 0,
               left: 0,
@@ -375,7 +332,6 @@ class EditorTabsState extends State<EditorTabs> {
               child: MoveWindow(),
             ),
 
-          // Level 1: Tab buttons + new tab button (top layer)
           Padding(
             padding: EdgeInsets.only(right: isImmersiveMode ? 138.0 : 0.0),
             child: Container(
@@ -383,7 +339,6 @@ class EditorTabsState extends State<EditorTabs> {
               padding: EdgeInsets.zero,
               child: Stack(
                 children: [
-                  // Tabs area with dynamic width
                   SizedBox(
                     width: effectiveAvailableWidth,
                     child: Focus(
@@ -392,7 +347,6 @@ class EditorTabsState extends State<EditorTabs> {
                         onPointerMove:
                             _isDragging
                                 ? (event) {
-                                  // Global listener to track cursor position during drag
                                   _updateDragTargetFromGlobalPosition(
                                     event.position,
                                   );
@@ -400,7 +354,6 @@ class EditorTabsState extends State<EditorTabs> {
                                 : null,
                         child: Row(
                           children: [
-                            // Tabs
                             ...widget.tabs.asMap().entries.map((entry) {
                               final index = entry.key;
                               final tab = entry.value;
@@ -425,14 +378,12 @@ class EditorTabsState extends State<EditorTabs> {
                                       ? 0.0
                                       : (isExpanded ? computedWidth : 0.0);
 
-                              // If parent requested to skip animations for this build, use zero duration
                               final animDuration =
                                   (_skipAnimationsThisBuild ||
                                           _noAnimateKeys.contains(tabKey))
                                       ? Duration.zero
                                       : _kTabAnimDuration;
 
-                              // Clear the skip flag after this frame so future updates animate normally
                               if (_skipAnimationsThisBuild) {
                                 WidgetsBinding.instance.addPostFrameCallback((
                                   _,
@@ -469,7 +420,6 @@ class EditorTabsState extends State<EditorTabs> {
                               );
                             }),
 
-                            // New tab button - positioned right after the last tab
                             if (widget.onNewTab != null)
                               Container(
                                 margin: const EdgeInsets.only(left: 4),
@@ -493,9 +443,7 @@ class EditorTabsState extends State<EditorTabs> {
                                     mouseCursor: SystemMouseCursors.basic,
                                     borderRadius: BorderRadius.circular(12),
                                     onTap: widget.onNewTab,
-                                    onHover: (isHovered) {
-                                      // Optional: add hover effect if desired
-                                    },
+                                    onHover: (isHovered) {},
                                     child: Container(
                                       height: 30,
                                       padding: const EdgeInsets.symmetric(
@@ -543,21 +491,14 @@ class EditorTabsState extends State<EditorTabs> {
       _isClosing[key] = true;
     });
 
-    // Delay actual close until animation has finished
     Timer(_kTabAnimDuration + const Duration(milliseconds: 20), () {
       if (mounted) {
-        // Clear state first to avoid re-animating if recreated
         setState(() {
           _isClosing.remove(key);
           _isExpanded.remove(key);
         });
       }
 
-      // If the tab being closed is currently active, pick a sensible
-      // replacement: prefer the next tab to the right; if there is no
-      // right neighbor pick the left neighbor. Call onTabSelected so the
-      // parent updates the active tab before we notify it to remove the
-      // tab. If the closed tab wasn't active, just notify the parent.
       if (widget.activeTab == tab) {
         final idx = widget.tabs.indexOf(tab);
         EditorTab? nextTab;
@@ -579,7 +520,6 @@ class EditorTabsState extends State<EditorTabs> {
     });
   }
 
-  // Public wrapper so parent widgets can request an animated close (e.g., Ctrl+W)
   void requestCloseTab(EditorTab tab) {
     _requestCloseTab(tab);
   }
@@ -599,7 +539,6 @@ class EditorTabsState extends State<EditorTabs> {
         return details.data != index;
       },
       onLeave: (data) {
-        // Hide indicator when leaving this element
         if (_dragTargetIndex == index) {
           setState(() {
             _dragTargetIndex = null;
@@ -612,7 +551,6 @@ class EditorTabsState extends State<EditorTabs> {
           final draggedIndex = details.data;
           int targetIndex = index;
 
-          // Use the stored drag target information
           if (_dragTargetIndex == index) {
             if (draggedIndex < index) {
               targetIndex = _dragTargetIsLeft ? index : index + 1;
@@ -620,7 +558,6 @@ class EditorTabsState extends State<EditorTabs> {
               targetIndex = _dragTargetIsLeft ? index : index + 1;
             }
           } else {
-            // Fallback to simple index-based logic
             if (draggedIndex < index) {
               targetIndex = index;
             } else {
@@ -628,10 +565,8 @@ class EditorTabsState extends State<EditorTabs> {
             }
           }
 
-          // Ensure target index is within bounds
           targetIndex = targetIndex.clamp(0, widget.tabs.length);
 
-          // Call the reorder callback immediately for instant visual feedback
           widget.onTabReorder!(draggedIndex, targetIndex);
         }
 
@@ -645,7 +580,6 @@ class EditorTabsState extends State<EditorTabs> {
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            // Store the bounds of this element for cursor detection
             WidgetsBinding.instance.addPostFrameCallback((_) {
               final RenderBox renderBox =
                   context.findRenderObject() as RenderBox;
@@ -661,7 +595,6 @@ class EditorTabsState extends State<EditorTabs> {
 
             return Row(
               children: [
-                // Left indicator
                 Container(
                   width: isTarget && _dragTargetIsLeft ? 4 : 0,
                   margin: EdgeInsets.symmetric(
@@ -678,7 +611,7 @@ class EditorTabsState extends State<EditorTabs> {
                             : null,
                   ),
                 ),
-                // Tab item
+
                 Expanded(
                   child: _buildTabItem(
                     tab,
@@ -688,7 +621,7 @@ class EditorTabsState extends State<EditorTabs> {
                     tabWidth,
                   ),
                 ),
-                // Right indicator
+
                 Container(
                   width: isTarget && !_dragTargetIsLeft ? 4 : 0,
                   margin: EdgeInsets.symmetric(
@@ -779,7 +712,7 @@ class EditorTabsState extends State<EditorTabs> {
                     size: 16,
                     color: colorScheme.onSurface,
                   ),
-                // Pin indicator for pinned tabs in feedback
+
                 if (tab.isPinned && displayMode != TabDisplayMode.icon)
                   Container(
                     margin: const EdgeInsets.only(left: 6),
@@ -845,7 +778,7 @@ class EditorTabsState extends State<EditorTabs> {
                     ),
                   ),
                 ),
-              // Pin indicator while dragging placeholder
+
               if (tab.isPinned && displayMode != TabDisplayMode.icon)
                 Container(
                   margin: const EdgeInsets.only(left: 6),
@@ -878,7 +811,6 @@ class EditorTabsState extends State<EditorTabs> {
           borderRadius: BorderRadius.circular(12),
           child: Listener(
             onPointerDown: (event) {
-              // Prevent middle-click close when tab is pinned
               if (event.buttons == 4 && !tab.isPinned) {
                 _requestCloseTab(tab);
               }
@@ -907,7 +839,6 @@ class EditorTabsState extends State<EditorTabs> {
                 ),
                 child: Row(
                   children: [
-                    // Title or icon based on display mode
                     if (displayMode != TabDisplayMode.icon)
                       Expanded(
                         child: Text(
@@ -940,7 +871,6 @@ class EditorTabsState extends State<EditorTabs> {
                         ),
                       ),
 
-                    // Pin indicator on the tab itself
                     if (tab.isPinned && displayMode != TabDisplayMode.icon)
                       Container(
                         margin: const EdgeInsets.only(left: 6),
@@ -954,7 +884,6 @@ class EditorTabsState extends State<EditorTabs> {
                         ),
                       ),
 
-                    // Dirty indicator (only show in full and compact modes)
                     if (tab.isDirty &&
                         (displayMode == TabDisplayMode.full ||
                             displayMode == TabDisplayMode.compact))
@@ -971,8 +900,6 @@ class EditorTabsState extends State<EditorTabs> {
                         ),
                       ),
 
-                    // Close button (only show in full and compact modes, or when hovered in minimal mode)
-                    // Do not show close button for pinned tabs
                     if (((displayMode == TabDisplayMode.full ||
                                 displayMode == TabDisplayMode.compact) ||
                             (displayMode == TabDisplayMode.minimal &&
@@ -1049,10 +976,9 @@ class EditorTabsState extends State<EditorTabs> {
         icon: Icons.close_fullscreen_rounded,
         label: 'Close Other Tabs',
         onTap: () {
-          // Mark the kept tab so it doesn't animate while others close
           final keepKey = _tabKey(tab);
           _noAnimateKeys.add(keepKey);
-          // Clear the marker after other tabs finish their close animation
+
           Timer(_kTabAnimDuration + const Duration(milliseconds: 80), () {
             if (mounted) {
               setState(() {

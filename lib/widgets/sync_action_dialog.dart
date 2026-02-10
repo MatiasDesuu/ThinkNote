@@ -55,7 +55,7 @@ Future<SyncAction?> showSyncActionDialog({required BuildContext context}) {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                // Upload Local Button
+
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -81,7 +81,7 @@ Future<SyncAction?> showSyncActionDialog({required BuildContext context}) {
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Download Remote Button
+
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(

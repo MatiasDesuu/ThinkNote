@@ -61,14 +61,12 @@ class NotesPanelState extends State<NotesPanel> {
   bool _showNoteIcons = true;
   StreamSubscription<bool>? _showNoteIconsSubscription;
 
-  // Selection state - using a dedicated approach similar to Obsidian/Joplin
   final Set<int> _selectedNoteIds = {};
   bool get hasSelection => _selectedNoteIds.isNotEmpty;
   int get selectionCount => _selectedNoteIds.length;
 
-  // Anchor note for shift-selection (the starting point of a range selection)
   int? _selectionAnchorId;
-  // Last clicked note (for tracking the most recent selection action)
+
   int? _lastClickedNoteId;
 
   bool _isProcessingAction = false;
@@ -84,20 +82,14 @@ class NotesPanelState extends State<NotesPanel> {
   StreamSubscription? _dbSubscription;
   bool _isUpdatingManually = false;
 
-  // Drag and drop state
   int? _dragTargetIndex;
   bool _dragTargetIsAbove = false;
   bool _isDragging = false;
 
-  // Deferred selection state - for handling click vs drag on selected notes
-  // When clicking a note that's already selected (without modifiers), we defer
-  // the single-selection until we know it wasn't a drag operation
   int? _pendingDeselectionNoteId;
 
-  // Element bounds tracking
   final Map<int, Rect> _elementBounds = {};
 
-  // Visual position tracking
   double? _currentVisualLineY;
 
   List<Note> get notes => _notes;
@@ -134,30 +126,65 @@ class NotesPanelState extends State<NotesPanel> {
         mainAxisSize: MainAxisSize.min,
         children: [
           CustomTooltip(
-            message: _completionSubSortByDate ? 'Sort completed by title' : 'Sort completed by date',
-            builder: (context, isHovering) => IconButton(
-              icon: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return ScaleTransition(
-                    scale: animation,
-                    child: FadeTransition(opacity: animation, child: child),
-                  );
-                },
-                child: Icon(
-                  _completionSubSortByDate
-                      ? Icons.access_time
-                      : Icons.sort_by_alpha,
-                  size: 16,
-                  key: ValueKey<bool>(_completionSubSortByDate),
+            message:
+                _completionSubSortByDate
+                    ? 'Sort completed by title'
+                    : 'Sort completed by date',
+            builder:
+                (context, isHovering) => IconButton(
+                  icon: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (
+                      Widget child,
+                      Animation<double> animation,
+                    ) {
+                      return ScaleTransition(
+                        scale: animation,
+                        child: FadeTransition(opacity: animation, child: child),
+                      );
+                    },
+                    child: Icon(
+                      _completionSubSortByDate
+                          ? Icons.access_time
+                          : Icons.sort_by_alpha,
+                      size: 16,
+                      key: ValueKey<bool>(_completionSubSortByDate),
+                    ),
+                  ),
+                  onPressed: toggleCompletionSubSort,
                 ),
-              ),
-              onPressed: toggleCompletionSubSort,
-            ),
           ),
           CustomTooltip(
             message: _getSortTooltip(),
-            builder: (context, isHovering) => IconButton(
+            builder:
+                (context, isHovering) => IconButton(
+                  icon: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (
+                      Widget child,
+                      Animation<double> animation,
+                    ) {
+                      return ScaleTransition(
+                        scale: animation,
+                        child: FadeTransition(opacity: animation, child: child),
+                      );
+                    },
+                    child: Icon(
+                      _getSortIcon(),
+                      size: 16,
+                      key: ValueKey<SortMode>(_sortMode),
+                    ),
+                  ),
+                  onPressed: toggleSortOrder,
+                ),
+          ),
+        ],
+      );
+    } else {
+      return CustomTooltip(
+        message: _getSortTooltip(),
+        builder:
+            (context, isHovering) => IconButton(
               icon: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 transitionBuilder: (Widget child, Animation<double> animation) {
@@ -174,38 +201,10 @@ class NotesPanelState extends State<NotesPanel> {
               ),
               onPressed: toggleSortOrder,
             ),
-          ),
-        ],
-      );
-    } else {
-      return CustomTooltip(
-        message: _getSortTooltip(),
-        builder: (context, isHovering) => IconButton(
-          icon: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return ScaleTransition(
-                scale: animation,
-                child: FadeTransition(opacity: animation, child: child),
-              );
-            },
-            child: Icon(
-              _getSortIcon(),
-              size: 16,
-              key: ValueKey<SortMode>(_sortMode),
-            ),
-          ),
-          onPressed: toggleSortOrder,
-        ),
       );
     }
   }
 
-  /// Handles note selection with Ctrl and Shift modifiers
-  /// Implements a professional selection model similar to Obsidian/Joplin:
-  /// - Click: Select single note, clear others
-  /// - Ctrl+Click: Toggle note in selection (add/remove)
-  /// - Shift+Click: Select range from anchor to clicked note
   void _handleNoteSelection(
     Note note,
     bool isCtrlPressed,
@@ -215,13 +214,10 @@ class NotesPanelState extends State<NotesPanel> {
 
     setState(() {
       if (isShiftPressed) {
-        // Shift+Click: Range selection from anchor to current note
         _handleShiftSelection(note);
       } else if (isCtrlPressed) {
-        // Ctrl+Click: Toggle individual note in selection
         _handleCtrlSelection(note);
       } else {
-        // Normal click: Single selection, clear all others
         _handleSingleSelection(note);
       }
     });
@@ -229,16 +225,13 @@ class NotesPanelState extends State<NotesPanel> {
     widget.onNoteSelected(note);
   }
 
-  /// Handles Shift+Click range selection
   void _handleShiftSelection(Note note) {
-    // If no anchor exists, use the currently selected note or the first selected note
     if (_selectionAnchorId == null) {
       if (widget.selectedNote != null) {
         _selectionAnchorId = widget.selectedNote!.id;
       } else if (_selectedNoteIds.isNotEmpty) {
         _selectionAnchorId = _selectedNoteIds.first;
       } else {
-        // No anchor available, treat as single selection
         _handleSingleSelection(note);
         return;
       }
@@ -247,7 +240,6 @@ class NotesPanelState extends State<NotesPanel> {
     final anchorIndex = _notes.indexWhere((n) => n.id == _selectionAnchorId);
     final targetIndex = _notes.indexWhere((n) => n.id == note.id);
 
-    // If anchor note no longer exists, use the first note as anchor
     if (anchorIndex == -1) {
       if (_notes.isNotEmpty) {
         _selectionAnchorId = _notes.first.id;
@@ -260,7 +252,6 @@ class NotesPanelState extends State<NotesPanel> {
 
     if (targetIndex == -1) return;
 
-    // Clear current selection and select the range
     _selectedNoteIds.clear();
 
     final start = anchorIndex <= targetIndex ? anchorIndex : targetIndex;
@@ -274,13 +265,9 @@ class NotesPanelState extends State<NotesPanel> {
     }
 
     _lastClickedNoteId = note.id;
-    // Keep anchor unchanged for consecutive shift-clicks
   }
 
-  /// Handles Ctrl+Click toggle selection
   void _handleCtrlSelection(Note note) {
-    // If starting multi-selection and nothing is selected yet,
-    // include the currently visible/active note
     if (_selectedNoteIds.isEmpty && widget.selectedNote != null) {
       final currentNoteId = widget.selectedNote!.id;
       if (currentNoteId != null) {
@@ -292,7 +279,7 @@ class NotesPanelState extends State<NotesPanel> {
     final noteId = note.id!;
     if (_selectedNoteIds.contains(noteId)) {
       _selectedNoteIds.remove(noteId);
-      // If we removed the anchor, update it to another selected note
+
       if (_selectionAnchorId == noteId) {
         _selectionAnchorId =
             _selectedNoteIds.isNotEmpty ? _selectedNoteIds.first : null;
@@ -302,18 +289,16 @@ class NotesPanelState extends State<NotesPanel> {
     }
 
     _lastClickedNoteId = note.id;
-    // Update anchor to clicked note for future shift-selections
+
     _selectionAnchorId = note.id;
   }
 
-  /// Handles normal single click selection
   void _handleSingleSelection(Note note) {
     _selectedNoteIds.clear();
     _lastClickedNoteId = note.id;
     _selectionAnchorId = note.id; // Set anchor for future shift-selections
   }
 
-  /// Clears all selection state
   void _clearSelection() {
     setState(() {
       _selectedNoteIds.clear();
@@ -323,19 +308,14 @@ class NotesPanelState extends State<NotesPanel> {
     _pendingCompletionChanges.clear();
   }
 
-  /// Gets an immutable copy of currently selected note IDs
-  /// This is important for async operations to prevent race conditions
   List<int> _getSelectedNoteIdsCopy() {
     return List<int>.unmodifiable(_selectedNoteIds.toList());
   }
 
-  /// Converts selected notes to tasks or regular notes
-  /// Uses immutable copy of selection to prevent race conditions
   Future<void> _convertSelectedNotes({required bool toTask}) async {
     if (_isProcessingAction) return;
     _isProcessingAction = true;
 
-    // Capture selection state BEFORE any async operations
     final noteIdsToConvert = _getSelectedNoteIdsCopy();
     _isUpdatingManually = true;
 
@@ -400,7 +380,6 @@ class NotesPanelState extends State<NotesPanel> {
         isCompleted: newCompletedState,
       );
 
-      // Instant reordering for better UX if we are sorting by completion
       if (_sortMode == SortMode.completion) {
         _sortNotesList(_notes);
       }
@@ -459,13 +438,10 @@ class NotesPanelState extends State<NotesPanel> {
     }
   }
 
-  /// Deletes all selected notes safely
-  /// Uses immutable copy of selection to prevent race conditions
   Future<void> _deleteSelectedNotes() async {
     if (_isProcessingAction) return;
     _isProcessingAction = true;
 
-    // Capture selection state BEFORE any async operations
     final noteIdsToDelete = _getSelectedNoteIdsCopy();
 
     if (noteIdsToDelete.isEmpty) {
@@ -474,14 +450,12 @@ class NotesPanelState extends State<NotesPanel> {
       return;
     }
 
-    // Clear selection immediately for responsive UI
     _clearSelection();
 
     final List<Note> deletedNotes = [];
     _isUpdatingManually = true;
 
     try {
-      // Process deletions sequentially to avoid race conditions
       for (final noteId in noteIdsToDelete) {
         try {
           final note = await _noteRepository.getNote(noteId);
@@ -494,7 +468,6 @@ class NotesPanelState extends State<NotesPanel> {
         }
       }
 
-      // Notify about deleted notes
       for (final note in deletedNotes) {
         widget.onNoteDeleted?.call(note);
       }
@@ -624,12 +597,9 @@ class NotesPanelState extends State<NotesPanel> {
     }
   }
 
-  /// Selects a specific note in the panel after a notebook change
   void selectNoteAfterNotebookChange(Note note) {
     if (mounted) {
-      // Reload sidebar first to load notes from the new notebook
       _loadNotes().then((_) {
-        // After loading, trigger the note selection
         if (mounted) {
           widget.onNoteSelected(note);
         }
@@ -792,11 +762,9 @@ class NotesPanelState extends State<NotesPanel> {
     try {
       List<Note> notes;
 
-      // If filtering by tag, get all notes with that tag
       if (widget.filterByTag != null && widget.filterByTag!.isNotEmpty) {
         notes = await TagsService().getNotesByTag(widget.filterByTag!);
       } else {
-        // Otherwise, get notes by notebook
         notes = await _noteRepository.getNotesByNotebookId(
           widget.selectedNotebookId ?? 0,
         );
@@ -804,7 +772,6 @@ class NotesPanelState extends State<NotesPanel> {
 
       if (!mounted) return;
 
-      // Apply pending optimistic changes to the fresh data from database
       if (_pendingCompletionChanges.isNotEmpty) {
         for (int i = 0; i < notes.length; i++) {
           final id = notes[i].id;
@@ -822,7 +789,6 @@ class NotesPanelState extends State<NotesPanel> {
         _notes = notes;
         _isLoading = false;
 
-        // Preserve selection state - only keep IDs that still exist
         _selectedNoteIds.clear();
         for (final noteId in currentSelection) {
           if (notes.any((note) => note.id == noteId)) {
@@ -830,14 +796,12 @@ class NotesPanelState extends State<NotesPanel> {
           }
         }
 
-        // Preserve anchor if it still exists
         if (_selectionAnchorId != null &&
             !notes.any((note) => note.id == _selectionAnchorId)) {
           _selectionAnchorId =
               _selectedNoteIds.isNotEmpty ? _selectedNoteIds.first : null;
         }
 
-        // Preserve last clicked if it still exists
         if (_lastClickedNoteId != null &&
             !notes.any((note) => note.id == _lastClickedNoteId)) {
           _lastClickedNoteId = null;
@@ -868,7 +832,6 @@ class NotesPanelState extends State<NotesPanel> {
       ),
     ];
 
-    // Add "Open in New Tab" option if callback is provided
     if (widget.onNoteOpenInNewTab != null) {
       menuItems.add(
         ContextMenuItem(
@@ -882,7 +845,6 @@ class NotesPanelState extends State<NotesPanel> {
       );
     }
 
-    // Add Pin/Unpin option
     menuItems.add(
       ContextMenuItem(
         icon: note.isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
@@ -902,9 +864,7 @@ class NotesPanelState extends State<NotesPanel> {
           _isUpdatingManually = true;
           _noteRepository
               .updateNote(note.copyWith(isPinned: !note.isPinned))
-              .then((_) {
-                // Background refresh to ensure sync
-              })
+              .then((_) {})
               .catchError((e) {
                 if (mounted) {
                   CustomSnackbar.show(
@@ -926,7 +886,6 @@ class NotesPanelState extends State<NotesPanel> {
       ),
     );
 
-    // Agregar opción de completar/descompletar solo si es un todo
     if (note.isTask) {
       menuItems.add(
         ContextMenuItem(
@@ -952,9 +911,7 @@ class NotesPanelState extends State<NotesPanel> {
             _isUpdatingManually = true;
             _noteRepository
                 .updateNote(note.copyWith(isCompleted: !note.isCompleted))
-                .then((_) {
-                  // Background refresh to ensure sync
-                })
+                .then((_) {})
                 .catchError((e) {
                   if (mounted) {
                     CustomSnackbar.show(
@@ -991,9 +948,7 @@ class NotesPanelState extends State<NotesPanel> {
           _isUpdatingManually = true;
           _noteRepository
               .updateNote(note.copyWith(isFavorite: !note.isFavorite))
-              .then((_) {
-                // Sincronización manejada en whenComplete
-              })
+              .then((_) {})
               .catchError((e) {
                 if (mounted) {
                   CustomSnackbar.show(
@@ -1028,9 +983,7 @@ class NotesPanelState extends State<NotesPanel> {
               .updateNote(
                 note.copyWith(isTask: !note.isTask, isCompleted: false),
               )
-              .then((_) {
-                // Sincronización manejada en whenComplete
-              })
+              .then((_) {})
               .catchError((e) {
                 if (mounted) {
                   CustomSnackbar.show(
@@ -1265,8 +1218,7 @@ class NotesPanelState extends State<NotesPanel> {
 
   Widget _buildNoteRow(Note note) {
     final isSelected = _selectedNoteIds.contains(note.id);
-    // Don't show selection highlight when dragging a single note
-    // Only show selection highlight for multi-selection (2+ notes)
+
     final showSelectionHighlight = isSelected && _selectedNoteIds.length > 1;
 
     return MouseRegion(
@@ -1378,7 +1330,6 @@ class NotesPanelState extends State<NotesPanel> {
     );
   }
 
-  /// Builds the drag feedback widget showing the note being dragged
   Widget _buildDragFeedback(Note primaryNote, List<Note> allNotes) {
     final colorScheme = Theme.of(context).colorScheme;
     final noteCount = allNotes.length;
@@ -1425,10 +1376,8 @@ class NotesPanelState extends State<NotesPanel> {
   }
 
   Widget _buildDraggableNote(Note note) {
-    // Determine if this note is part of a multi-selection
     final isNoteInSelection = _selectedNoteIds.contains(note.id);
-    // If dragging a selected note, include all selected notes
-    // If dragging an unselected note, just drag that one note
+
     final notesToDrag =
         isNoteInSelection && hasSelection
             ? _notes.where((n) => _selectedNoteIds.contains(n.id)).toList()
@@ -1445,10 +1394,9 @@ class NotesPanelState extends State<NotesPanel> {
       onDragStarted: () {
         setState(() {
           _isDragging = true;
-          // Cancel any pending deselection - user is dragging, not clicking
+
           _pendingDeselectionNoteId = null;
 
-          // If dragging an unselected note, clear selection and select just this note
           if (!isNoteInSelection) {
             _selectedNoteIds.clear();
             _selectedNoteIds.add(note.id!);
@@ -1472,8 +1420,6 @@ class NotesPanelState extends State<NotesPanel> {
       ),
       child: GestureDetector(
         onTap: () {
-          // Handle deferred single-selection for previously selected notes
-          // This fires when it was a click, not a drag
           if (_pendingDeselectionNoteId == note.id) {
             setState(() {
               _pendingDeselectionNoteId = null;
@@ -1490,7 +1436,6 @@ class NotesPanelState extends State<NotesPanel> {
           }
         },
         onTertiaryTapDown: (details) {
-          // Middle mouse button - open in new tab
           if (widget.onNoteOpenInNewTab != null) {
             widget.onNoteOpenInNewTab!(note);
           }
@@ -1502,18 +1447,14 @@ class NotesPanelState extends State<NotesPanel> {
               final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
               final isNoteAlreadySelected = _selectedNoteIds.contains(note.id);
 
-              // If clicking on an already-selected note without modifiers,
-              // defer the single-selection until we know it's not a drag
               if (isNoteAlreadySelected &&
                   !isCtrlPressed &&
                   !isShiftPressed &&
                   hasSelection) {
-                // Mark this note for potential deselection on click completion
                 _pendingDeselectionNoteId = note.id;
-                // Still notify the panel about selection for visual feedback
+
                 widget.onNoteSelectedFromPanel?.call(note);
               } else {
-                // Normal selection behavior
                 _pendingDeselectionNoteId = null;
                 widget.onNoteSelectedFromPanel?.call(note);
                 _handleNoteSelection(note, isCtrlPressed, isShiftPressed);
@@ -1527,24 +1468,19 @@ class NotesPanelState extends State<NotesPanel> {
   }
 
   void _updateDragTargetFromGlobalPosition(Offset globalPosition) {
-    // Find which note element the cursor is over by checking stored bounds
     for (int i = 0; i < _notes.length; i++) {
       final bounds = _elementBounds[i];
       if (bounds != null && bounds.contains(globalPosition)) {
-        // Calculate if cursor is in upper or lower half
         final localY = globalPosition.dy - bounds.top;
         final isAbove = localY < bounds.height / 2;
 
-        // Calculate the visual line Y position
         final visualLineY = isAbove ? bounds.top : bounds.bottom;
 
-        // Check if we're on the same visual line (within tolerance)
         bool sameVisualLine = false;
         if (_currentVisualLineY != null) {
           sameVisualLine = (visualLineY - _currentVisualLineY!).abs() < 5.0;
         }
 
-        // Only update if we're not on the same visual line
         if (!sameVisualLine) {
           setState(() {
             _dragTargetIndex = i;
@@ -1552,7 +1488,6 @@ class NotesPanelState extends State<NotesPanel> {
             _currentVisualLineY = visualLineY;
           });
         } else {
-          // Same visual line, just update internal state without setState
           _dragTargetIndex = i;
           _dragTargetIsAbove = isAbove;
           _currentVisualLineY = visualLineY;
@@ -1561,7 +1496,6 @@ class NotesPanelState extends State<NotesPanel> {
       }
     }
 
-    // If not over any note, clear the target only if it was set
     if (_dragTargetIndex != null) {
       setState(() {
         _dragTargetIndex = null;
@@ -1583,7 +1517,6 @@ class NotesPanelState extends State<NotesPanel> {
         return false;
       },
       onLeave: (data) {
-        // Hide indicator when leaving this element
         if (_dragTargetIndex == index) {
           setState(() {
             _dragTargetIndex = null;
@@ -1600,7 +1533,6 @@ class NotesPanelState extends State<NotesPanel> {
 
           int targetIndex = index;
 
-          // Use the stored drag target information
           if (_dragTargetIndex == index) {
             if (currentIndex < index) {
               targetIndex = _dragTargetIsAbove ? index : index + 1;
@@ -1608,7 +1540,6 @@ class NotesPanelState extends State<NotesPanel> {
               targetIndex = _dragTargetIsAbove ? index : index + 1;
             }
           } else {
-            // Fallback to simple index-based logic
             if (currentIndex < index) {
               targetIndex = index;
             } else {
@@ -1616,7 +1547,6 @@ class NotesPanelState extends State<NotesPanel> {
             }
           }
 
-          // Ensure target index is within bounds
           targetIndex = targetIndex.clamp(0, _notes.length);
 
           await _moveNote(draggedNote, targetIndex);
@@ -1632,7 +1562,6 @@ class NotesPanelState extends State<NotesPanel> {
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            // Store the bounds of this element for cursor detection
             WidgetsBinding.instance.addPostFrameCallback((_) {
               final RenderBox renderBox =
                   context.findRenderObject() as RenderBox;
@@ -1648,7 +1577,6 @@ class NotesPanelState extends State<NotesPanel> {
 
             return Column(
               children: [
-                // Top indicator
                 Container(
                   height: isTarget && _dragTargetIsAbove ? 4 : 0,
                   margin: EdgeInsets.symmetric(
@@ -1667,9 +1595,9 @@ class NotesPanelState extends State<NotesPanel> {
                             : null,
                   ),
                 ),
-                // Note item
+
                 _buildDraggableNote(note),
-                // Bottom indicator
+
                 Container(
                   height: isTarget && !_dragTargetIsAbove ? 4 : 0,
                   margin: EdgeInsets.symmetric(
@@ -1713,23 +1641,19 @@ class NotesPanelState extends State<NotesPanel> {
     final currentIndex = _notes.indexWhere((note) => note.id == draggedNote.id);
     if (currentIndex == -1) return;
 
-    // Constrain reordering to pinned/unpinned sections
     final pinnedNotesCount = _notes.where((n) => n.isPinned).length;
     int adjustedTargetIndex = targetIndex;
 
     if (draggedNote.isPinned) {
-      // Pinned notes can only move within the pinned section
       if (adjustedTargetIndex > pinnedNotesCount) {
         adjustedTargetIndex = pinnedNotesCount;
       }
     } else {
-      // Unpinned notes can only move within the unpinned section
       if (adjustedTargetIndex < pinnedNotesCount) {
         adjustedTargetIndex = pinnedNotesCount;
       }
     }
 
-    // Actualizar la UI inmediatamente para feedback visual
     setState(() {
       final finalTargetIndex =
           adjustedTargetIndex > currentIndex
@@ -1744,25 +1668,21 @@ class NotesPanelState extends State<NotesPanel> {
     try {
       final repo = NoteRepository(DatabaseHelper());
 
-      // Obtener todas las notas del notebook ordenadas
       final allNotes = await repo.getNotesByNotebookId(draggedNote.notebookId);
-      // Ensure local sorting matches the constraint
+
       allNotes.sort((a, b) {
         if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
         return a.orderIndex.compareTo(b.orderIndex);
       });
 
-      // Remover la nota que se está moviendo de la lista
       allNotes.removeWhere((note) => note.id == draggedNote.id);
 
-      // Insertar la nota en la nueva posición restringida
       final finalTargetIndex =
           adjustedTargetIndex > currentIndex
               ? adjustedTargetIndex - 1
               : adjustedTargetIndex;
       allNotes.insert(finalTargetIndex, draggedNote);
 
-      // Actualizar todos los orderIndex de forma optimizada
       final db = await DatabaseHelper().database;
       for (int i = 0; i < allNotes.length; i++) {
         db.execute('UPDATE notes SET order_index = ? WHERE id = ?', [
@@ -1771,16 +1691,14 @@ class NotesPanelState extends State<NotesPanel> {
         ]);
       }
 
-      // Notificar cambios en la base de datos para sincronización
       DatabaseHelper.notifyDatabaseChanged();
 
-      // Recargar las notas para asegurar sincronización
       if (mounted) {
         await _loadNotes();
       }
     } catch (e) {
       print('Error moving note: $e');
-      // Revertir cambios en la UI si hay error
+
       if (mounted) {
         await _loadNotes();
         CustomSnackbar.show(
@@ -1823,12 +1741,9 @@ class NotesPanelState extends State<NotesPanel> {
       return const Center(child: Text('Empty'));
     }
 
-    // Calculate bounds for all elements after the frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_isDragging) {
-        for (int i = 0; i < _notes.length; i++) {
-          // We'll calculate bounds in a different way
-        }
+        for (int i = 0; i < _notes.length; i++) {}
       }
     });
 
@@ -1836,7 +1751,6 @@ class NotesPanelState extends State<NotesPanel> {
       onPointerMove:
           _isDragging
               ? (event) {
-                // Global listener to track cursor position during drag
                 _updateDragTargetFromGlobalPosition(event.position);
               }
               : null,
@@ -1844,7 +1758,6 @@ class NotesPanelState extends State<NotesPanel> {
         itemCount: _notes.length + 2, // +2 for start and end drop zones
         itemBuilder: (context, index) {
           if (index == 0) {
-            // Start drop zone
             return DragTarget<Map<String, dynamic>>(
               onWillAcceptWithDetails: (details) {
                 final data = details.data;
@@ -1892,7 +1805,6 @@ class NotesPanelState extends State<NotesPanel> {
               },
             );
           } else if (index == _notes.length + 1) {
-            // End drop zone
             return DragTarget<Map<String, dynamic>>(
               onWillAcceptWithDetails: (details) {
                 final data = details.data;

@@ -14,7 +14,6 @@ class SaveAnimationController {
       vsync: vsync,
     );
 
-    // Only three simple phases
     _fadeOutIconAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _controller,
@@ -58,7 +57,6 @@ class SaveAnimationController {
     if (!_isDisposed && _controller.status != AnimationStatus.completed) {
       await _controller.forward(from: _controller.value);
 
-      // Ensure it reaches value 1.0 to allow interaction again
       if (!_isDisposed && _controller.value < 1.0) {
         _controller.value = 1.0;
       }
@@ -101,7 +99,6 @@ class SaveButton extends StatelessWidget {
           return Stack(
             alignment: Alignment.center,
             children: [
-              // Circular progress indicator (visible during loading phase)
               if (value > 0.2 && value < 0.8)
                 SizedBox(
                   width: 24,
@@ -113,7 +110,6 @@ class SaveButton extends StatelessWidget {
                   ),
                 ),
 
-              // Save icon that fades out and reappears
               Opacity(
                 opacity:
                     controller.fadeOutIconAnimation.value +

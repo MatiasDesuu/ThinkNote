@@ -1,6 +1,3 @@
-// editor_settings_panel.dart
-// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
-
 import 'dart:async';
 import 'dart:io';
 
@@ -13,7 +10,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import 'personalization_settings_panel.dart' show materialYouColors;
 
-// Cache para las configuraciones del editor
 class EditorSettingsCache {
   static EditorSettingsCache? _instance;
   static EditorSettingsCache get instance =>
@@ -70,7 +66,8 @@ class EditorSettingsCache {
       EditorSettings.defaultExpandNotebooksOnLinkOpen;
   double get wordsPerSecond =>
       _wordsPerSecond ?? EditorSettings.defaultWordsPerSecond;
-  bool get showBottomBar => _showBottomBar ?? EditorSettings.defaultShowBottomBar;
+  bool get showBottomBar =>
+      _showBottomBar ?? EditorSettings.defaultShowBottomBar;
   double get splitViewUpdateDelay =>
       _splitViewUpdateDelay ?? EditorSettings.defaultSplitViewUpdateDelay;
 
@@ -118,7 +115,7 @@ class EditorSettingsCache {
       _isInitialized = true;
     } catch (e) {
       print('Error initializing editor settings cache: $e');
-      // Usar valores por defecto si hay error
+
       _fontSize = EditorSettings.defaultFontSize;
       _lineSpacing = EditorSettings.defaultLineSpacing;
       _fontColor = EditorSettings.defaultFontColor;
@@ -214,7 +211,6 @@ class EditorSettingsCache {
   }
 }
 
-// Eventos de configuración
 class EditorSettingsEvents {
   static final _fontSizeController = StreamController<double>.broadcast();
   static final _lineSpacingController = StreamController<double>.broadcast();
@@ -374,7 +370,6 @@ class EditorSettings {
   static const String _splitViewUpdateDelayKey = 'split_view_update_delay';
   static const double defaultLineSpacing = 1.0;
 
-  // Default values
   static const double defaultFontSize = 16.0;
   static const String defaultFontFamily = 'Roboto';
   static const Color defaultFontColor = Color(0xFF000000);
@@ -392,7 +387,6 @@ class EditorSettings {
   static const bool defaultShowBottomBar = true;
   static const double defaultSplitViewUpdateDelay = 500.0;
 
-  // Fuentes disponibles
   static const List<String> availableFonts = [
     'Roboto',
     'Inter',
@@ -411,26 +405,22 @@ class EditorSettings {
     'Dancing Script',
   ];
 
-  // Usar los mismos colores que materialYouColors, pero agregando blanco y negro al principio
   static List<Color> get predefinedTextColors => [
     const Color(0xFFFFFFFF), // Blanco
     const Color(0xFF000000), // Negro
     ...materialYouColors,
   ];
 
-  // Get autosave setting
   static Future<bool> getAutoSaveEnabled() async {
     return await PlatformSettings.get(_autoSaveKey, true);
   }
 
-  // Save autosave setting
   static Future<void> setAutoSaveEnabled(bool value) async {
     await PlatformSettings.set(_autoSaveKey, value);
     EditorSettingsCache.instance.updateAutoSaveEnabled(value);
     EditorSettingsEvents.notifyAutoSaveEnabledChanged(value);
   }
 
-  // Get if editor is centered
   static Future<bool> getEditorCentered() async {
     return await PlatformSettings.get(
       _editorCenteredKey,
@@ -438,7 +428,6 @@ class EditorSettings {
     );
   }
 
-  // Save if editor is centered
   static Future<void> setEditorCentered(bool value) async {
     await PlatformSettings.set(_editorCenteredKey, value);
     EditorSettingsCache.instance.updateEditorCentered(value);
@@ -507,12 +496,10 @@ class EditorSettings {
     EditorSettingsEvents.notifyFontFamilyChanged(fontFamily);
   }
 
-  // Get startup setting
   static Future<bool> getStartAtStartup() async {
     return await PlatformSettings.get(_startupKey, defaultStartAtStartup);
   }
 
-  // Save startup setting
   static Future<void> setStartAtStartup(bool value) async {
     await PlatformSettings.set(_startupKey, value);
     EditorSettingsCache.instance.updateStartAtStartup(value);
@@ -532,7 +519,6 @@ class EditorSettings {
     }
   }
 
-  // Get show notebook icons setting
   static Future<bool> getShowNotebookIcons() async {
     return await PlatformSettings.get(
       _showNotebookIconsKey,
@@ -540,26 +526,22 @@ class EditorSettings {
     );
   }
 
-  // Save show notebook icons setting
   static Future<void> setShowNotebookIcons(bool value) async {
     await PlatformSettings.set(_showNotebookIconsKey, value);
     EditorSettingsCache.instance.updateShowNotebookIcons(value);
     EditorSettingsEvents.notifyShowNotebookIconsChanged(value);
   }
 
-  // Get show note icons setting
   static Future<bool> getShowNoteIcons() async {
     return await PlatformSettings.get(_showNoteIconsKey, defaultShowNoteIcons);
   }
 
-  // Save show note icons setting
   static Future<void> setShowNoteIcons(bool value) async {
     await PlatformSettings.set(_showNoteIconsKey, value);
     EditorSettingsCache.instance.updateShowNoteIcons(value);
     EditorSettingsEvents.notifyShowNoteIconsChanged(value);
   }
 
-  // Get hide tabs in immersive setting
   static Future<bool> getHideTabsInImmersive() async {
     return await PlatformSettings.get(
       _hideTabsInImmersiveKey,
@@ -567,14 +549,12 @@ class EditorSettings {
     );
   }
 
-  // Save hide tabs in immersive setting
   static Future<void> setHideTabsInImmersive(bool value) async {
     await PlatformSettings.set(_hideTabsInImmersiveKey, value);
     EditorSettingsCache.instance.updateHideTabsInImmersive(value);
     EditorSettingsEvents.notifyHideTabsInImmersiveChanged(value);
   }
 
-  // Get expand notebooks on selection setting
   static Future<bool> getExpandNotebooksOnSelection() async {
     return await PlatformSettings.get(
       _expandNotebooksOnSelectionKey,
@@ -582,14 +562,12 @@ class EditorSettings {
     );
   }
 
-  // Save expand notebooks on selection setting
   static Future<void> setExpandNotebooksOnSelection(bool value) async {
     await PlatformSettings.set(_expandNotebooksOnSelectionKey, value);
     EditorSettingsCache.instance.updateExpandNotebooksOnSelection(value);
     EditorSettingsEvents.notifyExpandNotebooksOnSelectionChanged(value);
   }
 
-  // Get expand notebooks on note open setting
   static Future<bool> getExpandNotebooksOnNoteOpen() async {
     return await PlatformSettings.get(
       _expandNotebooksOnNoteOpenKey,
@@ -597,14 +575,12 @@ class EditorSettings {
     );
   }
 
-  // Save expand notebooks on note open setting
   static Future<void> setExpandNotebooksOnNoteOpen(bool value) async {
     await PlatformSettings.set(_expandNotebooksOnNoteOpenKey, value);
     EditorSettingsCache.instance.updateExpandNotebooksOnNoteOpen(value);
     EditorSettingsEvents.notifyExpandNotebooksOnNoteOpenChanged(value);
   }
 
-  // Get expand notebooks on link open setting
   static Future<bool> getExpandNotebooksOnLinkOpen() async {
     return await PlatformSettings.get(
       _expandNotebooksOnLinkOpenKey,
@@ -612,38 +588,35 @@ class EditorSettings {
     );
   }
 
-  // Save expand notebooks on link open setting
   static Future<void> setExpandNotebooksOnLinkOpen(bool value) async {
     await PlatformSettings.set(_expandNotebooksOnLinkOpenKey, value);
     EditorSettingsCache.instance.updateExpandNotebooksOnLinkOpen(value);
     EditorSettingsEvents.notifyExpandNotebooksOnLinkOpenChanged(value);
   }
 
-  // Get words per second setting
   static Future<double> getWordsPerSecond() async {
-    return await PlatformSettings.get(_wordsPerSecondKey, defaultWordsPerSecond);
+    return await PlatformSettings.get(
+      _wordsPerSecondKey,
+      defaultWordsPerSecond,
+    );
   }
 
-  // Save words per second setting
   static Future<void> setWordsPerSecond(double value) async {
     await PlatformSettings.set(_wordsPerSecondKey, value);
     EditorSettingsCache.instance.updateWordsPerSecond(value);
     EditorSettingsEvents.notifyWordsPerSecondChanged(value);
   }
 
-  // Get show bottom bar setting
   static Future<bool> getShowBottomBar() async {
     return await PlatformSettings.get(_showBottomBarKey, defaultShowBottomBar);
   }
 
-  // Save show bottom bar setting
   static Future<void> setShowBottomBar(bool value) async {
     await PlatformSettings.set(_showBottomBarKey, value);
     EditorSettingsCache.instance.updateShowBottomBar(value);
     EditorSettingsEvents.notifyShowBottomBarChanged(value);
   }
 
-  // Get split view update delay setting
   static Future<double> getSplitViewUpdateDelay() async {
     return await PlatformSettings.get(
       _splitViewUpdateDelayKey,
@@ -651,14 +624,12 @@ class EditorSettings {
     );
   }
 
-  // Save split view update delay setting
   static Future<void> setSplitViewUpdateDelay(double value) async {
     await PlatformSettings.set(_splitViewUpdateDelayKey, value);
     EditorSettingsCache.instance.updateSplitViewUpdateDelay(value);
     EditorSettingsEvents.notifySplitViewUpdateDelayChanged(value);
   }
 
-  // Método para precargar todas las configuraciones del editor
   static Future<void> preloadSettings() async {
     await EditorSettingsCache.instance.initialize();
   }
@@ -668,10 +639,10 @@ class EditorSettingsPanel extends StatefulWidget {
   const EditorSettingsPanel({super.key});
 
   @override
-  _EditorSettingsPanelState createState() => _EditorSettingsPanelState();
+  EditorSettingsPanelState createState() => EditorSettingsPanelState();
 }
 
-class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
+class EditorSettingsPanelState extends State<EditorSettingsPanel> {
   double _fontSize = 16.0;
   double _lineSpacing = 1.0;
   Color _fontColor = const Color(0xFF000000);
@@ -877,7 +848,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
         ),
         const SizedBox(height: 20),
 
-        // Behavior Section (mover arriba)
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -907,7 +877,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 ),
                 const SizedBox(height: 16),
 
-                // Editor Centered
                 Row(
                   children: [
                     Icon(
@@ -941,7 +910,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 const SizedBox(height: 20),
 
-                // Show Editor Bottom Bar
                 Row(
                   children: [
                     Icon(
@@ -975,7 +943,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 const SizedBox(height: 20),
 
-                // Auto Save
                 Row(
                   children: [
                     Icon(
@@ -1009,7 +976,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 const SizedBox(height: 20),
 
-                // Start at Startup (Windows only)
                 if (Platform.isWindows) ...[
                   Row(
                     children: [
@@ -1044,7 +1010,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                   const SizedBox(height: 20),
                 ],
 
-                // Show Notebook Icons
                 Row(
                   children: [
                     Icon(
@@ -1078,7 +1043,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 const SizedBox(height: 20),
 
-                // Show Note Icons
                 Row(
                   children: [
                     Icon(
@@ -1112,7 +1076,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 const SizedBox(height: 20),
 
-                // Hide Tabs in Immersive Mode
                 Row(
                   children: [
                     Icon(
@@ -1146,7 +1109,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 const SizedBox(height: 20),
 
-                // Expand Notebooks on Selection
                 Row(
                   children: [
                     Icon(
@@ -1183,7 +1145,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 const SizedBox(height: 20),
 
-                // Expand Notebooks on Note Open
                 Row(
                   children: [
                     Icon(
@@ -1220,7 +1181,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 const SizedBox(height: 20),
 
-                // Expand Notebooks on Link Open
                 Row(
                   children: [
                     Icon(
@@ -1257,7 +1217,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 const SizedBox(height: 20),
 
-                // Words Per Second for Script Mode
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1310,7 +1269,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 const SizedBox(height: 20),
 
-                // Preview Update Delay
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1353,7 +1311,8 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                             min: 0,
                             max: 2000,
                             divisions: 40,
-                            label: '${(_splitViewUpdateDelay / 1000).toStringAsFixed(2)} s',
+                            label:
+                                '${(_splitViewUpdateDelay / 1000).toStringAsFixed(2)} s',
                             onChanged: _updateSplitViewUpdateDelay,
                           ),
                         ),
@@ -1368,7 +1327,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
         const SizedBox(height: 16),
 
-        // Typography Section
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -1398,7 +1356,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 ),
                 const SizedBox(height: 16),
 
-                // Font Size
                 Row(
                   children: [
                     Icon(
@@ -1453,7 +1410,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 const SizedBox(height: 20),
 
-                // Line Spacing
                 Row(
                   children: [
                     Icon(
@@ -1508,7 +1464,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 const SizedBox(height: 20),
 
-                // Text Color
                 Row(
                   children: [
                     Icon(
@@ -1525,7 +1480,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 ),
                 const SizedBox(height: 8),
 
-                // Use theme color toggle
                 Row(
                   children: [
                     const SizedBox(width: 32),
@@ -1552,7 +1506,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                   ],
                 ),
 
-                // Color selection (only visible when not using theme color)
                 if (!_useThemeFontColor) ...[
                   const SizedBox(height: 16),
                   Padding(
@@ -1571,7 +1524,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 const SizedBox(height: 20),
 
-                // Font Family
                 Row(
                   children: [
                     Icon(
@@ -1603,9 +1555,8 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHighest.withAlpha(
-                              127,
-                            ),
+                            color: colorScheme.surfaceContainerHighest
+                                .withAlpha(127),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: colorScheme.outline,
@@ -1648,7 +1599,6 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
         const SizedBox(height: 16),
 
-        // Preview Section
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -1699,7 +1649,8 @@ class _EditorSettingsPanelState extends State<EditorSettingsPanel> {
                               : _fontColor,
                     ),
                   ),
-            ),],
+                ),
+              ],
             ),
           ),
         ),

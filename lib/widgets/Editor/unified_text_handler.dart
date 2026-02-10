@@ -53,7 +53,6 @@ class UnifiedTextHandler extends StatelessWidget {
     );
   }
 
-  // _buildParagraphWidgets
   List<Widget> _buildParagraphWidgets(BuildContext context) {
     final lines = text.split('\n');
     final List<Widget> widgets = [];
@@ -71,7 +70,13 @@ class UnifiedTextHandler extends StatelessWidget {
         currentOffset += line.length + 1;
       } else {
         if (currentParagraph.isNotEmpty) {
-          _addParagraphWidget(context, currentParagraph.toString(), widgets, colorScheme, paragraphStartOffset);
+          _addParagraphWidget(
+            context,
+            currentParagraph.toString(),
+            widgets,
+            colorScheme,
+            paragraphStartOffset,
+          );
           currentOffset += currentParagraph.length + 1;
           currentParagraph.clear();
         }
@@ -93,13 +98,25 @@ class UnifiedTextHandler extends StatelessWidget {
     }
 
     if (currentParagraph.isNotEmpty) {
-      _addParagraphWidget(context, currentParagraph.toString(), widgets, colorScheme, paragraphStartOffset);
+      _addParagraphWidget(
+        context,
+        currentParagraph.toString(),
+        widgets,
+        colorScheme,
+        paragraphStartOffset,
+      );
     }
 
     return widgets;
   }
 
-  void _addParagraphWidget(BuildContext context, String paragraphText, List<Widget> widgets, ColorScheme colorScheme, int baseOffset) {
+  void _addParagraphWidget(
+    BuildContext context,
+    String paragraphText,
+    List<Widget> widgets,
+    ColorScheme colorScheme,
+    int baseOffset,
+  ) {
     if (FormatDetector.horizontalRuleRegex.hasMatch(paragraphText.trim())) {
       widgets.add(
         Padding(
@@ -126,11 +143,16 @@ class UnifiedTextHandler extends StatelessWidget {
               listSegment.type == FormatType.checkboxUnchecked)) {
         widgets.add(_buildListItemWidget(context, listSegment, baseOffset));
       } else {
-        final indentMatch = RegExp(r'^(\s+)(.*)$', dotAll: true).firstMatch(paragraphText);
-        if (enableListDetection && indentMatch != null && indentMatch.group(1)!.isNotEmpty) {
+        final indentMatch = RegExp(
+          r'^(\s+)(.*)$',
+          dotAll: true,
+        ).firstMatch(paragraphText);
+        if (enableListDetection &&
+            indentMatch != null &&
+            indentMatch.group(1)!.isNotEmpty) {
           final indent = indentMatch.group(1)!;
           final content = indentMatch.group(2)!;
-          
+
           widgets.add(
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 1.0),
@@ -252,9 +274,7 @@ class UnifiedTextHandler extends StatelessWidget {
           else
             Text(
               marker,
-              style: textStyle.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: textStyle.copyWith(fontWeight: FontWeight.bold),
             ),
           Expanded(
             child: RichText(
@@ -301,11 +321,12 @@ class UnifiedTextHandler extends StatelessWidget {
         spans.add(TextSpan(text: betweenText, style: style));
       }
 
-      spans.add(_buildSegmentSpan(context, segment, style, baseOffset: baseOffset));
+      spans.add(
+        _buildSegmentSpan(context, segment, style, baseOffset: baseOffset),
+      );
       lastIndex = segment.end;
     }
 
-    // Remaining text
     if (lastIndex < text.length) {
       spans.add(TextSpan(text: text.substring(lastIndex), style: style));
     }
@@ -416,7 +437,9 @@ class UnifiedTextHandler extends StatelessWidget {
               baseStyle.copyWith(
                 color: isChecked ? Colors.grey : baseStyle.color,
                 decoration:
-                    isChecked ? TextDecoration.lineThrough : TextDecoration.none,
+                    isChecked
+                        ? TextDecoration.lineThrough
+                        : TextDecoration.none,
               ),
               baseOffset: baseOffset + segment.start + contentOffset,
             ),

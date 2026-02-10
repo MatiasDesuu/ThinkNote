@@ -173,7 +173,6 @@ class HtmlGenerator {
         }
       }
 
-      // Fecha
       final date = DateTime.tryParse(bookmark.timestamp);
       if (date != null) {
         final formattedDate =

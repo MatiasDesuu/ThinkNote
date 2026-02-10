@@ -8,7 +8,12 @@ import '../../widgets/sync_action_dialog.dart';
 import '../../database/sync_service.dart';
 
 class SettingsScreen extends StatefulWidget {
-  final Function({bool? isDarkMode, bool? isColorMode, bool? isMonochrome, bool? isEInk})
+  final Function({
+    bool? isDarkMode,
+    bool? isColorMode,
+    bool? isMonochrome,
+    bool? isEInk,
+  })
   onUpdateTheme;
   final bool isDarkMode;
   final bool isColorModeEnabled;
@@ -65,7 +70,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadInitialSettingsSync() async {
     try {
-      // Asegurar que el cache esté inicializado
       await EditorSettings.preloadSettings();
 
       final prefs = await SharedPreferences.getInstance();
@@ -89,7 +93,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } catch (e) {
       print('Error loading settings: $e');
-      // En caso de error, usar valores por defecto
+
       if (mounted) {
         setState(() {
           _isWebDAVEnabled = false;
@@ -134,7 +138,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           type: CustomSnackbarType.success,
         );
 
-        // Show sync dialog if WebDAV is enabled
         if (_isWebDAVEnabled) {
           _showSyncDialog();
         }
@@ -156,13 +159,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _showSyncDialog() async {
     final result = await showSyncActionDialog(context: context);
-    
+
     if (!mounted || result == null || result == SyncAction.cancel) {
       return;
     }
 
     setState(() => _isLoading = true);
-    
+
     try {
       switch (result) {
         case SyncAction.uploadLocal:

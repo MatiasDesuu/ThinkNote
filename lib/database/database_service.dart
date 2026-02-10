@@ -37,29 +37,23 @@ class DatabaseService {
     _thinkRepository = ThinkRepository(dbHelper);
     _thinkService = ThinkService(_thinkRepository);
 
-    // Listen to DatabaseHelper changes and propagate them
     DatabaseHelper.onDatabaseChanged.listen((_) {
       _databaseChangeController.add(null);
     });
   }
 
-  // Stream controller para notificar cambios en la base de datos
   final _databaseChangeController = StreamController<void>.broadcast();
   Stream<void> get onDatabaseChanged => _databaseChangeController.stream;
 
-  // Accessor for task service
   TaskService get taskService => _taskService;
 
-  // Accessor for bookmark service
   BookmarkService get bookmarkService => _bookmarkService;
 
-  // Accessor for think service
   ThinkService get thinkService => _thinkService;
 
-  // Method to notify database changes
   void notifyDatabaseChanged() {
     _databaseChangeController.add(null);
-    // Also notify through DatabaseHelper for synchronization
+
     DatabaseHelper.notifyDatabaseChanged();
   }
 
@@ -68,8 +62,10 @@ class DatabaseService {
     return entities.length;
   }
 
-  Future<void> importFromZip(String zipPath, {void Function(double)? onProgress}) async {
-    // 1. Descomprimir el archivo en una carpeta temporal
+  Future<void> importFromZip(
+    String zipPath, {
+    void Function(double)? onProgress,
+  }) async {
     final tempDir = await Directory.systemTemp.createTemp('thinknote_import_');
     try {
       final bytes = await File(zipPath).readAsBytes();
@@ -85,63 +81,60 @@ class DatabaseService {
           await outFile.writeAsBytes(file.content as List<int>);
         }
         extractedCount++;
-        onProgress?.call((extractedCount / totalEntries) * 0.5); // 50% for extraction
+        onProgress?.call(
+          (extractedCount / totalEntries) * 0.5,
+        ); // 50% for extraction
       }
 
-      // 2. Obtener la base de datos
       final dbHelper = DatabaseHelper();
       final db = await dbHelper.database;
 
-      // 3. Recorrer la estructura de carpetas y archivos
       final totalToProcess = await _countEntities(tempDir);
       int processedCount = 0;
 
       await _processDirectory(tempDir, db, null, (processed) {
         processedCount += processed;
-        onProgress?.call(0.5 + ((processedCount / totalToProcess) * 0.5)); // 50% for processing
+        onProgress?.call(
+          0.5 + ((processedCount / totalToProcess) * 0.5),
+        ); // 50% for processing
       });
 
-      // 4. Notificar que la base de datos ha cambiado
       notifyDatabaseChanged();
     } finally {
-      // 5. Limpiar archivos temporales
       await tempDir.delete(recursive: true);
     }
   }
 
-  Future<void> importFromFolder(String folderPath, {void Function(double)? onProgress}) async {
+  Future<void> importFromFolder(
+    String folderPath, {
+    void Function(double)? onProgress,
+  }) async {
     try {
       final sourceDir = Directory(folderPath);
       if (!await sourceDir.exists()) {
         throw Exception('Source folder does not exist');
       }
 
-      // Obtener la base de datos
       final dbHelper = DatabaseHelper();
       final db = await dbHelper.database;
 
       final totalEntities = await _countEntities(sourceDir);
       int processedCount = 0;
 
-      // Procesar la estructura de carpetas y archivos (notebooks y notas)
       await _processDirectoryFromFolder(sourceDir, db, null, (processed) {
         processedCount += processed;
         onProgress?.call(processedCount / totalEntities);
       });
 
-      // Procesar la carpeta Thinks si existe
       final thinksDir = Directory(path.join(folderPath, 'Thinks'));
       if (await thinksDir.exists()) {
-        // Note: _importThinksFromFolder might need progress too but it's part of the same count
         await _importThinksFromFolder(thinksDir, db, (processed) {
           processedCount += processed;
           onProgress?.call(processedCount / totalEntities);
         });
       }
 
-      // Notificar que la base de datos ha cambiado
       notifyDatabaseChanged();
-
     } catch (e) {
       developer.log('Error importing from folder: $e', name: 'DatabaseService');
       throw Exception('Error importing from folder: $e');
@@ -156,10 +149,8 @@ class DatabaseService {
   ) async {
     final entities = await dir.list().toList();
 
-    // Primero procesar las carpetas
     for (final entity in entities) {
       if (entity is Directory) {
-        // Crear notebook en la base de datos
         db.execute(
           '''
           INSERT INTO ${config.DatabaseConfig.tableNotebooks} (
@@ -175,24 +166,20 @@ class DatabaseService {
           ],
         );
 
-        // Obtener el ID del notebook recién creado
         final result = db.select('SELECT last_insert_rowid() as id');
         final notebookId = result.first['id'] as int;
 
         onItemProcessed(1);
 
-        // Procesar recursivamente el contenido de la carpeta
         await _processDirectory(entity, db, notebookId, onItemProcessed);
       }
     }
 
-    // Luego procesar los archivos
     for (final entity in entities) {
       if (entity is File && path.extension(entity.path) == '.md') {
         final content = await entity.readAsString();
         final title = path.basenameWithoutExtension(entity.path);
 
-        // Crear nota en la base de datos
         db.execute(
           '''
           INSERT INTO ${config.DatabaseConfig.tableNotes} (
@@ -226,7 +213,6 @@ class DatabaseService {
   ) async {
     final entities = await dir.list().toList();
 
-    // Filtrar solo carpetas que no sean "Thinks" (ya que se procesa por separado)
     final folders =
         entities
             .where(
@@ -235,10 +221,8 @@ class DatabaseService {
             )
             .toList();
 
-    // Primero procesar las carpetas
     for (final entity in folders) {
       if (entity is Directory) {
-        // Crear notebook en la base de datos
         db.execute(
           '''
           INSERT INTO ${config.DatabaseConfig.tableNotebooks} (
@@ -254,26 +238,32 @@ class DatabaseService {
           ],
         );
 
-        // Obtener el ID del notebook recién creado
         final result = db.select('SELECT last_insert_rowid() as id');
         final notebookId = result.first['id'] as int;
 
         onItemProcessed(1);
 
-        // Procesar recursivamente el contenido de la carpeta
-        await _processDirectoryFromFolder(entity, db, notebookId, onItemProcessed);
+        await _processDirectoryFromFolder(
+          entity,
+          db,
+          notebookId,
+          onItemProcessed,
+        );
       }
     }
 
-    // Verificar si hay archivos sueltos en el directorio raíz
-    final files = entities.where((entity) =>
-        entity is File &&
-        (path.extension(entity.path) == '.txt' ||
-            path.extension(entity.path) == '.md')).toList();
+    final files =
+        entities
+            .where(
+              (entity) =>
+                  entity is File &&
+                  (path.extension(entity.path) == '.txt' ||
+                      path.extension(entity.path) == '.md'),
+            )
+            .toList();
 
     int? effectiveParentId = parentId;
     if (parentId == null && files.isNotEmpty) {
-      // Crear un notebook por defecto para archivos sueltos
       db.execute(
         '''
         INSERT INTO ${config.DatabaseConfig.tableNotebooks} (
@@ -282,19 +272,13 @@ class DatabaseService {
           ${config.DatabaseConfig.columnCreatedAt}
         ) VALUES (?, ?, ?)
       ''',
-        [
-          'Imported Notes',
-          null,
-          DateTime.now().millisecondsSinceEpoch,
-        ],
+        ['Imported Notes', null, DateTime.now().millisecondsSinceEpoch],
       );
 
-      // Obtener el ID del notebook recién creado
       final result = db.select('SELECT last_insert_rowid() as id');
       effectiveParentId = result.first['id'] as int;
     }
 
-    // Luego procesar los archivos (.txt y .md)
     for (final entity in entities) {
       if (entity is File &&
           (path.extension(entity.path) == '.txt' ||
@@ -302,7 +286,6 @@ class DatabaseService {
         final content = await entity.readAsString(encoding: utf8);
         final title = path.basenameWithoutExtension(entity.path);
 
-        // Crear nota en la base de datos
         db.execute(
           '''
           INSERT INTO ${config.DatabaseConfig.tableNotes} (
@@ -342,7 +325,6 @@ class DatabaseService {
         final content = await entity.readAsString(encoding: utf8);
         final title = path.basenameWithoutExtension(entity.path);
 
-        // Crear think en la base de datos
         db.execute(
           '''
           INSERT INTO ${config.DatabaseConfig.tableThinks} (
@@ -369,7 +351,6 @@ class DatabaseService {
       final dbHelper = DatabaseHelper();
       await dbHelper.resetDatabase();
 
-      // Notificar que la base de datos ha cambiado
       notifyDatabaseChanged();
     } catch (e) {
       throw Exception('Error deleting database: $e');
@@ -387,7 +368,6 @@ class DatabaseService {
     }
   }
 
-  // Método para migrar tareas desde JSON a la base de datos
   Future<void> migrateTasksFromJson(Directory rootDir) async {
     final tasksDir = Directory(path.join(rootDir.path, '.todos'));
     if (!await tasksDir.exists()) return;
@@ -403,7 +383,6 @@ class DatabaseService {
             )
             .toList();
 
-    // Obtener tags.json si existe
     final tagsFile = File(path.join(tasksDir.path, 'tags.json'));
     List<String> allTags = [];
     if (await tagsFile.exists()) {
@@ -418,19 +397,16 @@ class DatabaseService {
       }
     }
 
-    // Crear los tags globales en la base de datos
     for (final tag in allTags) {
       await _taskService.addTag(tag);
     }
 
-    // Procesar cada archivo JSON de tareas
     for (final file in files) {
       if (file is File) {
         try {
           final content = await file.readAsString();
           final todoJson = await json.decode(content);
 
-          // Crear la tarea en la base de datos
           final now = DateTime.now();
           final task = Task(
             name: todoJson['nombre'] ?? 'Untitled',
@@ -448,14 +424,12 @@ class DatabaseService {
 
           final taskId = await _taskRepository.createTask(task);
 
-          // Agregar tags a la tarea
           if (todoJson['tags'] is List) {
             for (final tag in todoJson['tags']) {
               await _taskService.assignTagToTask(tag.toString(), taskId);
             }
           }
 
-          // Procesar subtareas
           if (todoJson['subtareas'] is List) {
             for (final subtareaJson in todoJson['subtareas']) {
               final subtask = Subtask(
@@ -476,20 +450,17 @@ class DatabaseService {
       }
     }
 
-    // Notificar que la base de datos ha cambiado
     notifyDatabaseChanged();
   }
 
   Future<void> initializeDatabase() async {
     try {
       if (Platform.isAndroid) {
-        // Asegurarse de que el directorio de la base de datos existe
         final dbPath = await config.DatabaseConfig.databasePath;
         final dbDir = dbPath.substring(0, dbPath.lastIndexOf('/'));
         await Directory(dbDir).create(recursive: true);
       }
 
-      // Inicializar la base de datos
       final dbHelper = DatabaseHelper();
       await dbHelper.database;
 
@@ -511,15 +482,12 @@ class DatabaseService {
 
       final destinationFile = File(destinationPath);
 
-      // Crear el directorio de destino si no existe
       final destinationDir = destinationFile.parent;
       if (!await destinationDir.exists()) {
         await destinationDir.create(recursive: true);
       }
 
-      // Copiar el archivo de la base de datos
       await sourceFile.copy(destinationPath);
-
     } catch (e) {
       developer.log('Error exporting database: $e', name: 'DatabaseService');
       throw Exception('Error exporting database: $e');
@@ -531,26 +499,22 @@ class DatabaseService {
       final dbHelper = DatabaseHelper();
       final db = await dbHelper.database;
 
-      // Crear el directorio de destino si no existe
       final destinationDir = Directory(destinationPath);
       if (!await destinationDir.exists()) {
         await destinationDir.create(recursive: true);
       }
 
-      // Obtener todos los notebooks
       final notebooks = db.select('''
         SELECT * FROM ${config.DatabaseConfig.tableNotebooks}
         WHERE ${config.DatabaseConfig.columnDeletedAt} IS NULL
         ORDER BY ${config.DatabaseConfig.columnOrderIndex}, ${config.DatabaseConfig.columnName}
       ''');
 
-      // Crear un mapa de notebooks por ID para facilitar la búsqueda de padres
       final Map<int, Map<String, dynamic>> notebooksMap = {};
       for (final notebook in notebooks) {
         notebooksMap[notebook['id'] as int] = notebook;
       }
 
-      // Función recursiva para crear la estructura de carpetas y archivos
       await _exportNotebookStructure(
         db,
         notebooks,
@@ -559,10 +523,7 @@ class DatabaseService {
         null,
       );
 
-      // Exportar thinks a una carpeta separada
       await _exportThinks(db, destinationPath);
-
-
     } catch (e) {
       developer.log(
         'Error exporting database to files: $e',
@@ -579,7 +540,6 @@ class DatabaseService {
     String basePath,
     int? parentId,
   ) async {
-    // Filtrar notebooks que pertenecen al padre actual
     final currentNotebooks =
         notebooks
             .where((notebook) => notebook['parent_id'] == parentId)
@@ -589,20 +549,16 @@ class DatabaseService {
       final notebookId = notebook['id'] as int;
       final notebookName = notebook['name'] as String;
 
-      // Crear nombre de carpeta seguro (sin caracteres especiales)
       final safeFolderName = _sanitizeFileName(notebookName);
       final notebookPath = path.join(basePath, safeFolderName);
 
-      // Crear la carpeta del notebook
       final notebookDir = Directory(notebookPath);
       if (!await notebookDir.exists()) {
         await notebookDir.create(recursive: true);
       }
 
-      // Obtener y exportar las notas de este notebook
       await _exportNotesFromNotebook(db, notebookId, notebookPath);
 
-      // Procesar recursivamente los sub-notebooks
       await _exportNotebookStructure(
         db,
         notebooks,
@@ -618,7 +574,6 @@ class DatabaseService {
     int notebookId,
     String notebookPath,
   ) async {
-    // Obtener todas las notas del notebook que no estén eliminadas
     final notes = db.select(
       '''
       SELECT * FROM ${config.DatabaseConfig.tableNotes}
@@ -633,18 +588,15 @@ class DatabaseService {
       final title = note['title'] as String;
       final content = note['content'] as String;
 
-      // Crear nombre de archivo seguro
       final safeFileName = _sanitizeFileName(title);
       final filePath = path.join(notebookPath, '$safeFileName.txt');
 
-      // Crear el archivo de texto
       final noteFile = File(filePath);
       await noteFile.writeAsString(content, encoding: utf8);
     }
   }
 
   String _sanitizeFileName(String fileName) {
-    // Reemplazar caracteres no permitidos en nombres de archivo
     return fileName
         .replaceAll(RegExp(r'[<>:"/\\|?*]'), '_')
         .replaceAll(RegExp(r'\s+'), ' ')
@@ -652,14 +604,12 @@ class DatabaseService {
   }
 
   Future<void> _exportThinks(sqlite.Database db, String basePath) async {
-    // Crear la carpeta Thinks
     final thinksPath = path.join(basePath, 'Thinks');
     final thinksDir = Directory(thinksPath);
     if (!await thinksDir.exists()) {
       await thinksDir.create(recursive: true);
     }
 
-    // Obtener todos los thinks que no estén eliminados
     final thinks = db.select('''
       SELECT * FROM ${config.DatabaseConfig.tableThinks}
       WHERE ${config.DatabaseConfig.columnDeletedAt} IS NULL
@@ -670,11 +620,9 @@ class DatabaseService {
       final title = think['title'] as String;
       final content = think['content'] as String;
 
-      // Crear nombre de archivo seguro
       final safeFileName = _sanitizeFileName(title);
       final filePath = path.join(thinksPath, '$safeFileName.txt');
 
-      // Crear el archivo de texto
       final thinkFile = File(filePath);
       await thinkFile.writeAsString(content, encoding: utf8);
     }
@@ -682,20 +630,15 @@ class DatabaseService {
 
   Future<void> exportBookmarksToHtml(String destinationPath) async {
     try {
-      // Obtener todos los bookmarks con sus tags
       final bookmarks = await _bookmarkService.getAllBookmarksWithTags();
 
-      // Generar el contenido HTML usando HtmlGenerator
       final htmlContent = await HtmlGenerator.generateBookmarksHtml(
         bookmarks,
         _bookmarkService,
       );
 
-      // Crear el archivo HTML
       final htmlFile = File(destinationPath);
       await htmlFile.writeAsString(htmlContent, encoding: utf8);
-
-
     } catch (e) {
       developer.log(
         'Error exporting bookmarks to HTML: $e',

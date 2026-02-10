@@ -94,9 +94,11 @@ class ResizablePanelState extends State<ResizablePanel>
   Future<void> _loadSavedSettings() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
-    final savedExpanded = prefs.getBool('${widget.preferencesKey}_expanded') ?? true;
+    final savedExpanded =
+        prefs.getBool('${widget.preferencesKey}_expanded') ?? true;
     setState(() {
-      _width = prefs.getDouble('${widget.preferencesKey}_width') ?? widget.minWidth;
+      _width =
+          prefs.getDouble('${widget.preferencesKey}_width') ?? widget.minWidth;
       _isExpanded = savedExpanded;
       _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
         CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
@@ -196,14 +198,16 @@ class ResizablePanelState extends State<ResizablePanel>
   @override
   Widget build(BuildContext context) {
     final separatorWidth = widget.showLeftSeparator ? 1.0 : 0.0;
-    
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AnimatedBuilder(
           animation: _animationController,
           builder: (context, child) {
-            final animatedWidth = _widthAnimation.value + (separatorWidth * _animationController.value);
+            final animatedWidth =
+                _widthAnimation.value +
+                (separatorWidth * _animationController.value);
             return ClipRect(
               child: SizedBox(
                 width: animatedWidth,
@@ -238,98 +242,112 @@ class ResizablePanelState extends State<ResizablePanel>
                             Stack(
                               children: [
                                 MouseRegion(
-                                  onEnter: (_) => setState(() => _isHovered = true),
-                                  onExit: (_) => setState(() => _isHovered = false),
+                                  onEnter:
+                                      (_) => setState(() => _isHovered = true),
+                                  onExit:
+                                      (_) => setState(() => _isHovered = false),
                                   child: Container(
                                     height: 48,
-                            padding: const EdgeInsets.only(left:16, right: 8),
-                            child: Center(
-                              child: Row(
-                                children: [
-                                  // Iconos específicos para cada panel
-                                  if (widget.title == 'Notebooks') ...[
-                                    Icon(
-                                      Icons.folder_rounded,
-                                      size: 20,
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
+                                    padding: const EdgeInsets.only(
+                                      left: 16,
+                                      right: 8,
                                     ),
-                                    const SizedBox(width: 8),
-                                  ] else if (widget.title == 'Notes') ...[
-                                    Icon(
-                                      Icons.note_rounded,
-                                      size: 20,
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 8),
-                                  ],
-                                  Text(
-                                    widget.title,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color:
-                                          Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  if (_isHovered && widget.onTitleTap != null)
-                                    CustomTooltip(
-                                      message: 'Go to root notebook',
-                                      builder: (context, isHovering) => IconButton(
-                                        icon: Icon(
-                                          Icons.home_rounded,
-                                          size: 16,
-                                        ),
-                                        onPressed: widget.onTitleTap,
+                                    child: Center(
+                                      child: Row(
+                                        children: [
+                                          if (widget.title == 'Notebooks') ...[
+                                            Icon(
+                                              Icons.folder_rounded,
+                                              size: 20,
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                            ),
+                                            const SizedBox(width: 8),
+                                          ] else if (widget.title ==
+                                              'Notes') ...[
+                                            Icon(
+                                              Icons.note_rounded,
+                                              size: 20,
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                            ),
+                                            const SizedBox(width: 8),
+                                          ],
+                                          Text(
+                                            widget.title,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color:
+                                                  Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          if (_isHovered &&
+                                              widget.onTitleTap != null)
+                                            CustomTooltip(
+                                              message: 'Go to root notebook',
+                                              builder:
+                                                  (context, isHovering) =>
+                                                      IconButton(
+                                                        icon: Icon(
+                                                          Icons.home_rounded,
+                                                          size: 16,
+                                                        ),
+                                                        onPressed:
+                                                            widget.onTitleTap,
+                                                      ),
+                                            ),
+                                          if (widget.trailing != null)
+                                            widget.trailing!,
+                                        ],
                                       ),
                                     ),
-                                  if (widget.trailing != null) widget.trailing!,
-                                ],
-                              ),
-                            ),
-                          ),
+                                  ),
                                 ),
-                          // MoveWindow en el área del título, excluyendo el botón trailing
-                          Positioned(
-                            top: 0,
-                            left: 0,
-                            right:
-                                widget.trailing != null
-                                    ? 100
-                                    : 0, // Excluir área del botón
-                            height: 48,
-                            child: MoveWindow(),
+
+                                Positioned(
+                                  top: 0,
+                                  left: 0,
+                                  right:
+                                      widget.trailing != null
+                                          ? 100
+                                          : 0, // Excluir área del botón
+                                  height: 48,
+                                  child: MoveWindow(),
+                                ),
+                              ],
+                            ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 0),
+                              child: widget.child,
+                            ),
                           ),
                         ],
                       ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 0),
-                        child: widget.child,
+                    ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.resizeLeftRight,
+                        child: GestureDetector(
+                          onPanUpdate: _onDragUpdate,
+                          onPanEnd: _onDragEnd,
+                          child: Container(width: 8, color: Colors.transparent),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              Positioned(
-                right: 0,
-                top: 0,
-                bottom: 0,
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.resizeLeftRight,
-                  child: GestureDetector(
-                    onPanUpdate: _onDragUpdate,
-                    onPanEnd: _onDragEnd,
-                    child: Container(width: 8, color: Colors.transparent),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
             ],
           ),
         ),
@@ -397,9 +415,11 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
   Future<void> _loadSavedSettings() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
-    final savedExpanded = prefs.getBool('${widget.preferencesKey}_expanded') ?? true;
+    final savedExpanded =
+        prefs.getBool('${widget.preferencesKey}_expanded') ?? true;
     setState(() {
-      _width = prefs.getDouble('${widget.preferencesKey}_width') ?? widget.minWidth;
+      _width =
+          prefs.getDouble('${widget.preferencesKey}_width') ?? widget.minWidth;
       _isExpanded = savedExpanded;
       _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
         CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
@@ -425,7 +445,6 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
   void _onDragUpdate(DragUpdateDetails details) {
     if (!_isExpanded) return;
     setState(() {
-      // Para redimensionar desde la izquierda, restamos el delta
       _width = (_width - details.delta.dx).clamp(
         widget.minWidth,
         widget.maxWidth,

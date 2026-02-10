@@ -41,20 +41,16 @@ class BookmarkSharingHandler {
       return;
     }
 
-    // Limpiar y procesar la URL
     String cleanUrl = value;
 
-    // Si es una URL de Google, intentar extraer la URL real
     if (value.contains('google.com/search')) {
       try {
         final uri = Uri.parse(value);
         final queryParams = uri.queryParameters;
 
-        // Intentar obtener la URL real de los parámetros de búsqueda
         if (queryParams.containsKey('url')) {
           cleanUrl = queryParams['url']!;
         } else if (queryParams.containsKey('q')) {
-          // Si no hay URL directa, usar la búsqueda como título
           cleanUrl =
               'https://www.google.com/search?q=${Uri.encodeComponent(queryParams['q']!)}';
         }
@@ -63,7 +59,6 @@ class BookmarkSharingHandler {
       }
     }
 
-    // Validar la URL limpia
     try {
       final uri = Uri.parse(cleanUrl);
       if (uri.scheme.isNotEmpty && uri.host.isNotEmpty) {
@@ -95,10 +90,8 @@ class BookmarkSharingHandler {
     bool isFetchingTitle = true;
     bool isSaving = false;
 
-    // Obtener tags predefinidos para la URL
     final autoTags = await DatabaseService().bookmarkService.getTagsForUrl(url);
 
-    // Mostrar el diálogo inmediatamente
     if (!context.mounted) return;
     showModalBottomSheet(
       context: context,
@@ -241,25 +234,28 @@ class BookmarkSharingHandler {
                         width: double.infinity,
                         padding: EdgeInsets.only(bottom: bottomPadding),
                         child: ElevatedButton(
-                          onPressed: isSaving ? null : () async {
-                            setState(() {
-                              isSaving = true;
-                            });
-                            await _saveBookmark(
-                              context,
-                              setState,
-                              titleController.text,
-                              url,
-                              descController.text,
-                              [
-                                ...autoTags,
-                                ...tagsController.text
-                                    .split(',')
-                                    .map((e) => e.trim())
-                                    .where((e) => e.isNotEmpty),
-                              ],
-                            );
-                          },
+                          onPressed:
+                              isSaving
+                                  ? null
+                                  : () async {
+                                    setState(() {
+                                      isSaving = true;
+                                    });
+                                    await _saveBookmark(
+                                      context,
+                                      setState,
+                                      titleController.text,
+                                      url,
+                                      descController.text,
+                                      [
+                                        ...autoTags,
+                                        ...tagsController.text
+                                            .split(',')
+                                            .map((e) => e.trim())
+                                            .where((e) => e.isNotEmpty),
+                                      ],
+                                    );
+                                  },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: colorScheme.primary,
                             foregroundColor: colorScheme.onPrimary,
@@ -268,22 +264,23 @@ class BookmarkSharingHandler {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: isSaving
-                              ? SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: colorScheme.onPrimary,
+                          child:
+                              isSaving
+                                  ? SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: colorScheme.onPrimary,
+                                    ),
+                                  )
+                                  : const Text(
+                                    'Save',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                )
-                              : const Text(
-                                  'Save',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
                         ),
                       ),
                     ],
@@ -294,7 +291,6 @@ class BookmarkSharingHandler {
           ),
     );
 
-    // Obtener el título de la página web de forma asíncrona
     try {
       final response = await http
           .get(Uri.parse(url))
@@ -302,13 +298,15 @@ class BookmarkSharingHandler {
 
       if (response.statusCode == 200) {
         final document = html.parse(response.body);
-        final ogTitle = document.querySelector('meta[property="og:title"]')?.attributes['content'];
+        final ogTitle =
+            document
+                .querySelector('meta[property="og:title"]')
+                ?.attributes['content'];
         String? pageTitle;
 
         if (ogTitle != null && ogTitle.isNotEmpty) {
           pageTitle = ogTitle;
         } else {
-          // Check if it's a Reddit URL and use API
           if (url.contains('reddit.com')) {
             pageTitle = await _getRedditTitle(url);
           }
@@ -329,7 +327,6 @@ class BookmarkSharingHandler {
       titleController.text = _getDefaultTitle(url);
     } finally {
       if (context.mounted) {
-        // Usar el StatefulBuilder para actualizar el estado
         (context as Element).markNeedsBuild();
         isFetchingTitle = false;
       }
@@ -352,12 +349,16 @@ class BookmarkSharingHandler {
 
       final pathSegments = uri.pathSegments;
       final postIdIndex = pathSegments.indexOf('comments');
-      if (postIdIndex == -1 || postIdIndex + 1 >= pathSegments.length) return null;
+      if (postIdIndex == -1 || postIdIndex + 1 >= pathSegments.length) {
+        return null;
+      }
 
       final postId = pathSegments[postIdIndex + 1];
       final apiUrl = 'https://www.reddit.com/comments/$postId.json';
 
-      final response = await http.get(Uri.parse(apiUrl)).timeout(const Duration(seconds: 3));
+      final response = await http
+          .get(Uri.parse(apiUrl))
+          .timeout(const Duration(seconds: 3));
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
         if (jsonData is List && jsonData.isNotEmpty) {
@@ -380,14 +381,12 @@ class BookmarkSharingHandler {
     List<String> tags,
   ) async {
     try {
-      // Normalizar la URL antes de verificar duplicados
       String normalizedUrl = url;
       if (url.contains('google.com/search')) {
         try {
           final uri = Uri.parse(url);
           final queryParams = uri.queryParameters;
           if (queryParams.containsKey('q')) {
-            // Para URLs de Google, usar solo la consulta como identificador único
             normalizedUrl = 'google_search:${queryParams['q']}';
           }
         } catch (e) {
@@ -395,7 +394,6 @@ class BookmarkSharingHandler {
         }
       }
 
-      // Verificar si el bookmark ya existe usando la URL normalizada
       final existingBookmark = await DatabaseService().bookmarkService
           .getBookmarkByUrl(normalizedUrl);
 
@@ -417,7 +415,6 @@ class BookmarkSharingHandler {
           return;
         }
 
-        // Actualizar el bookmark existente
         await DatabaseService().bookmarkService.updateBookmark(
           Bookmark(
             id: existingBookmark.id,
@@ -429,13 +426,11 @@ class BookmarkSharingHandler {
           ),
         );
 
-        // Actualizar los tags
         await DatabaseService().bookmarkService.updateBookmarkTags(
           existingBookmark.id!,
           tags,
         );
       } else {
-        // Crear nuevo bookmark
         final bookmarkId = await DatabaseService().bookmarkService
             .createBookmark(
               Bookmark(
@@ -448,55 +443,47 @@ class BookmarkSharingHandler {
               ),
             );
 
-        // Agregar los tags al nuevo bookmark
         await DatabaseService().bookmarkService.updateBookmarkTags(
           bookmarkId,
           tags,
         );
       }
 
-      // Actualizar la pantalla de bookmarks si está visible
       if (BookmarksScreenState.currentState != null) {
         await BookmarksScreenState.currentState!.loadData();
       }
 
-      // Sincronizar con WebDAV si está activo (el loading sigue visible)
       try {
         final syncService = SyncService();
-        // Verificar si WebDAV está habilitado
+
         final settings = await syncService.getSettings();
         if (settings['enabled'] == true) {
-          // Esperar a que se complete la sincronización
           await syncService.forceSync();
         }
       } catch (e) {
         print('Error during sync: $e');
-        // Continuar con el cierre incluso si hay error de sincronización
       }
 
-      // Pequeña pausa para que el usuario vea que se completó
       await Future.delayed(const Duration(milliseconds: 200));
 
-      // Ahora sí, cerrar el diálogo y la app
       if (context.mounted) {
         Navigator.of(context, rootNavigator: true).pop();
-        // Mínima espera para que se cierre el diálogo suavemente
+
         await Future.delayed(const Duration(milliseconds: 100));
-        // Volver a la app anterior
+
         SystemNavigator.pop();
       }
     } catch (e) {
       print('Error: Error saving bookmark: $e');
       if (context.mounted) {
-        // Mostrar el error pero mantener el estado de loading
         CustomSnackbar.show(
           context: context,
           message: 'Error saving bookmark: ${e.toString()}',
           type: CustomSnackbarType.error,
         );
-        // Esperar un poco para que el usuario vea el error
+
         await Future.delayed(const Duration(milliseconds: 1500));
-        // En caso de error, también intentamos cerrar el diálogo y volver
+
         Navigator.of(context, rootNavigator: true).pop();
         await Future.delayed(const Duration(milliseconds: 100));
         SystemNavigator.pop();

@@ -118,7 +118,10 @@ class _NoteStatisticsDrawerState extends State<NoteStatisticsDrawer> {
                     context,
                     icon: Icons.title_rounded,
                     label: 'Name',
-                    value: widget.currentTitle.isEmpty ? 'Untitled' : widget.currentTitle,
+                    value:
+                        widget.currentTitle.isEmpty
+                            ? 'Untitled'
+                            : widget.currentTitle,
                   ),
                   const SizedBox(height: 4),
                   _buildStatCard(

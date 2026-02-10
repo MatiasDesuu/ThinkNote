@@ -97,7 +97,8 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
   late AnimationController _animationController;
   late Animation<double> _widthAnimation;
   late GlobalIconSidebarState _globalIconSidebarState;
-  final GlobalKey<IconSidebarState> _iconSidebarKey = GlobalKey<IconSidebarState>();
+  final GlobalKey<IconSidebarState> _iconSidebarKey =
+      GlobalKey<IconSidebarState>();
   double _currentWidth = 70;
 
   bool get isExpanded => _globalIconSidebarState.isExpanded;
@@ -118,11 +119,11 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
     _widthAnimation = Tween<double>(begin: 0, end: _currentWidth).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    // Al abrir, setear el valor final sin animación
+
     if (_globalIconSidebarState.isExpanded) {
       _animationController.value = 1.0;
     }
-    // Escuchar cambios globales para sincronizar el ancho
+
     _globalIconSidebarState.addListener(_onGlobalSidebarChanged);
   }
 
@@ -348,7 +349,7 @@ class GlobalIconSidebarState extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     _width = prefs.getDouble('icon_sidebar_width') ?? 70;
-    // Always start with icon sidebar expanded on app restart
+
     _isExpanded = true;
     await prefs.setBool('icon_sidebar_expanded', true);
     _isInitialized = true;

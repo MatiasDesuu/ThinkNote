@@ -1,5 +1,3 @@
-// ignore_for_file: library_private_types_in_public_api
-
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -50,32 +48,30 @@ class ThinksScreen extends StatefulWidget {
   });
 
   @override
-  _ThinksScreenState createState() => _ThinksScreenState();
+  ThinksScreenState createState() => ThinksScreenState();
 }
 
-class _ThinksScreenState extends State<ThinksScreen>
+class ThinksScreenState extends State<ThinksScreen>
     with TickerProviderStateMixin {
   List<Think> _thinks = [];
   final ScrollController _scrollController = ScrollController();
   Think? _selectedThink;
-  final SearchTextEditingController _noteController = SearchTextEditingController();
+  final SearchTextEditingController _noteController =
+      SearchTextEditingController();
   final TextEditingController _titleController = TextEditingController();
   Timer? _debounceNote;
   bool _isEditorCentered = false;
   bool _isSplitView = false;
   final FocusNode _appFocusNode = FocusNode();
 
-  // Variables for resizable panel
   double _sidebarWidth = 240;
   bool _isDragging = false;
   bool _isSidebarVisible = true;
   late AnimationController _sidebarAnimController;
   late Animation<double> _sidebarWidthAnimation;
 
-  // Loading state
   bool _isLoading = true;
 
-  // Services
   late ThinkService _thinkService;
   StreamSubscription? _thinkChangesSubscription;
   StreamSubscription? _dbSubscription;
@@ -84,7 +80,6 @@ class _ThinksScreenState extends State<ThinksScreen>
   void initState() {
     super.initState();
 
-    // Inicializar animación del sidebar
     _sidebarAnimController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
@@ -94,38 +89,31 @@ class _ThinksScreenState extends State<ThinksScreen>
       CurvedAnimation(parent: _sidebarAnimController, curve: Curves.easeInOut),
     );
 
-    // Initialize database service and repository
     final dbHelper = DatabaseHelper();
     final thinkRepository = ThinkRepository(dbHelper);
     _thinkService = ThinkService(thinkRepository);
 
-    // Subscribe to changes in thinks
     _thinkChangesSubscription = _thinkService.onThinkChanged.listen((_) {
       _loadThinks();
     });
 
-    // Listen to database changes for background sync updates
     _dbSubscription = DatabaseHelper.onDatabaseChanged.listen((_) {
       if (mounted) {
         _loadThinks();
       }
     });
 
-    // Initialize everything in parallel and then update state once
     _initializeData();
   }
 
   Future<void> _initializeData() async {
     try {
-      // Load saved settings
       final prefs = await SharedPreferences.getInstance();
       final savedWidth = prefs.getDouble('thinks_sidebar_width') ?? 240;
       final editorCentered = prefs.getBool('editor_centered') ?? false;
 
-      // Load thinks
       List<Think> loadedThinks = await _thinkService.getAllThinks();
 
-      // Update state once with all loaded data
       if (mounted) {
         setState(() {
           _sidebarWidth = savedWidth;
@@ -149,7 +137,6 @@ class _ThinksScreenState extends State<ThinksScreen>
     await prefs.setDouble('thinks_sidebar_width', width);
   }
 
-
   @override
   void dispose() {
     _noteController.dispose();
@@ -163,13 +150,10 @@ class _ThinksScreenState extends State<ThinksScreen>
     super.dispose();
   }
 
-  // Method to load thinks (used after operations)
   Future<void> _loadThinks() async {
     try {
-      // Get thinks using the thinkService
       final loadedThinks = await _thinkService.getAllThinks();
 
-      // Update state with new thinks
       if (mounted) {
         setState(() {
           _thinks = loadedThinks;
@@ -225,7 +209,6 @@ class _ThinksScreenState extends State<ThinksScreen>
         await _thinkService.deleteThink(think.id!);
 
         if (mounted) {
-          // If the deleted Think is the current one, clear the editor
           if (_selectedThink?.id == think.id) {
             setState(() {
               _selectedThink = null;
@@ -254,7 +237,6 @@ class _ThinksScreenState extends State<ThinksScreen>
       final notebookRepo = NotebookRepository(dbHelper);
       final noteRepo = NoteRepository(dbHelper);
 
-      // Search for "Drafts" in root
       final rootNotebooks = await notebookRepo.getNotebooksByParentId(null);
       var drafts = rootNotebooks.where((n) => n.name == 'Drafts').firstOrNull;
 
@@ -273,7 +255,6 @@ class _ThinksScreenState extends State<ThinksScreen>
         throw Exception('Could not access Drafts notebook');
       }
 
-      // Create Note from Think
       final noteToAdd = Note(
         title: think.title,
         content: think.content,
@@ -286,11 +267,9 @@ class _ThinksScreenState extends State<ThinksScreen>
 
       await noteRepo.createNote(noteToAdd);
 
-      // Delete Think
       await _thinkService.deleteThink(think.id!);
 
       if (mounted) {
-        // If the moved Think is the current one, clear the editor
         if (_selectedThink?.id == think.id) {
           setState(() {
             _selectedThink = null;
@@ -320,7 +299,6 @@ class _ThinksScreenState extends State<ThinksScreen>
 
   Future<void> _openThink(Think think) async {
     try {
-      // Save the current think before opening a new one
       if (_selectedThink != null) {
         await _saveThink();
       }
@@ -341,22 +319,18 @@ class _ThinksScreenState extends State<ThinksScreen>
     }
   }
 
-  // Save Think content
   Future<void> _saveThink() async {
     if (_selectedThink == null) return;
 
     try {
-      // Update the think with new content and title
       final updatedThink = _selectedThink!.copyWith(
         title: _titleController.text.trim(),
         content: _noteController.text,
         updatedAt: DateTime.now(),
       );
 
-      // Save using service
       await _thinkService.updateThink(updatedThink);
 
-      // Update the reference to the selected think
       setState(() {
         _selectedThink = updatedThink;
       });
@@ -413,9 +387,10 @@ class _ThinksScreenState extends State<ThinksScreen>
           return Container(
             margin: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? colorScheme.primary.withAlpha(25)
-                  : isHovering
+              color:
+                  isSelected
+                      ? colorScheme.primary.withAlpha(25)
+                      : isHovering
                       ? colorScheme.surfaceContainerHighest
                       : colorScheme.surface,
               borderRadius: BorderRadius.circular(10),
@@ -435,7 +410,6 @@ class _ThinksScreenState extends State<ThinksScreen>
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Ícono de think y favorito
                       Stack(
                         alignment: Alignment.center,
                         clipBehavior: Clip.none,
@@ -467,7 +441,7 @@ class _ThinksScreenState extends State<ThinksScreen>
                         ],
                       ),
                       const SizedBox(width: 12),
-                      // Título y detalles
+
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -507,7 +481,7 @@ class _ThinksScreenState extends State<ThinksScreen>
                         ),
                       ),
                       const SizedBox(width: 4),
-                      // Botón eliminar
+
                       Opacity(
                         opacity: isHovering ? 1.0 : 0.0,
                         child: IgnorePointer(
@@ -589,7 +563,6 @@ class _ThinksScreenState extends State<ThinksScreen>
     }
   }
 
-  // Method to open the settings screen
   void _openSettings() async {
     await Navigator.of(context).push(
       PageRouteBuilder(
@@ -602,7 +575,6 @@ class _ThinksScreenState extends State<ThinksScreen>
       ),
     );
 
-    // Reload editor settings
     if (_selectedThink != null) {
       setState(() {});
     }
@@ -666,10 +638,8 @@ class _ThinksScreenState extends State<ThinksScreen>
           child: Scaffold(
             body: Stack(
               children: [
-                // Main content
                 Row(
                   children: [
-                    // Left sidebar with new implementation
                     ResizableIconSidebar(
                       rootDir: widget.rootDir,
                       onOpenNote: widget.onOpenNote,
@@ -698,11 +668,11 @@ class _ThinksScreenState extends State<ThinksScreen>
                       appFocusNode: _appFocusNode,
                     ),
 
-                    // Animated sidebar
                     AnimatedBuilder(
                       animation: _sidebarWidthAnimation,
                       builder: (context, child) {
-                        final animatedWidth = _sidebarWidthAnimation.value * (_sidebarWidth + 1);
+                        final animatedWidth =
+                            _sidebarWidthAnimation.value * (_sidebarWidth + 1);
                         if (animatedWidth == 0 && !_isSidebarVisible) {
                           return const SizedBox.shrink();
                         }
@@ -726,172 +696,185 @@ class _ThinksScreenState extends State<ThinksScreen>
                             color: colorScheme.surfaceContainerHighest,
                           ),
 
-                          // Central panel with thinks list (resizable)
                           Container(
-                          width: _sidebarWidth,
-                          decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerLow,
-                          ),
-                          child: Stack(
-                            children: [
-                              Column(
-                                children: [
-                                  // Thinks header
-                                  Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Symbols.neurology_rounded,
-                                          size: 20,
-                                          color: colorScheme.primary,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'Thinks',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: colorScheme.onSurfaceVariant,
+                            width: _sidebarWidth,
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerLow,
+                            ),
+                            child: Stack(
+                              children: [
+                                Column(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Symbols.neurology_rounded,
+                                            size: 20,
+                                            color: colorScheme.primary,
                                           ),
-                                        ),
-                                        const Spacer(),
-                                        Text(
-                                          '${_thinks.length}',
-                                          style: TextStyle(
-                                            color: colorScheme.onSurfaceVariant,
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Thinks',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                            ),
                                           ),
+                                          const Spacer(),
+                                          Text(
+                                            '${_thinks.length}',
+                                            style: TextStyle(
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    Expanded(
+                                      child:
+                                          _thinks.isEmpty
+                                              ? Center(
+                                                child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Icon(
+                                                      Symbols.lightbulb_2,
+                                                      size: 48,
+                                                      color: colorScheme
+                                                          .onSurfaceVariant
+                                                          .withAlpha(100),
+                                                    ),
+                                                    const SizedBox(height: 16),
+                                                    Text(
+                                                      'No Thinks created',
+                                                      style: TextStyle(
+                                                        color: colorScheme
+                                                            .onSurfaceVariant
+                                                            .withAlpha(150),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    TextButton.icon(
+                                                      onPressed:
+                                                          _createNewThink,
+                                                      icon: Icon(
+                                                        Icons
+                                                            .add_circle_outline_rounded,
+                                                        size: 18,
+                                                        color:
+                                                            colorScheme.primary,
+                                                      ),
+                                                      label: Text(
+                                                        'Create Think',
+                                                        style: TextStyle(
+                                                          color:
+                                                              colorScheme
+                                                                  .primary,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              )
+                                              : ReorderableListView.builder(
+                                                scrollController:
+                                                    _scrollController,
+                                                padding:
+                                                    const EdgeInsets.fromLTRB(
+                                                      4,
+                                                      4,
+                                                      4,
+                                                      0,
+                                                    ),
+                                                itemCount: _thinks.length,
+                                                buildDefaultDragHandles: false,
+                                                onReorder: (
+                                                  oldIndex,
+                                                  newIndex,
+                                                ) async {
+                                                  if (newIndex > oldIndex) {
+                                                    newIndex--;
+                                                  }
+
+                                                  setState(() {
+                                                    final item = _thinks
+                                                        .removeAt(oldIndex);
+                                                    _thinks.insert(
+                                                      newIndex,
+                                                      item,
+                                                    );
+                                                  });
+
+                                                  try {
+                                                    await _thinkService
+                                                        .reorderThinks(_thinks);
+                                                    await _loadThinks();
+                                                  } catch (e) {
+                                                    if (!context.mounted) {
+                                                      return;
+                                                    }
+                                                    CustomSnackbar.show(
+                                                      context: context,
+                                                      message:
+                                                          'Error reordering: ${e.toString()}',
+                                                      type:
+                                                          CustomSnackbarType
+                                                              .error,
+                                                    );
+                                                    await _loadThinks();
+                                                  }
+                                                },
+                                                itemBuilder: (context, index) {
+                                                  final think = _thinks[index];
+                                                  return _buildThinkItem(think);
+                                                },
+                                              ),
+                                    ),
+                                  ],
+                                ),
+
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: MouseRegion(
+                                    cursor: SystemMouseCursors.resizeLeftRight,
+                                    child: GestureDetector(
+                                      onPanUpdate: _onDragUpdate,
+                                      onPanStart:
+                                          (_) => setState(
+                                            () => _isDragging = true,
+                                          ),
+                                      onPanEnd: (details) {
+                                        setState(() => _isDragging = false);
+                                        _onDragEnd(details);
+                                      },
+                                      child: Container(
+                                        width: 6,
+                                        decoration: BoxDecoration(
+                                          color:
+                                              _isDragging
+                                                  ? colorScheme.primary
+                                                      .withAlpha(50)
+                                                  : Colors.transparent,
                                         ),
-                                      ],
+                                      ),
                                     ),
                                   ),
-                                  // Thinks list
-                                  Expanded(
-                                    child:
-                                    _thinks.isEmpty
-                                        ? Center(
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Symbols.lightbulb_2,
-                                                size: 48,
-                                                color: colorScheme
-                                                    .onSurfaceVariant
-                                                    .withAlpha(100),
-                                              ),
-                                              const SizedBox(height: 16),
-                                              Text(
-                                                'No Thinks created',
-                                                style: TextStyle(
-                                                  color: colorScheme
-                                                      .onSurfaceVariant
-                                                      .withAlpha(150),
-                                                ),
-                                              ),
-                                              const SizedBox(height: 8),
-                                              TextButton.icon(
-                                                onPressed: _createNewThink,
-                                                icon: Icon(
-                                                  Icons
-                                                      .add_circle_outline_rounded,
-                                                  size: 18,
-                                                  color: colorScheme.primary,
-                                                ),
-                                                label: Text(
-                                                  'Create Think',
-                                                  style: TextStyle(
-                                                    color: colorScheme.primary,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        )
-                                        : ReorderableListView.builder(
-                                          scrollController: _scrollController,
-                                          padding: const EdgeInsets.fromLTRB(
-                                            4,
-                                            4,
-                                            4,
-                                            0,
-                                          ),
-                                          itemCount: _thinks.length,
-                                          buildDefaultDragHandles: false,
-                                          onReorder: (
-                                            oldIndex,
-                                            newIndex,
-                                          ) async {
-                                            if (newIndex > oldIndex) {
-                                              newIndex--;
-                                            }
-
-                                            setState(() {
-                                              final item = _thinks.removeAt(
-                                                oldIndex,
-                                              );
-                                              _thinks.insert(newIndex, item);
-                                            });
-
-                                            try {
-                                              await _thinkService.reorderThinks(
-                                                _thinks,
-                                              );
-                                              await _loadThinks();
-                                            } catch (e) {
-                                              if (!context.mounted) return;
-                                              CustomSnackbar.show(
-                                                context: context,
-                                                message:
-                                                    'Error reordering: ${e.toString()}',
-                                                type: CustomSnackbarType.error,
-                                              );
-                                              await _loadThinks();
-                                            }
-                                          },
-                                          itemBuilder: (context, index) {
-                                            final think = _thinks[index];
-                                            return _buildThinkItem(think);
-                                          },
-                                        ),
-                              ),
-                            ],
-                          ),
-                          // Resize control
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            bottom: 0,
-                            child: MouseRegion(
-                              cursor: SystemMouseCursors.resizeLeftRight,
-                              child: GestureDetector(
-                                onPanUpdate: _onDragUpdate,
-                                onPanStart:
-                                    (_) => setState(() => _isDragging = true),
-                                onPanEnd: (details) {
-                                  setState(() => _isDragging = false);
-                                  _onDragEnd(details);
-                                },
-                                child: Container(
-                                  width: 6,
-                                  decoration: BoxDecoration(
-                                    color:
-                                        _isDragging
-                                            ? colorScheme.primary.withAlpha(50)
-                                            : Colors.transparent,
-                                  ),
                                 ),
-                              ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                        ],
-                      ),
-                    ),
 
-                    // Right editor panel
                     Expanded(
                       child: Container(
                         color: colorScheme.surface,
@@ -924,9 +907,15 @@ class _ThinksScreenState extends State<ThinksScreen>
                                     onTitleChanged: _onNoteChanged,
                                     onContentChanged: _onNoteChanged,
                                     initialEditorCentered: _isEditorCentered,
-                                    onEditorCenteredChanged: (isEditorCentered) async {
-                                      final prefs = await SharedPreferences.getInstance();
-                                      await prefs.setBool('editor_centered', isEditorCentered);
+                                    onEditorCenteredChanged: (
+                                      isEditorCentered,
+                                    ) async {
+                                      final prefs =
+                                          await SharedPreferences.getInstance();
+                                      await prefs.setBool(
+                                        'editor_centered',
+                                        isEditorCentered,
+                                      );
                                       setState(() {
                                         _isEditorCentered = isEditorCentered;
                                       });
@@ -944,7 +933,6 @@ class _ThinksScreenState extends State<ThinksScreen>
                   ],
                 ),
 
-                // Window controls in top right corner
                 Positioned(
                   top: 0,
                   right: 0,
@@ -1007,7 +995,6 @@ class _ThinksScreenState extends State<ThinksScreen>
                   ),
                 ),
 
-                // Title drag area - correctly placed
                 Positioned(
                   top: 0,
                   left: 60, // Left sidebar width
@@ -1024,7 +1011,6 @@ class _ThinksScreenState extends State<ThinksScreen>
   }
 }
 
-// Widget auxiliar para gestionar el estado de hover
 class MouseRegionHoverItem extends StatefulWidget {
   final Widget Function(BuildContext, bool) builder;
 

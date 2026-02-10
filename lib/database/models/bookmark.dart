@@ -41,9 +41,10 @@ class Bookmark {
       timestamp: map['timestamp'] ?? DateTime.now().toIso8601String(),
       hidden: map['hidden'] == 1,
       tagIds: List<int>.from(map['tag_ids'] ?? []),
-      tags: (tagsString != null && tagsString.isNotEmpty)
-          ? tagsString.split(',')
-          : [],
+      tags:
+          (tagsString != null && tagsString.isNotEmpty)
+              ? tagsString.split(',')
+              : [],
     );
   }
 

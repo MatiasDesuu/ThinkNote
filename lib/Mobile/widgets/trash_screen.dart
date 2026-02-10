@@ -86,19 +86,15 @@ class _TrashScreenState extends State<TrashScreen> {
     );
 
     if (confirmed == true) {
-      // Primero eliminamos todas las notas
       for (final note in _deletedNotes) {
         await _noteRepository.hardDeleteNote(note.id!);
       }
 
-      // Luego eliminamos todos los thinks
       for (final think in _deletedThinks) {
         await _thinkRepository.permanentlyDeleteThink(think.id!);
       }
 
-      // Finalmente eliminamos los notebooks y sus subnotebooks
       for (final notebook in _deletedNotebooks) {
-        // Primero eliminamos todas las notas asociadas al notebook
         await _notebookRepository.hardDeleteNotebook(notebook.id!);
       }
 
@@ -260,8 +256,18 @@ class _TrashScreenState extends State<TrashScreen> {
 
   String _formatDate(DateTime date) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }

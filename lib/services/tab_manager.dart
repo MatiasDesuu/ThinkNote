@@ -12,7 +12,6 @@ class TabManager extends ChangeNotifier {
   EditorTab? _activeTab;
   int _emptyTabCounter = 0;
 
-  // Callback to change notebook when opening notes from different notebooks
   Function(Note)? onNotebookChangeRequested;
 
   List<EditorTab> get tabs => List.unmodifiable(_tabs);
@@ -26,13 +25,11 @@ class TabManager extends ChangeNotifier {
     String? searchQuery,
     bool isAdvancedSearch = false,
   }) {
-    // Check if tab already exists
     final existingTabIndex = _tabs.indexWhere(
       (tab) => tab.note != null && tab.note!.id == note.id,
     );
 
     if (existingTabIndex != -1) {
-      // Update existing tab
       final existingTab = _tabs[existingTabIndex];
       final updatedTab = existingTab.copyWith(
         searchQuery: searchQuery,
@@ -42,7 +39,6 @@ class TabManager extends ChangeNotifier {
       _tabs[existingTabIndex] = updatedTab;
       _activeTab = updatedTab;
     } else {
-      // Create new tab
       final newTab = EditorTab(
         note: note,
         noteController: SearchTextEditingController(text: note.content),
@@ -57,19 +53,15 @@ class TabManager extends ChangeNotifier {
 
     _saveTabsToStorage();
 
-    // Diferir la notificación para evitar problemas con los controladores
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
   }
 
   void createEmptyTab() {
-    // Check if there's already an empty tab
     if (hasEmptyTab) {
-      // Move existing empty tab to the end and make it active
       moveEmptyTabToEnd();
     } else {
-      // Create new empty tab only if none exists
       final emptyTabId = 'empty_${++_emptyTabCounter}';
       final newTab = EditorTab(
         note: null,
@@ -83,7 +75,6 @@ class TabManager extends ChangeNotifier {
 
       _saveTabsToStorage();
 
-      // Diferir la notificación para evitar problemas con los controladores
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
@@ -93,29 +84,26 @@ class TabManager extends ChangeNotifier {
   void assignNoteToActiveTab(Note note) {
     if (_activeTab == null || _activeTab!.note != null) return;
 
-    // Check if note is already open in another tab
     final existingTabIndex = _tabs.indexWhere(
       (tab) => tab.note != null && tab.note!.id == note.id,
     );
 
     if (existingTabIndex != -1) {
-      // Note is already open, switch to it and remove the empty tab
       final emptyTab = _activeTab!;
       _activeTab = _tabs[existingTabIndex];
       _tabs.remove(emptyTab);
       _saveTabsToStorage();
 
-      // Dispose empty tab controllers
       WidgetsBinding.instance.addPostFrameCallback((_) {
         try {
           emptyTab.noteController.dispose();
         } catch (e) {
-          // Already disposed
+          // Ignore errors when disposing controllers
         }
         try {
           emptyTab.titleController.dispose();
         } catch (e) {
-          // Already disposed
+          // Ignore errors when disposing controllers
         }
         notifyListeners();
       });
@@ -138,18 +126,16 @@ class TabManager extends ChangeNotifier {
     _tabs[activeTabIndex] = updatedTab;
     _activeTab = updatedTab;
 
-    // Diferir la notificación para evitar problemas con los controladores
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Dispose old controllers after the frame
       try {
         oldNoteController.dispose();
       } catch (e) {
-        // Already disposed
+        // Ignore errors when disposing controllers
       }
       try {
         oldTitleController.dispose();
       } catch (e) {
-        // Already disposed
+        // Ignore errors when disposing controllers
       }
       notifyListeners();
     });
@@ -158,13 +144,11 @@ class TabManager extends ChangeNotifier {
   void replaceNoteInActiveTab(Note note) {
     if (_activeTab == null) return;
 
-    // Check if note is already open in another tab
     final existingTabIndex = _tabs.indexWhere(
       (tab) => tab.note != null && tab.note!.id == note.id,
     );
 
     if (existingTabIndex != -1 && _tabs[existingTabIndex] != _activeTab) {
-      // Note is already open in another tab. Switch to it and close current tab.
       final currentTab = _activeTab!;
       _activeTab = _tabs[existingTabIndex];
       _tabs.remove(currentTab);
@@ -174,12 +158,12 @@ class TabManager extends ChangeNotifier {
         try {
           currentTab.noteController.dispose();
         } catch (e) {
-          // Already disposed
+          // Ignore errors when disposing controllers
         }
         try {
           currentTab.titleController.dispose();
         } catch (e) {
-          // Already disposed
+          // Ignore errors when disposing controllers
         }
         notifyListeners();
       });
@@ -203,38 +187,30 @@ class TabManager extends ChangeNotifier {
     _tabs[activeTabIndex] = updatedTab;
     _activeTab = updatedTab;
 
-    // Diferir la notificación para evitar problemas con los controladores
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Dispose old controllers after the frame
       oldNoteController.dispose();
       oldTitleController.dispose();
       notifyListeners();
     });
   }
 
-  /// Opens a note and changes notebook if necessary
   void openTabWithNotebookChange(
     Note note, {
     String? searchQuery,
     bool isAdvancedSearch = false,
   }) {
-    // Request notebook change if needed
     if (onNotebookChangeRequested != null) {
       onNotebookChangeRequested!.call(note);
     } else {}
 
-    // Then open the tab normally
     openTab(note, searchQuery: searchQuery, isAdvancedSearch: isAdvancedSearch);
   }
 
-  /// Replaces note in current tab and changes notebook if necessary
   void replaceNoteInActiveTabWithNotebookChange(Note note) {
-    // Request notebook change if needed
     if (onNotebookChangeRequested != null) {
       onNotebookChangeRequested!.call(note);
     } else {}
 
-    // Then replace the note in the active tab
     replaceNoteInActiveTab(note);
   }
 
@@ -243,36 +219,30 @@ class TabManager extends ChangeNotifier {
       _activeTab = tab;
       _saveTabsToStorage();
 
-      // Diferir la notificación para evitar problemas con los controladores
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
     }
   }
 
-  /// Toggle pinned state for a tab. Pinned tabs are moved to the front.
   void togglePin(EditorTab tab) {
     final index = _tabs.indexOf(tab);
     if (index == -1) return;
 
     final updated = tab.copyWith(isPinned: !tab.isPinned);
 
-    // Dispose old controllers are the same, keep them
     _tabs[index] = updated;
 
     if (updated.isPinned) {
-      // Move to front (index 0)
       _tabs.removeAt(index);
       _tabs.insert(0, updated);
     } else {
-      // Unpinned - move after other pinned tabs (end of pinned area)
       _tabs.removeAt(index);
       final firstUnpinned = _tabs.indexWhere((t) => !t.isPinned);
       final insertIndex = firstUnpinned == -1 ? _tabs.length : firstUnpinned;
       _tabs.insert(insertIndex, updated);
     }
 
-    // Update active tab reference if needed
     if (_activeTab == tab) {
       _activeTab = updated;
     }
@@ -292,7 +262,6 @@ class TabManager extends ChangeNotifier {
 
       _tabs.removeAt(index);
 
-      // Update active tab if needed
       if (_activeTab == tab) {
         if (_tabs.isNotEmpty) {
           _activeTab = _tabs.last;
@@ -303,17 +272,16 @@ class TabManager extends ChangeNotifier {
 
       _saveTabsToStorage();
 
-      // Diferir la notificación y dispose para evitar problemas con los controladores
       WidgetsBinding.instance.addPostFrameCallback((_) {
         try {
           noteController.dispose();
         } catch (e) {
-          // Controller already disposed
+          // Ignore errors when disposing controllers
         }
         try {
           titleController.dispose();
         } catch (e) {
-          // Controller already disposed
+          // Ignore errors when disposing controllers
         }
         notifyListeners();
       });
@@ -326,18 +294,17 @@ class TabManager extends ChangeNotifier {
     _tabs.clear();
     _activeTab = null;
 
-    // Diferir la notificación y dispose para evitar problemas con los controladores
     WidgetsBinding.instance.addPostFrameCallback((_) {
       for (final (noteController, titleController) in controllersToDispose) {
         try {
           noteController.dispose();
         } catch (e) {
-          // Already disposed
+          // Ignore errors when disposing controllers
         }
         try {
           titleController.dispose();
         } catch (e) {
-          // Already disposed
+          // Ignore errors when disposing controllers
         }
       }
       notifyListeners();
@@ -351,10 +318,8 @@ class TabManager extends ChangeNotifier {
             .map((tab) => (tab.noteController, tab.titleController))
             .toList();
 
-    // Remove tabs
     _tabs.removeWhere((tab) => tab != keepTab);
 
-    // Update active tab if needed
     if (_activeTab != null && !_tabs.contains(_activeTab)) {
       if (_tabs.isNotEmpty) {
         _activeTab = _tabs.last;
@@ -365,18 +330,17 @@ class TabManager extends ChangeNotifier {
 
     _saveTabsToStorage();
 
-    // Single notification and dispose after all operations
     WidgetsBinding.instance.addPostFrameCallback((_) {
       for (final (noteController, titleController) in controllersToDispose) {
         try {
           noteController.dispose();
         } catch (e) {
-          // Already disposed
+          // Ignore errors when disposing controllers
         }
         try {
           titleController.dispose();
         } catch (e) {
-          // Already disposed
+          // Ignore errors when disposing controllers
         }
       }
       notifyListeners();
@@ -389,7 +353,6 @@ class TabManager extends ChangeNotifier {
       final oldNoteController = tab.noteController;
       final oldTitleController = tab.titleController;
 
-      // Crear nuevos controladores con el contenido actualizado
       final updatedTab = tab.copyWith(
         noteController: SearchTextEditingController(text: content),
         titleController: TextEditingController(text: title),
@@ -409,7 +372,6 @@ class TabManager extends ChangeNotifier {
 
       _saveTabsToStorage();
 
-      // Diferir la notificación y dispose para evitar problemas con los controladores
       WidgetsBinding.instance.addPostFrameCallback((_) {
         oldNoteController.dispose();
         oldTitleController.dispose();
@@ -417,10 +379,14 @@ class TabManager extends ChangeNotifier {
       });
     }
   }
-  void setTabSearchQuery(EditorTab tab, String? query, {bool isAdvanced = false}) {
+
+  void setTabSearchQuery(
+    EditorTab tab,
+    String? query, {
+    bool isAdvanced = false,
+  }) {
     final index = _tabs.indexOf(tab);
     if (index != -1) {
-      // Only update if different to avoid unnecessary notifications
       if (_tabs[index].searchQuery == query &&
           _tabs[index].isAdvancedSearch == isAdvanced) {
         return;
@@ -440,6 +406,7 @@ class TabManager extends ChangeNotifier {
       });
     }
   }
+
   void markTabAsSaved(EditorTab tab) {
     final index = _tabs.indexOf(tab);
     if (index != -1) {
@@ -450,7 +417,6 @@ class TabManager extends ChangeNotifier {
         _activeTab = updatedTab;
       }
 
-      // Diferir la notificación para evitar problemas con los controladores
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
@@ -467,7 +433,6 @@ class TabManager extends ChangeNotifier {
         _activeTab = updatedTab;
       }
 
-      // Diferir la notificación para evitar problemas con los controladores
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
@@ -485,9 +450,6 @@ class TabManager extends ChangeNotifier {
       }
 
       _saveTabsToStorage();
-
-      // No notificamos listeners aquí para evitar reconstrucciones innecesarias
-      // El estado del modo lectura se maneja localmente en el editor
     }
   }
 
@@ -502,9 +464,6 @@ class TabManager extends ChangeNotifier {
       }
 
       _saveTabsToStorage();
-
-      // No notificamos listeners aquí para evitar reconstrucciones innecesarias
-      // El estado del centrado se maneja localmente en el editor
     }
   }
 
@@ -519,9 +478,6 @@ class TabManager extends ChangeNotifier {
       }
 
       _saveTabsToStorage();
-
-      // No notificamos listeners aquí para evitar reconstrucciones innecesarias
-      // El estado del split view se maneja localmente en el editor
     }
   }
 
@@ -546,18 +502,16 @@ class TabManager extends ChangeNotifier {
         _activeTab = updatedTab;
       }
 
-      // Diferir la notificación para evitar problemas con los controladores
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Dispose old controllers after the frame
         try {
           oldNoteController.dispose();
         } catch (e) {
-          // Already disposed
+          // Ignore errors when disposing controllers
         }
         try {
           oldTitleController.dispose();
         } catch (e) {
-          // Already disposed
+          // Ignore errors when disposing controllers
         }
         notifyListeners();
       });
@@ -570,10 +524,7 @@ class TabManager extends ChangeNotifier {
     );
     if (index != -1) {
       final tab = _tabs[index];
-      final updatedTab = tab.copyWith(
-        note: updatedNote,
-        // Keep existing controllers to avoid losing focus
-      );
+      final updatedTab = tab.copyWith(note: updatedNote);
 
       _tabs[index] = updatedTab;
 
@@ -581,7 +532,6 @@ class TabManager extends ChangeNotifier {
         _activeTab = updatedTab;
       }
 
-      // Diferir la notificación para evitar problemas con los controladores
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
@@ -624,7 +574,6 @@ class TabManager extends ChangeNotifier {
     if (oldIndex < 0 || oldIndex >= _tabs.length) return;
     if (newIndex < 0 || newIndex >= _tabs.length) return;
 
-    // Determine pinned groups before any modification
     final movingTab = _tabs[oldIndex];
     final wasPinned = movingTab.isPinned;
     final pinnedCount = _tabs.where((t) => t.isPinned).length;
@@ -632,24 +581,18 @@ class TabManager extends ChangeNotifier {
     final allowedStart = wasPinned ? 0 : pinnedCount;
     final allowedEnd = wasPinned ? (pinnedCount - 1) : (_tabs.length - 1);
 
-    // If target is outside allowed range for the group, abort (revert)
     if (newIndex < allowedStart || newIndex > allowedEnd) {
-      // Do nothing to revert to previous position
       return;
     }
 
-    // Perform reorder
     final tab = _tabs.removeAt(oldIndex);
     _tabs.insert(newIndex, tab);
 
-    // Notificar inmediatamente para feedback visual instantáneo
     notifyListeners();
 
-    // Guardar en storage de forma asíncrona
     _saveTabsToStorage();
   }
 
-  /// Moves an existing empty tab to the end of the tab list and makes it active
   void moveEmptyTabToEnd() {
     final existingEmptyTabIndex = _tabs.indexWhere((tab) => tab.note == null);
 
@@ -660,7 +603,6 @@ class TabManager extends ChangeNotifier {
       _activeTab = existingEmptyTab;
       _saveTabsToStorage();
 
-      // Diferir la notificación para evitar problemas con los controladores
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
@@ -692,7 +634,6 @@ class TabManager extends ChangeNotifier {
         tabsData.add(tabData);
       }
 
-      // Guardar índice de la pestaña activa
       final activeTabIndex =
           _activeTab != null ? _tabs.indexOf(_activeTab!) : -1;
 
@@ -728,8 +669,7 @@ class TabManager extends ChangeNotifier {
           final isReadMode = tabData['isReadMode'] as bool? ?? false;
           final isEditorCentered =
               tabData['isEditorCentered'] as bool? ?? false;
-          final isSplitView =
-              tabData['isSplitView'] as bool? ?? false;
+          final isSplitView = tabData['isSplitView'] as bool? ?? false;
           final lastAccessed = DateTime.parse(
             tabData['lastAccessed'] as String,
           );
@@ -742,7 +682,9 @@ class TabManager extends ChangeNotifier {
           if (note != null || tabId != null) {
             final tab = EditorTab(
               note: note,
-              noteController: SearchTextEditingController(text: note?.content ?? ''),
+              noteController: SearchTextEditingController(
+                text: note?.content ?? '',
+              ),
               titleController: TextEditingController(text: note?.title ?? ''),
               searchQuery: searchQuery,
               isAdvancedSearch: isAdvancedSearch,
@@ -758,27 +700,22 @@ class TabManager extends ChangeNotifier {
           }
         }
 
-        // Cerrar todas las pestañas existentes
         closeAllTabs();
 
-        // Ensure pinned tabs come first when restoring order
         loadedTabs.sort((a, b) {
           if (a.isPinned && !b.isPinned) return -1;
           if (!a.isPinned && b.isPinned) return 1;
           return 0;
         });
 
-        // Cargar las pestañas guardadas
         _tabs.addAll(loadedTabs);
 
-        // Restaurar la pestaña activa
         if (activeTabIndex >= 0 && activeTabIndex < _tabs.length) {
           _activeTab = _tabs[activeTabIndex];
         } else if (_tabs.isNotEmpty) {
           _activeTab = _tabs.last;
         }
 
-        // Diferir la notificación para evitar problemas con los controladores
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
@@ -794,19 +731,18 @@ class TabManager extends ChangeNotifier {
 
   @override
   void dispose() {
-    // Guardar pestañas antes de cerrar
     saveTabsToStorage();
 
     for (final tab in _tabs) {
       try {
         tab.noteController.dispose();
       } catch (e) {
-        // Already disposed
+        // Ignore errors when disposing controllers
       }
       try {
         tab.titleController.dispose();
       } catch (e) {
-        // Already disposed
+        // Ignore errors when disposing controllers
       }
     }
     super.dispose();

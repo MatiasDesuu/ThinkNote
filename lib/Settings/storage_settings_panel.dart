@@ -1,6 +1,3 @@
-// storage_settings_panel.dart
-// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -52,7 +49,6 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
         ),
         const SizedBox(height: 20),
 
-        // Import Section
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -109,7 +105,10 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                         maxLines: 1,
                       ),
                     ),
-                    onPressed: _isImporting || _isImportingFromFolder || _isPickerOpen ? null : _importZipFile,
+                    onPressed:
+                        _isImporting || _isImportingFromFolder || _isPickerOpen
+                            ? null
+                            : _importZipFile,
                     style: buttonStyle,
                   ),
                 ),
@@ -144,7 +143,9 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                       ),
                     ),
                     onPressed:
-                        _isImporting || _isImportingFromFolder || _isPickerOpen ? null : _importFromFolder,
+                        _isImporting || _isImportingFromFolder || _isPickerOpen
+                            ? null
+                            : _importFromFolder,
                     style: buttonStyle,
                   ),
                 ),
@@ -159,7 +160,6 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
 
         const SizedBox(height: 16),
 
-        // Export Section
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -211,7 +211,8 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                         maxLines: 1,
                       ),
                     ),
-                    onPressed: _isExporting || _isPickerOpen ? null : _exportDatabase,
+                    onPressed:
+                        _isExporting || _isPickerOpen ? null : _exportDatabase,
                     style: buttonStyle,
                   ),
                 ),
@@ -241,7 +242,10 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                         maxLines: 1,
                       ),
                     ),
-                    onPressed: _isExportingToFiles || _isPickerOpen ? null : _exportToFiles,
+                    onPressed:
+                        _isExportingToFiles || _isPickerOpen
+                            ? null
+                            : _exportToFiles,
                     style: buttonStyle,
                   ),
                 ),
@@ -272,7 +276,9 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                       ),
                     ),
                     onPressed:
-                        _isExportingBookmarks || _isPickerOpen ? null : _exportBookmarksToHtml,
+                        _isExportingBookmarks || _isPickerOpen
+                            ? null
+                            : _exportBookmarksToHtml,
                     style: buttonStyle,
                   ),
                 ),
@@ -283,7 +289,6 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
 
         const SizedBox(height: 16),
 
-        // Danger Zone Section
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -365,7 +370,8 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                         maxLines: 1,
                       ),
                     ),
-                    onPressed: _isDeleting || _isPickerOpen ? null : _deleteDatabase,
+                    onPressed:
+                        _isDeleting || _isPickerOpen ? null : _deleteDatabase,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colorScheme.error,
                       foregroundColor: colorScheme.onError,
@@ -529,7 +535,8 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                       style: TextButton.styleFrom(
                         backgroundColor:
                             Theme.of(context).colorScheme.surfaceContainerHigh,
-                        foregroundColor: Theme.of(context).colorScheme.onSurface,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onSurface,
                         minimumSize: const Size(0, 44),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -550,7 +557,8 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                       onPressed: () => Navigator.pop(context, true),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
                         minimumSize: const Size(0, 44),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -583,32 +591,24 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildBulletPoint(
-                    context,
-                    'Reclaiming unused disk space.',
-                  ),
+                  _buildBulletPoint(context, 'Reclaiming unused disk space.'),
                   _buildBulletPoint(
                     context,
                     'Defragmenting the database file.',
                   ),
-                  _buildBulletPoint(
-                    context,
-                    'Improving database performance.',
-                  ),
+                  _buildBulletPoint(context, 'Improving database performance.'),
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primaryContainer
-                          .withAlpha(50),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer.withAlpha(50),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withAlpha(50),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withAlpha(50),
                       ),
                     ),
                     child: Row(

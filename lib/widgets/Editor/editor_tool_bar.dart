@@ -45,11 +45,12 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
   }) {
     return CustomTooltip(
       message: tooltipMessage,
-      builder: (context, isHovering) => IconButton(
-        icon: Icon(iconData, size: iconSize),
-        onPressed: onPressed,
-        visualDensity: VisualDensity.compact,
-      ),
+      builder:
+          (context, isHovering) => IconButton(
+            icon: Icon(iconData, size: iconSize),
+            onPressed: onPressed,
+            visualDensity: VisualDensity.compact,
+          ),
     );
   }
 
@@ -208,10 +209,12 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                 ),
                 const VerticalDivider(width: 16, indent: 8, endIndent: 8),
                 GestureDetector(
-                  onSecondaryTapDown: (details) =>
-                      _showHeadingsMenu(context, details.globalPosition),
-                  onLongPressStart: (details) =>
-                      _showHeadingsMenu(context, details.globalPosition),
+                  onSecondaryTapDown:
+                      (details) =>
+                          _showHeadingsMenu(context, details.globalPosition),
+                  onLongPressStart:
+                      (details) =>
+                          _showHeadingsMenu(context, details.globalPosition),
                   child: _buildTooltipIconButton(
                     context,
                     iconData: Symbols.format_h1_rounded,

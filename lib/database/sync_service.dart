@@ -47,18 +47,15 @@ class SyncService {
   ); // 1 hour default
   bool _ignoreChanges = false;
 
-  // Stream for auto sync configuration changes
   final StreamController<bool> _autoSyncEnabledController =
       StreamController<bool>.broadcast();
   Stream<bool> get autoSyncEnabledStream => _autoSyncEnabledController.stream;
 
-  // Stream for auto sync interval changes
   final StreamController<Duration> _autoSyncIntervalController =
       StreamController<Duration>.broadcast();
   Stream<Duration> get autoSyncIntervalStream =>
       _autoSyncIntervalController.stream;
 
-  // Stream for screen open auto sync changes
   final StreamController<bool> _screenOpenAutoSyncController =
       StreamController<bool>.broadcast();
   Stream<bool> get screenOpenAutoSyncStream =>
@@ -114,10 +111,8 @@ class SyncService {
   void _triggerSync() {
     if (!_isInitialized) return;
 
-    // Cancelar el timer anterior si existe
     _debounceTimer?.cancel();
 
-    // Verificar si ha pasado suficiente tiempo desde la última sincronización
     final now = DateTime.now();
     if (_lastSyncTime != null &&
         now.difference(_lastSyncTime!) < _minSyncInterval &&
@@ -125,7 +120,6 @@ class SyncService {
       return;
     }
 
-    // Crear un nuevo timer
     _debounceTimer = Timer(const Duration(seconds: 2), () async {
       if (!_isSyncing && _changeCount >= _minChangesForSync) {
         await _performSync();
@@ -175,7 +169,7 @@ class SyncService {
 
       if (isManual) {
         _updateStatus(SyncStep.completed, 1.0, 'Sync completed');
-        // Reset to idle after a delay
+
         Future.delayed(const Duration(milliseconds: 500), () {
           _updateStatus(SyncStep.idle, 0.0, '');
         });
@@ -288,13 +282,11 @@ class SyncService {
 
   Future<bool> testConnection() async {
     try {
-      // Obtener las credenciales actuales
       final prefs = await SharedPreferences.getInstance();
       final url = prefs.getString('webdav_url') ?? '';
       final username = prefs.getString('webdav_username') ?? '';
       final password = prefs.getString('webdav_password') ?? '';
 
-      // Verificar que las credenciales no estén vacías
       if (url.isEmpty || username.isEmpty || password.isEmpty) {
         developer.log(
           'Missing credentials for connection test',
@@ -303,7 +295,6 @@ class SyncService {
         return false;
       }
 
-      // Intentar una operación real de WebDAV
       return await _webdavService.testConnection(url, username, password);
     } catch (e) {
       developer.log('Error testing connection: $e', name: 'SyncService');
@@ -311,7 +302,6 @@ class SyncService {
     }
   }
 
-  /// Upload the local database to the WebDAV server
   Future<void> uploadLocalDatabase() async {
     if (!_isInitialized) {
       await initialize();
@@ -332,7 +322,6 @@ class SyncService {
     }
   }
 
-  /// Download the database from the WebDAV server
   Future<void> downloadRemoteDatabase() async {
     if (!_isInitialized) {
       await initialize();

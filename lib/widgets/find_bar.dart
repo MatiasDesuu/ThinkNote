@@ -40,10 +40,7 @@ class _FindBarState extends State<FindBar> {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-                    color: colorScheme.outline.withAlpha(50),
-          width: 1,
-        ),
+        border: Border.all(color: colorScheme.outline.withAlpha(50), width: 1),
       ),
       child: Row(
         children: [
@@ -102,9 +99,7 @@ class _FindBarState extends State<FindBar> {
             SizedBox(
               height: buttonHeight,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
                   color: colorScheme.primary.withAlpha(20),
                   borderRadius: BorderRadius.circular(20),

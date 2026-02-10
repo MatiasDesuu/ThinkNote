@@ -237,7 +237,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 canPop: Navigator.canPop(context),
                 onPopInvokedWithResult: (bool didPop, bool? result) {
                   if (didPop) return;
-                  // Si no se pudo hacer pop, verificar si hay algo que cerrar
+
                   if (Navigator.canPop(context)) {
                     Navigator.pop(context);
                   }
@@ -327,17 +327,14 @@ class _SearchScreenState extends State<SearchScreen> {
     final isNotebook = item is Notebook;
     final hasContent = isNotebook ? false : (item.content.isNotEmpty);
 
-    // Obtener el icono apropiado
     IconData iconData;
     if (isNotebook) {
-      // Para notebooks, usar el icono personalizado o el por defecto
       iconData =
           item.iconId != null
               ? NotebookIconsRepository.getIconById(item.iconId!)?.icon ??
                   Icons.folder_rounded
               : Icons.folder_rounded;
     } else {
-      // Para notas, usar el icono de descripción
       iconData = Icons.description_outlined;
     }
 

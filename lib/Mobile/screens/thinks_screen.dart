@@ -155,7 +155,6 @@ class _ThinksScreenState extends State<ThinksScreen> {
       final notebookRepo = NotebookRepository(dbHelper);
       final noteRepo = NoteRepository(dbHelper);
 
-      // Search for "Drafts" in root
       final rootNotebooks = await notebookRepo.getNotebooksByParentId(null);
       var drafts = rootNotebooks.where((n) => n.name == 'Drafts').firstOrNull;
 
@@ -174,7 +173,6 @@ class _ThinksScreenState extends State<ThinksScreen> {
         throw Exception('Could not access Drafts notebook');
       }
 
-      // Create Note from Think
       final noteToAdd = Note(
         title: think.title,
         content: think.content,
@@ -187,7 +185,6 @@ class _ThinksScreenState extends State<ThinksScreen> {
 
       await noteRepo.createNote(noteToAdd);
 
-      // Delete Think
       await _thinkService.deleteThink(think.id!);
 
       if (mounted) {
@@ -260,9 +257,7 @@ class _ThinksScreenState extends State<ThinksScreen> {
                           onSave: () async {
                             try {
                               final dbHelper = DatabaseHelper();
-                              final thinkRepository = ThinkRepository(
-                                dbHelper,
-                              );
+                              final thinkRepository = ThinkRepository(dbHelper);
 
                               final updatedThink = Think(
                                 id: think.id,
@@ -275,9 +270,7 @@ class _ThinksScreenState extends State<ThinksScreen> {
                                 tags: think.tags,
                               );
 
-                              await thinkRepository.updateThink(
-                                updatedThink,
-                              );
+                              await thinkRepository.updateThink(updatedThink);
                               DatabaseHelper.notifyDatabaseChanged();
                             } catch (e) {
                               debugPrint('Error saving think: $e');
@@ -607,7 +600,6 @@ class _ThinksScreenState extends State<ThinksScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.center,
                                     children: [
-                                      // Ícono de think y favorito
                                       Stack(
                                         alignment: Alignment.center,
                                         clipBehavior: Clip.none,
@@ -641,7 +633,7 @@ class _ThinksScreenState extends State<ThinksScreen> {
                                         ],
                                       ),
                                       const SizedBox(width: 12),
-                                      // Título y detalles
+
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment:

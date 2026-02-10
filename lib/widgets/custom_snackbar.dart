@@ -27,7 +27,6 @@ class CustomSnackbar extends StatelessWidget {
     VoidCallback? onActionPressed,
     String? actionLabel,
   }) {
-    // Hide any existing snackbar
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
     ScaffoldMessenger.of(context).showSnackBar(

@@ -182,7 +182,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _calendarEventRepository = CalendarEventRepository(dbHelper);
       _isInitialized = true;
 
-      // Cargar eventos del calendario
       await _loadCalendarEvents();
     } catch (e) {
       print('Error initializing repository: $e');
@@ -197,7 +196,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _performManualSync() async {
     try {
-      // Verificar si WebDAV está habilitado antes de intentar sincronizar
       final prefs = await SharedPreferences.getInstance();
       final isEnabled = prefs.getBool('webdav_enabled') ?? false;
       final url = prefs.getString('webdav_url') ?? '';
@@ -250,7 +248,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       if (!mounted) return;
 
-      // Apply pending optimistic changes to the fresh data from database
       if (_pendingCompletionChanges.isNotEmpty) {
         for (int i = 0; i < notes.length; i++) {
           final id = notes[i].id;
@@ -420,7 +417,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return;
       }
 
-      // Check if this is a stack template
       if (template.title.toLowerCase().contains('#stack')) {
         await _createNotesFromStackTemplate(template);
         return;
@@ -497,7 +493,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return;
       }
 
-      // Parse the content for {{note1, note2, ...}}
       final regExp = RegExp(r'\{\{([^}]+)\}\}');
       final match = regExp.firstMatch(template.content);
       if (match == null) {
@@ -510,7 +505,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       final noteNames =
           noteNamesString.split(',').map((name) => name.trim()).toList();
 
-      // Get all notes from the template's notebook
       final templateNotes = await _noteRepository.getNotesByNotebookId(
         template.notebookId,
       );
@@ -518,7 +512,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         for (var note in templateNotes) note.title: note,
       };
 
-      // Check if all specified notes exist
       final missingNotes =
           noteNames
               .where((name) => !templateNoteMap.containsKey(name))
@@ -540,7 +533,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       List<Note> createdNotes = [];
 
-      // Create each note
       for (final noteName in noteNames) {
         final sourceNote = templateNoteMap[noteName]!;
 
@@ -603,7 +595,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _openTemplatesScreen() async {
-    // Pre-fetch templates for instant display
     Map<Notebook, List<Note>> preloadedTemplates = {};
     List<Notebook> preloadedNotebookTemplates = [];
     try {
@@ -841,13 +832,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       },
       onNoteLinkTap: (Note linkedNote) {
-        // Open the linked note by pushing a new editor on top
         Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => _buildNoteEditor(linkedNote)));
       },
       onNotebookLinkTap: (Notebook linkedNotebook) {
-        // Switch notebook and go back to list
         if (widget.onNotebookSelected != null) {
           widget.onNotebookSelected!(linkedNotebook);
         }
@@ -1012,7 +1001,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _notes[currentNoteIndex] = currentNote.copyWith(
         isCompleted: newCompletedState,
       );
-      // Re-sort the notes after completion change
+
       _sortNotes(_notes);
     });
 

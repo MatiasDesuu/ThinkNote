@@ -1,6 +1,3 @@
-// shortcuts_settings_panel.dart
-// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 
 class ShortcutsSettingsPanel extends StatelessWidget {
@@ -18,7 +15,6 @@ class ShortcutsSettingsPanel extends StatelessWidget {
         ),
         const SizedBox(height: 20),
 
-        // Navigation and Editing Section
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -95,7 +91,6 @@ class ShortcutsSettingsPanel extends StatelessWidget {
 
         const SizedBox(height: 16),
 
-        // Synchronization Section
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -137,7 +132,6 @@ class ShortcutsSettingsPanel extends StatelessWidget {
 
         const SizedBox(height: 16),
 
-        // Interface Section
         Card(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -247,8 +241,10 @@ class ShortcutsSettingsPanel extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0,
+                  vertical: 4.0,
+                ),
                 decoration: BoxDecoration(
                   color: colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8.0),
