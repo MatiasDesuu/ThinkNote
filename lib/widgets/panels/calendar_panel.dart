@@ -887,7 +887,7 @@ class CalendarPanelState extends State<CalendarPanel>
                                     candidateData.isNotEmpty
                                         ? colorScheme.error
                                         : (_isShowingUnassigned
-                                            ? colorScheme.secondary
+                                            ? colorScheme.onSurfaceVariant
                                             : colorScheme.primary),
                               );
                             },
@@ -1356,7 +1356,7 @@ class CalendarPanelState extends State<CalendarPanel>
                               candidateData.isNotEmpty
                                   ? colorScheme.error
                                   : (_isShowingUnassigned
-                                      ? colorScheme.secondary
+                                      ? colorScheme.onSurfaceVariant
                                       : colorScheme.primary),
                         );
                       },
