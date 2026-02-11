@@ -664,7 +664,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
 
   Future<void> _reorderSteps(int parentId, int oldIndex, int newIndex) async {
     final steps =
-        _subtasks.where((s) => s.parentId == parentId && !s.completed).toList();
+        _subtasks.where((s) => s.parentId == parentId).toList()
+          ..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
 
     if (newIndex > oldIndex) {
       newIndex -= 1;

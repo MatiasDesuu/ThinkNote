@@ -358,11 +358,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
           );
 
       final steps =
-          subtasks
-              .where((s) => s.parentId == parentId && !s.completed)
-              .toList();
+          subtasks.where((s) => s.parentId == parentId).toList()
+            ..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
       final otherSubtasks =
-          subtasks.where((s) => s.parentId != parentId || s.completed).toList();
+          subtasks.where((s) => s.parentId != parentId).toList();
 
       if (newIndex > oldIndex) {
         newIndex -= 1;
@@ -887,7 +886,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
             children: [
-              if (!_task.sortByPriority && !isCompleted)
+              if (!_task.sortByPriority)
                 ReorderableDragStartListener(
                   index: index,
                   child: Padding(
@@ -2045,76 +2044,61 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
       return const SizedBox.shrink();
     }
 
-    final pendingSteps =
-        _cachedSubtasks
-            ?.where((s) => s.parentId == parent.id && !s.completed)
-            .toList() ??
-        [];
-    final completedSteps =
-        _cachedSubtasks
-            ?.where((s) => s.parentId == parent.id && s.completed)
-            .toList() ??
-        [];
+    final allSteps =
+        _cachedSubtasks?.where((s) => s.parentId == parent.id).toList() ?? [];
 
-    if (pendingSteps.isEmpty && completedSteps.isEmpty) {
+    if (allSteps.isEmpty) {
       return const SizedBox.shrink();
+    }
+
+    allSteps.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+
+    if (_task.sortByPriority) {
+      allSteps.sort((a, b) {
+        final priorityComp = b.priority.index.compareTo(a.priority.index);
+        if (priorityComp != 0) return priorityComp;
+        return a.orderIndex.compareTo(b.orderIndex);
+      });
     }
 
     return Padding(
       padding: const EdgeInsets.only(left: 32, bottom: 4, right: 8),
       child: Column(
         children: [
-          if (pendingSteps.isNotEmpty)
-            _task.sortByPriority
-                ? Column(
-                  children:
-                      pendingSteps.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final step = entry.value;
-                        final isEditing =
-                            _editingSubtaskId == step.id.toString();
-                        return _buildSubtaskItem(
-                          step,
-                          isEditing,
-                          colorScheme,
-                          index,
-                        );
-                      }).toList(),
-                )
-                : ReorderableListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: pendingSteps.length,
-                  onReorder:
-                      (oldIndex, newIndex) =>
-                          _reorderSteps(parent.id!, oldIndex, newIndex),
-                  buildDefaultDragHandles: false,
-                  itemBuilder: (context, index) {
-                    final step = pendingSteps[index];
-                    final isEditing = _editingSubtaskId == step.id.toString();
-                    return _buildSubtaskItem(
-                      step,
-                      isEditing,
-                      colorScheme,
-                      index,
-                    );
-                  },
-                ),
-          if (completedSteps.isNotEmpty)
-            Column(
-              children:
-                  completedSteps.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final step = entry.value;
-                    final isEditing = _editingSubtaskId == step.id.toString();
-                    return _buildSubtaskItem(
-                      step,
-                      isEditing,
-                      colorScheme,
-                      index,
-                    );
-                  }).toList(),
-            ),
+          _task.sortByPriority
+              ? Column(
+                children:
+                    allSteps.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final step = entry.value;
+                      final isEditing = _editingSubtaskId == step.id.toString();
+                      return _buildSubtaskItem(
+                        step,
+                        isEditing,
+                        colorScheme,
+                        index,
+                      );
+                    }).toList(),
+              )
+              : ReorderableListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: allSteps.length,
+                onReorder:
+                    (oldIndex, newIndex) =>
+                        _reorderSteps(parent.id!, oldIndex, newIndex),
+                buildDefaultDragHandles: false,
+                itemBuilder: (context, index) {
+                  final step = allSteps[index];
+                  final isEditing = _editingSubtaskId == step.id.toString();
+                  return _buildSubtaskItem(
+                    step,
+                    isEditing,
+                    colorScheme,
+                    index,
+                  );
+                },
+              ),
         ],
       ),
     );

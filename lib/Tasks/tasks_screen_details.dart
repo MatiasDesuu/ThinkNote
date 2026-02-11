@@ -633,7 +633,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
               ? ValueKey('step_${subtask.id}')
               : ValueKey('sub_${subtask.id}'),
       index: index,
-      enabled: !ordenarPorPrioridad && !isCompleted,
+      enabled: !ordenarPorPrioridad,
       child: _SubtaskItemHover(
         builder: (context, isHovering) {
           return Container(
@@ -649,7 +649,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: Row(
                 children: [
-                  if (!ordenarPorPrioridad && !isCompleted)
+                  if (!ordenarPorPrioridad)
                     Icon(
                       Icons.drag_indicator_rounded,
                       color:
@@ -884,74 +884,63 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
       return const SizedBox.shrink();
     }
 
-    final pendingSteps =
-        widget.subtasks
-            .where((s) => s.parentId == subtask.id && !s.completed)
-            .toList();
-    final completedSteps =
-        widget.subtasks
-            .where((s) => s.parentId == subtask.id && s.completed)
-            .toList();
+    final allSteps =
+        widget.subtasks.where((s) => s.parentId == subtask.id).toList()
+          ..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
 
-    if (pendingSteps.isEmpty && completedSteps.isEmpty) {
+    if (allSteps.isEmpty) {
       return const SizedBox.shrink();
+    }
+
+    final sortByPriority = widget.selectedTask!.sortByPriority;
+
+    if (sortByPriority) {
+      allSteps.sort((a, b) {
+        final priorityComp = b.priority.index.compareTo(a.priority.index);
+        if (priorityComp != 0) return priorityComp;
+        return a.orderIndex.compareTo(b.orderIndex);
+      });
     }
 
     return Column(
       children: [
-        if (pendingSteps.isNotEmpty)
-          widget.selectedTask!.sortByPriority
-              ? Column(
-                children:
-                    pendingSteps.map((step) {
-                      final isEditing =
-                          widget.editingSubtaskId == step.id.toString();
-                      return _buildSubtaskItem(
-                        step,
-                        isEditing,
-                        colorScheme,
-                        isStep: true,
-                      );
-                    }).toList(),
-              )
-              : ReorderableListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: pendingSteps.length,
-                onReorder:
-                    (oldIndex, newIndex) =>
-                        widget.onReorderSteps(subtask.id!, oldIndex, newIndex),
-                buildDefaultDragHandles: false,
-                itemBuilder: (context, index) {
-                  final step = pendingSteps[index];
-                  final isEditing =
-                      widget.editingSubtaskId == step.id.toString();
-                  return _buildSubtaskItem(
-                    step,
-                    isEditing,
-                    colorScheme,
-                    isStep: true,
-                    stepIndex: index,
-                  );
-                },
-              ),
-        if (completedSteps.isNotEmpty)
-          Column(
-            children:
-                completedSteps.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final step = entry.value;
-                  final isEditing =
-                      widget.editingSubtaskId == step.id.toString();
-                  return _buildSubtaskItem(
-                    step,
-                    isEditing,
-                    colorScheme,
-                    isStep: true,
-                    stepIndex: index,
-                  );
-                }).toList(),
-          ),
+        sortByPriority
+            ? Column(
+              children:
+                  allSteps.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final step = entry.value;
+                    final isEditing =
+                        widget.editingSubtaskId == step.id.toString();
+                    return _buildSubtaskItem(
+                      step,
+                      isEditing,
+                      colorScheme,
+                      isStep: true,
+                      stepIndex: index,
+                    );
+                  }).toList(),
+            )
+            : ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: allSteps.length,
+              onReorder:
+                  (oldIndex, newIndex) =>
+                      widget.onReorderSteps(subtask.id!, oldIndex, newIndex),
+              buildDefaultDragHandles: false,
+              itemBuilder: (context, index) {
+                final step = allSteps[index];
+                final isEditing = widget.editingSubtaskId == step.id.toString();
+                return _buildSubtaskItem(
+                  step,
+                  isEditing,
+                  colorScheme,
+                  isStep: true,
+                  stepIndex: index,
+                );
+              },
+            ),
       ],
     );
   }
