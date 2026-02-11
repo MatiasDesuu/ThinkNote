@@ -82,14 +82,13 @@ class BookmarksSidebarPanel extends StatelessWidget {
 
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                  horizontal: 8,
                 ),
                 child: TextField(
                   controller: searchController,
                   decoration: InputDecoration(
                     hintText: 'Search...',
-                    prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                    prefixIcon: const Icon(Icons.search_rounded, size: 18),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -121,7 +120,7 @@ class BookmarksSidebarPanel extends StatelessWidget {
 
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
+                  horizontal: 8,
                   vertical: 4,
                 ),
                 child: Material(
