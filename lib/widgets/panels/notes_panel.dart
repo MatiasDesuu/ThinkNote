@@ -243,7 +243,7 @@ class NotesPanelState extends State<NotesPanel> {
     if (anchorIndex == -1) {
       if (_notes.isNotEmpty) {
         _selectionAnchorId = _notes.first.id;
-        _handleShiftSelection(note); // Retry with new anchor
+        _handleShiftSelection(note);
       } else {
         _handleSingleSelection(note);
       }
@@ -296,7 +296,7 @@ class NotesPanelState extends State<NotesPanel> {
   void _handleSingleSelection(Note note) {
     _selectedNoteIds.clear();
     _lastClickedNoteId = note.id;
-    _selectionAnchorId = note.id; // Set anchor for future shift-selections
+    _selectionAnchorId = note.id;
   }
 
   void _clearSelection() {
@@ -1410,7 +1410,7 @@ class NotesPanelState extends State<NotesPanel> {
           _isDragging = false;
           _dragTargetIndex = null;
           _currentVisualLineY = null;
-          _elementBounds.clear(); // Clear bounds when drag ends
+          _elementBounds.clear();
           _pendingDeselectionNoteId = null;
         });
       },
@@ -1755,7 +1755,7 @@ class NotesPanelState extends State<NotesPanel> {
               }
               : null,
       child: ListView.builder(
-        itemCount: _notes.length + 2, // +2 for start and end drop zones
+        itemCount: _notes.length + 2,
         itemBuilder: (context, index) {
           if (index == 0) {
             return DragTarget<Map<String, dynamic>>(
@@ -1853,8 +1853,7 @@ class NotesPanelState extends State<NotesPanel> {
             );
           }
 
-          final note =
-              _notes[index - 1]; // -1 because index 0 is the start drop zone
+          final note = _notes[index - 1];
           return _buildNoteWithDropZone(note, index - 1);
         },
       ),

@@ -47,9 +47,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     with TickerProviderStateMixin {
   List<Task> _tasks = [];
   List<Task> _completedTasks = [];
-  List<Task> _allPendingTasks = []; // Todas las tareas pendientes sin filtrar
-  List<Task> _allCompletedTasks =
-      []; // Todas las tareas completadas sin filtrar
+  List<Task> _allPendingTasks = [];
+  List<Task> _allCompletedTasks = [];
   Task? _selectedTask;
   List<Subtask> _subtasks = [];
   String? _selectedTag;
@@ -99,7 +98,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     _sidebarAnimController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
-      value: 1.0, // Empieza visible
+      value: 1.0,
     );
     _sidebarWidthAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _sidebarAnimController, curve: Curves.easeInOut),
@@ -244,9 +243,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
 
       if (mounted) {
         setState(() {
-          _tasks = allPendingTasks; // Inicialmente mostrar todas las tareas
-          _completedTasks =
-              allCompletedTasks; // Inicialmente mostrar todas las tareas
+          _tasks = allPendingTasks;
+          _completedTasks = allCompletedTasks;
           _allPendingTasks = allPendingTasks;
           _allCompletedTasks = allCompletedTasks;
         });
@@ -295,9 +293,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
 
       if (mounted) {
         setState(() {
-          _tasks = allPendingTasks; // Inicialmente mostrar todas las tareas
-          _completedTasks =
-              allCompletedTasks; // Inicialmente mostrar todas las tareas
+          _tasks = allPendingTasks;
+          _completedTasks = allCompletedTasks;
           _allPendingTasks = allPendingTasks;
           _allCompletedTasks = allCompletedTasks;
           _subtasks = subtasks;
@@ -523,7 +520,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
         _selectedTask = Task(
           id: _selectedTask!.id,
           name: _selectedTask!.name,
-          date: null, // Fecha explícitamente null
+          date: null,
           completed: _selectedTask!.completed,
           state: _selectedTask!.state,
           createdAt: _selectedTask!.createdAt,
@@ -558,6 +555,24 @@ class _TodoScreenDBState extends State<TodoScreenDB>
       setState(() {
         _subtasks.add(newSubtask);
         _newSubtaskController.clear();
+      });
+    }
+  }
+
+  Future<void> _addSubtaskStep(Subtask parentSubtask, String text) async {
+    if (_selectedTask == null || text.trim().isEmpty) {
+      return;
+    }
+
+    final newStep = await _databaseService.taskService.createSubtask(
+      _selectedTask!.id!,
+      text.trim(),
+      parentId: parentSubtask.id,
+    );
+
+    if (newStep != null) {
+      setState(() {
+        _subtasks.add(newStep);
       });
     }
   }
@@ -647,12 +662,45 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     }
   }
 
+  Future<void> _reorderSteps(int parentId, int oldIndex, int newIndex) async {
+    final steps =
+        _subtasks.where((s) => s.parentId == parentId && !s.completed).toList();
+
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+
+    final item = steps.removeAt(oldIndex);
+    steps.insert(newIndex, item);
+
+    final subtasksToUpdate = <Subtask>[];
+    for (int i = 0; i < steps.length; i++) {
+      final subtask = steps[i];
+      if (subtask.orderIndex != i) {
+        subtasksToUpdate.add(subtask.copyWith(orderIndex: i));
+      }
+    }
+
+    setState(() {
+      for (final updated in subtasksToUpdate) {
+        final idx = _subtasks.indexWhere((s) => s.id == updated.id);
+        if (idx != -1) {
+          _subtasks[idx] = updated;
+        }
+      }
+    });
+
+    for (final updatedSubtask in subtasksToUpdate) {
+      await _databaseService.taskService.updateSubtask(updatedSubtask);
+    }
+  }
+
   List<Subtask> _getPendingSubtasks() {
-    return _subtasks.where((s) => !s.completed).toList();
+    return _subtasks.where((s) => !s.completed && s.parentId == null).toList();
   }
 
   List<Subtask> _getCompletedSubtasks() {
-    return _subtasks.where((s) => s.completed).toList();
+    return _subtasks.where((s) => s.completed && s.parentId == null).toList();
   }
 
   Future<void> _updateSubtaskPriority(
@@ -1321,6 +1369,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                           onSaveSubtaskEditing: _saveSubtaskEditing,
                           onCancelSubtaskEditing: _cancelSubtaskEditing,
                           onReorderSubtasks: _reorderSubtasks,
+                          onReorderSteps: _reorderSteps,
                           onUpdateSubtaskPriority: _updateSubtaskPriority,
                           onToggleSortByPriority: _toggleSortByPriority,
                           onToggleSubtaskExpansion: _toggleSubtaskExpansion,
@@ -1334,6 +1383,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
                           onShowManageTags: _showManageTagsDialog,
                           getPendingSubtasks: _getPendingSubtasks,
                           getCompletedSubtasks: _getCompletedSubtasks,
+                          onAddSubtaskStep: _addSubtaskStep,
                         ),
                       ),
                     ),
@@ -1429,12 +1479,8 @@ class _TodoScreenDBState extends State<TodoScreenDB>
 
                 Positioned(
                   top: 0,
-                  left:
-                      60 +
-                      (_isSidebarVisible
-                          ? _sidebarWidth
-                          : 0), // Skip left sidebar + central task sidebar
-                  right: 138, // Control buttons width
+                  left: 60 + (_isSidebarVisible ? _sidebarWidth : 0),
+                  right: 138,
                   height: 40,
                   child: MoveWindow(),
                 ),
@@ -2058,7 +2104,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     setState(() {
       _selectedTag = tag;
     });
-    _filterTasksByTag(tag); // Aplicar filtro solo a la tab actual
+    _filterTasksByTag(tag);
   }
 
   void _openSettings() {

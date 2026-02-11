@@ -512,6 +512,6 @@ class NotebookIconsRepository {
   }
 
   static NotebookIcon getDefaultIcon() {
-    return icons.first; // Retorna el primer icono (folder_rounded)
+    return icons.first;
   }
 }

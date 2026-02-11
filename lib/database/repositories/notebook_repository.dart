@@ -88,8 +88,8 @@ class NotebookRepository {
     try {
       stmt.execute([
         notebook.name,
-        notebook.parentId, // Para la condición CASE
-        notebook.parentId, // Para el valor ELSE
+        notebook.parentId,
+        notebook.parentId,
         notebook.orderIndex,
         notebook.isFavorite ? 1 : 0,
         notebook.iconId,

@@ -32,7 +32,7 @@ class _FindBarState extends State<FindBar> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    const buttonHeight = 36.0; // Height for all elements
+    const buttonHeight = 36.0;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8.0),

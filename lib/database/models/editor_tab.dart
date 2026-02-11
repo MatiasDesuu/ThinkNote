@@ -11,10 +11,10 @@ class EditorTab {
   final bool isDirty;
   final bool isPinned;
   final bool isReadMode;
-  final bool isEditorCentered; // Individual centered state for each tab
-  final bool isSplitView; // Individual split view state for each tab
+  final bool isEditorCentered;
+  final bool isSplitView;
   final DateTime lastAccessed;
-  final String? tabId; // Unique identifier for empty tabs
+  final String? tabId;
 
   const EditorTab({
     this.note,

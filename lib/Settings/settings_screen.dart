@@ -194,8 +194,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               Positioned(
                 top: 0,
-                left: 60, // Width of left sidebar
-                right: 138, // Width of control buttons
+                left: 60,
+                right: 138,
                 height: 40,
                 child: MoveWindow(),
               ),

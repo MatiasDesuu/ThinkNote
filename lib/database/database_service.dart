@@ -81,9 +81,7 @@ class DatabaseService {
           await outFile.writeAsBytes(file.content as List<int>);
         }
         extractedCount++;
-        onProgress?.call(
-          (extractedCount / totalEntries) * 0.5,
-        ); // 50% for extraction
+        onProgress?.call((extractedCount / totalEntries) * 0.5);
       }
 
       final dbHelper = DatabaseHelper();
@@ -94,9 +92,7 @@ class DatabaseService {
 
       await _processDirectory(tempDir, db, null, (processed) {
         processedCount += processed;
-        onProgress?.call(
-          0.5 + ((processedCount / totalToProcess) * 0.5),
-        ); // 50% for processing
+        onProgress?.call(0.5 + ((processedCount / totalToProcess) * 0.5));
       });
 
       notifyDatabaseChanged();

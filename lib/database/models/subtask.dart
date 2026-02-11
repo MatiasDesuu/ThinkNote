@@ -7,6 +7,7 @@ class Subtask {
   final bool completed;
   final int orderIndex;
   final SubtaskPriority priority;
+  final int? parentId;
 
   Subtask({
     this.id,
@@ -15,6 +16,7 @@ class Subtask {
     this.completed = false,
     this.orderIndex = 0,
     this.priority = SubtaskPriority.medium,
+    this.parentId,
   });
 
   Map<String, dynamic> toMap() {
@@ -25,6 +27,7 @@ class Subtask {
       'completed': completed ? 1 : 0,
       'order_index': orderIndex,
       'priority': priority.index,
+      'parent_id': parentId,
     };
   }
 
@@ -36,6 +39,7 @@ class Subtask {
       completed: map['completed'] == 1,
       orderIndex: map['order_index'] as int? ?? 0,
       priority: SubtaskPriority.values[map['priority'] as int? ?? 1],
+      parentId: map['parent_id'] as int?,
     );
   }
 
@@ -46,6 +50,7 @@ class Subtask {
     bool? completed,
     int? orderIndex,
     SubtaskPriority? priority,
+    int? parentId,
   }) {
     return Subtask(
       id: id ?? this.id,
@@ -54,6 +59,7 @@ class Subtask {
       completed: completed ?? this.completed,
       orderIndex: orderIndex ?? this.orderIndex,
       priority: priority ?? this.priority,
+      parentId: parentId ?? this.parentId,
     );
   }
 }

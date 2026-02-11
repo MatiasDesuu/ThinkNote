@@ -146,7 +146,9 @@ class DatabaseHelper {
         ${config.DatabaseConfig.columnSubtaskCompleted} INTEGER NOT NULL DEFAULT 0,
         ${config.DatabaseConfig.columnSubtaskPriority} INTEGER NOT NULL DEFAULT 1,
         ${config.DatabaseConfig.columnOrderIndex} INTEGER NOT NULL DEFAULT 0,
-        FOREIGN KEY (${config.DatabaseConfig.columnTaskId}) REFERENCES ${config.DatabaseConfig.tableTasks} (${config.DatabaseConfig.columnId}) ON DELETE CASCADE
+        ${config.DatabaseConfig.columnParentId} INTEGER,
+        FOREIGN KEY (${config.DatabaseConfig.columnTaskId}) REFERENCES ${config.DatabaseConfig.tableTasks} (${config.DatabaseConfig.columnId}) ON DELETE CASCADE,
+        FOREIGN KEY (${config.DatabaseConfig.columnParentId}) REFERENCES ${config.DatabaseConfig.tableSubtasks} (${config.DatabaseConfig.columnId}) ON DELETE CASCADE
       )
     ''');
 
@@ -537,6 +539,25 @@ class DatabaseHelper {
           db.execute('''
             ALTER TABLE ${config.DatabaseConfig.tableCalendarEvents}
             ADD COLUMN ${config.DatabaseConfig.columnCalendarEventStatus} TEXT
+          ''');
+        }
+      } catch (e) {
+        // Ignore if column already exists
+      }
+
+      try {
+        final result = db.select('''
+          PRAGMA table_info(${config.DatabaseConfig.tableSubtasks})
+        ''');
+
+        final hasParentIdColumn = result.any(
+          (row) => row['name'] == config.DatabaseConfig.columnParentId,
+        );
+
+        if (!hasParentIdColumn) {
+          db.execute('''
+            ALTER TABLE ${config.DatabaseConfig.tableSubtasks}
+            ADD COLUMN ${config.DatabaseConfig.columnParentId} INTEGER
           ''');
         }
       } catch (e) {

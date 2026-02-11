@@ -5,12 +5,7 @@ import '../../database/models/editor_tab.dart';
 import '../../services/immersive_mode_service.dart';
 import '../context_menu.dart';
 
-enum TabDisplayMode {
-  full, // Show full title + close button
-  compact, // Show truncated title + close button
-  minimal, // Show truncated title only
-  icon, // Show only icon
-}
+enum TabDisplayMode { full, compact, minimal, icon }
 
 class EditorTabs extends StatefulWidget {
   final List<EditorTab> tabs;
@@ -51,15 +46,12 @@ class EditorTabsState extends State<EditorTabs> {
 
   int? _hoveredTabIndex;
 
-  final Map<String, bool> _isExpanded = {}; // true = expanded (full width)
-  final Map<String, bool> _isClosing =
-      {}; // true = currently animating close (shrinking)
-  final Set<String> _suppressNextOpen =
-      {}; // keys for which next open animation should be skipped
+  final Map<String, bool> _isExpanded = {};
+  final Map<String, bool> _isClosing = {};
+  final Set<String> _suppressNextOpen = {};
   bool _suppressNextUpdateAnimations = false;
   bool _skipAnimationsThisBuild = false;
-  bool _initialPopulation =
-      true; // true until we handle the first non-empty tabs population
+  bool _initialPopulation = true;
   final Set<String> _noAnimateKeys = {};
   static const Duration _kTabAnimDuration = Duration(milliseconds: 100);
 
@@ -262,7 +254,7 @@ class EditorTabsState extends State<EditorTabs> {
 
     final minTabWidth = 120.0;
     final maxTabWidth = 200.0;
-    final newTabButtonWidth = 40.0; // Approximate width of new tab button
+    final newTabButtonWidth = 40.0;
 
     final windowControlsWidth = isImmersiveMode ? 138.0 : 0.0;
     final effectiveAvailableWidth = availableWidth - windowControlsWidth;
@@ -290,14 +282,13 @@ class EditorTabsState extends State<EditorTabs> {
 
     TabDisplayMode displayMode;
     if (actualTabWidth >= 180) {
-      displayMode = TabDisplayMode.full; // Show full title + close button
+      displayMode = TabDisplayMode.full;
     } else if (actualTabWidth >= 140) {
-      displayMode =
-          TabDisplayMode.compact; // Show truncated title + close button
+      displayMode = TabDisplayMode.compact;
     } else if (actualTabWidth >= 100) {
-      displayMode = TabDisplayMode.minimal; // Show truncated title only
+      displayMode = TabDisplayMode.minimal;
     } else {
-      displayMode = TabDisplayMode.icon; // Show only icon
+      displayMode = TabDisplayMode.icon;
     }
 
     for (final tab in widget.tabs) {
@@ -327,7 +318,7 @@ class EditorTabsState extends State<EditorTabs> {
             Positioned(
               top: 0,
               left: 0,
-              right: 138, // Width of window controls (3 * 46)
+              right: 138,
               height: 40,
               child: MoveWindow(),
             ),
@@ -485,7 +476,7 @@ class EditorTabsState extends State<EditorTabs> {
 
   void _requestCloseTab(EditorTab tab) {
     final key = _tabKey(tab);
-    if (_isClosing[key] == true) return; // already closing
+    if (_isClosing[key] == true) return;
 
     setState(() {
       _isClosing[key] = true;
@@ -667,7 +658,7 @@ class EditorTabsState extends State<EditorTabs> {
           _isDragging = false;
           _dragTargetIndex = null;
           _currentVisualLineX = null;
-          _elementBounds.clear(); // Clear bounds when drag ends
+          _elementBounds.clear();
         });
       },
       feedback: Opacity(

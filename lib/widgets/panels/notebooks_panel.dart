@@ -608,7 +608,7 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
     if (notebook.id == null) return;
 
     final children = _childNotebooks[notebook.id!] ?? [];
-    if (children.isEmpty) return; // No expandir si no hay hijos
+    if (children.isEmpty) return;
 
     final controller = _getAnimationController(notebook.id!);
     final isCurrentlyExpanded = _expandedNotebooks.contains(notebook.id);

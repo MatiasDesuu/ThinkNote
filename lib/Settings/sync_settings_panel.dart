@@ -17,8 +17,8 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
   final _passwordController = TextEditingController();
   bool _isEnabled = false;
   bool _autoSyncEnabled = true;
-  int _autoSyncIntervalMinutes = 60; // Default 1 hour
-  bool _screenOpenAutoSyncEnabled = true; // Default enabled
+  int _autoSyncIntervalMinutes = 60;
+  bool _screenOpenAutoSyncEnabled = true;
   bool _isLoading = true;
   bool _isTesting = false;
 

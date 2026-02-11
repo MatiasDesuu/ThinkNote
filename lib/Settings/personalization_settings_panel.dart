@@ -2,43 +2,43 @@ import 'package:flutter/material.dart';
 import '../theme_handler.dart' as theme_handler;
 
 const List<Color> materialYouColors = [
-  Color(0xFFE53935), // Red
-  Color(0xFFD81B60), // Pink
-  Color(0xFF8E24AA), // Purple
-  Color(0xFF5E35B1), // Deep Purple
-  Color(0xFF3949AB), // Indigo
-  Color(0xFF1E88E5), // Blue
-  Color(0xFF039BE5), // Light Blue
-  Color(0xFF00ACC1), // Cyan
-  Color(0xFF00897B), // Teal
-  Color(0xFF43A047), // Green
-  Color(0xFF7CB342), // Light Green
-  Color(0xFFFDD835), // Yellow
-  Color(0xFFFFB300), // Amber
-  Color(0xFFFB8C00), // Orange
-  Color(0xFFD84315), // Deep Orange
-  Color(0xFF795548), // Brown
-  Color(0xFF757575), // Grey
-  Color(0xFF546E7A), // Blue Grey
+  Color(0xFFE53935),
+  Color(0xFFD81B60),
+  Color(0xFF8E24AA),
+  Color(0xFF5E35B1),
+  Color(0xFF3949AB),
+  Color(0xFF1E88E5),
+  Color(0xFF039BE5),
+  Color(0xFF00ACC1),
+  Color(0xFF00897B),
+  Color(0xFF43A047),
+  Color(0xFF7CB342),
+  Color(0xFFFDD835),
+  Color(0xFFFFB300),
+  Color(0xFFFB8C00),
+  Color(0xFFD84315),
+  Color(0xFF795548),
+  Color(0xFF757575),
+  Color(0xFF546E7A),
 
-  Color(0xFFFFABAB), // Soft Red
-  Color(0xFFF48FB1), // Soft Pink
-  Color(0xFFCE93D8), // Soft Purple
-  Color(0xFFB39DDB), // Soft Deep Purple
-  Color(0xFF9FA8DA), // Soft Indigo
-  Color(0xFF90CAF9), // Soft Blue
-  Color(0xFF81D4FA), // Soft Light Blue
-  Color(0xFF80DEEA), // Soft Cyan
-  Color(0xFF80CBC4), // Soft Teal
-  Color(0xFFA5D6A7), // Soft Green
-  Color(0xFFC5E1A5), // Soft Light Green
-  Color(0xFFFFF59D), // Soft Yellow
-  Color(0xFFFFE082), // Soft Amber
-  Color(0xFFFFCC80), // Soft Orange
-  Color(0xFFFFAB91), // Soft Deep Orange
-  Color(0xFFBCAAA4), // Soft Brown
-  Color(0xFFBDBDBD), // Soft Grey
-  Color(0xFF90A4AE), // Soft Blue Grey
+  Color(0xFFFFABAB),
+  Color(0xFFF48FB1),
+  Color(0xFFCE93D8),
+  Color(0xFFB39DDB),
+  Color(0xFF9FA8DA),
+  Color(0xFF90CAF9),
+  Color(0xFF81D4FA),
+  Color(0xFF80DEEA),
+  Color(0xFF80CBC4),
+  Color(0xFFA5D6A7),
+  Color(0xFFC5E1A5),
+  Color(0xFFFFF59D),
+  Color(0xFFFFE082),
+  Color(0xFFFFCC80),
+  Color(0xFFFFAB91),
+  Color(0xFFBCAAA4),
+  Color(0xFFBDBDBD),
+  Color(0xFF90A4AE),
 ];
 
 class PersonalizationSettingsPanel extends StatefulWidget {

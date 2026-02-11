@@ -406,8 +406,8 @@ class EditorSettings {
   ];
 
   static List<Color> get predefinedTextColors => [
-    const Color(0xFFFFFFFF), // Blanco
-    const Color(0xFF000000), // Negro
+    const Color(0xFFFFFFFF),
+    const Color(0xFF000000),
     ...materialYouColors,
   ];
 
@@ -470,7 +470,7 @@ class EditorSettings {
   static Future<Color> getFontColor() async {
     final useTheme = await getUseThemeFontColor();
     if (useTheme) {
-      return defaultFontColor; // Will be overridden by theme
+      return defaultFontColor;
     }
     final colorValue = await PlatformSettings.get(
       _fontColorKey,

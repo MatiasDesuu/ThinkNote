@@ -143,7 +143,7 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
     final dialogHeight =
         hasResults
             ? (screenSize.height * 0.7 > 500 ? 500.0 : screenSize.height * 0.7)
-            : 80.0; // Solo search field
+            : 80.0;
 
     return Stack(
       children: [

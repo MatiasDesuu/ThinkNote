@@ -297,7 +297,7 @@ class IconSidebarState extends State<IconSidebar>
       final isEnabled = await syncService.getScreenOpenAutoSyncEnabled();
 
       if (!isEnabled) {
-        return; // Skip sync if disabled
+        return;
       }
 
       await syncService.forceSync(isManual: false);

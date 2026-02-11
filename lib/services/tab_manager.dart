@@ -181,7 +181,7 @@ class TabManager extends ChangeNotifier {
       noteController: SearchTextEditingController(text: note.content),
       titleController: TextEditingController(text: note.title),
       lastAccessed: DateTime.now(),
-      isDirty: false, // Reset dirty state for new note
+      isDirty: false,
     );
 
     _tabs[activeTabIndex] = updatedTab;

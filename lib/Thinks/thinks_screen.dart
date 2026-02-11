@@ -83,7 +83,7 @@ class ThinksScreenState extends State<ThinksScreen>
     _sidebarAnimController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
-      value: 1.0, // Empieza visible
+      value: 1.0,
     );
     _sidebarWidthAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _sidebarAnimController, curve: Curves.easeInOut),
@@ -895,8 +895,7 @@ class ThinksScreenState extends State<ThinksScreen>
                                       id: _selectedThink!.id!,
                                       title: _selectedThink!.title,
                                       content: _selectedThink!.content,
-                                      notebookId:
-                                          0, // Usamos 0 como ID por defecto para thinks
+                                      notebookId: 0,
                                       createdAt: _selectedThink!.createdAt,
                                       updatedAt: _selectedThink!.updatedAt,
                                       isFavorite: _selectedThink!.isFavorite,
@@ -997,8 +996,8 @@ class ThinksScreenState extends State<ThinksScreen>
 
                 Positioned(
                   top: 0,
-                  left: 60, // Left sidebar width
-                  right: 138, // Control buttons width
+                  left: 60,
+                  right: 138,
                   height: 40,
                   child: MoveWindow(),
                 ),

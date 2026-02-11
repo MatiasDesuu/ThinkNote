@@ -702,7 +702,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         setState(() {
           final index = _notes.indexWhere((n) => n.id == note.id);
           if (index != -1) {
-            _notes[index] = note; // Revert to original state
+            _notes[index] = note;
             _sortNotes(_notes);
           }
         });
@@ -737,7 +737,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (mounted) {
         setState(() {
           if (!_notes.any((n) => n.id == note.id)) {
-            _notes.add(note); // Restore note if deletion failed
+            _notes.add(note);
             _sortNotes(_notes);
           }
         });
@@ -933,7 +933,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
           if (a.isCompleted == b.isCompleted) {
             if (_completionSubSortByDate) {
-              return b.createdAt.compareTo(a.createdAt); // Más reciente primero
+              return b.createdAt.compareTo(a.createdAt);
             } else {
               return a.title.compareTo(b.title);
             }

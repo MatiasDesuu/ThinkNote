@@ -50,7 +50,7 @@ class TaskService {
     final updatedTask = Task(
       id: task.id,
       name: task.name,
-      date: task.date, // Mantener la fecha explícitamente
+      date: task.date,
       completed: task.completed,
       state: task.state,
       createdAt: task.createdAt,
@@ -74,7 +74,7 @@ class TaskService {
     final updatedTask = Task(
       id: task.id,
       name: task.name,
-      date: date, // Puede ser null para borrar la fecha
+      date: date,
       completed: task.completed,
       state: task.state,
       createdAt: task.createdAt,
@@ -119,8 +119,12 @@ class TaskService {
     }
   }
 
-  Future<Subtask?> createSubtask(int taskId, String text) async {
-    final subtask = Subtask(taskId: taskId, text: text);
+  Future<Subtask?> createSubtask(
+    int taskId,
+    String text, {
+    int? parentId,
+  }) async {
+    final subtask = Subtask(taskId: taskId, text: text, parentId: parentId);
 
     final id = await _taskRepository.createSubtask(subtask);
     final subtasks = await _taskRepository.getSubtasksByTaskId(taskId);

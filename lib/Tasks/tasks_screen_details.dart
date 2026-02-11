@@ -30,6 +30,7 @@ class TaskDetailsPanel extends StatefulWidget {
   final Function(Subtask) onSaveSubtaskEditing;
   final VoidCallback onCancelSubtaskEditing;
   final Function(int, int) onReorderSubtasks;
+  final Function(int, int, int) onReorderSteps;
   final Function(Subtask, SubtaskPriority) onUpdateSubtaskPriority;
   final VoidCallback onToggleSortByPriority;
   final Function(String) onToggleSubtaskExpansion;
@@ -40,6 +41,7 @@ class TaskDetailsPanel extends StatefulWidget {
   final VoidCallback onShowManageTags;
   final List<Subtask> Function() getPendingSubtasks;
   final List<Subtask> Function() getCompletedSubtasks;
+  final Function(Subtask, String) onAddSubtaskStep;
 
   const TaskDetailsPanel({
     super.key,
@@ -62,6 +64,7 @@ class TaskDetailsPanel extends StatefulWidget {
     required this.onSaveSubtaskEditing,
     required this.onCancelSubtaskEditing,
     required this.onReorderSubtasks,
+    required this.onReorderSteps,
     required this.onUpdateSubtaskPriority,
     required this.onToggleSortByPriority,
     required this.onToggleSubtaskExpansion,
@@ -72,6 +75,7 @@ class TaskDetailsPanel extends StatefulWidget {
     required this.onShowManageTags,
     required this.getPendingSubtasks,
     required this.getCompletedSubtasks,
+    required this.onAddSubtaskStep,
   });
 
   @override
@@ -79,6 +83,25 @@ class TaskDetailsPanel extends StatefulWidget {
 }
 
 class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
+  final TextEditingController _stepController = TextEditingController();
+  int? _addingStepSubtaskId;
+  final Set<int> _textExpandedIds = {};
+
+  @override
+  void didUpdateWidget(covariant TaskDetailsPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedTask?.id != widget.selectedTask?.id) {
+      _textExpandedIds.clear();
+      _addingStepSubtaskId = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _stepController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -592,24 +615,29 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
   Widget _buildSubtaskItem(
     Subtask subtask,
     bool isEditing,
-    ColorScheme colorScheme,
-  ) {
+    ColorScheme colorScheme, {
+    bool isStep = false,
+    int? stepIndex,
+  }) {
     final isCompleted = subtask.completed;
-    final list =
+    final topLevelList =
         isCompleted
             ? widget.getCompletedSubtasks()
             : widget.getPendingSubtasks();
-    final index = list.indexOf(subtask);
+    final index = stepIndex ?? topLevelList.indexOf(subtask);
     final ordenarPorPrioridad = widget.selectedTask?.sortByPriority ?? false;
 
-    return ReorderableDragStartListener(
-      key: ValueKey(subtask.id!),
+    final item = ReorderableDragStartListener(
+      key:
+          isStep
+              ? ValueKey('step_${subtask.id}')
+              : ValueKey('sub_${subtask.id}'),
       index: index,
       enabled: !ordenarPorPrioridad && !isCompleted,
       child: _SubtaskItemHover(
         builder: (context, isHovering) {
           return Container(
-            margin: const EdgeInsets.only(bottom: 4),
+            margin: EdgeInsets.only(bottom: 4, left: isStep ? 32 : 0),
             decoration: BoxDecoration(
               color:
                   isHovering
@@ -622,15 +650,24 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
               child: Row(
                 children: [
                   if (!ordenarPorPrioridad && !isCompleted)
+                    Icon(
+                      Icons.drag_indicator_rounded,
+                      color:
+                          isHovering
+                              ? colorScheme.onSurfaceVariant.withAlpha(150)
+                              : colorScheme.onSurfaceVariant.withAlpha(80),
+                      size: 18,
+                    ),
+                  if (!isStep)
+                    _buildSubtaskExpansionButton(subtask, colorScheme),
+
+                  if (isStep)
                     Padding(
                       padding: const EdgeInsets.only(right: 4),
                       child: Icon(
-                        Icons.drag_indicator_rounded,
-                        color:
-                            isHovering
-                                ? colorScheme.onSurfaceVariant.withAlpha(150)
-                                : colorScheme.onSurfaceVariant.withAlpha(80),
-                        size: 18,
+                        Icons.subdirectory_arrow_right_rounded,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant.withAlpha(150),
                       ),
                     ),
 
@@ -714,23 +751,24 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                                   (_) => widget.onCancelSubtaskEditing(),
                             )
                             : GestureDetector(
-                              onTap:
-                                  () => widget.onToggleSubtaskExpansion(
-                                    subtask.id.toString(),
-                                  ),
+                              onTap: () {
+                                setState(() {
+                                  if (_textExpandedIds.contains(subtask.id)) {
+                                    _textExpandedIds.remove(subtask.id);
+                                  } else {
+                                    _textExpandedIds.add(subtask.id!);
+                                  }
+                                });
+                              },
                               onDoubleTap: () => widget.onEditSubtask(subtask),
                               child: Text(
                                 subtask.text,
                                 maxLines:
-                                    widget.expandedSubtasks.contains(
-                                          subtask.id.toString(),
-                                        )
+                                    _textExpandedIds.contains(subtask.id)
                                         ? null
                                         : 1,
                                 overflow:
-                                    widget.expandedSubtasks.contains(
-                                          subtask.id.toString(),
-                                        )
+                                    _textExpandedIds.contains(subtask.id)
                                         ? TextOverflow.visible
                                         : TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -762,6 +800,28 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                       colorScheme: colorScheme,
                     ),
                   ] else ...[
+                    if (!isStep)
+                      Opacity(
+                        opacity: isHovering ? 1.0 : 0.0,
+                        child: IgnorePointer(
+                          ignoring: !isHovering,
+                          child: _buildSubtaskActionButton(
+                            icon: Icons.add_rounded,
+                            color: colorScheme.onSurfaceVariant,
+                            onTap: () {
+                              widget.onAddSubtaskStep(subtask, 'New step');
+                              if (!widget.expandedSubtasks.contains(
+                                subtask.id.toString(),
+                              )) {
+                                widget.onToggleSubtaskExpansion(
+                                  subtask.id.toString(),
+                                );
+                              }
+                            },
+                            colorScheme: colorScheme,
+                          ),
+                        ),
+                      ),
                     if (!isCompleted)
                       Opacity(
                         opacity: isHovering ? 1.0 : 0.0,
@@ -809,6 +869,91 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
         },
       ),
     );
+
+    if (isStep) return item;
+
+    return Column(
+      key: ValueKey(subtask.id!),
+      mainAxisSize: MainAxisSize.min,
+      children: [item, _buildStepsSection(subtask, colorScheme)],
+    );
+  }
+
+  Widget _buildStepsSection(Subtask subtask, ColorScheme colorScheme) {
+    if (!widget.expandedSubtasks.contains(subtask.id.toString())) {
+      return const SizedBox.shrink();
+    }
+
+    final pendingSteps =
+        widget.subtasks
+            .where((s) => s.parentId == subtask.id && !s.completed)
+            .toList();
+    final completedSteps =
+        widget.subtasks
+            .where((s) => s.parentId == subtask.id && s.completed)
+            .toList();
+
+    if (pendingSteps.isEmpty && completedSteps.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        if (pendingSteps.isNotEmpty)
+          widget.selectedTask!.sortByPriority
+              ? Column(
+                children:
+                    pendingSteps.map((step) {
+                      final isEditing =
+                          widget.editingSubtaskId == step.id.toString();
+                      return _buildSubtaskItem(
+                        step,
+                        isEditing,
+                        colorScheme,
+                        isStep: true,
+                      );
+                    }).toList(),
+              )
+              : ReorderableListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: pendingSteps.length,
+                onReorder:
+                    (oldIndex, newIndex) =>
+                        widget.onReorderSteps(subtask.id!, oldIndex, newIndex),
+                buildDefaultDragHandles: false,
+                itemBuilder: (context, index) {
+                  final step = pendingSteps[index];
+                  final isEditing =
+                      widget.editingSubtaskId == step.id.toString();
+                  return _buildSubtaskItem(
+                    step,
+                    isEditing,
+                    colorScheme,
+                    isStep: true,
+                    stepIndex: index,
+                  );
+                },
+              ),
+        if (completedSteps.isNotEmpty)
+          Column(
+            children:
+                completedSteps.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final step = entry.value;
+                  final isEditing =
+                      widget.editingSubtaskId == step.id.toString();
+                  return _buildSubtaskItem(
+                    step,
+                    isEditing,
+                    colorScheme,
+                    isStep: true,
+                    stepIndex: index,
+                  );
+                }).toList(),
+          ),
+      ],
+    );
   }
 
   Widget _buildSubtaskActionButton({
@@ -840,6 +985,40 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
       case SubtaskPriority.low:
         return Icons.arrow_downward_rounded;
     }
+  }
+
+  Widget _buildSubtaskExpansionButton(
+    Subtask subtask,
+    ColorScheme colorScheme,
+  ) {
+    final isExpanded = widget.expandedSubtasks.contains(subtask.id.toString());
+    final hasSteps = widget.subtasks.any((s) => s.parentId == subtask.id);
+
+    if (!hasSteps && _addingStepSubtaskId != subtask.id) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 2),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => widget.onToggleSubtaskExpansion(subtask.id.toString()),
+          borderRadius: BorderRadius.circular(4),
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: Icon(
+              isExpanded
+                  ? Icons.keyboard_arrow_down_rounded
+                  : Icons.keyboard_arrow_right_rounded,
+              size: 20,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Color _getPriorityColor(SubtaskPriority priority) {

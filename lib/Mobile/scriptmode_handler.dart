@@ -37,7 +37,7 @@ class ScriptModeHandler {
         currentBlockNumber++;
         currentContent = "";
       } else {
-        currentContent += "$line\n"; // Ignorar líneas que solo sean #números
+        currentContent += "$line\n";
       }
     }
 

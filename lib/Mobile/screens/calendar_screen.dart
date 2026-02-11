@@ -201,25 +201,25 @@ class CalendarScreenState extends State<CalendarScreen> {
       CalendarEventStatus(
         id: 0,
         name: 'To Write',
-        color: '#FFB77D', // Orange pastel
+        color: '#FFB77D',
         orderIndex: 0,
       ),
       CalendarEventStatus(
         id: 0,
         name: 'To Record',
-        color: '#90CAF9', // Blue pastel
+        color: '#90CAF9',
         orderIndex: 1,
       ),
       CalendarEventStatus(
         id: 0,
         name: 'In Progress',
-        color: '#CE93D8', // Purple pastel
+        color: '#CE93D8',
         orderIndex: 2,
       ),
       CalendarEventStatus(
         id: 0,
         name: 'Completed',
-        color: '#A5D6A7', // Green pastel
+        color: '#A5D6A7',
         orderIndex: 3,
       ),
     ];

@@ -22,7 +22,7 @@ class CalendarEvent {
     return CalendarEvent(
       id: map[DatabaseConfig.columnCalendarEventId] as int,
       noteId: map[DatabaseConfig.columnCalendarEventNoteId] as int,
-      note: null, // Se cargará después si es necesario
+      note: null,
       date: DateTime.fromMillisecondsSinceEpoch(
         map[DatabaseConfig.columnCalendarEventDate] as int,
       ),

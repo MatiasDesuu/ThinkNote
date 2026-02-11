@@ -107,7 +107,7 @@ class ScriptModeHandlerDesktop {
                 final lines = fullContent.split('\n');
                 if (lines.isEmpty) return;
 
-                final header = lines.first; // #script
+                final header = lines.first;
                 final blocks = parseScript(fullContent);
 
                 final updatedBlocks =

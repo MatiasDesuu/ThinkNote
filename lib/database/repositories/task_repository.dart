@@ -252,8 +252,9 @@ class TaskRepository {
         ${config.DatabaseConfig.columnSubtaskText},
         ${config.DatabaseConfig.columnSubtaskCompleted},
         ${config.DatabaseConfig.columnOrderIndex},
-        ${config.DatabaseConfig.columnSubtaskPriority}
-      ) VALUES (?, ?, ?, ?, ?)
+        ${config.DatabaseConfig.columnSubtaskPriority},
+        ${config.DatabaseConfig.columnParentId}
+      ) VALUES (?, ?, ?, ?, ?, ?)
       ''');
 
     try {
@@ -263,6 +264,7 @@ class TaskRepository {
         subtask.completed ? 1 : 0,
         subtask.orderIndex != 0 ? subtask.orderIndex : nextOrder,
         subtask.priority.index,
+        subtask.parentId,
       ]);
       await _updateSyncTimestamp(db);
       DatabaseHelper.notifyDatabaseChanged();
@@ -305,7 +307,8 @@ class TaskRepository {
       SET ${config.DatabaseConfig.columnSubtaskText} = ?,
           ${config.DatabaseConfig.columnSubtaskCompleted} = ?,
           ${config.DatabaseConfig.columnOrderIndex} = ?,
-          ${config.DatabaseConfig.columnSubtaskPriority} = ?
+          ${config.DatabaseConfig.columnSubtaskPriority} = ?,
+          ${config.DatabaseConfig.columnParentId} = ?
       WHERE ${config.DatabaseConfig.columnId} = ?
     ''');
 
@@ -315,6 +318,7 @@ class TaskRepository {
         subtask.completed ? 1 : 0,
         subtask.orderIndex,
         subtask.priority.index,
+        subtask.parentId,
         subtask.id,
       ]);
       await _updateSyncTimestamp(db);

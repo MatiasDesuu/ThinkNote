@@ -165,7 +165,7 @@ class _NotebookSelectorScreenState extends State<NotebookSelectorScreen>
               ),
               child: Row(
                 children: [
-                  SizedBox(width: level * 24), // Indentación por nivel
+                  SizedBox(width: level * 24),
                   if (hasChildren)
                     IconButton(
                       icon: AnimatedRotation(
@@ -185,7 +185,7 @@ class _NotebookSelectorScreenState extends State<NotebookSelectorScreen>
                       padding: EdgeInsets.zero,
                     )
                   else
-                    SizedBox(width: 32), // Espacio para alineación
+                    SizedBox(width: 32),
                   Icon(
                     notebook.iconId != null
                         ? (NotebookIconsRepository.getIconById(
@@ -196,9 +196,7 @@ class _NotebookSelectorScreenState extends State<NotebookSelectorScreen>
                     size: 28,
                     color: colorScheme.primary,
                   ),
-                  const SizedBox(
-                    width: 24,
-                  ), // Padding consistente con trash_screen
+                  const SizedBox(width: 24),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

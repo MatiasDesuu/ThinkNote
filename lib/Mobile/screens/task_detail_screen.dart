@@ -43,6 +43,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
 
   StreamSubscription<void>? _dbChangeSubscription;
   final Set<String> _expandedSubtasks = <String>{};
+  final Set<String> _expandedStepIds = <String>{};
   late TabController _subtasksTabController;
   int _subtasksLoadGeneration = 0;
   bool _isEInkMode = false;
@@ -201,21 +202,29 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     return true;
   }
 
-  Future<void> _addSubtask() async {
-    if (_newSubtaskController.text.trim().isEmpty) return;
+  Future<void> _addSubtask({int? parentId, String? text}) async {
+    final subtaskText = text ?? _newSubtaskController.text.trim();
+    if (subtaskText.isEmpty) return;
 
     try {
       final subtask = await widget.databaseService.taskService.createSubtask(
         _task.id!,
-        _newSubtaskController.text.trim(),
+        subtaskText,
+        parentId: parentId,
       );
 
       if (subtask != null) {
         if (!mounted) return;
 
-        _newSubtaskController.clear();
+        if (text == null) {
+          _newSubtaskController.clear();
+        }
+
         setState(() {
           _taskChanged = true;
+          if (parentId != null) {
+            _expandedStepIds.add(parentId.toString());
+          }
         });
 
         await _prefetchSubtasks();
@@ -284,8 +293,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
             _task.id!,
           );
 
-      final pendingSubtasks = subtasks.where((s) => !s.completed).toList();
-      final completedSubtasks = subtasks.where((s) => s.completed).toList();
+      final pendingSubtasks =
+          subtasks.where((s) => !s.completed && s.parentId == null).toList();
+      final otherSubtasks =
+          subtasks.where((s) => s.completed || s.parentId != null).toList();
 
       if (newIndex > oldIndex) {
         newIndex -= 1;
@@ -310,7 +321,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
 
       if (!mounted) return;
       setState(() {
-        _cachedSubtasks = [...updatedPending, ...completedSubtasks];
+        _cachedSubtasks = [...updatedPending, ...otherSubtasks];
         _taskChanged = true;
       });
 
@@ -331,6 +342,72 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
       CustomSnackbar.show(
         context: context,
         message: 'Error reordering subtasks: ${e.toString()}',
+        type: CustomSnackbarType.error,
+      );
+    }
+  }
+
+  Future<void> _reorderSteps(int parentId, int oldIndex, int newIndex) async {
+    if (_task.sortByPriority) return;
+
+    try {
+      List<Subtask> subtasks =
+          _cachedSubtasks ??
+          await widget.databaseService.taskService.getSubtasksByTaskId(
+            _task.id!,
+          );
+
+      final steps =
+          subtasks
+              .where((s) => s.parentId == parentId && !s.completed)
+              .toList();
+      final otherSubtasks =
+          subtasks.where((s) => s.parentId != parentId || s.completed).toList();
+
+      if (newIndex > oldIndex) {
+        newIndex -= 1;
+      }
+
+      final item = steps.removeAt(oldIndex);
+      steps.insert(newIndex, item);
+
+      final updatedSteps = <Subtask>[];
+      final subtasksToUpdate = <Subtask>[];
+
+      for (int i = 0; i < steps.length; i++) {
+        final subtask = steps[i];
+        if (subtask.orderIndex != i) {
+          final updated = subtask.copyWith(orderIndex: i);
+          updatedSteps.add(updated);
+          subtasksToUpdate.add(updated);
+        } else {
+          updatedSteps.add(subtask);
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _cachedSubtasks = [...updatedSteps, ...otherSubtasks];
+        _taskChanged = true;
+      });
+
+      unawaited(() async {
+        try {
+          for (final subtask in subtasksToUpdate) {
+            await widget.databaseService.taskService.updateSubtask(subtask);
+          }
+          await _saveTask();
+          widget.databaseService.notifyDatabaseChanged();
+        } catch (e) {
+          print('Error updating steps in background: $e');
+        }
+      }());
+    } catch (e) {
+      print('Error reordering steps: $e');
+      if (!mounted) return;
+      CustomSnackbar.show(
+        context: context,
+        message: 'Error reordering steps: ${e.toString()}',
         type: CustomSnackbarType.error,
       );
     }
@@ -723,10 +800,13 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     int index,
   ) {
     final isCompleted = subtask.completed;
+    final isStep = subtask.parentId != null;
+    final itemKey = Key(subtask.id.toString());
 
-    return Dismissible(
-      key: Key(subtask.id.toString()),
-      direction: DismissDirection.horizontal,
+    final widgetContent = Dismissible(
+      key: isStep ? itemKey : ValueKey('dismiss_${subtask.id}'),
+      direction:
+          isStep ? DismissDirection.endToStart : DismissDirection.horizontal,
       background: Container(
         decoration: BoxDecoration(
           color: colorScheme.tertiary,
@@ -790,7 +870,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
         return result ?? false;
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 4, left: 8, right: 8),
+        margin: EdgeInsets.only(
+          bottom: 4,
+          left: isStep ? 0 : 8,
+          right: isStep ? 0 : 8,
+        ),
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(10),
@@ -811,8 +895,20 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                     child: Icon(
                       Icons.drag_indicator_rounded,
                       color: colorScheme.onSurfaceVariant.withAlpha(100),
-                      size: 18,
+                      size: 20,
                     ),
+                  ),
+                ),
+
+              if (!isStep) _buildSubtaskExpansionButton(subtask),
+
+              if (isStep)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Icon(
+                    Icons.subdirectory_arrow_right_rounded,
+                    size: 18,
+                    color: colorScheme.onSurfaceVariant.withAlpha(200),
                   ),
                 ),
 
@@ -822,7 +918,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                   isCompleted
                       ? Icons.check_box_rounded
                       : Icons.check_box_outline_blank_rounded,
-                  size: 20,
+                  size: 22,
                   color:
                       isCompleted
                           ? colorScheme.primary
@@ -923,6 +1019,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                         ),
               ),
 
+              if (!isStep && !isCompleted)
+                _buildAddStepButton(subtask, colorScheme),
+
               if (!isCompleted)
                 Material(
                   color: Colors.transparent,
@@ -935,7 +1034,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                       child: Icon(
                         _getPriorityIcon(subtask.priority),
                         color: _getPriorityColor(subtask.priority),
-                        size: 18,
+                        size: 20,
                       ),
                     ),
                   ),
@@ -944,6 +1043,14 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
           ),
         ),
       ),
+    );
+
+    if (isStep) return widgetContent;
+
+    return Column(
+      key: itemKey,
+      mainAxisSize: MainAxisSize.min,
+      children: [widgetContent, _buildStepsSection(subtask, colorScheme)],
     );
   }
 
@@ -1317,13 +1424,17 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                       hideControls: true,
                       weekOffset: _habitsWeekOffset,
                       showEmptyMessage: false,
-                      allowScroll: true, // Enable scrolling in mobile
+                      allowScroll: true,
                     );
                   }
                   final pendingSubtasks =
-                      subtasks.where((s) => !s.completed).toList();
+                      subtasks
+                          .where((s) => !s.completed && s.parentId == null)
+                          .toList();
                   final completedSubtasks =
-                      subtasks.where((s) => s.completed).toList();
+                      subtasks
+                          .where((s) => s.completed && s.parentId == null)
+                          .toList();
 
                   return Column(
                     children: [
@@ -1792,6 +1903,21 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     });
   }
 
+  Widget _buildAddStepButton(Subtask subtask, ColorScheme colorScheme) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(6),
+      child: InkWell(
+        onTap: () => _addSubtask(parentId: subtask.id, text: "New step"),
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Icon(Icons.add_rounded, color: colorScheme.primary, size: 20),
+        ),
+      ),
+    );
+  }
+
   void _showPrioritySelector(Subtask subtask) {
     final colorScheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
@@ -1871,6 +1997,126 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
           ),
         );
       },
+    );
+  }
+
+  void _toggleStepExpansion(String id) {
+    setState(() {
+      if (_expandedStepIds.contains(id)) {
+        _expandedStepIds.remove(id);
+      } else {
+        _expandedStepIds.add(id);
+      }
+    });
+  }
+
+  Widget _buildSubtaskExpansionButton(Subtask subtask) {
+    final hasSteps =
+        _cachedSubtasks?.any((s) => s.parentId == subtask.id) ?? false;
+    if (!hasSteps) return const SizedBox.shrink();
+
+    final isExpanded = _expandedStepIds.contains(subtask.id.toString());
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 2),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _toggleStepExpansion(subtask.id.toString()),
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.all(2),
+            child: Icon(
+              isExpanded
+                  ? Icons.keyboard_arrow_down_rounded
+                  : Icons.keyboard_arrow_right_rounded,
+              size: 22,
+              color: colorScheme.primary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepsSection(Subtask parent, ColorScheme colorScheme) {
+    if (!_expandedStepIds.contains(parent.id.toString())) {
+      return const SizedBox.shrink();
+    }
+
+    final pendingSteps =
+        _cachedSubtasks
+            ?.where((s) => s.parentId == parent.id && !s.completed)
+            .toList() ??
+        [];
+    final completedSteps =
+        _cachedSubtasks
+            ?.where((s) => s.parentId == parent.id && s.completed)
+            .toList() ??
+        [];
+
+    if (pendingSteps.isEmpty && completedSteps.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 32, bottom: 4, right: 8),
+      child: Column(
+        children: [
+          if (pendingSteps.isNotEmpty)
+            _task.sortByPriority
+                ? Column(
+                  children:
+                      pendingSteps.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final step = entry.value;
+                        final isEditing =
+                            _editingSubtaskId == step.id.toString();
+                        return _buildSubtaskItem(
+                          step,
+                          isEditing,
+                          colorScheme,
+                          index,
+                        );
+                      }).toList(),
+                )
+                : ReorderableListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: pendingSteps.length,
+                  onReorder:
+                      (oldIndex, newIndex) =>
+                          _reorderSteps(parent.id!, oldIndex, newIndex),
+                  buildDefaultDragHandles: false,
+                  itemBuilder: (context, index) {
+                    final step = pendingSteps[index];
+                    final isEditing = _editingSubtaskId == step.id.toString();
+                    return _buildSubtaskItem(
+                      step,
+                      isEditing,
+                      colorScheme,
+                      index,
+                    );
+                  },
+                ),
+          if (completedSteps.isNotEmpty)
+            Column(
+              children:
+                  completedSteps.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final step = entry.value;
+                    final isEditing = _editingSubtaskId == step.id.toString();
+                    return _buildSubtaskItem(
+                      step,
+                      isEditing,
+                      colorScheme,
+                      index,
+                    );
+                  }).toList(),
+            ),
+        ],
+      ),
     );
   }
 

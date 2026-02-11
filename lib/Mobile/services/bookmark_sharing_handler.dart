@@ -419,7 +419,7 @@ class BookmarkSharingHandler {
           Bookmark(
             id: existingBookmark.id,
             title: title.isEmpty ? _getDefaultTitle(url) : title,
-            url: url, // Usar la URL original para guardar
+            url: url,
             description: description,
             timestamp: DateTime.now().toIso8601String(),
             hidden: false,
@@ -435,7 +435,7 @@ class BookmarkSharingHandler {
             .createBookmark(
               Bookmark(
                 title: title.isEmpty ? _getDefaultTitle(url) : title,
-                url: url, // Usar la URL original para guardar
+                url: url,
                 description: description,
                 timestamp: DateTime.now().toIso8601String(),
                 hidden: false,

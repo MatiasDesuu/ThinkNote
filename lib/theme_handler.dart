@@ -296,22 +296,14 @@ class ThemeManager {
           monochromeEnabled
               ? NavigationBarThemeData(
                 backgroundColor: colorScheme.surfaceContainer,
-                indicatorColor:
-                    colorScheme
-                        .primaryContainer, // Use primaryContainer for high contrast
+                indicatorColor: colorScheme.primaryContainer,
                 surfaceTintColor: Colors.transparent,
                 overlayColor: WidgetStateProperty.all(Colors.transparent),
                 iconTheme: WidgetStateProperty.resolveWith((states) {
                   if (states.contains(WidgetState.selected)) {
-                    return IconThemeData(
-                      color:
-                          colorScheme
-                              .onPrimaryContainer, // White on black or black on white
-                    );
+                    return IconThemeData(color: colorScheme.onPrimaryContainer);
                   }
-                  return IconThemeData(
-                    color: colorScheme.onSurface, // Unselected icons
-                  );
+                  return IconThemeData(color: colorScheme.onSurface);
                 }),
                 labelTextStyle: WidgetStateProperty.resolveWith((states) {
                   if (states.contains(WidgetState.selected)) {
@@ -508,37 +500,13 @@ class ThemeManager {
 
     final surfaceLightness =
         isDark
-            ? [
-              0.08, // Más oscuro pero no tanto
-              0.12, // Incremento sutil
-              0.16, // Mayor diferencia
-              0.22, // Aún más claro
-              0.28, // El más claro
-            ] // Modo oscuro: de más oscuro a más claro
-            : [
-              0.98, // Casi blanco
-              0.96, // Muy sutil diferencia
-              0.94, // Diferencia notable
-              0.91, // Más oscuro
-              0.88, // El más oscuro
-            ]; // Modo claro: de más claro a más oscuro
+            ? [0.08, 0.12, 0.16, 0.22, 0.28]
+            : [0.98, 0.96, 0.94, 0.91, 0.88];
 
     final surfaceSaturation =
         isDark
-            ? [
-              0.08,
-              0.12,
-              0.16,
-              0.20,
-              0.24,
-            ] // Modo oscuro: saturación más sutil
-            : [
-              0.05,
-              0.08,
-              0.12,
-              0.16,
-              0.20,
-            ]; // Modo claro: saturación más sutil
+            ? [0.08, 0.12, 0.16, 0.20, 0.24]
+            : [0.05, 0.08, 0.12, 0.16, 0.20];
 
     return ColorScheme(
       brightness: brightness,
@@ -608,18 +576,16 @@ class ThemeManager {
     );
 
     return baseScheme.copyWith(
-      primary: const Color(0xFF222222), // Active buttons
+      primary: const Color(0xFF222222),
       onPrimary: const Color(0xFFFFFFFF),
-      secondary: const Color(0xFF858585), // Disabled buttons
+      secondary: const Color(0xFF858585),
       onSecondary: const Color(0xFFFFFFFF),
       tertiary: const Color(0xFF222222),
       onTertiary: const Color(0xFFFFFFFF),
 
-      primaryContainer: const Color(
-        0xFF000000,
-      ), // Black indicator for selected items
+      primaryContainer: const Color(0xFF000000),
       onPrimaryContainer: const Color(0xFFFFFFFF),
-      secondaryContainer: const Color(0xFFF6F6F6), // Elements sidebar
+      secondaryContainer: const Color(0xFFF6F6F6),
       onSecondaryContainer: const Color(0xFF858585),
       tertiaryContainer: const Color(0xFFF6F6F6),
       onTertiaryContainer: const Color(0xFF222222),
@@ -627,9 +593,9 @@ class ThemeManager {
       primaryFixed: const Color(0xFF666666),
       primaryFixedDim: const Color(0xFF444444),
 
-      surface: const Color(0xFFFFFFFF), // Editor background
+      surface: const Color(0xFFFFFFFF),
       onSurface: const Color(0xFF222222),
-      surfaceContainer: const Color(0xFFFFFFFF), // Bottom bar background
+      surfaceContainer: const Color(0xFFFFFFFF),
       surfaceContainerLow: const Color(0xFFF6F6F6),
       surfaceContainerHigh: const Color(0xFFF6F6F6),
       surfaceContainerHighest: const Color(0xFFE0E0E0),
@@ -656,16 +622,14 @@ class ThemeManager {
     );
 
     return baseScheme.copyWith(
-      primary: const Color(0xFFDADADA), // Primary color buttons
+      primary: const Color(0xFFDADADA),
       onPrimary: const Color(0xFF1E1E1E),
-      secondary: const Color(0xFF949494), // Inactive buttons
+      secondary: const Color(0xFF949494),
       onSecondary: const Color(0xFF1E1E1E),
       tertiary: const Color(0xFFDADADA),
       onTertiary: const Color(0xFF1E1E1E),
 
-      primaryContainer: const Color(
-        0xFFFFFFFF,
-      ), // White indicator for selected items
+      primaryContainer: const Color(0xFFFFFFFF),
       onPrimaryContainer: const Color(0xFF000000),
       secondaryContainer: const Color(0xFF262626),
       onSecondaryContainer: const Color(0xFF949494),
@@ -677,7 +641,7 @@ class ThemeManager {
 
       surface: const Color(0xFF2D2D2D),
       onSurface: const Color(0xFFDADADA),
-      surfaceContainer: const Color(0xFF000000), // Bottom bar background
+      surfaceContainer: const Color(0xFF000000),
       surfaceContainerLow: const Color(0xFF262626),
       surfaceContainerHigh: const Color(0xFF363636),
       surfaceContainerHighest: const Color(0xFF363636),
@@ -709,7 +673,7 @@ class ThemeManager {
       onPrimaryContainer: isDark ? Colors.black : Colors.white,
       surface:
           brightness == Brightness.light
-              ? const Color(0xFFFFFFFF) // Editor background
+              ? const Color(0xFFFFFFFF)
               : const Color(0xFF2D2D2D),
       surfaceContainerLowest:
           brightness == Brightness.light
@@ -717,7 +681,7 @@ class ThemeManager {
               : const Color(0xFF121212),
       surfaceContainerLow:
           brightness == Brightness.light
-              ? const Color(0xFFF6F6F6) // Button and elements sidebar
+              ? const Color(0xFFF6F6F6)
               : const Color(0xFF262626),
       surfaceContainer:
           brightness == Brightness.light
@@ -729,7 +693,7 @@ class ThemeManager {
               : const Color(0xFF303030),
       surfaceContainerHighest:
           brightness == Brightness.light
-              ? const Color(0xFFe0e0e0) // Sidebar divider
+              ? const Color(0xFFe0e0e0)
               : const Color(0xFF363636),
       tertiary:
           brightness == Brightness.light

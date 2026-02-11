@@ -76,7 +76,7 @@ class ResizablePanelState extends State<ResizablePanel>
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
-      value: 1.0, // Start expanded to avoid jump
+      value: 1.0,
     );
     _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
@@ -160,7 +160,7 @@ class ResizablePanelState extends State<ResizablePanel>
   }
 
   void collapsePanel() {
-    if (!_isExpanded) return; // Already collapsed
+    if (!_isExpanded) return;
 
     final navigatorContext = context;
     setState(() {
@@ -178,7 +178,7 @@ class ResizablePanelState extends State<ResizablePanel>
   }
 
   void expandPanel() {
-    if (_isExpanded) return; // Already expanded
+    if (_isExpanded) return;
 
     final navigatorContext = context;
     setState(() {
@@ -314,10 +314,7 @@ class ResizablePanelState extends State<ResizablePanel>
                                 Positioned(
                                   top: 0,
                                   left: 0,
-                                  right:
-                                      widget.trailing != null
-                                          ? 100
-                                          : 0, // Excluir área del botón
+                                  right: widget.trailing != null ? 100 : 0,
                                   height: 48,
                                   child: MoveWindow(),
                                 ),
@@ -374,7 +371,7 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
-      value: 1.0, // Start expanded to avoid jump
+      value: 1.0,
     );
     _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
@@ -481,7 +478,7 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
   }
 
   void collapsePanel() {
-    if (!_isExpanded) return; // Already collapsed
+    if (!_isExpanded) return;
 
     final navigatorContext = context;
     setState(() {
@@ -499,7 +496,7 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
   }
 
   void expandPanel() {
-    if (_isExpanded) return; // Already expanded
+    if (_isExpanded) return;
 
     final navigatorContext = context;
     setState(() {

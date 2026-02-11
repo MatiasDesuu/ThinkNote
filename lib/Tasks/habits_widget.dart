@@ -9,14 +9,11 @@ class HabitsTracker extends StatefulWidget {
   final DatabaseService databaseService;
   final List<Subtask> subtasks;
   final int taskId;
-  final bool
-  hideControls; // if true, don't render internal week/nav and add row
-  final int? weekOffset; // external week offset (parent-controlled)
-  final bool
-  showEmptyMessage; // whether to show 'No habits' when subtasks empty
+  final bool hideControls;
+  final int? weekOffset;
+  final bool showEmptyMessage;
   final Map<int, List<String>>? initialCompletions;
-  final bool
-  allowScroll; // if true, allow scrolling even when hideControls is true
+  final bool allowScroll;
 
   const HabitsTracker({
     super.key,
@@ -35,8 +32,7 @@ class HabitsTracker extends StatefulWidget {
 }
 
 class _HabitsTrackerState extends State<HabitsTracker> {
-  Map<String, List<String>> _data =
-      {}; // subtaskId -> list of date strings (ISO yyyy-MM-dd)
+  Map<String, List<String>> _data = {};
   late DateTime _now;
   late List<Subtask> _localSubtasks;
   final TextEditingController _editingController = TextEditingController();
@@ -203,11 +199,11 @@ class _HabitsTrackerState extends State<HabitsTracker> {
       );
       if (mounted && generation == _subsLoadGeneration) {
         setState(() {
-          _localSubtasks = subs;
+          _localSubtasks = subs.where((s) => s.parentId == null).toList();
         });
       }
     } catch (e) {
-        // Ignore errors when loading subtasks
+      // Ignore errors when loading subtasks
     }
   }
 
@@ -222,7 +218,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
       _newSubtaskController.clear();
       await _refreshLocalSubtasks();
     } catch (e) {
-        // Ignore errors during creation
+      // Ignore errors during creation
     }
   }
 
@@ -270,7 +266,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
       _now.day,
     ).add(Duration(days: offset * 7));
 
-    final weekday = base.weekday; // 1..7
+    final weekday = base.weekday;
     final monday = base.subtract(Duration(days: weekday - 1));
     return List.generate(7, (i) => monday.add(Duration(days: i))).toList();
   }

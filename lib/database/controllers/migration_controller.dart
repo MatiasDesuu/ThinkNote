@@ -63,9 +63,7 @@ class MigrationController {
     }
 
     final notebooks = await _notebookRepository.getAllNotebooks();
-    final notes = await _noteRepository.getNotesByNotebookId(
-      0,
-    ); // Obtener todas las notas
+    final notes = await _noteRepository.getNotesByNotebookId(0);
 
     for (final notebook in notebooks) {
       final notebookPath = _getNotebookPath(notebook, notebooks);

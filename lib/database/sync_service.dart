@@ -42,9 +42,7 @@ class SyncService {
   DateTime? _lastSyncTime;
   static const Duration _minSyncInterval = Duration(seconds: 10);
   static const int _minChangesForSync = 1;
-  static const Duration defaultAutoSyncInterval = Duration(
-    minutes: 60,
-  ); // 1 hour default
+  static const Duration defaultAutoSyncInterval = Duration(minutes: 60);
   bool _ignoreChanges = false;
 
   final StreamController<bool> _autoSyncEnabledController =
@@ -207,7 +205,7 @@ class SyncService {
       }
     }
 
-    _changeCount = _minChangesForSync; // Forzar al menos un cambio
+    _changeCount = _minChangesForSync;
     await _performSync(isManual: isManual);
   }
 

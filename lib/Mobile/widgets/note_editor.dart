@@ -304,7 +304,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
         if (currentPosition <= selection.start) {
           selectionLineIndex = i;
         }
-        currentPosition += line.length + 1; // +1 for the newline
+        currentPosition += line.length + 1;
       }
 
       int newBlockNumber;
@@ -826,8 +826,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                             top: 8,
                                             left: 8,
                                             right: 8,
-                                            bottom:
-                                                80, // Add padding for bottom bar/FloatingActionButton
+                                            bottom: 80,
                                           ),
                                           child: Align(
                                             alignment: Alignment.topLeft,

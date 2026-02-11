@@ -424,8 +424,8 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
 
           Positioned(
             top: 0,
-            left: 60, // Left sidebar width
-            right: 138, // Control buttons width
+            left: 60,
+            right: 138,
             height: 48,
             child: MoveWindow(child: Container(color: Colors.transparent)),
           ),

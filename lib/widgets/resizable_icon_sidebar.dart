@@ -204,7 +204,7 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
   }
 
   void collapsePanel() {
-    if (!_globalIconSidebarState.isExpanded) return; // Already collapsed
+    if (!_globalIconSidebarState.isExpanded) return;
 
     final navigatorContext = context;
     _globalIconSidebarState.setExpanded(false);
@@ -217,7 +217,7 @@ class ResizableIconSidebarState extends State<ResizableIconSidebar>
   }
 
   void expandPanel() {
-    if (_globalIconSidebarState.isExpanded) return; // Already expanded
+    if (_globalIconSidebarState.isExpanded) return;
 
     final navigatorContext = context;
     _globalIconSidebarState.setExpanded(true);

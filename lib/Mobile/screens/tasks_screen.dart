@@ -257,7 +257,7 @@ class TasksScreenState extends State<TasksScreen>
         }
       }
 
-      setState(() {}); // Actualizar UI inmediatamente
+      setState(() {});
 
       for (final updatedTask in tasksToUpdate) {
         await _databaseService.taskService.updateTask(updatedTask);
