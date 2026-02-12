@@ -268,7 +268,7 @@ class ResizablePanelState extends State<ResizablePanel>
                                           ] else if (widget.title ==
                                               'Notes') ...[
                                             Icon(
-                                              Icons.note_rounded,
+                                              Icons.description_rounded,
                                               size: 20,
                                               color:
                                                   Theme.of(

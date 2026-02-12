@@ -889,8 +889,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
               if (!_task.sortByPriority)
                 ReorderableDragStartListener(
                   index: index,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 6),
+                  child: SizedBox(
+                    width: 20,
+                    height: 24,
                     child: Icon(
                       Icons.drag_indicator_rounded,
                       color: colorScheme.onSurfaceVariant.withAlpha(100),
@@ -902,26 +903,31 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
               if (!isStep) _buildSubtaskExpansionButton(subtask),
 
               if (isStep)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
+                SizedBox(
+                  width: 24,
+                  height: 24,
                   child: Icon(
                     Icons.subdirectory_arrow_right_rounded,
-                    size: 18,
+                    size: 16,
                     color: colorScheme.onSurfaceVariant.withAlpha(200),
                   ),
                 ),
 
               GestureDetector(
                 onTap: () => _toggleSubtask(subtask),
-                child: Icon(
-                  isCompleted
-                      ? Icons.check_box_rounded
-                      : Icons.check_box_outline_blank_rounded,
-                  size: 22,
-                  color:
-                      isCompleted
-                          ? colorScheme.primary
-                          : colorScheme.onSurfaceVariant,
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Icon(
+                    isCompleted
+                        ? Icons.check_box_rounded
+                        : Icons.check_box_outline_blank_rounded,
+                    size: 18,
+                    color:
+                        isCompleted
+                            ? colorScheme.primary
+                            : colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
 
@@ -977,6 +983,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                           ),
                           style: TextStyle(
                             fontSize: 15,
+                            height: 1.2,
+                            leadingDistribution: TextLeadingDistribution.even,
                             color: colorScheme.onSurface,
                           ),
                           onSubmitted: (_) => _saveSubtaskEditing(subtask),
@@ -1005,6 +1013,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                                     : TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 15,
+                              height: 1.2,
+                              leadingDistribution: TextLeadingDistribution.even,
                               decoration:
                                   isCompleted
                                       ? TextDecoration.lineThrough
@@ -2018,19 +2028,20 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.only(right: 2),
+      padding: const EdgeInsets.only(right: 0),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _toggleStepExpansion(subtask.id.toString()),
-          borderRadius: BorderRadius.circular(4),
-          child: Padding(
-            padding: const EdgeInsets.all(2),
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            width: 24,
+            height: 24,
             child: Icon(
               isExpanded
                   ? Icons.keyboard_arrow_down_rounded
                   : Icons.keyboard_arrow_right_rounded,
-              size: 22,
+              size: 18,
               color: colorScheme.primary,
             ),
           ),

@@ -162,7 +162,20 @@ class _TodoScreenDBState extends State<TodoScreenDB>
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _sidebarWidth = prefs.getDouble('todo_sidebar_width') ?? 240;
+      final expandedList = prefs.getStringList('todo_expanded_subtasks');
+      if (expandedList != null) {
+        _expandedSubtasks.clear();
+        _expandedSubtasks.addAll(expandedList);
+      }
     });
+  }
+
+  Future<void> _saveExpandedSubtasks() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      'todo_expanded_subtasks',
+      _expandedSubtasks.toList(),
+    );
   }
 
   Future<void> _saveWidth(double width) async {
@@ -2124,5 +2137,6 @@ class _TodoScreenDBState extends State<TodoScreenDB>
         _expandedSubtasks.add(id);
       }
     });
+    _saveExpandedSubtasks();
   }
 }

@@ -388,7 +388,12 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12),
               ),
-              style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.2,
+                leadingDistribution: TextLeadingDistribution.even,
+                color: colorScheme.onSurface,
+              ),
               onSubmitted: (_) => widget.onAddSubtask(),
             ),
           ),
@@ -650,20 +655,25 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
               child: Row(
                 children: [
                   if (!ordenarPorPrioridad)
-                    Icon(
-                      Icons.drag_indicator_rounded,
-                      color:
-                          isHovering
-                              ? colorScheme.onSurfaceVariant.withAlpha(150)
-                              : colorScheme.onSurfaceVariant.withAlpha(80),
-                      size: 18,
+                    SizedBox(
+                      width: 20,
+                      height: 24,
+                      child: Icon(
+                        Icons.drag_indicator_rounded,
+                        color:
+                            isHovering
+                                ? colorScheme.onSurfaceVariant.withAlpha(150)
+                                : colorScheme.onSurfaceVariant.withAlpha(80),
+                        size: 18,
+                      ),
                     ),
                   if (!isStep)
                     _buildSubtaskExpansionButton(subtask, colorScheme),
 
                   if (isStep)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
+                    SizedBox(
+                      width: 24,
+                      height: 24,
                       child: Icon(
                         Icons.subdirectory_arrow_right_rounded,
                         size: 16,
@@ -675,20 +685,24 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                     cursor: SystemMouseCursors.click,
                     child: GestureDetector(
                       onTap: () => widget.onToggleSubtask(subtask),
-                      child: Icon(
-                        isCompleted
-                            ? Icons.check_box_rounded
-                            : Icons.check_box_outline_blank_rounded,
-                        size: 18,
-                        color:
-                            isCompleted
-                                ? colorScheme.primary
-                                : colorScheme.onSurfaceVariant,
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Icon(
+                          isCompleted
+                              ? Icons.check_box_rounded
+                              : Icons.check_box_outline_blank_rounded,
+                          size: 18,
+                          color:
+                              isCompleted
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 4),
 
                   if (!isCompleted &&
                       subtask.priority != SubtaskPriority.medium)
@@ -741,6 +755,9 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                               ),
                               style: TextStyle(
                                 fontSize: 14,
+                                height: 1.2,
+                                leadingDistribution:
+                                    TextLeadingDistribution.even,
                                 color: colorScheme.onSurface,
                               ),
                               onSubmitted:
@@ -773,6 +790,9 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                                         : TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 15,
+                                  height: 1.2,
+                                  leadingDistribution:
+                                      TextLeadingDistribution.even,
                                   decoration:
                                       isCompleted
                                           ? TextDecoration.lineThrough
@@ -988,20 +1008,20 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(right: 2),
+      padding: const EdgeInsets.only(right: 0),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => widget.onToggleSubtaskExpansion(subtask.id.toString()),
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(6),
           child: SizedBox(
-            width: 28,
-            height: 28,
+            width: 24,
+            height: 24,
             child: Icon(
               isExpanded
                   ? Icons.keyboard_arrow_down_rounded
                   : Icons.keyboard_arrow_right_rounded,
-              size: 20,
+              size: 18,
               color: colorScheme.onSurfaceVariant,
             ),
           ),

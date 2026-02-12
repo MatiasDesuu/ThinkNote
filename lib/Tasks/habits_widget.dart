@@ -414,6 +414,8 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                           ),
                           style: TextStyle(
                             fontSize: 14,
+                            height: 1.2,
+                            leadingDistribution: TextLeadingDistribution.even,
                             color: colorScheme.onSurface,
                           ),
                           onSubmitted: (_) => _addSubtask(),
@@ -591,6 +593,10 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                                                       ),
                                                       style: TextStyle(
                                                         fontSize: 14,
+                                                        height: 1.2,
+                                                        leadingDistribution:
+                                                            TextLeadingDistribution
+                                                                .even,
                                                         color:
                                                             colorScheme
                                                                 .onSurface,
@@ -632,6 +638,10 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                                                         sub.text,
                                                         style: TextStyle(
                                                           fontSize: 14,
+                                                          height: 1.2,
+                                                          leadingDistribution:
+                                                              TextLeadingDistribution
+                                                                  .even,
                                                           fontWeight:
                                                               FontWeight.w500,
                                                           color:
