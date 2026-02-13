@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../database/database_service.dart';
 import '../database/models/bookmark.dart';
 
@@ -21,24 +22,40 @@ class LinksHandlerDB {
   List<Bookmark> get filteredBookmarks {
     var filtered = List<Bookmark>.from(_bookmarks);
 
+    if (_selectedTag != null) {
+      if (_selectedTag == hiddenTag) {
+        filtered = filtered.where((b) => b.tags.contains(hiddenTag)).toList();
+      } else if (_selectedTag == untaggedTag) {
+        filtered = filtered.where((b) => b.tags.isEmpty).toList();
+      } else {
+        filtered =
+            filtered
+                .where(
+                  (b) =>
+                      b.tags.contains(_selectedTag) &&
+                      !b.tags.contains(hiddenTag),
+                )
+                .toList();
+      }
+    } else {
+      filtered =
+          filtered
+              .where((b) => !b.hidden && !b.tags.contains(hiddenTag))
+              .toList();
+    }
+
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
       filtered =
           filtered.where((bookmark) {
             final title = bookmark.title.toLowerCase();
             final url = bookmark.url.toLowerCase();
+            final tagsMatch = bookmark.tags.any(
+              (tag) => tag.toLowerCase().contains(query),
+            );
 
-            return title.contains(query) || url.contains(query);
+            return title.contains(query) || url.contains(query) || tagsMatch;
           }).toList();
-    }
-
-    if (_selectedTag != null) {
-      if (_selectedTag == hiddenTag) {
-      } else {
-        filtered = filtered.where((bookmark) => !bookmark.hidden).toList();
-      }
-    } else {
-      filtered = filtered.where((bookmark) => !bookmark.hidden).toList();
     }
 
     filtered.sort((a, b) {
@@ -80,7 +97,17 @@ class LinksHandlerDB {
     _searchQuery = '';
   }
 
+  bool _isLoadingBookmarks = false;
+  Completer<void>? _loadCompleter;
+
   Future<void> loadBookmarks() async {
+    if (_isLoadingBookmarks) {
+      return _loadCompleter?.future;
+    }
+
+    _isLoadingBookmarks = true;
+    _loadCompleter = Completer<void>();
+
     try {
       _bookmarks =
           await _databaseService.bookmarkService.getAllBookmarksWithTags();
@@ -96,10 +123,15 @@ class LinksHandlerDB {
         _allTags.remove(hiddenTag);
         _allTags.add(hiddenTag);
       }
+      _loadCompleter?.complete();
     } catch (e) {
       print('Error loading bookmarks: $e');
       _bookmarks = [];
       _allTags = [];
+      _loadCompleter?.completeError(e);
+    } finally {
+      _isLoadingBookmarks = false;
+      _loadCompleter = null;
     }
   }
 
@@ -189,66 +221,6 @@ class LinksHandlerDB {
 
   Future<List<Bookmark>> getFilteredBookmarks() async {
     await loadBookmarks();
-    var filtered = filteredBookmarks;
-
-    if (_selectedTag != null) {
-      final List<Bookmark> tagFiltered = [];
-
-      for (final bookmark in filtered) {
-        final tags = bookmark.tags;
-
-        if (_selectedTag == hiddenTag) {
-          if (tags.contains(_selectedTag)) {
-            tagFiltered.add(bookmark);
-          }
-        } else if (_selectedTag == untaggedTag) {
-          if (tags.isEmpty) {
-            tagFiltered.add(bookmark);
-          }
-        } else {
-          if (tags.contains(_selectedTag) && !tags.contains(hiddenTag)) {
-            tagFiltered.add(bookmark);
-          }
-        }
-      }
-
-      filtered = tagFiltered;
-    } else {
-      final List<Bookmark> nonHiddenBookmarks = [];
-
-      for (final bookmark in filtered) {
-        final tags = bookmark.tags;
-        if (!tags.contains(hiddenTag)) {
-          nonHiddenBookmarks.add(bookmark);
-        }
-      }
-
-      filtered = nonHiddenBookmarks;
-    }
-
-    if (_searchQuery.isNotEmpty) {
-      final query = _searchQuery.toLowerCase();
-      final List<Bookmark> searchTagFiltered = [];
-
-      for (final bookmark in _bookmarks) {
-        final tags = bookmark.tags;
-
-        if (tags.any((tag) => tag.toLowerCase().contains(query))) {
-          if (_selectedTag == hiddenTag || !tags.contains(hiddenTag)) {
-            if (!filtered.any((b) => b.id == bookmark.id)) {
-              searchTagFiltered.add(bookmark);
-            }
-          }
-        }
-      }
-
-      for (final bookmark in searchTagFiltered) {
-        if (!filtered.any((b) => b.id == bookmark.id)) {
-          filtered.add(bookmark);
-        }
-      }
-    }
-
-    return filtered;
+    return filteredBookmarks;
   }
 }

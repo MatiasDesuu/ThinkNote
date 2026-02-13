@@ -180,19 +180,26 @@ class DatabaseHelper {
       )
     ''');
 
-    db.execute('''
-      CREATE TABLE IF NOT EXISTS ${config.DatabaseConfig.tableCalendarEvents} (
-        ${config.DatabaseConfig.columnCalendarEventId} INTEGER PRIMARY KEY AUTOINCREMENT,
-        ${config.DatabaseConfig.columnCalendarEventNoteId} INTEGER NOT NULL,
-        ${config.DatabaseConfig.columnCalendarEventDate} INTEGER NOT NULL,
-        ${config.DatabaseConfig.columnCalendarEventOrderIndex} INTEGER NOT NULL DEFAULT 0,
-        ${config.DatabaseConfig.columnCalendarEventStatus} TEXT,
-        FOREIGN KEY (${config.DatabaseConfig.columnCalendarEventNoteId}) REFERENCES ${config.DatabaseConfig.tableNotes} (${config.DatabaseConfig.columnId}) ON DELETE CASCADE
-      )
-    ''');
+      db.execute('''
+        CREATE TABLE IF NOT EXISTS ${config.DatabaseConfig.tableCalendarEvents} (
+          ${config.DatabaseConfig.columnCalendarEventId} INTEGER PRIMARY KEY AUTOINCREMENT,
+          ${config.DatabaseConfig.columnCalendarEventNoteId} INTEGER NOT NULL,
+          ${config.DatabaseConfig.columnCalendarEventDate} INTEGER NOT NULL,
+          ${config.DatabaseConfig.columnCalendarEventOrderIndex} INTEGER NOT NULL DEFAULT 0,
+          ${config.DatabaseConfig.columnCalendarEventStatus} TEXT,
+          FOREIGN KEY (${config.DatabaseConfig.columnCalendarEventNoteId}) REFERENCES ${config.DatabaseConfig.tableNotes} (${config.DatabaseConfig.columnId}) ON DELETE CASCADE
+        )
+      ''');
 
-    db.execute('''
-      CREATE TABLE IF NOT EXISTS bookmarks (
+      db.execute('CREATE INDEX IF NOT EXISTS idx_notes_notebook_id ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnNotebookId});');
+      db.execute('CREATE INDEX IF NOT EXISTS idx_notes_deleted_at ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnDeletedAt});');
+      db.execute('CREATE INDEX IF NOT EXISTS idx_notebooks_parent_id ON ${config.DatabaseConfig.tableNotebooks}(${config.DatabaseConfig.columnParentId});');
+      db.execute('CREATE INDEX IF NOT EXISTS idx_calendar_events_date ON ${config.DatabaseConfig.tableCalendarEvents}(${config.DatabaseConfig.columnCalendarEventDate});');
+      db.execute('CREATE INDEX IF NOT EXISTS idx_notes_is_favorite ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnIsFavorite});');
+      db.execute('CREATE INDEX IF NOT EXISTS idx_notes_pinned_order ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnNoteIsPinned}, order_index);');
+
+      db.execute('''
+        CREATE TABLE IF NOT EXISTS bookmarks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         url TEXT NOT NULL,
@@ -562,6 +569,17 @@ class DatabaseHelper {
         }
       } catch (e) {
         // Ignore if column already exists
+      }
+
+      try {
+        db.execute('CREATE INDEX IF NOT EXISTS idx_notes_notebook_id ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnNotebookId});');
+        db.execute('CREATE INDEX IF NOT EXISTS idx_notes_deleted_at ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnDeletedAt});');
+        db.execute('CREATE INDEX IF NOT EXISTS idx_notebooks_parent_id ON ${config.DatabaseConfig.tableNotebooks}(${config.DatabaseConfig.columnParentId});');
+        db.execute('CREATE INDEX IF NOT EXISTS idx_calendar_events_date ON ${config.DatabaseConfig.tableCalendarEvents}(${config.DatabaseConfig.columnCalendarEventDate});');
+        db.execute('CREATE INDEX IF NOT EXISTS idx_notes_is_favorite ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnIsFavorite});');
+        db.execute('CREATE INDEX IF NOT EXISTS idx_notes_pinned_order ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnNoteIsPinned}, order_index);');
+      } catch (e) {
+        // Ignore if indexes already exist or fail
       }
     } catch (e) {
       developer.log('Error running migrations: $e', name: 'DatabaseHelper');

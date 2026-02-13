@@ -533,8 +533,6 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     if (confirmed == true) {
       await _linksHandler.removeBookmark(bookmark.id!);
       widget.onLinkRemoved();
-      await _loadBookmarks();
-      setState(() {});
     }
   }
 

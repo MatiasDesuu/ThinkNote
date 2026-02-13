@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../shortcuts_handler.dart';
 
 Future<bool?> showDeleteConfirmationDialog({
   required BuildContext context,
@@ -20,103 +21,110 @@ Future<bool?> showDeleteConfirmationDialog({
     barrierDismissible: barrierDismissible,
     useRootNavigator: false,
     builder:
-        (context) => PopScope(
-          canPop: true,
-          onPopInvokedWithResult: (bool didPop, bool? result) {
-            if (didPop) return;
-            Navigator.pop(context, false);
-          },
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                width: 400,
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainer,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        title,
-                        style: textStyle?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                          color: colorScheme.onSurface,
+        (context) => AppShortcuts(
+          shortcuts: ShortcutsHandler.getDialogShortcuts(
+            onConfirm: () => Navigator.pop(context, true),
+            onCancel: () => Navigator.pop(context, false),
+          ),
+          child: PopScope(
+            canPop: true,
+            onPopInvokedWithResult: (bool didPop, bool? result) {
+              if (didPop) return;
+              Navigator.pop(context, false);
+            },
+            child: Dialog(
+              backgroundColor: Colors.transparent,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  width: 400,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainer,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          title,
+                          style: textStyle?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                            color: colorScheme.onSurface,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        message,
-                        style: textStyle?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                        const SizedBox(height: 8),
+                        Text(
+                          message,
+                          style: textStyle?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
 
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              style: TextButton.styleFrom(
-                                backgroundColor:
-                                    colorScheme.surfaceContainerHigh,
-                                foregroundColor: colorScheme.onSurface,
-                                minimumSize: const Size(0, 44),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  cancelText,
-                                  style: textStyle,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    confirmColor ?? colorScheme.primary,
-                                foregroundColor: colorScheme.onPrimary,
-                                minimumSize: const Size(0, 44),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  confirmText,
-                                  style: textStyle?.copyWith(
-                                    color: colorScheme.onPrimary,
-                                    fontWeight: FontWeight.bold,
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                style: TextButton.styleFrom(
+                                  backgroundColor:
+                                      colorScheme.surfaceContainerHigh,
+                                  foregroundColor: colorScheme.onSurface,
+                                  minimumSize: const Size(0, 44),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
+                                ),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    cancelText,
+                                    style: textStyle,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                autofocus: true,
+                                onPressed: () => Navigator.pop(context, true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      confirmColor ?? colorScheme.primary,
+                                  foregroundColor: colorScheme.onPrimary,
+                                  minimumSize: const Size(0, 44),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    confirmText,
+                                    style: textStyle?.copyWith(
+                                      color: colorScheme.onPrimary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

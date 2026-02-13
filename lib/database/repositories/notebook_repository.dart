@@ -2,7 +2,6 @@ import '../database_helper.dart';
 import '../database_config.dart' as config;
 import '../models/notebook.dart';
 import '../database_service.dart';
-import 'package:collection/collection.dart';
 
 class NotebookRepository {
   final DatabaseHelper _dbHelper;
@@ -107,46 +106,35 @@ class NotebookRepository {
     final now = DateTime.now().millisecondsSinceEpoch;
 
     final nestedNotebooks = await _getNestedNotebooks(id);
+    final allIds = [id, ...nestedNotebooks.map((n) => n.id!)];
+    final placeholders = List.filled(allIds.length, '?').join(',');
 
-    for (final notebook in nestedNotebooks) {
+    db.execute('BEGIN TRANSACTION');
+    try {
       db.execute(
         '''
         UPDATE ${config.DatabaseConfig.tableNotes}
         SET ${config.DatabaseConfig.columnDeletedAt} = ?
-        WHERE ${config.DatabaseConfig.columnNotebookId} = ?
+        WHERE ${config.DatabaseConfig.columnNotebookId} IN ($placeholders)
         ''',
-        [now, notebook.id],
+        [now, ...allIds],
       );
 
       db.execute(
         '''
         UPDATE ${config.DatabaseConfig.tableNotebooks}
         SET ${config.DatabaseConfig.columnDeletedAt} = ?
-        WHERE ${config.DatabaseConfig.columnId} = ?
+        WHERE ${config.DatabaseConfig.columnId} IN ($placeholders)
         ''',
-        [now, notebook.id],
+        [now, ...allIds],
       );
+
+      db.execute('COMMIT');
+      DatabaseService().notifyDatabaseChanged();
+    } catch (e) {
+      db.execute('ROLLBACK');
+      rethrow;
     }
-
-    db.execute(
-      '''
-      UPDATE ${config.DatabaseConfig.tableNotes}
-      SET ${config.DatabaseConfig.columnDeletedAt} = ?
-      WHERE ${config.DatabaseConfig.columnNotebookId} = ?
-      ''',
-      [now, id],
-    );
-
-    db.execute(
-      '''
-      UPDATE ${config.DatabaseConfig.tableNotebooks}
-      SET ${config.DatabaseConfig.columnDeletedAt} = ?
-      WHERE ${config.DatabaseConfig.columnId} = ?
-      ''',
-      [now, id],
-    );
-
-    DatabaseService().notifyDatabaseChanged();
   }
 
   Future<List<Notebook>> _getNestedNotebooks(int parentId) async {
@@ -178,44 +166,34 @@ class NotebookRepository {
     final db = await _dbHelper.database;
 
     final nestedNotebooks = await _getDeletedNestedNotebooks(id);
+    final allIds = [id, ...nestedNotebooks.map((n) => n.id!)];
+    final placeholders = List.filled(allIds.length, '?').join(',');
 
-    for (final notebook in nestedNotebooks) {
+    db.execute('BEGIN TRANSACTION');
+    try {
       db.execute(
         '''
         UPDATE ${config.DatabaseConfig.tableNotes}
         SET ${config.DatabaseConfig.columnDeletedAt} = NULL
-        WHERE ${config.DatabaseConfig.columnNotebookId} = ?
+        WHERE ${config.DatabaseConfig.columnNotebookId} IN ($placeholders)
         ''',
-        [notebook.id],
+        allIds,
       );
 
       db.execute(
         '''
         UPDATE ${config.DatabaseConfig.tableNotebooks}
         SET ${config.DatabaseConfig.columnDeletedAt} = NULL
-        WHERE ${config.DatabaseConfig.columnId} = ?
+        WHERE ${config.DatabaseConfig.columnId} IN ($placeholders)
         ''',
-        [notebook.id],
+        allIds,
       );
+      db.execute('COMMIT');
+      DatabaseService().notifyDatabaseChanged();
+    } catch (e) {
+      db.execute('ROLLBACK');
+      rethrow;
     }
-
-    db.execute(
-      '''
-      UPDATE ${config.DatabaseConfig.tableNotes}
-      SET ${config.DatabaseConfig.columnDeletedAt} = NULL
-      WHERE ${config.DatabaseConfig.columnNotebookId} = ?
-      ''',
-      [id],
-    );
-
-    db.execute(
-      '''
-      UPDATE ${config.DatabaseConfig.tableNotebooks}
-      SET ${config.DatabaseConfig.columnDeletedAt} = NULL
-      WHERE ${config.DatabaseConfig.columnId} = ?
-      ''',
-      [id],
-    );
   }
 
   Future<List<Notebook>> _getDeletedNestedNotebooks(int parentId) async {
@@ -273,65 +251,32 @@ class NotebookRepository {
     final db = await _dbHelper.database;
 
     final nestedNotebooks = await _getDeletedNestedNotebooksForHardDelete(id);
+    final allIds = [id, ...nestedNotebooks.map((n) => n.id!)];
+    final placeholders = List.filled(allIds.length, '?').join(',');
 
-    nestedNotebooks.sort((a, b) {
-      int depthA = 0;
-      int depthB = 0;
-      Notebook? currentA = a;
-      Notebook? currentB = b;
-
-      while (currentA?.parentId != null) {
-        depthA++;
-        currentA = nestedNotebooks.firstWhereOrNull(
-          (n) => n.id == currentA?.parentId,
-        );
-        if (currentA == null) break;
-      }
-
-      while (currentB?.parentId != null) {
-        depthB++;
-        currentB = nestedNotebooks.firstWhereOrNull(
-          (n) => n.id == currentB?.parentId,
-        );
-        if (currentB == null) break;
-      }
-
-      return depthB.compareTo(depthA);
-    });
-
-    for (final notebook in nestedNotebooks) {
+    db.execute('BEGIN TRANSACTION');
+    try {
       db.execute(
         '''
         DELETE FROM ${config.DatabaseConfig.tableNotes}
-        WHERE ${config.DatabaseConfig.columnNotebookId} = ?
+        WHERE ${config.DatabaseConfig.columnNotebookId} IN ($placeholders)
         ''',
-        [notebook.id],
+        allIds,
       );
 
       db.execute(
         '''
         DELETE FROM ${config.DatabaseConfig.tableNotebooks}
-        WHERE ${config.DatabaseConfig.columnId} = ?
+        WHERE ${config.DatabaseConfig.columnId} IN ($placeholders)
         ''',
-        [notebook.id],
+        allIds,
       );
+      db.execute('COMMIT');
+      DatabaseService().notifyDatabaseChanged();
+    } catch (e) {
+      db.execute('ROLLBACK');
+      rethrow;
     }
-
-    db.execute(
-      '''
-      DELETE FROM ${config.DatabaseConfig.tableNotes}
-      WHERE ${config.DatabaseConfig.columnNotebookId} = ?
-      ''',
-      [id],
-    );
-
-    db.execute(
-      '''
-      DELETE FROM ${config.DatabaseConfig.tableNotebooks}
-      WHERE ${config.DatabaseConfig.columnId} = ?
-      ''',
-      [id],
-    );
   }
 
   Future<List<Notebook>> getAllNotebooks() async {

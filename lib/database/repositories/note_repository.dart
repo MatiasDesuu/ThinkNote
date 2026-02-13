@@ -270,6 +270,43 @@ class NoteRepository {
     return result.map((row) => Note.fromMap(row)).toList();
   }
 
+  Future<void> reorderNotes(List<Note> notes) async {
+    final db = await _dbHelper.database;
+    db.execute('BEGIN TRANSACTION');
+
+    try {
+      final stmt = db.prepare('''
+        UPDATE ${config.DatabaseConfig.tableNotes}
+        SET order_index = ?,
+            ${config.DatabaseConfig.columnUpdatedAt} = ?
+        WHERE id = ?
+      ''');
+
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      for (int i = 0; i < notes.length; i++) {
+        stmt.execute([i, now, notes[i].id]);
+      }
+
+      stmt.dispose();
+
+      db.execute(
+        '''
+        UPDATE sync_info
+        SET last_modified = ?
+        WHERE id = 1
+      ''',
+        [now],
+      );
+
+      db.execute('COMMIT');
+      DatabaseService().notifyDatabaseChanged();
+    } catch (e) {
+      db.execute('ROLLBACK');
+      rethrow;
+    }
+  }
+
   Future<void> updateNoteOrder(int noteId, int newOrder) async {
     final db = await _dbHelper.database;
     db.execute(

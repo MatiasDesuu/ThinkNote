@@ -489,21 +489,19 @@ class BookmarkService {
   Future<List<Bookmark>> getAllBookmarksWithTags() async {
     final db = await _dbHelper.database;
 
-    final List<Map<String, dynamic>> maps = db.select('''
-      SELECT 
-        b.*,
-        GROUP_CONCAT(t.tag) as tags
-      FROM bookmarks b
-      LEFT JOIN bookmarks_tags t ON t.id IN (
-        SELECT value FROM json_each(b.tag_ids)
-      )
-      GROUP BY b.id
-    ''');
+    final List<Map<String, dynamic>> bookmarkMaps = db.select('SELECT * FROM bookmarks');
+    final List<Map<String, dynamic>> tagMaps = db.select('SELECT * FROM bookmarks_tags');
+    
+    final Map<int, String> tagMap = {
+      for (var row in tagMaps) row['id'] as int: row['tag'] as String
+    };
 
-    return maps.map((map) {
+    return bookmarkMaps.map((map) {
       final tagIds = List<int>.from(
         json.decode(map['tag_ids'] as String? ?? '[]'),
       );
+      
+      final tags = tagIds.map((id) => tagMap[id]).whereType<String>().toList();
 
       return Bookmark.fromMap({
         'id': map['id'],
@@ -513,7 +511,7 @@ class BookmarkService {
         'timestamp': map['timestamp'],
         'hidden': map['hidden'],
         'tag_ids': tagIds,
-        'tags': map['tags'],
+        'tags': tags.isNotEmpty ? tags.join(',') : null,
       });
     }).toList();
   }

@@ -1,5 +1,6 @@
 import '../database_helper.dart';
 import '../models/calendar_event.dart';
+import '../models/note.dart';
 import '../database_config.dart' as config;
 import 'note_repository.dart';
 
@@ -60,22 +61,36 @@ class CalendarEventRepository {
 
     final result = db.select(
       '''
-      SELECT * FROM ${config.DatabaseConfig.tableCalendarEvents}
-      WHERE ${config.DatabaseConfig.columnCalendarEventDate} >= ?
-      AND ${config.DatabaseConfig.columnCalendarEventDate} < ?
-      ORDER BY ${config.DatabaseConfig.columnCalendarEventOrderIndex} ASC
+      SELECT e.*, n.title, n.content, n.notebook_id, n.created_at, n.updated_at, 
+             n.is_favorite, n.tags, n.order_index as n_order_index, n.is_task, n.is_completed, n.is_pinned
+      FROM ${config.DatabaseConfig.tableCalendarEvents} e
+      JOIN ${config.DatabaseConfig.tableNotes} n ON e.${config.DatabaseConfig.columnCalendarEventNoteId} = n.id
+      WHERE e.${config.DatabaseConfig.columnCalendarEventDate} >= ?
+      AND e.${config.DatabaseConfig.columnCalendarEventDate} < ?
+      AND n.${config.DatabaseConfig.columnDeletedAt} IS NULL
+      ORDER BY e.${config.DatabaseConfig.columnCalendarEventOrderIndex} ASC
     ''',
       [startOfDay.millisecondsSinceEpoch, endOfDay.millisecondsSinceEpoch],
     );
 
-    final events = result.map((row) => CalendarEvent.fromMap(row)).toList();
-
-    for (var i = 0; i < events.length; i++) {
-      final note = await _noteRepository.getNote(events[i].noteId);
-      events[i] = events[i].copyWith(note: note);
-    }
-
-    return events;
+    return result.map((row) {
+      final event = CalendarEvent.fromMap(row);
+      final note = Note(
+        id: row['note_id'] as int,
+        title: row['title'] as String? ?? '',
+        content: row['content'] as String? ?? '',
+        notebookId: row['notebook_id'] as int,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at'] as int),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(row['updated_at'] as int),
+        isFavorite: row['is_favorite'] == 1,
+        tags: row['tags'] as String? ?? '',
+        orderIndex: row['n_order_index'] as int? ?? 0,
+        isTask: row['is_task'] == 1,
+        isCompleted: row['is_completed'] == 1,
+        isPinned: row['is_pinned'] == 1,
+      );
+      return event.copyWith(note: note);
+    }).toList();
   }
 
   Future<List<CalendarEvent>> getCalendarEventsByMonth(DateTime month) async {
@@ -85,22 +100,36 @@ class CalendarEventRepository {
 
     final result = db.select(
       '''
-      SELECT * FROM ${config.DatabaseConfig.tableCalendarEvents}
-      WHERE ${config.DatabaseConfig.columnCalendarEventDate} >= ?
-      AND ${config.DatabaseConfig.columnCalendarEventDate} <= ?
-      ORDER BY ${config.DatabaseConfig.columnCalendarEventOrderIndex} ASC
+      SELECT e.*, n.title, n.content, n.notebook_id, n.created_at, n.updated_at, 
+             n.is_favorite, n.tags, n.order_index as n_order_index, n.is_task, n.is_completed, n.is_pinned
+      FROM ${config.DatabaseConfig.tableCalendarEvents} e
+      JOIN ${config.DatabaseConfig.tableNotes} n ON e.${config.DatabaseConfig.columnCalendarEventNoteId} = n.id
+      WHERE e.${config.DatabaseConfig.columnCalendarEventDate} >= ?
+      AND e.${config.DatabaseConfig.columnCalendarEventDate} <= ?
+      AND n.${config.DatabaseConfig.columnDeletedAt} IS NULL
+      ORDER BY e.${config.DatabaseConfig.columnCalendarEventOrderIndex} ASC
     ''',
       [startOfMonth.millisecondsSinceEpoch, endOfMonth.millisecondsSinceEpoch],
     );
 
-    final events = result.map((row) => CalendarEvent.fromMap(row)).toList();
-
-    for (var i = 0; i < events.length; i++) {
-      final note = await _noteRepository.getNote(events[i].noteId);
-      events[i] = events[i].copyWith(note: note);
-    }
-
-    return events;
+    return result.map((row) {
+      final event = CalendarEvent.fromMap(row);
+      final note = Note(
+        id: row['note_id'] as int,
+        title: row['title'] as String? ?? '',
+        content: row['content'] as String? ?? '',
+        notebookId: row['notebook_id'] as int,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at'] as int),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(row['updated_at'] as int),
+        isFavorite: row['is_favorite'] == 1,
+        tags: row['tags'] as String? ?? '',
+        orderIndex: row['n_order_index'] as int? ?? 0,
+        isTask: row['is_task'] == 1,
+        isCompleted: row['is_completed'] == 1,
+        isPinned: row['is_pinned'] == 1,
+      );
+      return event.copyWith(note: note);
+    }).toList();
   }
 
   Future<CalendarEvent?> getCalendarEventByNoteId(int noteId) async {
@@ -179,18 +208,32 @@ class CalendarEventRepository {
   Future<List<CalendarEvent>> getUnassignedCalendarEvents() async {
     final db = await _dbHelper.database;
     final result = db.select('''
-      SELECT * FROM ${config.DatabaseConfig.tableCalendarEvents}
-      WHERE ${config.DatabaseConfig.columnCalendarEventStatus} IS NULL
-      ORDER BY ${config.DatabaseConfig.columnCalendarEventOrderIndex} ASC
+      SELECT e.*, n.title, n.content, n.notebook_id, n.created_at, n.updated_at, 
+             n.is_favorite, n.tags, n.order_index as n_order_index, n.is_task, n.is_completed, n.is_pinned
+      FROM ${config.DatabaseConfig.tableCalendarEvents} e
+      JOIN ${config.DatabaseConfig.tableNotes} n ON e.${config.DatabaseConfig.columnCalendarEventNoteId} = n.id
+      WHERE e.${config.DatabaseConfig.columnCalendarEventStatus} IS NULL
+      AND n.${config.DatabaseConfig.columnDeletedAt} IS NULL
+      ORDER BY e.${config.DatabaseConfig.columnCalendarEventOrderIndex} ASC
     ''');
 
-    final events = result.map((row) => CalendarEvent.fromMap(row)).toList();
-
-    for (var i = 0; i < events.length; i++) {
-      final note = await _noteRepository.getNote(events[i].noteId);
-      events[i] = events[i].copyWith(note: note);
-    }
-
-    return events;
+    return result.map((row) {
+      final event = CalendarEvent.fromMap(row);
+      final note = Note(
+        id: row['note_id'] as int,
+        title: row['title'] as String? ?? '',
+        content: row['content'] as String? ?? '',
+        notebookId: row['notebook_id'] as int,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at'] as int),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(row['updated_at'] as int),
+        isFavorite: row['is_favorite'] == 1,
+        tags: row['tags'] as String? ?? '',
+        orderIndex: row['n_order_index'] as int? ?? 0,
+        isTask: row['is_task'] == 1,
+        isCompleted: row['is_completed'] == 1,
+        isPinned: row['is_pinned'] == 1,
+      );
+      return event.copyWith(note: note);
+    }).toList();
   }
 }

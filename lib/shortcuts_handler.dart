@@ -221,6 +221,7 @@ class ShortcutsHandler {
   }) {
     return {
       const SingleActivator(LogicalKeyboardKey.enter): onConfirm,
+      const SingleActivator(LogicalKeyboardKey.numpadEnter): onConfirm,
       const SingleActivator(LogicalKeyboardKey.escape): onCancel,
     };
   }
@@ -231,6 +232,7 @@ class ShortcutsHandler {
   }) {
     final Map<ShortcutActivator, VoidCallback> shortcuts = {
       const SingleActivator(LogicalKeyboardKey.enter): onSubmit,
+      const SingleActivator(LogicalKeyboardKey.numpadEnter): onSubmit,
     };
 
     if (onCancel != null) {
