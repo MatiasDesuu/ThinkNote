@@ -5,7 +5,7 @@ REM Configure variables
 set GITEA_URL=http://192.168.1.119:10009
 set REPO_OWNER=MatiasDesu
 set REPO_NAME=ThinkNote
-set GITEA_TOKEN=47dc8216649cd1d8f9b40174f3156bf75cdb7600
+set GITEA_TOKEN=47a4f2b9977498ab36e4e7e7ca77b7791c2df431
 REM Replace with your Gitea token
 set APK_PATH=%CD%/build/app/outputs/flutter-apk/app-release.apk
 for /f "delims=" %%i in ('powershell.exe -Command "Get-Date -Format 'yyyyMMdd-HHmmss'"') do set RELEASE_TAG=v1.0.0-%%i

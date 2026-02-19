@@ -66,6 +66,7 @@ class ShortcutsHandler {
       const SingleActivator(LogicalKeyboardKey.f6): onToggleCalendarPanel,
       const SingleActivator(LogicalKeyboardKey.f7): onToggleFavoritesPanel,
       const SingleActivator(LogicalKeyboardKey.f8): onToggleTrashPanel,
+      const SingleActivator(LogicalKeyboardKey.f9): onGlobalSearch,
       const SingleActivator(
             LogicalKeyboardKey.keyF,
             control: true,
@@ -192,6 +193,10 @@ class ShortcutsHandler {
       }
       if (key == LogicalKeyboardKey.f8) {
         onToggleTrashPanel();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.f9) {
+        onGlobalSearch();
         return true;
       }
     }

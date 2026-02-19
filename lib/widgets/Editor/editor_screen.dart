@@ -1432,12 +1432,15 @@ class _NotaEditorState extends State<NotaEditor>
                 if (_showFindBar) {
                   if (event is KeyDownEvent) {
                     if (event.logicalKey == LogicalKeyboardKey.enter) {
-                      if (HardwareKeyboard.instance.isShiftPressed) {
-                        _previousMatch();
-                      } else {
-                        _nextMatch();
+                      if (!_editorFocusNode.hasFocus) {
+                        if (HardwareKeyboard.instance.isShiftPressed) {
+                          _previousMatch();
+                        } else {
+                          _nextMatch();
+                        }
+                        return KeyEventResult.handled;
                       }
-                      return KeyEventResult.handled;
+                      return KeyEventResult.ignored;
                     } else if (event.logicalKey == LogicalKeyboardKey.escape) {
                       _hideFindBar();
                       return KeyEventResult.handled;
