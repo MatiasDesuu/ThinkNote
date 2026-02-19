@@ -895,7 +895,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                     child: Icon(
                       Icons.drag_indicator_rounded,
                       color: colorScheme.onSurfaceVariant.withAlpha(100),
-                      size: 20,
+                      size: 18,
                     ),
                   ),
                 ),
@@ -931,7 +931,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                 ),
               ),
 
-              const SizedBox(width: 12),
+              const SizedBox(width: 4),
 
               if (!isCompleted && subtask.priority != SubtaskPriority.medium)
                 Padding(
@@ -952,6 +952,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                         ? TextField(
                           controller: _editingController,
                           autofocus: true,
+                          textCapitalization: TextCapitalization.sentences,
                           decoration: InputDecoration(
                             isDense: true,
                             contentPadding: const EdgeInsets.symmetric(
@@ -983,7 +984,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                           ),
                           style: TextStyle(
                             fontSize: 15,
-                            height: 1.2,
                             leadingDistribution: TextLeadingDistribution.even,
                             color: colorScheme.onSurface,
                           ),
@@ -1013,7 +1013,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                                     : TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 15,
-                              height: 1.2,
                               leadingDistribution: TextLeadingDistribution.even,
                               decoration:
                                   isCompleted

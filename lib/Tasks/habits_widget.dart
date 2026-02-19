@@ -399,6 +399,7 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                       Expanded(
                         child: TextField(
                           controller: _newSubtaskController,
+                          textCapitalization: TextCapitalization.sentences,
                           decoration: InputDecoration(
                             hintText: 'Add habit...',
                             hintStyle: TextStyle(
@@ -544,6 +545,9 @@ class _HabitsTrackerState extends State<HabitsTracker> {
                                                       controller:
                                                           _editingController,
                                                       autofocus: true,
+                                                      textCapitalization:
+                                                          TextCapitalization
+                                                              .sentences,
                                                       focusNode:
                                                           _editingFocusNode,
                                                       decoration: InputDecoration(

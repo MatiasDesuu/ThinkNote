@@ -642,7 +642,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
       child: _SubtaskItemHover(
         builder: (context, isHovering) {
           return Container(
-            margin: EdgeInsets.only(bottom: 4, left: isStep ? 32 : 0),
+            margin: EdgeInsets.only(bottom: 4, left: isStep ? 22 : 0),
             decoration: BoxDecoration(
               color:
                   isHovering
