@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../database/database_service.dart';
 import '../database/models/task.dart';
@@ -9,6 +10,7 @@ import '../widgets/confirmation_dialogue.dart';
 import '../widgets/custom_dialog.dart';
 import '../widgets/custom_date_picker_dialog.dart';
 import '../widgets/custom_tooltip.dart';
+import '../widgets/context_menu.dart';
 
 class TaskDetailsPanel extends StatefulWidget {
   final Task? selectedTask;
@@ -641,15 +643,31 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
       enabled: !ordenarPorPrioridad,
       child: _SubtaskItemHover(
         builder: (context, isHovering) {
-          return Container(
-            margin: EdgeInsets.only(bottom: 4, left: isStep ? 22 : 0),
-            decoration: BoxDecoration(
-              color:
-                  isHovering
-                      ? colorScheme.surfaceContainerHighest
-                      : colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(10),
-            ),
+          return GestureDetector(
+            onSecondaryTapDown: (details) {
+              ContextMenuOverlay.show(
+                context: context,
+                tapPosition: details.globalPosition,
+                items: [
+                  ContextMenuItem(
+                    icon: Icons.copy_rounded,
+                    label: 'Copy text',
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: subtask.text));
+                    },
+                  ),
+                ],
+              );
+            },
+            child: Container(
+              margin: EdgeInsets.only(bottom: 4, left: isStep ? 22 : 0),
+              decoration: BoxDecoration(
+                color:
+                    isHovering
+                        ? colorScheme.surfaceContainerHighest
+                        : colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(10),
+              ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: Row(
@@ -885,7 +903,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                 ],
               ),
             ),
-          );
+          ),);
         },
       ),
     );
