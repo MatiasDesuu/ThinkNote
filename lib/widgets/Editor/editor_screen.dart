@@ -1768,39 +1768,43 @@ class _NotaEditorState extends State<NotaEditor>
                         child: Stack(
                           children: [
                             _isReadMode
-                                ? _isScript
-                                    ? ScriptModeHandlerDesktop.buildScriptPreview(
-                                      context,
-                                      widget.noteController.text,
-                                      textStyle: _textStyle,
-                                      onNoteLinkTap: (note, isMiddleClick) {
-                                        _handleNoteLinkTap(note, isMiddleClick);
-                                      },
-                                      onTextChanged: (newText) {
-                                        widget.noteController.value = widget
-                                            .noteController
-                                            .value
-                                            .copyWith(
-                                              text: newText,
-                                              selection:
-                                                  widget
-                                                      .noteController
-                                                      .selection,
-                                            );
-                                      },
-                                      controller: _previewScrollController,
-                                    )
-                                    : _buildNoteReadPreview(
-                                      context,
-                                      controller: _previewScrollController,
-                                    )
+                                ? RepaintBoundary(
+                                    child: _isScript
+                                        ? ScriptModeHandlerDesktop.buildScriptPreview(
+                                          context,
+                                          widget.noteController.text,
+                                          textStyle: _textStyle,
+                                          onNoteLinkTap: (note, isMiddleClick) {
+                                            _handleNoteLinkTap(note, isMiddleClick);
+                                          },
+                                          onTextChanged: (newText) {
+                                            widget.noteController.value = widget
+                                                .noteController
+                                                .value
+                                                .copyWith(
+                                                  text: newText,
+                                                  selection:
+                                                      widget
+                                                          .noteController
+                                                          .selection,
+                                                );
+                                          },
+                                          controller: _previewScrollController,
+                                        )
+                                        : _buildNoteReadPreview(
+                                          context,
+                                          controller: _previewScrollController,
+                                        ),
+                                  )
                                 : _isSplitView
                                 ? Row(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
                                     Expanded(
-                                      child: _buildHighlightedTextField(),
+                                      child: RepaintBoundary(
+                                        child: _buildHighlightedTextField(),
+                                      ),
                                     ),
                                     const SizedBox(width: 16),
                                     VerticalDivider(
@@ -1812,8 +1816,8 @@ class _NotaEditorState extends State<NotaEditor>
                                     ),
                                     const SizedBox(width: 16),
                                     Expanded(
-                                      child:
-                                          _isScript
+                                      child: RepaintBoundary(
+                                        child: _isScript
                                               ? ScriptModeHandlerDesktop.buildScriptPreview(
                                                 context,
                                                 _splitViewPreviewText,
@@ -1846,10 +1850,11 @@ class _NotaEditorState extends State<NotaEditor>
                                                 controller:
                                                     _previewScrollController,
                                               ),
+                                      ),
                                     ),
                                   ],
                                 )
-                                : _buildHighlightedTextField(),
+                                : RepaintBoundary(child: _buildHighlightedTextField()),
 
                             if (_showFindBar)
                               Positioned(

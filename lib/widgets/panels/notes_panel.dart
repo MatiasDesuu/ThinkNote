@@ -1901,7 +1901,6 @@ class NotesPanelState extends State<NotesPanel> {
   void _sortNotesList(List<Note> notes) {
     if (widget.selectedNotebookId == -1) {
       notes.sort((a, b) {
-        if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
         return _lastModifiedAscending
             ? a.updatedAt.compareTo(b.updatedAt)
             : b.updatedAt.compareTo(a.updatedAt);

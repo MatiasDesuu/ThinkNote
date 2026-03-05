@@ -1299,20 +1299,11 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                         ),
                       ),
                     ),
-                    SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ..._notebooks.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final notebook = entry.value;
-                            return _buildNotebookNode(
-                              notebook,
-                              isLast: index == _notebooks.length - 1,
-                            );
-                          }),
-
-                          DragTarget<Map<String, dynamic>>(
+                    ListView.builder(
+                      itemCount: _notebooks.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == _notebooks.length) {
+                          return DragTarget<Map<String, dynamic>>(
                             onWillAcceptWithDetails: (details) {
                               final data = details.data;
                               if (data['type'] == 'notebook') {
@@ -1379,9 +1370,15 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                                 ),
                               );
                             },
-                          ),
-                        ],
-                      ),
+                          );
+                        }
+
+                        final notebook = _notebooks[index];
+                        return _buildNotebookNode(
+                          notebook,
+                          isLast: index == _notebooks.length - 1,
+                        );
+                      },
                     ),
                   ],
                 );

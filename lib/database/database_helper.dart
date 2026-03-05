@@ -193,6 +193,7 @@ class DatabaseHelper {
 
       db.execute('CREATE INDEX IF NOT EXISTS idx_notes_notebook_id ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnNotebookId});');
       db.execute('CREATE INDEX IF NOT EXISTS idx_notes_deleted_at ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnDeletedAt});');
+      db.execute('CREATE INDEX IF NOT EXISTS idx_notes_updated_at ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnUpdatedAt} DESC);');
       db.execute('CREATE INDEX IF NOT EXISTS idx_notebooks_parent_id ON ${config.DatabaseConfig.tableNotebooks}(${config.DatabaseConfig.columnParentId});');
       db.execute('CREATE INDEX IF NOT EXISTS idx_calendar_events_date ON ${config.DatabaseConfig.tableCalendarEvents}(${config.DatabaseConfig.columnCalendarEventDate});');
       db.execute('CREATE INDEX IF NOT EXISTS idx_notes_is_favorite ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnIsFavorite});');
@@ -574,6 +575,7 @@ class DatabaseHelper {
       try {
         db.execute('CREATE INDEX IF NOT EXISTS idx_notes_notebook_id ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnNotebookId});');
         db.execute('CREATE INDEX IF NOT EXISTS idx_notes_deleted_at ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnDeletedAt});');
+        db.execute('CREATE INDEX IF NOT EXISTS idx_notes_updated_at ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnUpdatedAt} DESC);');
         db.execute('CREATE INDEX IF NOT EXISTS idx_notebooks_parent_id ON ${config.DatabaseConfig.tableNotebooks}(${config.DatabaseConfig.columnParentId});');
         db.execute('CREATE INDEX IF NOT EXISTS idx_calendar_events_date ON ${config.DatabaseConfig.tableCalendarEvents}(${config.DatabaseConfig.columnCalendarEventDate});');
         db.execute('CREATE INDEX IF NOT EXISTS idx_notes_is_favorite ON ${config.DatabaseConfig.tableNotes}(${config.DatabaseConfig.columnIsFavorite});');
