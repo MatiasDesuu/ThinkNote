@@ -270,6 +270,20 @@ class NoteRepository {
     return result.map((row) => Note.fromMap(row)).toList();
   }
 
+  Future<List<Note>> getRecentlyModifiedNotes({int limit = 50}) async {
+    final db = await _dbHelper.database;
+    final result = db.select(
+      '''
+      SELECT * FROM ${config.DatabaseConfig.tableNotes}
+      WHERE ${config.DatabaseConfig.columnDeletedAt} IS NULL
+      ORDER BY ${config.DatabaseConfig.columnUpdatedAt} DESC
+      LIMIT ?
+    ''',
+      [limit],
+    );
+    return result.map((row) => Note.fromMap(row)).toList();
+  }
+
   Future<void> reorderNotes(List<Note> notes) async {
     final db = await _dbHelper.database;
     db.execute('BEGIN TRANSACTION');

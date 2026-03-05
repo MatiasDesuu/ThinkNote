@@ -85,31 +85,55 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
   }
 
   Widget buildTrailingButton() {
-    return CustomTooltip(
-      message:
-          areAllNotebooksExpanded
-              ? 'Collapse all notebooks'
-              : 'Expand all notebooks',
-      builder:
-          (context, isHovering) => IconButton(
-            icon: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return ScaleTransition(
-                  scale: animation,
-                  child: FadeTransition(opacity: animation, child: child),
-                );
-              },
-              child: Icon(
-                areAllNotebooksExpanded
-                    ? Icons.unfold_less_rounded
-                    : Icons.unfold_more_rounded,
-                size: 16,
-                key: ValueKey<bool>(areAllNotebooksExpanded),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CustomTooltip(
+          message: 'Last modified',
+          builder:
+              (context, isHovering) => IconButton(
+                icon: const Icon(Icons.history_rounded, size: 16),
+                onPressed: () {
+                  widget.onNotebookSelected(
+                    Notebook(
+                      id: -1,
+                      name: 'Last modified',
+                      createdAt: DateTime.now(),
+                    ),
+                  );
+                },
               ),
-            ),
-            onPressed: toggleAllNotebooks,
-          ),
+        ),
+        CustomTooltip(
+          message:
+              areAllNotebooksExpanded
+                  ? 'Collapse all notebooks'
+                  : 'Expand all notebooks',
+          builder:
+              (context, isHovering) => IconButton(
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (
+                    Widget child,
+                    Animation<double> animation,
+                  ) {
+                    return ScaleTransition(
+                      scale: animation,
+                      child: FadeTransition(opacity: animation, child: child),
+                    );
+                  },
+                  child: Icon(
+                    areAllNotebooksExpanded
+                        ? Icons.unfold_less_rounded
+                        : Icons.unfold_more_rounded,
+                    size: 16,
+                    key: ValueKey<bool>(areAllNotebooksExpanded),
+                  ),
+                ),
+                onPressed: toggleAllNotebooks,
+              ),
+        ),
+      ],
     );
   }
 

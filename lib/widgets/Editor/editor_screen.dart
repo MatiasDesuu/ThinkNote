@@ -132,6 +132,9 @@ class _NotaEditorState extends State<NotaEditor>
   bool _isSyncingScroll = false;
   final GlobalKey _exportButtonKey = GlobalKey();
 
+  String _lastTitleText = '';
+  String _lastContentText = '';
+
   TextStyle get _textStyle => GoogleFonts.getFont(
     _fontFamily,
     fontSize: _fontSize,
@@ -185,6 +188,8 @@ class _NotaEditorState extends State<NotaEditor>
   @override
   void initState() {
     super.initState();
+    _lastTitleText = widget.titleController.text;
+    _lastContentText = widget.noteController.text;
     WidgetsBinding.instance.addObserver(this);
     _saveController = SaveAnimationController(vsync: this);
     widget.noteController.addListener(_onContentChanged);
@@ -455,6 +460,9 @@ class _NotaEditorState extends State<NotaEditor>
   }
 
   void _onTitleChanged() {
+    if (widget.titleController.text == _lastTitleText) return;
+    _lastTitleText = widget.titleController.text;
+
     widget.onTitleChanged();
 
     if (_isAutoSaveEnabled) {
@@ -488,6 +496,9 @@ class _NotaEditorState extends State<NotaEditor>
   }
 
   void _onContentChanged() {
+    if (widget.noteController.text == _lastContentText) return;
+    _lastContentText = widget.noteController.text;
+
     widget.onContentChanged();
 
     _scriptDetectionDebouncer?.cancel();
@@ -542,6 +553,9 @@ class _NotaEditorState extends State<NotaEditor>
     } catch (e) {
       // Ignore errors when removing listeners
     }
+
+    _lastTitleText = widget.titleController.text;
+    _lastContentText = widget.noteController.text;
 
     widget.noteController.addListener(_onContentChanged);
     widget.titleController.addListener(_onTitleChanged);

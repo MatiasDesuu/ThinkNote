@@ -119,7 +119,43 @@ class NotesPanelState extends State<NotesPanel> {
     }
   }
 
+  bool _lastModifiedAscending = false;
+
   Widget buildTrailingButton() {
+    if (widget.selectedNotebookId == -1) {
+      return CustomTooltip(
+        message:
+            _lastModifiedAscending
+                ? 'Oldest modified first'
+                : 'Newest modified first',
+        builder:
+            (context, isHovering) => IconButton(
+              icon: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return ScaleTransition(
+                    scale: animation,
+                    child: FadeTransition(opacity: animation, child: child),
+                  );
+                },
+                child: Icon(
+                  _lastModifiedAscending
+                      ? Icons.arrow_upward_rounded
+                      : Icons.arrow_downward_rounded,
+                  size: 16,
+                  key: ValueKey<bool>(_lastModifiedAscending),
+                ),
+              ),
+              onPressed: () {
+                setState(() {
+                  _lastModifiedAscending = !_lastModifiedAscending;
+                  _sortNotesList(_notes);
+                });
+              },
+            ),
+      );
+    }
+
     if (_sortMode == SortMode.completion) {
       return Row(
         key: ValueKey<bool>(_completionSubSortByDate),
@@ -762,7 +798,9 @@ class NotesPanelState extends State<NotesPanel> {
     try {
       List<Note> notes;
 
-      if (widget.filterByTag != null && widget.filterByTag!.isNotEmpty) {
+      if (widget.selectedNotebookId == -1) {
+        notes = await _noteRepository.getRecentlyModifiedNotes(limit: 50);
+      } else if (widget.filterByTag != null && widget.filterByTag!.isNotEmpty) {
         notes = await TagsService().getNotesByTag(widget.filterByTag!);
       } else {
         notes = await _noteRepository.getNotesByNotebookId(
@@ -1861,6 +1899,16 @@ class NotesPanelState extends State<NotesPanel> {
   }
 
   void _sortNotesList(List<Note> notes) {
+    if (widget.selectedNotebookId == -1) {
+      notes.sort((a, b) {
+        if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+        return _lastModifiedAscending
+            ? a.updatedAt.compareTo(b.updatedAt)
+            : b.updatedAt.compareTo(a.updatedAt);
+      });
+      return;
+    }
+
     switch (_sortMode) {
       case SortMode.date:
         notes.sort((a, b) {

@@ -965,6 +965,14 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     if (activeTab?.note == null || isSaving || _isLoadingNoteContent) {
       return;
     }
+
+    final newTitle = activeTab!.titleController.text.trim();
+    final newContent = activeTab.noteController.text;
+
+    if (activeTab.note!.title == newTitle && activeTab.note!.content == newContent && !activeTab.isDirty) {
+      return;
+    }
+
     setState(() {
       isSaving = true;
     });
@@ -974,14 +982,14 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       final noteRepository = NoteRepository(dbHelper);
 
       await noteRepository.updateNoteTitleAndContent(
-        activeTab!.note!.id!,
-        activeTab.titleController.text.trim(),
-        activeTab.noteController.text,
+        activeTab.note!.id!,
+        newTitle,
+        newContent,
       );
 
       final updatedNote = activeTab.note!.copyWith(
-        title: activeTab.titleController.text.trim(),
-        content: activeTab.noteController.text,
+        title: newTitle,
+        content: newContent,
         updatedAt: DateTime.now(),
       );
 
