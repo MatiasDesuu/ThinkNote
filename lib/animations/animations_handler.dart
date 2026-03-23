@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/custom_tooltip.dart';
 
 class SaveAnimationController {
   late AnimationController _controller;
@@ -106,50 +107,57 @@ class SaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      tooltip: 'Save Note',
-      icon: AnimatedBuilder(
-        animation: controller.controller,
-        builder: (context, child) {
-          final colorScheme = Theme.of(context).colorScheme;
-          final primaryColor = colorScheme.primary;
-          final value = controller.controller.value;
+    return CustomTooltip(
+      message: 'Save Note',
+      builder: (context, isHovering) {
+        return IconButton(
+          tooltip: '',
+          icon: AnimatedBuilder(
+            animation: controller.controller,
+            builder: (context, child) {
+              final colorScheme = Theme.of(context).colorScheme;
+              final primaryColor = colorScheme.primary;
+              final value = controller.controller.value;
 
-          return SizedBox(
-            width: 24,
-            height: 24,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                if (controller.progressOpacityAnimation.value > 0)
-                  Opacity(
-                    opacity: controller.progressOpacityAnimation.value,
-                    child: RotationTransition(
-                      turns: controller.rotationAnimation,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.0,
-                        strokeCap: StrokeCap.round,
-                        value: null,
-                        valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+              return SizedBox(
+                width: 24,
+                height: 24,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (controller.progressOpacityAnimation.value > 0)
+                      Opacity(
+                        opacity: controller.progressOpacityAnimation.value,
+                        child: RotationTransition(
+                          turns: controller.rotationAnimation,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.0,
+                            strokeCap: StrokeCap.round,
+                            value: null,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              primaryColor,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
 
-                if (value <= 0.2 || (value >= 0.8))
-                  Transform.scale(
-                    scale: controller.scaleAnimation.value,
-                    child: Icon(
-                      Icons.save_rounded,
-                      size: 24,
-                      color: primaryColor,
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
-      ),
-      onPressed: controller.isAnimating ? null : onPressed,
+                    if (value <= 0.2 || (value >= 0.8))
+                      Transform.scale(
+                        scale: controller.scaleAnimation.value,
+                        child: Icon(
+                          Icons.save_rounded,
+                          size: 24,
+                          color: primaryColor,
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+          onPressed: controller.isAnimating ? null : onPressed,
+        );
+      },
     );
   }
 }
