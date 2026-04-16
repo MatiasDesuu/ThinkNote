@@ -7,7 +7,6 @@ import '../../database/models/subtask.dart';
 import 'tags_screen.dart' as tasks;
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/confirmation_dialogue.dart';
-import '../../Tasks/habits_widget.dart';
 import '../../widgets/custom_date_picker_dialog.dart';
 import '../theme_handler.dart';
 
@@ -28,9 +27,7 @@ class TaskDetailScreen extends StatefulWidget {
 class _TaskDetailScreenState extends State<TaskDetailScreen>
     with SingleTickerProviderStateMixin {
   late Task _task;
-  bool _isHabits = false;
   List<Subtask>? _cachedSubtasks;
-  Map<int, List<String>>? _cachedHabitCompletions;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _newSubtaskController = TextEditingController();
   DateTime? _selectedDate;
@@ -39,7 +36,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
   Timer? _debounceTimer;
   String? _editingSubtaskId;
   final TextEditingController _editingController = TextEditingController();
-  int _habitsWeekOffset = 0;
 
   StreamSubscription<void>? _dbChangeSubscription;
   final Set<String> _expandedSubtasks = <String>{};
@@ -71,14 +67,12 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
       _saveTask();
     });
 
-    _loadIsHabits();
     _prefetchSubtasks();
 
     try {
       _dbChangeSubscription = widget.databaseService.onDatabaseChanged.listen((
         _,
       ) async {
-        await _loadIsHabits();
         await _refreshCachedSubtasks();
       });
     } catch (_) {}
@@ -96,12 +90,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                 _task.id!,
               );
 
-      try {
-        _cachedHabitCompletions = await widget.databaseService.taskService
-            .getHabitCompletionsForTask(_task.id!);
-      } catch (_) {
-        _cachedHabitCompletions = null;
-      }
       if (!mounted || generation != _subtasksLoadGeneration) return;
       setState(() {
         _cachedSubtasks = subs;
@@ -111,21 +99,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
 
   Future<void> _refreshCachedSubtasks() async {
     await _prefetchSubtasks();
-  }
-
-  Future<void> _loadIsHabits() async {
-    if (_task.id == null) return;
-    try {
-      final tags = await widget.databaseService.taskService.getTagsByTaskId(
-        _task.id!,
-      );
-      if (!mounted) return;
-      setState(() {
-        _isHabits = tags.contains('Habits');
-      });
-    } catch (e) {
-      // If there's an error loading tags, default to non-habit behavior
-    }
   }
 
   @override
@@ -1078,19 +1051,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           backgroundColor: Theme.of(context).colorScheme.surface,
-          title:
-              _isHabits
-                  ? Row(
-                    children: [
-                      Icon(
-                        Icons.self_improvement_rounded,
-                        color: colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text('Habits Details'),
-                    ],
-                  )
-                  : const Text('Task Details'),
+          title: const Text('Task Details'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: _saveAndExit,
@@ -1189,233 +1150,64 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                     ],
                   ),
 
-                  if (!_isHabits) ...[
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildActionChip(
-                            icon: Icons.calendar_today_rounded,
-                            label:
-                                _task.date == null
-                                    ? 'Add date'
-                                    : DateFormat(
-                                      'MMM d, yyyy',
-                                    ).format(_task.date!),
-                            isActive: _task.date != null,
-                            onTap: () => _selectDate(),
-                            onClear:
-                                _task.date != null ? () => _clearDate() : null,
-                            colorScheme: colorScheme,
-                          ),
-                          const SizedBox(width: 4),
-
-                          _buildActionChip(
-                            icon: _getStateIconData(_task.state),
-                            label: _getStateText(_task.state),
-                            isActive: _task.state != TaskState.none,
-                            onTap: _showStateSelector,
-                            colorScheme: colorScheme,
-                            activeColor: _getStateColor(_task.state),
-                          ),
-                          const SizedBox(width: 4),
-
-                          FutureBuilder<List<String>>(
-                            future: widget.databaseService.taskService
-                                .getTagsByTaskId(_task.id!),
-                            builder: (context, snapshot) {
-                              final tags = snapshot.data ?? [];
-                              return _buildActionChip(
-                                icon: Icons.label_outline_rounded,
-                                label:
-                                    tags.isEmpty
-                                        ? 'Add tags'
-                                        : tags.length == 1
-                                        ? tags.first
-                                        : '${tags.length} tags',
-                                isActive: tags.isNotEmpty,
-                                onTap: _showTagSelector,
-                                colorScheme: colorScheme,
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-                    _buildNewSubtaskInput(colorScheme: colorScheme),
-                  ] else ...[
-                    FutureBuilder<List<String>>(
-                      future: widget.databaseService.taskService
-                          .getTagsByTaskId(_task.id!),
-                      builder: (context, snapshot) {
-                        final tags = snapshot.data ?? [];
-                        return _buildActionChip(
-                          icon: Icons.label_outline_rounded,
-                          label:
-                              tags.isEmpty
-                                  ? 'Add tags'
-                                  : tags.length == 1
-                                  ? tags.first
-                                  : '${tags.length} tags',
-                          isActive: tags.isNotEmpty,
-                          onTap: _showTagSelector,
-                          colorScheme: colorScheme,
-                        );
-                      },
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            if (_isHabits) ...[
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  children: [
-                    Row(
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
                       children: [
-                        Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                          child: InkWell(
-                            onTap: () => setState(() => _habitsWeekOffset--),
-                            borderRadius: BorderRadius.circular(8),
-                            child: SizedBox(
-                              width: 36,
-                              height: 36,
-                              child: Icon(
-                                Icons.chevron_left_rounded,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
+                        _buildActionChip(
+                          icon: Icons.calendar_today_rounded,
+                          label:
+                              _task.date == null
+                                  ? 'Add date'
+                                  : DateFormat(
+                                    'MMM d, yyyy',
+                                  ).format(_task.date!),
+                          isActive: _task.date != null,
+                          onTap: () => _selectDate(),
+                          onClear:
+                              _task.date != null ? () => _clearDate() : null,
+                          colorScheme: colorScheme,
                         ),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              if (_habitsWeekOffset != 0) {
-                                setState(() => _habitsWeekOffset = 0);
-                              }
-                            },
-                            child: Container(
-                              height: 36,
-                              alignment: Alignment.center,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.calendar_today_rounded,
-                                    size: 14,
-                                    color:
-                                        _habitsWeekOffset == 0
-                                            ? colorScheme.primary
-                                            : colorScheme.onSurfaceVariant,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${DateFormat('MMM d').format(DateTime.now().add(Duration(days: _habitsWeekOffset * 7 - DateTime.now().weekday + 1)))} - ${DateFormat('MMM d').format(DateTime.now().add(Duration(days: _habitsWeekOffset * 7 - DateTime.now().weekday + 7)))}',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color:
-                                          _habitsWeekOffset == 0
-                                              ? colorScheme.primary
-                                              : colorScheme.onSurface,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                        const SizedBox(width: 4),
+
+                        _buildActionChip(
+                          icon: _getStateIconData(_task.state),
+                          label: _getStateText(_task.state),
+                          isActive: _task.state != TaskState.none,
+                          onTap: _showStateSelector,
+                          colorScheme: colorScheme,
+                          activeColor: _getStateColor(_task.state),
                         ),
-                        Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                          child: InkWell(
-                            onTap: () => setState(() => _habitsWeekOffset++),
-                            borderRadius: BorderRadius.circular(8),
-                            child: SizedBox(
-                              width: 36,
-                              height: 36,
-                              child: Icon(
-                                Icons.chevron_right_rounded,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
+                        const SizedBox(width: 4),
+
+                        FutureBuilder<List<String>>(
+                          future: widget.databaseService.taskService
+                              .getTagsByTaskId(_task.id!),
+                          builder: (context, snapshot) {
+                            final tags = snapshot.data ?? [];
+                            return _buildActionChip(
+                              icon: Icons.label_outline_rounded,
+                              label:
+                                  tags.isEmpty
+                                      ? 'Add tags'
+                                      : tags.length == 1
+                                      ? tags.first
+                                      : '${tags.length} tags',
+                              isActive: tags.isNotEmpty,
+                              onTap: _showTagSelector,
+                              colorScheme: colorScheme,
+                            );
+                          },
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                  ),
 
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: colorScheme.outlineVariant.withAlpha(100),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Material(
-                            color: colorScheme.primaryContainer.withAlpha(80),
-                            borderRadius: BorderRadius.circular(8),
-                            child: InkWell(
-                              onTap: _addSubtask,
-                              borderRadius: BorderRadius.circular(8),
-                              child: SizedBox(
-                                width: 36,
-                                height: 36,
-                                child: Icon(
-                                  Icons.add_rounded,
-                                  color: colorScheme.primary,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: TextField(
-                              controller: _newSubtaskController,
-                              textCapitalization: TextCapitalization.sentences,
-                              decoration: InputDecoration(
-                                hintText: 'Add habit...',
-                                hintStyle: TextStyle(
-                                  color: colorScheme.onSurfaceVariant.withAlpha(
-                                    150,
-                                  ),
-                                  fontSize: 14,
-                                ),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                ),
-                              ),
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: colorScheme.onSurface,
-                              ),
-                              onSubmitted: (_) => _addSubtask(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  const SizedBox(height: 8),
+                  _buildNewSubtaskInput(colorScheme: colorScheme),
+                ],
               ),
-            ],
+            ),
 
             Expanded(
               child: StreamBuilder<void>(
@@ -1423,18 +1215,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                 builder: (context, snapshot) {
                   final subtasks = _cachedSubtasks ?? <Subtask>[];
 
-                  if (_isHabits) {
-                    return HabitsTracker(
-                      databaseService: widget.databaseService,
-                      subtasks: subtasks,
-                      taskId: _task.id!,
-                      initialCompletions: _cachedHabitCompletions,
-                      hideControls: true,
-                      weekOffset: _habitsWeekOffset,
-                      showEmptyMessage: false,
-                      allowScroll: true,
-                    );
-                  }
                   final pendingSubtasks =
                       subtasks
                           .where((s) => !s.completed && s.parentId == null)

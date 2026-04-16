@@ -1908,25 +1908,15 @@ class _TodoScreenDBState extends State<TodoScreenDB>
 
                     if (task.state != TaskState.none &&
                         task.state != TaskState.completed)
-                      FutureBuilder<List<String>>(
-                        future: _databaseService.taskService.getTagsByTaskId(
-                          task.id!,
+                      Opacity(
+                        opacity: (isHovering || isSelected) ? 1.0 : 0.0,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: _buildStateIndicator(
+                            task.state,
+                            colorScheme,
+                          ),
                         ),
-                        builder: (context, snapshot) {
-                          final hasHabitsTag =
-                              snapshot.data?.contains('Habits') ?? false;
-                          if (hasHabitsTag) return const SizedBox.shrink();
-                          return Opacity(
-                            opacity: (isHovering || isSelected) ? 1.0 : 0.0,
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 8),
-                              child: _buildStateIndicator(
-                                task.state,
-                                colorScheme,
-                              ),
-                            ),
-                          );
-                        },
                       ),
 
                     Opacity(

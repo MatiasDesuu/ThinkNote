@@ -818,17 +818,7 @@ class TasksScreenState extends State<TasksScreen>
 
                   if (task.state != TaskState.none &&
                       task.state != TaskState.completed)
-                    FutureBuilder<List<String>>(
-                      future: _databaseService.taskService.getTagsByTaskId(
-                        task.id!,
-                      ),
-                      builder: (context, snapshot) {
-                        final hasHabitsTag =
-                            snapshot.data?.contains('Habits') ?? false;
-                        if (hasHabitsTag) return const SizedBox.shrink();
-                        return _buildStateIndicator(task.state, colorScheme);
-                      },
-                    ),
+                    _buildStateIndicator(task.state, colorScheme),
 
                   Icon(
                     Icons.chevron_right_rounded,

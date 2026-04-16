@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import '../database/database_service.dart';
 import '../database/models/task.dart';
 import '../database/models/subtask.dart';
-import 'habits_widget.dart';
 import '../widgets/custom_snackbar.dart';
 import '../widgets/confirmation_dialogue.dart';
 import '../widgets/custom_dialog.dart';
@@ -117,24 +116,15 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
       );
     }
 
-    final isHabits = widget.selectedTaskTags.contains('Habits');
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeader(colorScheme: colorScheme, isHabits: isHabits),
+        _buildHeader(colorScheme: colorScheme),
 
         const SizedBox(height: 4),
 
         Expanded(
-          child:
-              isHabits
-                  ? HabitsTracker(
-                    databaseService: widget.databaseService,
-                    subtasks: widget.subtasks,
-                    taskId: widget.selectedTask!.id!,
-                  )
-                  : _buildSubtasksSection(colorScheme: colorScheme),
+          child: _buildSubtasksSection(colorScheme: colorScheme),
         ),
       ],
     );
@@ -142,7 +132,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
 
   Widget _buildHeader({
     required ColorScheme colorScheme,
-    required bool isHabits,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -184,20 +173,19 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
             ],
           ),
 
-          if (!isHabits) ...[
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildActionChip(
-                    icon: Icons.calendar_today_rounded,
-                    label:
-                        widget.selectedDate == null
-                            ? 'Add date'
-                            : DateFormat(
-                              'MMM d, yyyy',
-                            ).format(widget.selectedDate!),
-                    isActive: widget.selectedDate != null,
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildActionChip(
+                  icon: Icons.calendar_today_rounded,
+                  label:
+                      widget.selectedDate == null
+                          ? 'Add date'
+                          : DateFormat(
+                            'MMM d, yyyy',
+                          ).format(widget.selectedDate!),
+                  isActive: widget.selectedDate != null,
                     onTap: () => _selectDate(colorScheme),
                     onClear:
                         widget.selectedDate != null
@@ -239,22 +227,6 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
             const SizedBox(height: 8),
 
             _buildNewSubtaskInput(colorScheme: colorScheme),
-          ],
-
-          if (isHabits) ...[
-            _buildActionChip(
-              icon: Icons.label_outline_rounded,
-              label:
-                  widget.selectedTaskTags.isEmpty
-                      ? 'Add tags'
-                      : widget.selectedTaskTags.length == 1
-                      ? widget.selectedTaskTags.first
-                      : '${widget.selectedTaskTags.length} tags',
-              isActive: widget.selectedTaskTags.isNotEmpty,
-              onTap: _showTagSelectorDialog,
-              colorScheme: colorScheme,
-            ),
-          ],
         ],
       ),
     );

@@ -346,66 +346,6 @@ class TaskRepository {
     }
   }
 
-  Future<void> setHabitCompletion(
-    int subtaskId,
-    String isoDate,
-    bool completed,
-  ) async {
-    final db = await _dbHelper.database;
-    if (completed) {
-      final stmt = db.prepare(
-        'INSERT OR IGNORE INTO habit_completions (subtask_id, date) VALUES (?, ?)',
-      );
-      try {
-        stmt.execute([subtaskId, isoDate]);
-      } finally {
-        stmt.dispose();
-      }
-    } else {
-      final stmt = db.prepare(
-        'DELETE FROM habit_completions WHERE subtask_id = ? AND date = ?',
-      );
-      try {
-        stmt.execute([subtaskId, isoDate]);
-      } finally {
-        stmt.dispose();
-      }
-    }
-
-    await _updateSyncTimestamp(db);
-    DatabaseHelper.notifyDatabaseChanged();
-  }
-
-  Future<List<String>> getHabitCompletionsForSubtask(int subtaskId) async {
-    final db = await _dbHelper.database;
-    final result = db.select(
-      'SELECT date FROM habit_completions WHERE subtask_id = ?',
-      [subtaskId],
-    );
-    return result.map((r) => r['date'] as String).toList();
-  }
-
-  Future<Map<int, List<String>>> getHabitCompletionsForTask(int taskId) async {
-    final db = await _dbHelper.database;
-    final result = db.select(
-      '''
-      SELECT hc.subtask_id as subtask_id, hc.date as date
-      FROM habit_completions hc
-      JOIN ${config.DatabaseConfig.tableSubtasks} s ON hc.subtask_id = s.${config.DatabaseConfig.columnId}
-      WHERE s.${config.DatabaseConfig.columnTaskId} = ?
-    ''',
-      [taskId],
-    );
-
-    final Map<int, List<String>> map = {};
-    for (final row in result) {
-      final subId = row['subtask_id'] as int;
-      final date = row['date'] as String;
-      map.putIfAbsent(subId, () => []).add(date);
-    }
-    return map;
-  }
-
   Future<int> updateSubtaskOrder(int subtaskId, int newOrder) async {
     final db = await _dbHelper.database;
     db.execute(

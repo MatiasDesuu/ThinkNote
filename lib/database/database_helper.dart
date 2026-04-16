@@ -153,16 +153,6 @@ class DatabaseHelper {
     ''');
 
     db.execute('''
-      CREATE TABLE IF NOT EXISTS habit_completions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        subtask_id INTEGER NOT NULL,
-        date TEXT NOT NULL,
-        UNIQUE(subtask_id, date),
-        FOREIGN KEY(subtask_id) REFERENCES ${config.DatabaseConfig.tableSubtasks} (${config.DatabaseConfig.columnId}) ON DELETE CASCADE
-      )
-    ''');
-
-    db.execute('''
       CREATE TABLE IF NOT EXISTS ${config.DatabaseConfig.tableTaskTags} (
         ${config.DatabaseConfig.columnId} INTEGER PRIMARY KEY AUTOINCREMENT,
         ${config.DatabaseConfig.columnTagName} TEXT NOT NULL,

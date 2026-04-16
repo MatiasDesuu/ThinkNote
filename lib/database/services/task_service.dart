@@ -170,22 +170,6 @@ class TaskService {
     await _taskRepository.updateSubtask(updatedSubtask);
   }
 
-  Future<void> setHabitCompletion(
-    int subtaskId,
-    String isoDate,
-    bool completed,
-  ) async {
-    await _taskRepository.setHabitCompletion(subtaskId, isoDate, completed);
-  }
-
-  Future<List<String>> getHabitCompletionsForSubtask(int subtaskId) async {
-    return await _taskRepository.getHabitCompletionsForSubtask(subtaskId);
-  }
-
-  Future<Map<int, List<String>>> getHabitCompletionsForTask(int taskId) async {
-    return await _taskRepository.getHabitCompletionsForTask(taskId);
-  }
-
   Future<List<String>> getAllTags() async {
     final tags = await _taskRepository.getAllTags();
     return tags.map((tag) => tag.name).toList();
