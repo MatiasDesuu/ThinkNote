@@ -27,6 +27,7 @@ import 'database/database_service.dart';
 import 'database/sync_service.dart';
 import 'Mobile/main_mobile.dart';
 import 'widgets/panels/notes_panel.dart';
+import 'widgets/immersive_notes_overlay.dart';
 import 'widgets/custom_snackbar.dart';
 import 'widgets/panels/calendar_panel.dart';
 import 'widgets/search_screen_desktop.dart';
@@ -876,6 +877,8 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     });
   }
 
+  bool _isNotesForcedOpenInImmersive = false;
+
   void _onImmersiveModeChanged() {
     if (mounted) {
       setState(() {});
@@ -969,7 +972,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     final newTitle = activeTab!.titleController.text.trim();
     final newContent = activeTab.noteController.text;
 
-    if (activeTab.note!.title == newTitle && activeTab.note!.content == newContent && !activeTab.isDirty) {
+    if (activeTab.note!.title == newTitle &&
+        activeTab.note!.content == newContent &&
+        !activeTab.isDirty) {
       return;
     }
 
@@ -1912,6 +1917,59 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     super.dispose();
   }
 
+  Widget _buildNotesPanel() {
+    return ResizablePanel(
+      key: _notesPanelKey,
+      minWidth: 200,
+      maxWidth: 400,
+      appFocusNode: _appFocusNode,
+      title: 'Notes',
+      preferencesKey: 'notes_panel',
+      showLeftSeparator: !_immersiveModeService.isImmersiveMode,
+      trailing: Builder(
+        builder: (context) {
+          final notesPanel = _notesPanelStateKey.currentState;
+          if (notesPanel == null) {
+            return const SizedBox.shrink();
+          }
+          return notesPanel.buildTrailingButton();
+        },
+      ),
+      child: NotesPanel(
+        key: _notesPanelStateKey,
+        selectedNotebookId: _selectedNotebook?.id,
+        filterByTag: _selectedTag,
+        selectedNote: _selectedNote,
+        onNoteSelected: _onNoteSelected,
+        onNoteSelectedFromPanel: (note) {
+          if (mounted && _editorTabsKey.currentState != null) {
+            _editorTabsKey.currentState!.suppressNextUpdateAnimations();
+          }
+          _onNoteSelected(note);
+        },
+        onNoteOpenInNewTab: (note) {
+          _onNoteOpenInNewTab(note);
+        },
+        onLocateInCalendar: _onLocateNoteInCalendar,
+        onTrashUpdated: () {
+          _isLoadingNoteContent = true;
+          _titleController.clear();
+          _noteController.clear();
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              _isLoadingNoteContent = false;
+            }
+          });
+          _selectNote(null);
+        },
+        onSortChanged: () {
+          setState(() {});
+        },
+        onNoteDeleted: _onNoteDeleted,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GlobalAppShortcuts(
@@ -1941,9 +1999,15 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
         child: Scaffold(
           body: Stack(
             children: [
-              Row(
-                children: [
-                  ResizableIconSidebar(
+              ImmersiveNotesOverlay(
+                isImmersiveMode: _immersiveModeService.isImmersiveMode &&
+                    !_isNotesForcedOpenInImmersive,
+                overlayPanel: _buildNotesPanel(),
+                onExpand: () => _notesPanelKey.currentState?.expandPanel(),
+                onCollapse: () => _notesPanelKey.currentState?.collapsePanel(),
+                child: Row(
+                  children: [
+                    ResizableIconSidebar(
                     key: _iconSidebarKey,
                     rootDir: Directory.current,
                     onOpenNote: (note) => _onNoteSelected(note as Note),
@@ -2051,61 +2115,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                       onNotebookDeleted: _onNotebookDeleted,
                     ),
                   ),
-                  ResizablePanel(
-                    key: _notesPanelKey,
-                    minWidth: 200,
-                    maxWidth: 400,
-                    appFocusNode: _appFocusNode,
-                    title: 'Notes',
-                    preferencesKey: 'notes_panel',
-                    showLeftSeparator: !_immersiveModeService.isImmersiveMode,
-                    trailing: Builder(
-                      builder: (context) {
-                        final notesPanel = _notesPanelStateKey.currentState;
-                        if (notesPanel == null) {
-                          return const SizedBox.shrink();
-                        }
-                        return notesPanel.buildTrailingButton();
-                      },
-                    ),
-                    child: NotesPanel(
-                      key: _notesPanelStateKey,
-                      selectedNotebookId: _selectedNotebook?.id,
-                      filterByTag: _selectedTag,
-                      selectedNote: _selectedNote,
-                      onNoteSelected: _onNoteSelected,
-                      onNoteSelectedFromPanel: (note) {
-                        if (mounted && _editorTabsKey.currentState != null) {
-                          _editorTabsKey.currentState!
-                              .suppressNextUpdateAnimations();
-                        }
-
-                        _onNoteSelected(note);
-                      },
-                      onNoteOpenInNewTab: (note) {
-                        _onNoteOpenInNewTab(note);
-                      },
-                      onLocateInCalendar: _onLocateNoteInCalendar,
-                      onTrashUpdated: () {
-                        _isLoadingNoteContent = true;
-
-                        _titleController.clear();
-                        _noteController.clear();
-
-                        Future.delayed(const Duration(milliseconds: 500), () {
-                          if (mounted) {
-                            _isLoadingNoteContent = false;
-                          }
-                        });
-
-                        _selectNote(null);
-                      },
-                      onSortChanged: () {
-                        setState(() {});
-                      },
-                      onNoteDeleted: _onNoteDeleted,
-                    ),
-                  ),
+                  if (!_immersiveModeService.isImmersiveMode ||
+                      _isNotesForcedOpenInImmersive)
+                    _buildNotesPanel(),
                   Expanded(
                     child: Stack(
                       children: [
@@ -2165,6 +2177,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                     ),
                   ),
                 ],
+              ),
               ),
 
               Positioned(
@@ -2268,8 +2281,31 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   }
 
   void _toggleNotesPanel() {
-    if (_notesPanelKey.currentState != null) {
-      _notesPanelKey.currentState!.togglePanel();
+    if (_immersiveModeService.isImmersiveMode) {
+      if (_notesPanelKey.currentState == null) return;
+
+      final isExpanded = _notesPanelKey.currentState!.isExpanded;
+      if (isExpanded) {
+        _notesPanelKey.currentState!.collapsePanel();
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            setState(() {
+              _isNotesForcedOpenInImmersive = false;
+            });
+          }
+        });
+      } else {
+        setState(() {
+          _isNotesForcedOpenInImmersive = true;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _notesPanelKey.currentState?.expandPanel();
+        });
+      }
+    } else {
+      if (_notesPanelKey.currentState != null) {
+        _notesPanelKey.currentState!.togglePanel();
+      }
     }
   }
 
