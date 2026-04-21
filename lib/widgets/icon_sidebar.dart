@@ -145,6 +145,7 @@ class _HoverMenuOverlayState extends State<HoverMenuOverlay> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        mouseCursor: SystemMouseCursors.click,
         onTap: () {
           item.onTap?.call();
           _removeOverlay();

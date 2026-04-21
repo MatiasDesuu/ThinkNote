@@ -94,6 +94,7 @@ class _TagsPanelState extends State<TagsPanel> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(
+          mouseCursor: SystemMouseCursors.click,
           onTap: () async {
             setState(() {
               _isExpanded = !_isExpanded;
@@ -157,6 +158,7 @@ class _TagsPanelState extends State<TagsPanel> {
                                         : colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(8),
                                 child: InkWell(
+                                  mouseCursor: SystemMouseCursors.click,
                                   onTap: () => widget.onTagSelected?.call(tag),
                                   borderRadius: BorderRadius.circular(8),
                                   hoverColor: colorScheme.primary.withAlpha(20),

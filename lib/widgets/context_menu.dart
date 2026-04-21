@@ -143,6 +143,7 @@ class _ContextMenuState extends State<ContextMenu> {
           }
         },
         child: InkWell(
+          mouseCursor: SystemMouseCursors.click,
           onTap: () {
             widget.onClose();
             try {

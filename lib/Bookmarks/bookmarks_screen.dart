@@ -752,6 +752,7 @@ class _BookmarkListItemState extends State<_BookmarkListItem> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
+              mouseCursor: SystemMouseCursors.click,
               borderRadius: BorderRadius.circular(10),
               onTap: widget.onTap,
               onSecondaryTapDown: (details) {

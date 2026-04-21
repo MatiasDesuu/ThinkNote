@@ -1087,6 +1087,7 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
           },
           builder: (context, candidateData, rejectedData) {
             return InkWell(
+              mouseCursor: SystemMouseCursors.click,
               onTap: () {
                 int currMills = DateTime.now().millisecondsSinceEpoch;
                 int last = _lastClickTimes[notebook.id] ?? 0;

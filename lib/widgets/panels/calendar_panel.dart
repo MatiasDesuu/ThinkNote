@@ -1087,6 +1087,7 @@ class CalendarPanelState extends State<CalendarPanel>
             child: Material(
               color: Colors.transparent,
               child: InkWell(
+                mouseCursor: SystemMouseCursors.click,
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
                   if (widget.onNoteSelectedFromPanel != null) {
@@ -1270,6 +1271,7 @@ class CalendarPanelState extends State<CalendarPanel>
                           color: colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(8),
                           child: InkWell(
+                            mouseCursor: SystemMouseCursors.click,
                             onTap:
                                 () =>
                                     widget.onNotebookSelectedFromFavorite?.call(
@@ -1547,6 +1549,7 @@ class CalendarPanelState extends State<CalendarPanel>
             child: Material(
               color: Colors.transparent,
               child: InkWell(
+                mouseCursor: SystemMouseCursors.click,
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
                   widget.onTaskSelected?.call(task);
@@ -1866,6 +1869,7 @@ class CalendarPanelState extends State<CalendarPanel>
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
+                            mouseCursor: SystemMouseCursors.click,
                             onTap: () async {
                               setState(() {
                                 _selectedDate = date;

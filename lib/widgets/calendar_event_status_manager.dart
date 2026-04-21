@@ -385,6 +385,7 @@ class _CalendarEventStatusManagerState
                             child: Material(
                               color: Colors.transparent,
                               child: InkWell(
+                                
                                 onTap: () {
                                   widget.onStatusSelected(status);
                                   Navigator.of(context).pop();

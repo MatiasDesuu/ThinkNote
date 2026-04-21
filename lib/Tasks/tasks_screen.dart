@@ -1519,6 +1519,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
               : colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
+        mouseCursor: SystemMouseCursors.click,
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         hoverColor: colorScheme.primary.withAlpha(20),
@@ -1745,6 +1746,7 @@ class _TodoScreenDBState extends State<TodoScreenDB>
           child: Material(
             color: Colors.transparent,
             child: InkWell(
+              mouseCursor: SystemMouseCursors.click,
               borderRadius: BorderRadius.circular(10),
               onTap: () => _handleTaskSelection(task),
               onSecondaryTapDown: (details) {

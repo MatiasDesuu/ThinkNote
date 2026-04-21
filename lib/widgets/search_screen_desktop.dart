@@ -302,10 +302,10 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
     }
 
     return MouseRegion(
-      cursor: SystemMouseCursors.click,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
+          mouseCursor: SystemMouseCursors.click,
           onTap: () => _handleItemTap(item),
           borderRadius: BorderRadius.circular(8),
           hoverColor: colorScheme.surfaceContainerHigh,

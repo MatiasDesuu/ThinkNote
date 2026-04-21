@@ -127,6 +127,7 @@ class BookmarksSidebarPanel extends StatelessWidget {
                   color: Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                   child: InkWell(
+                    mouseCursor: SystemMouseCursors.click,
                     onTap: onSortToggle,
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
@@ -270,6 +271,7 @@ class BookmarksSidebarPanel extends StatelessWidget {
                         : Colors.transparent),
             borderRadius: BorderRadius.circular(8),
             child: InkWell(
+              mouseCursor: SystemMouseCursors.click,
               onTap: onTap,
               borderRadius: BorderRadius.circular(8),
               child: Padding(

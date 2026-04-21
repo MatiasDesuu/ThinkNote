@@ -1547,6 +1547,7 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(16),
                       child: InkWell(
+                        mouseCursor: SystemMouseCursors.click,
                         onTap: _showFontSelector,
                         borderRadius: BorderRadius.circular(16),
                         child: Container(
@@ -1787,6 +1788,7 @@ class _FontSelectorDialog extends StatelessWidget {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
+                  mouseCursor: SystemMouseCursors.click,
                   onTap: () => onFontSelected(font),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(

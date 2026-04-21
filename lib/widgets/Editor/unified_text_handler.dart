@@ -940,6 +940,7 @@ class _InlineCodeWidgetState extends State<_InlineCodeWidget> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
+                    mouseCursor: SystemMouseCursors.click,
                     onTap: () async {
                       await Clipboard.setData(ClipboardData(text: widget.text));
                       setState(() => _isCopied = true);
@@ -1003,6 +1004,7 @@ class _TaggedCodeWidgetState extends State<_TaggedCodeWidget> {
           ).colorScheme.surfaceContainerHighest.withAlpha(128),
           borderRadius: BorderRadius.circular(4),
           child: InkWell(
+            mouseCursor: SystemMouseCursors.click,
             onTap: () async {
               await Clipboard.setData(ClipboardData(text: widget.text));
               setState(() => _isCopied = true);

@@ -398,6 +398,7 @@ class ThinksScreenState extends State<ThinksScreen>
             child: Material(
               color: Colors.transparent,
               child: InkWell(
+                mouseCursor: SystemMouseCursors.click,
                 borderRadius: BorderRadius.circular(10),
                 onTap: () => _openThink(think),
                 onSecondaryTapDown:

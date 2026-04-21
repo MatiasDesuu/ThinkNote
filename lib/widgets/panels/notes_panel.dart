@@ -1259,11 +1259,10 @@ class NotesPanelState extends State<NotesPanel> {
 
     final showSelectionHighlight = isSelected && _selectedNoteIds.length > 1;
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+          mouseCursor: SystemMouseCursors.click,
           onSecondaryTapDown: (details) {
             if (isSelected) {
               _showMultiSelectionMenu(context, details.globalPosition);
@@ -1364,7 +1363,6 @@ class NotesPanelState extends State<NotesPanel> {
             ),
           ),
         ),
-      ),
     );
   }
 

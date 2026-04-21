@@ -303,6 +303,7 @@ class _CustomDatePickerDialogState extends State<CustomDatePickerDialog> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
+                    mouseCursor: SystemMouseCursors.click,
                     onTap: () {
                       setState(() {
                         _selectedDate = date;
