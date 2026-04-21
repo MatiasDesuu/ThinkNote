@@ -110,17 +110,49 @@ class EInkTheme {
           backgroundColor: foregroundColor,
           foregroundColor: backgroundColor,
           elevation: 0,
+          enabledMouseCursor: SystemMouseCursors.click,
         ),
       ),
 
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(foregroundColor: foregroundColor),
+        style: TextButton.styleFrom(
+          foregroundColor: foregroundColor,
+          enabledMouseCursor: SystemMouseCursors.click,
+        ),
       ),
 
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: foregroundColor,
           side: BorderSide(color: foregroundColor),
+          enabledMouseCursor: SystemMouseCursors.click,
+        ),
+      ),
+
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: foregroundColor,
+          foregroundColor: backgroundColor,
+          enabledMouseCursor: SystemMouseCursors.click,
+        ),
+      ),
+
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: foregroundColor,
+          enabledMouseCursor: SystemMouseCursors.click,
+        ),
+      ),
+
+      menuButtonTheme: MenuButtonThemeData(
+        style: MenuItemButton.styleFrom(
+          enabledMouseCursor: SystemMouseCursors.click,
+        ),
+      ),
+
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: SegmentedButton.styleFrom(
+          enabledMouseCursor: SystemMouseCursors.click,
         ),
       ),
 

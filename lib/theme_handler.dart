@@ -320,6 +320,41 @@ class ThemeManager {
                 }),
               )
               : null,
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          enabledMouseCursor: SystemMouseCursors.click,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          enabledMouseCursor: SystemMouseCursors.click,
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          enabledMouseCursor: SystemMouseCursors.click,
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          enabledMouseCursor: SystemMouseCursors.click,
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          enabledMouseCursor: SystemMouseCursors.click,
+        ),
+      ),
+      menuButtonTheme: MenuButtonThemeData(
+        style: MenuItemButton.styleFrom(
+          enabledMouseCursor: SystemMouseCursors.click,
+        ),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: SegmentedButton.styleFrom(
+          enabledMouseCursor: SystemMouseCursors.click,
+        ),
+      ),
     );
   }
 

@@ -123,16 +123,12 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
 
         const SizedBox(height: 4),
 
-        Expanded(
-          child: _buildSubtasksSection(colorScheme: colorScheme),
-        ),
+        Expanded(child: _buildSubtasksSection(colorScheme: colorScheme)),
       ],
     );
   }
 
-  Widget _buildHeader({
-    required ColorScheme colorScheme,
-  }) {
+  Widget _buildHeader({required ColorScheme colorScheme}) {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
@@ -186,47 +182,47 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                             'MMM d, yyyy',
                           ).format(widget.selectedDate!),
                   isActive: widget.selectedDate != null,
-                    onTap: () => _selectDate(colorScheme),
-                    onClear:
-                        widget.selectedDate != null
-                            ? () => widget.onDateChanged(null)
-                            : null,
-                    colorScheme: colorScheme,
-                  ),
-                  const SizedBox(width: 8),
+                  onTap: () => _selectDate(colorScheme),
+                  onClear:
+                      widget.selectedDate != null
+                          ? () => widget.onDateChanged(null)
+                          : null,
+                  colorScheme: colorScheme,
+                ),
+                const SizedBox(width: 8),
 
-                  _buildActionChip(
-                    icon: _getStateIcon(widget.selectedTask!.state),
-                    label: _getStateText(widget.selectedTask!.state),
-                    isActive: widget.selectedTask!.state != TaskState.none,
-                    onTap: _showStatusSelectorDialog,
-                    colorScheme: colorScheme,
-                    activeColor: _getStateColor(
-                      widget.selectedTask!.state,
-                      colorScheme,
-                    ),
+                _buildActionChip(
+                  icon: _getStateIcon(widget.selectedTask!.state),
+                  label: _getStateText(widget.selectedTask!.state),
+                  isActive: widget.selectedTask!.state != TaskState.none,
+                  onTap: _showStatusSelectorDialog,
+                  colorScheme: colorScheme,
+                  activeColor: _getStateColor(
+                    widget.selectedTask!.state,
+                    colorScheme,
                   ),
-                  const SizedBox(width: 8),
+                ),
+                const SizedBox(width: 8),
 
-                  _buildActionChip(
-                    icon: Icons.label_outline_rounded,
-                    label:
-                        widget.selectedTaskTags.isEmpty
-                            ? 'Add tags'
-                            : widget.selectedTaskTags.length == 1
-                            ? widget.selectedTaskTags.first
-                            : '${widget.selectedTaskTags.length} tags',
-                    isActive: widget.selectedTaskTags.isNotEmpty,
-                    onTap: _showTagSelectorDialog,
-                    colorScheme: colorScheme,
-                  ),
-                ],
-              ),
+                _buildActionChip(
+                  icon: Icons.label_outline_rounded,
+                  label:
+                      widget.selectedTaskTags.isEmpty
+                          ? 'Add tags'
+                          : widget.selectedTaskTags.length == 1
+                          ? widget.selectedTaskTags.first
+                          : '${widget.selectedTaskTags.length} tags',
+                  isActive: widget.selectedTaskTags.isNotEmpty,
+                  onTap: _showTagSelectorDialog,
+                  colorScheme: colorScheme,
+                ),
+              ],
             ),
+          ),
 
-            const SizedBox(height: 8),
+          const SizedBox(height: 8),
 
-            _buildNewSubtaskInput(colorScheme: colorScheme),
+          _buildNewSubtaskInput(colorScheme: colorScheme),
         ],
       ),
     );
@@ -247,6 +243,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
             borderRadius: BorderRadius.circular(8),
             child: InkWell(
               onTap: onTap,
+              mouseCursor: SystemMouseCursors.click,
               borderRadius: BorderRadius.circular(8),
               child: SizedBox(
                 width: 36,
@@ -284,6 +281,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
+        mouseCursor: SystemMouseCursors.click,
         borderRadius: BorderRadius.circular(8),
         hoverColor: colorScheme.primary.withAlpha(20),
         child: Container(
@@ -301,12 +299,15 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
               ),
               if (onClear != null) ...[
                 const SizedBox(width: 4),
-                GestureDetector(
-                  onTap: onClear,
-                  child: Icon(
-                    Icons.close_rounded,
-                    size: 14,
-                    color: chipColor.withAlpha(180),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: onClear,
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 14,
+                      color: chipColor.withAlpha(180),
+                    ),
                   ),
                 ),
               ],
@@ -337,6 +338,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
             borderRadius: BorderRadius.circular(8),
             child: InkWell(
               onTap: widget.onAddSubtask,
+              mouseCursor: SystemMouseCursors.click,
               borderRadius: BorderRadius.circular(8),
               child: SizedBox(
                 width: 36,
@@ -380,6 +382,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                   borderRadius: BorderRadius.circular(8),
                   child: InkWell(
                     onTap: widget.onToggleSortByPriority,
+                    mouseCursor: SystemMouseCursors.click,
                     borderRadius: BorderRadius.circular(8),
                     child: SizedBox(
                       width: 36,
@@ -640,242 +643,246 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
                         : colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(10),
               ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              child: Row(
-                children: [
-                  if (!ordenarPorPrioridad)
-                    SizedBox(
-                      width: 20,
-                      height: 24,
-                      child: Icon(
-                        Icons.drag_indicator_rounded,
-                        color:
-                            isHovering
-                                ? colorScheme.onSurfaceVariant.withAlpha(150)
-                                : colorScheme.onSurfaceVariant.withAlpha(80),
-                        size: 18,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    if (!ordenarPorPrioridad)
+                      SizedBox(
+                        width: 20,
+                        height: 24,
+                        child: Icon(
+                          Icons.drag_indicator_rounded,
+                          color:
+                              isHovering
+                                  ? colorScheme.onSurfaceVariant.withAlpha(150)
+                                  : colorScheme.onSurfaceVariant.withAlpha(80),
+                          size: 18,
+                        ),
                       ),
-                    ),
-                  if (!isStep)
-                    _buildSubtaskExpansionButton(subtask, colorScheme),
+                    if (!isStep)
+                      _buildSubtaskExpansionButton(subtask, colorScheme),
 
-                  if (isStep)
-                    SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: Icon(
-                        Icons.subdirectory_arrow_right_rounded,
-                        size: 16,
-                        color: colorScheme.onSurfaceVariant.withAlpha(150),
-                      ),
-                    ),
-
-                  MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      onTap: () => widget.onToggleSubtask(subtask),
-                      child: SizedBox(
+                    if (isStep)
+                      SizedBox(
                         width: 24,
                         height: 24,
                         child: Icon(
-                          isCompleted
-                              ? Icons.check_box_rounded
-                              : Icons.check_box_outline_blank_rounded,
-                          size: 18,
-                          color:
-                              isCompleted
-                                  ? colorScheme.primary
-                                  : colorScheme.onSurfaceVariant,
+                          Icons.subdirectory_arrow_right_rounded,
+                          size: 16,
+                          color: colorScheme.onSurfaceVariant.withAlpha(150),
+                        ),
+                      ),
+
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () => widget.onToggleSubtask(subtask),
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Icon(
+                            isCompleted
+                                ? Icons.check_box_rounded
+                                : Icons.check_box_outline_blank_rounded,
+                            size: 18,
+                            color:
+                                isCompleted
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(width: 4),
+                    const SizedBox(width: 4),
 
-                  if (!isCompleted &&
-                      subtask.priority != SubtaskPriority.medium)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: _getPriorityColor(subtask.priority),
-                          shape: BoxShape.circle,
+                    if (!isCompleted &&
+                        subtask.priority != SubtaskPriority.medium)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: _getPriorityColor(subtask.priority),
+                            shape: BoxShape.circle,
+                          ),
                         ),
                       ),
-                    ),
 
-                  Expanded(
-                    child:
-                        isEditing
-                            ? TextField(
-                              controller: widget.editingController,
-                              autofocus: true,
-                              decoration: InputDecoration(
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 6,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                  borderSide: BorderSide(
-                                    color: colorScheme.primary.withAlpha(100),
+                    Expanded(
+                      child:
+                          isEditing
+                              ? TextField(
+                                controller: widget.editingController,
+                                autofocus: true,
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
                                   ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                  borderSide: BorderSide(
-                                    color: colorScheme.outlineVariant.withAlpha(
-                                      100,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                    borderSide: BorderSide(
+                                      color: colorScheme.primary.withAlpha(100),
                                     ),
                                   ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                  borderSide: BorderSide(
-                                    color: colorScheme.primary,
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                    borderSide: BorderSide(
+                                      color: colorScheme.outlineVariant
+                                          .withAlpha(100),
+                                    ),
                                   ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                    borderSide: BorderSide(
+                                      color: colorScheme.primary,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: colorScheme.surface,
                                 ),
-                                filled: true,
-                                fillColor: colorScheme.surface,
-                              ),
-                              style: TextStyle(
-                                fontSize: 14,
-                                height: 1.2,
-                                leadingDistribution:
-                                    TextLeadingDistribution.even,
-                                color: colorScheme.onSurface,
-                              ),
-                              onSubmitted:
-                                  (_) => widget.onSaveSubtaskEditing(subtask),
-                              onEditingComplete:
-                                  () => widget.onSaveSubtaskEditing(subtask),
-                              onTapOutside:
-                                  (_) => widget.onCancelSubtaskEditing(),
-                            )
-                            : GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  if (_textExpandedIds.contains(subtask.id)) {
-                                    _textExpandedIds.remove(subtask.id);
-                                  } else {
-                                    _textExpandedIds.add(subtask.id!);
-                                  }
-                                });
-                              },
-                              onDoubleTap: () => widget.onEditSubtask(subtask),
-                              child: Text(
-                                subtask.text,
-                                maxLines:
-                                    _textExpandedIds.contains(subtask.id)
-                                        ? null
-                                        : 1,
-                                overflow:
-                                    _textExpandedIds.contains(subtask.id)
-                                        ? TextOverflow.visible
-                                        : TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontSize: 15,
+                                  fontSize: 14,
                                   height: 1.2,
                                   leadingDistribution:
                                       TextLeadingDistribution.even,
-                                  decoration:
-                                      isCompleted
-                                          ? TextDecoration.lineThrough
-                                          : null,
-                                  color:
-                                      isCompleted
-                                          ? colorScheme.onSurfaceVariant
-                                          : colorScheme.onSurface,
+                                  color: colorScheme.onSurface,
+                                ),
+                                onSubmitted:
+                                    (_) => widget.onSaveSubtaskEditing(subtask),
+                                onEditingComplete:
+                                    () => widget.onSaveSubtaskEditing(subtask),
+                                onTapOutside:
+                                    (_) => widget.onCancelSubtaskEditing(),
+                              )
+                              : GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    if (_textExpandedIds.contains(subtask.id)) {
+                                      _textExpandedIds.remove(subtask.id);
+                                    } else {
+                                      _textExpandedIds.add(subtask.id!);
+                                    }
+                                  });
+                                },
+                                onDoubleTap:
+                                    () => widget.onEditSubtask(subtask),
+                                child: Text(
+                                  subtask.text,
+                                  maxLines:
+                                      _textExpandedIds.contains(subtask.id)
+                                          ? null
+                                          : 1,
+                                  overflow:
+                                      _textExpandedIds.contains(subtask.id)
+                                          ? TextOverflow.visible
+                                          : TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    height: 1.2,
+                                    leadingDistribution:
+                                        TextLeadingDistribution.even,
+                                    decoration:
+                                        isCompleted
+                                            ? TextDecoration.lineThrough
+                                            : null,
+                                    color:
+                                        isCompleted
+                                            ? colorScheme.onSurfaceVariant
+                                            : colorScheme.onSurface,
+                                  ),
                                 ),
                               ),
-                            ),
-                  ),
+                    ),
 
-                  if (isEditing) ...[
-                    _buildSubtaskActionButton(
-                      icon: Icons.check_rounded,
-                      color: colorScheme.primary,
-                      onTap: () => widget.onSaveSubtaskEditing(subtask),
-                      colorScheme: colorScheme,
-                    ),
-                    _buildSubtaskActionButton(
-                      icon: Icons.close_rounded,
-                      color: colorScheme.error,
-                      onTap: widget.onCancelSubtaskEditing,
-                      colorScheme: colorScheme,
-                    ),
-                  ] else ...[
-                    if (!isStep)
-                      Opacity(
-                        opacity: isHovering ? 1.0 : 0.0,
-                        child: IgnorePointer(
-                          ignoring: !isHovering,
-                          child: _buildSubtaskActionButton(
-                            icon: Icons.add_rounded,
-                            color: colorScheme.onSurfaceVariant,
-                            onTap: () {
-                              widget.onAddSubtaskStep(subtask, 'New step');
-                              if (!widget.expandedSubtasks.contains(
-                                subtask.id.toString(),
-                              )) {
-                                widget.onToggleSubtaskExpansion(
+                    if (isEditing) ...[
+                      _buildSubtaskActionButton(
+                        icon: Icons.check_rounded,
+                        color: colorScheme.primary,
+                        onTap: () => widget.onSaveSubtaskEditing(subtask),
+                        colorScheme: colorScheme,
+                      ),
+                      _buildSubtaskActionButton(
+                        icon: Icons.close_rounded,
+                        color: colorScheme.error,
+                        onTap: widget.onCancelSubtaskEditing,
+                        colorScheme: colorScheme,
+                      ),
+                    ] else ...[
+                      if (!isStep)
+                        Opacity(
+                          opacity: isHovering ? 1.0 : 0.0,
+                          child: IgnorePointer(
+                            ignoring: !isHovering,
+                            child: _buildSubtaskActionButton(
+                              icon: Icons.add_rounded,
+                              color: colorScheme.onSurfaceVariant,
+                              onTap: () {
+                                widget.onAddSubtaskStep(subtask, 'New step');
+                                if (!widget.expandedSubtasks.contains(
                                   subtask.id.toString(),
-                                );
-                              }
-                            },
-                            colorScheme: colorScheme,
+                                )) {
+                                  widget.onToggleSubtaskExpansion(
+                                    subtask.id.toString(),
+                                  );
+                                }
+                              },
+                              colorScheme: colorScheme,
+                            ),
                           ),
                         ),
-                      ),
-                    if (!isCompleted)
+                      if (!isCompleted)
+                        Opacity(
+                          opacity: isHovering ? 1.0 : 0.0,
+                          child: IgnorePointer(
+                            ignoring: !isHovering,
+                            child: _buildSubtaskActionButton(
+                              icon: _getPriorityIcon(subtask.priority),
+                              color: _getPriorityColor(subtask.priority),
+                              onTap: () => _showPrioritySelectorDialog(subtask),
+                              colorScheme: colorScheme,
+                            ),
+                          ),
+                        ),
+
                       Opacity(
                         opacity: isHovering ? 1.0 : 0.0,
                         child: IgnorePointer(
                           ignoring: !isHovering,
                           child: _buildSubtaskActionButton(
-                            icon: _getPriorityIcon(subtask.priority),
-                            color: _getPriorityColor(subtask.priority),
-                            onTap: () => _showPrioritySelectorDialog(subtask),
+                            icon: Icons.edit_rounded,
+                            color: colorScheme.onSurfaceVariant,
+                            onTap: () => widget.onEditSubtask(subtask),
                             colorScheme: colorScheme,
                           ),
                         ),
                       ),
 
-                    Opacity(
-                      opacity: isHovering ? 1.0 : 0.0,
-                      child: IgnorePointer(
-                        ignoring: !isHovering,
-                        child: _buildSubtaskActionButton(
-                          icon: Icons.edit_rounded,
-                          color: colorScheme.onSurfaceVariant,
-                          onTap: () => widget.onEditSubtask(subtask),
-                          colorScheme: colorScheme,
+                      Opacity(
+                        opacity: isHovering ? 1.0 : 0.0,
+                        child: IgnorePointer(
+                          ignoring: !isHovering,
+                          child: _buildSubtaskActionButton(
+                            icon: Icons.delete_outline_rounded,
+                            color: colorScheme.error.withAlpha(180),
+                            onTap: () => widget.onDeleteSubtask(subtask),
+                            colorScheme: colorScheme,
+                          ),
                         ),
                       ),
-                    ),
-
-                    Opacity(
-                      opacity: isHovering ? 1.0 : 0.0,
-                      child: IgnorePointer(
-                        ignoring: !isHovering,
-                        child: _buildSubtaskActionButton(
-                          icon: Icons.delete_outline_rounded,
-                          color: colorScheme.error.withAlpha(180),
-                          onTap: () => widget.onDeleteSubtask(subtask),
-                          colorScheme: colorScheme,
-                        ),
-                      ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
-          ),);
+          );
         },
       ),
     );
@@ -966,6 +973,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
       borderRadius: BorderRadius.circular(4),
       child: InkWell(
         onTap: onTap,
+        mouseCursor: SystemMouseCursors.click,
         borderRadius: BorderRadius.circular(4),
         child: Padding(
           padding: const EdgeInsets.all(4),
@@ -1003,6 +1011,7 @@ class _TaskDetailsPanelState extends State<TaskDetailsPanel> {
         color: Colors.transparent,
         child: InkWell(
           onTap: () => widget.onToggleSubtaskExpansion(subtask.id.toString()),
+          mouseCursor: SystemMouseCursors.click,
           borderRadius: BorderRadius.circular(6),
           child: SizedBox(
             width: 24,
