@@ -3,7 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class NotebookIcon {
   final int id;
-  final IconData icon;
+  final dynamic icon;
   final String name;
 
   const NotebookIcon({
@@ -14,7 +14,7 @@ class NotebookIcon {
 }
 
 class NotebookIconsRepository {
-  static const List<NotebookIcon> icons = [
+  static final List<NotebookIcon> icons = [
     NotebookIcon(id: 1, icon: Icons.folder_rounded, name: 'Folder'),
     NotebookIcon(id: 2, icon: Icons.folder_open_rounded, name: 'Open Folder'),
     NotebookIcon(
@@ -472,26 +472,30 @@ class NotebookIconsRepository {
       name: 'Video Collection',
     ),
     NotebookIcon(id: 229, icon: Icons.video_file_rounded, name: 'Video File'),
-    NotebookIcon(id: 230, icon: FontAwesomeIcons.tiktok, name: 'Tiktok'),
-    NotebookIcon(id: 231, icon: FontAwesomeIcons.youtube, name: 'Youtube'),
-    NotebookIcon(id: 232, icon: FontAwesomeIcons.instagram, name: 'Instagram'),
-    NotebookIcon(id: 233, icon: FontAwesomeIcons.facebook, name: 'Facebook'),
-    NotebookIcon(id: 234, icon: FontAwesomeIcons.xTwitter, name: 'Twitter'),
-    NotebookIcon(id: 235, icon: FontAwesomeIcons.github, name: 'Github'),
-    NotebookIcon(id: 236, icon: FontAwesomeIcons.google, name: 'Google'),
-    NotebookIcon(id: 237, icon: FontAwesomeIcons.xbox, name: 'Xbox'),
+    NotebookIcon(id: 230, icon: FontAwesomeIcons.tiktok.data, name: 'Tiktok'),
+    NotebookIcon(id: 231, icon: FontAwesomeIcons.youtube.data, name: 'Youtube'),
+    NotebookIcon(
+      id: 232,
+      icon: FontAwesomeIcons.instagram.data,
+      name: 'Instagram',
+    ),
+    NotebookIcon(id: 233, icon: FontAwesomeIcons.facebook.data, name: 'Facebook'),
+    NotebookIcon(id: 234, icon: FontAwesomeIcons.xTwitter.data, name: 'Twitter'),
+    NotebookIcon(id: 235, icon: FontAwesomeIcons.github.data, name: 'Github'),
+    NotebookIcon(id: 236, icon: FontAwesomeIcons.google.data, name: 'Google'),
+    NotebookIcon(id: 237, icon: FontAwesomeIcons.xbox.data, name: 'Xbox'),
     NotebookIcon(
       id: 238,
-      icon: FontAwesomeIcons.playstation,
+      icon: FontAwesomeIcons.playstation.data,
       name: 'Playstation',
     ),
-    NotebookIcon(id: 239, icon: FontAwesomeIcons.steam, name: 'Steam'),
-    NotebookIcon(id: 240, icon: FontAwesomeIcons.discord, name: 'Discord'),
-    NotebookIcon(id: 241, icon: FontAwesomeIcons.bullseye, name: 'Bullseye'),
-    NotebookIcon(id: 242, icon: FontAwesomeIcons.whatsapp, name: 'Whatsapp'),
-    NotebookIcon(id: 243, icon: FontAwesomeIcons.reddit, name: 'Reddit'),
-    NotebookIcon(id: 244, icon: FontAwesomeIcons.pinterest, name: 'Pinterest'),
-    NotebookIcon(id: 245, icon: FontAwesomeIcons.book, name: 'Book'),
+    NotebookIcon(id: 239, icon: FontAwesomeIcons.steam.data, name: 'Steam'),
+    NotebookIcon(id: 240, icon: FontAwesomeIcons.discord.data, name: 'Discord'),
+    NotebookIcon(id: 241, icon: FontAwesomeIcons.bullseye.data, name: 'Bullseye'),
+    NotebookIcon(id: 242, icon: FontAwesomeIcons.whatsapp.data, name: 'Whatsapp'),
+    NotebookIcon(id: 243, icon: FontAwesomeIcons.reddit.data, name: 'Reddit'),
+    NotebookIcon(id: 244, icon: FontAwesomeIcons.pinterest.data, name: 'Pinterest'),
+    NotebookIcon(id: 245, icon: FontAwesomeIcons.book.data, name: 'Book'),
     NotebookIcon(id: 246, icon: Icons.coffee_rounded, name: 'Coffee'),
     NotebookIcon(id: 247, icon: Icons.newspaper_rounded, name: 'Newspaper'),
     NotebookIcon(id: 248, icon: Icons.calendar_month_rounded, name: 'Calendar'),

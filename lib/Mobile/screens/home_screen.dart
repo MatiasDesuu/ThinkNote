@@ -892,6 +892,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  IconData _resolveNotebookIconData(dynamic rawIcon) {
+    if (rawIcon is IconData) {
+      return rawIcon;
+    }
+
+    // Handles icon-like objects (e.g. FaIconData) that expose IconData fields.
+    try {
+      final codePoint = rawIcon.codePoint as int;
+      final fontFamily = rawIcon.fontFamily as String?;
+      final fontPackage = rawIcon.fontPackage as String?;
+      final matchTextDirection = rawIcon.matchTextDirection as bool? ?? false;
+
+      return IconData(
+        codePoint,
+        fontFamily: fontFamily,
+        fontPackage: fontPackage,
+        matchTextDirection: matchTextDirection,
+      );
+    } catch (_) {
+      return Icons.folder_rounded;
+    }
+  }
+
   Future<void> _toggleSortMode() async {
     setState(() {
       final modes = SortMode.values;
@@ -1117,10 +1140,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               padding: const EdgeInsets.only(right: 8),
               child: Icon(
                 widget.selectedNotebook?.iconId != null
-                    ? (NotebookIconsRepository.getIconById(
-                          widget.selectedNotebook!.iconId!,
-                        )?.icon ??
-                        Icons.folder_rounded)
+                    ? _resolveNotebookIconData(
+                      NotebookIconsRepository.getIconById(
+                            widget.selectedNotebook!.iconId!,
+                          )
+                          ?.icon,
+                    )
                     : Icons.folder_rounded,
                 size: 24,
                 color: Theme.of(context).colorScheme.primary,

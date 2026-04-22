@@ -40,7 +40,7 @@ class NotebookRepository {
       DatabaseService().notifyDatabaseChanged();
       return db.lastInsertRowId;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -97,7 +97,7 @@ class NotebookRepository {
       DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -315,7 +315,7 @@ class NotebookRepository {
       DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -361,7 +361,7 @@ class NotebookRepository {
         stmt.execute([i, notebooks[i].id]);
       }
 
-      stmt.dispose();
+      stmt.close();
       db.execute('COMMIT');
       DatabaseService().notifyDatabaseChanged();
     } catch (e) {

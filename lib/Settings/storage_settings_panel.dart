@@ -424,7 +424,7 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
   Future<void> _importZipFile() async {
     setState(() => _isPickerOpen = true);
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['zip'],
       );
@@ -473,7 +473,7 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
   Future<void> _importFromFolder() async {
     setState(() => _isPickerOpen = true);
     try {
-      final result = await FilePicker.platform.getDirectoryPath(
+      final result = await FilePicker.getDirectoryPath(
         dialogTitle: 'Select Import Directory',
       );
 
@@ -714,7 +714,7 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
   Future<void> _exportDatabase() async {
     setState(() => _isPickerOpen = true);
     try {
-      final result = await FilePicker.platform.saveFile(
+      final result = await FilePicker.saveFile(
         dialogTitle: 'Export Database',
         fileName: 'thinknote_backup.db',
         type: FileType.custom,
@@ -755,7 +755,7 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
   Future<void> _exportToFiles() async {
     setState(() => _isPickerOpen = true);
     try {
-      final result = await FilePicker.platform.getDirectoryPath(
+      final result = await FilePicker.getDirectoryPath(
         dialogTitle: 'Select Export Directory',
       );
 
@@ -793,7 +793,7 @@ class _StorageSettingsPanelState extends State<StorageSettingsPanel> {
   Future<void> _exportBookmarksToHtml() async {
     setState(() => _isPickerOpen = true);
     try {
-      final result = await FilePicker.platform.saveFile(
+      final result = await FilePicker.saveFile(
         dialogTitle: 'Export Bookmarks to HTML',
         fileName: 'thinknote_bookmarks.html',
         type: FileType.custom,

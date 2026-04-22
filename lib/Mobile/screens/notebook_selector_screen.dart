@@ -28,6 +28,28 @@ class _NotebookSelectorScreenState extends State<NotebookSelectorScreen>
   bool _isLoading = true;
   String? _errorMessage;
 
+  IconData _resolveNotebookIconData(dynamic rawIcon) {
+    if (rawIcon is IconData) {
+      return rawIcon;
+    }
+
+    try {
+      final codePoint = rawIcon.codePoint as int;
+      final fontFamily = rawIcon.fontFamily as String?;
+      final fontPackage = rawIcon.fontPackage as String?;
+      final matchTextDirection = rawIcon.matchTextDirection as bool? ?? false;
+
+      return IconData(
+        codePoint,
+        fontFamily: fontFamily,
+        fontPackage: fontPackage,
+        matchTextDirection: matchTextDirection,
+      );
+    } catch (_) {
+      return Icons.folder_rounded;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -188,10 +210,12 @@ class _NotebookSelectorScreenState extends State<NotebookSelectorScreen>
                     SizedBox(width: 32),
                   Icon(
                     notebook.iconId != null
-                        ? (NotebookIconsRepository.getIconById(
-                              notebook.iconId!,
-                            )?.icon ??
-                            Icons.folder_rounded)
+                        ? _resolveNotebookIconData(
+                          NotebookIconsRepository.getIconById(
+                                notebook.iconId!,
+                              )
+                              ?.icon,
+                        )
                         : Icons.folder_rounded,
                     size: 28,
                     color: colorScheme.primary,

@@ -63,7 +63,7 @@ class CalendarEventStatusRepository {
       DatabaseHelper.notifyDatabaseChanged();
       return db.lastInsertRowId;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 

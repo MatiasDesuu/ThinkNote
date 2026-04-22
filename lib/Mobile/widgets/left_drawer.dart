@@ -271,6 +271,28 @@ class _MobileDrawerState extends State<MobileDrawer>
     }
   }
 
+  IconData _resolveNotebookIconData(dynamic rawIcon) {
+    if (rawIcon is IconData) {
+      return rawIcon;
+    }
+
+    try {
+      final codePoint = rawIcon.codePoint as int;
+      final fontFamily = rawIcon.fontFamily as String?;
+      final fontPackage = rawIcon.fontPackage as String?;
+      final matchTextDirection = rawIcon.matchTextDirection as bool? ?? false;
+
+      return IconData(
+        codePoint,
+        fontFamily: fontFamily,
+        fontPackage: fontPackage,
+        matchTextDirection: matchTextDirection,
+      );
+    } catch (_) {
+      return Icons.folder_rounded;
+    }
+  }
+
   Widget _buildNotebookNode(
     Notebook notebook, {
     int level = 0,
@@ -426,7 +448,10 @@ class _MobileDrawerState extends State<MobileDrawer>
                 ),
               ),
               if (_showNotebookIcons) ...[
-                Icon(iconToShow.icon, color: colorScheme.primary),
+                Icon(
+                  _resolveNotebookIconData(iconToShow.icon),
+                  color: colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
               ],
               Expanded(

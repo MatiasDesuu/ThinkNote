@@ -17,7 +17,7 @@ class ExportService {
       final fileName =
           '${cleanTitle.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_')}.md';
 
-      final String? outputFile = await FilePicker.platform.saveFile(
+      final String? outputFile = await FilePicker.saveFile(
         dialogTitle: 'Export to Markdown',
         fileName: fileName,
         allowedExtensions: ['md'],
@@ -53,7 +53,7 @@ class ExportService {
       final fileName =
           '${cleanTitle.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_')}.html';
 
-      final String? outputFile = await FilePicker.platform.saveFile(
+      final String? outputFile = await FilePicker.saveFile(
         dialogTitle: 'Export to HTML',
         fileName: fileName,
         allowedExtensions: ['html'],
@@ -141,7 +141,7 @@ class ExportService {
       final fileName =
           '${cleanTitle.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_')}.pdf';
 
-      final String? outputFile = await FilePicker.platform.saveFile(
+      final String? outputFile = await FilePicker.saveFile(
         dialogTitle: 'Export to PDF',
         fileName: fileName,
         allowedExtensions: ['pdf'],

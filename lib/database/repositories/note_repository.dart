@@ -68,7 +68,7 @@ class NoteRepository {
       DatabaseService().notifyDatabaseChanged();
       return db.lastInsertRowId;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -191,7 +191,7 @@ class NoteRepository {
       NotificationService().notifyNoteUpdate(note);
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -218,7 +218,7 @@ class NoteRepository {
       DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -302,7 +302,7 @@ class NoteRepository {
         stmt.execute([i, now, notes[i].id]);
       }
 
-      stmt.dispose();
+      stmt.close();
 
       db.execute(
         '''
@@ -401,7 +401,7 @@ class NoteRepository {
 
       DatabaseService().notifyDatabaseChanged();
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -438,7 +438,7 @@ class NoteRepository {
 
       DatabaseService().notifyDatabaseChanged();
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 }

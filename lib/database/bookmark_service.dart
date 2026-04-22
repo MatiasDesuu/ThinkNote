@@ -201,7 +201,7 @@ class BookmarkService {
       DatabaseHelper.notifyDatabaseChanged();
       return db.lastInsertRowId;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -229,7 +229,7 @@ class BookmarkService {
       DatabaseHelper.notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -245,7 +245,7 @@ class BookmarkService {
       DatabaseHelper.notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -294,7 +294,7 @@ class BookmarkService {
       DatabaseHelper.notifyDatabaseChanged();
       return db.lastInsertRowId;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -310,7 +310,7 @@ class BookmarkService {
       DatabaseHelper.notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -387,7 +387,7 @@ class BookmarkService {
           stmt.execute([tag]);
           tagId = db.lastInsertRowId;
         } finally {
-          stmt.dispose();
+          stmt.close();
         }
       }
       tagIds.add(tagId);
@@ -453,7 +453,7 @@ class BookmarkService {
       }
       rethrow;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -469,7 +469,7 @@ class BookmarkService {
       DatabaseHelper.notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 

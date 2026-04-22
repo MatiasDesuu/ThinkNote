@@ -34,7 +34,7 @@ class CalendarEventRepository {
       DatabaseHelper.notifyDatabaseChanged();
       return db.lastInsertRowId;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -80,8 +80,12 @@ class CalendarEventRepository {
         title: row['title'] as String? ?? '',
         content: row['content'] as String? ?? '',
         notebookId: row['notebook_id'] as int,
-        createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at'] as int),
-        updatedAt: DateTime.fromMillisecondsSinceEpoch(row['updated_at'] as int),
+        createdAt: DateTime.fromMillisecondsSinceEpoch(
+          row['created_at'] as int,
+        ),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(
+          row['updated_at'] as int,
+        ),
         isFavorite: row['is_favorite'] == 1,
         tags: row['tags'] as String? ?? '',
         orderIndex: row['n_order_index'] as int? ?? 0,
@@ -119,8 +123,12 @@ class CalendarEventRepository {
         title: row['title'] as String? ?? '',
         content: row['content'] as String? ?? '',
         notebookId: row['notebook_id'] as int,
-        createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at'] as int),
-        updatedAt: DateTime.fromMillisecondsSinceEpoch(row['updated_at'] as int),
+        createdAt: DateTime.fromMillisecondsSinceEpoch(
+          row['created_at'] as int,
+        ),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(
+          row['updated_at'] as int,
+        ),
         isFavorite: row['is_favorite'] == 1,
         tags: row['tags'] as String? ?? '',
         orderIndex: row['n_order_index'] as int? ?? 0,
@@ -161,7 +169,7 @@ class CalendarEventRepository {
       DatabaseHelper.notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -201,7 +209,7 @@ class CalendarEventRepository {
       DatabaseHelper.notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -209,7 +217,7 @@ class CalendarEventRepository {
     final db = await _dbHelper.database;
     final result = db.select('''
       SELECT e.*, n.title, n.content, n.notebook_id, n.created_at, n.updated_at, 
-             n.is_favorite, n.tags, n.order_index as n_order_index, n.is_task, n.is_completed, n.is_pinned
+            n.is_favorite, n.tags, n.order_index as n_order_index, n.is_task, n.is_completed, n.is_pinned
       FROM ${config.DatabaseConfig.tableCalendarEvents} e
       JOIN ${config.DatabaseConfig.tableNotes} n ON e.${config.DatabaseConfig.columnCalendarEventNoteId} = n.id
       WHERE e.${config.DatabaseConfig.columnCalendarEventStatus} IS NULL
@@ -224,8 +232,12 @@ class CalendarEventRepository {
         title: row['title'] as String? ?? '',
         content: row['content'] as String? ?? '',
         notebookId: row['notebook_id'] as int,
-        createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at'] as int),
-        updatedAt: DateTime.fromMillisecondsSinceEpoch(row['updated_at'] as int),
+        createdAt: DateTime.fromMillisecondsSinceEpoch(
+          row['created_at'] as int,
+        ),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(
+          row['updated_at'] as int,
+        ),
         isFavorite: row['is_favorite'] == 1,
         tags: row['tags'] as String? ?? '',
         orderIndex: row['n_order_index'] as int? ?? 0,

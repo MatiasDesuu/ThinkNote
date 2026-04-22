@@ -77,6 +77,9 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
   String _lastTextContent = '';
   bool _isHandlingContentChange = false;
   bool _isNavigatingAway = false;
+  bool _isUserTyping = false;
+  Timer? _typingDebounce;
+  String _lastObservedContentForTyping = '';
 
   @override
   void initState() {
@@ -87,8 +90,9 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
     );
     _saveController = SaveAnimationController(vsync: this);
     _lastTextContent = widget.contentController.text;
-    _lastTextContent = widget.contentController.text;
+    _lastObservedContentForTyping = widget.contentController.text;
     widget.titleController.addListener(_onTitleChanged);
+    widget.contentController.addListener(_onContentControllerTextChanged);
     _detectScriptMode();
     _loadThemePreferences();
   }
@@ -101,6 +105,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
   }
 
   void _onTitleChanged() {
+    _notifyTypingActivity();
     widget.onTitleChanged();
 
     _autoSaveDebounce?.cancel();
@@ -110,6 +115,8 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
   }
 
   void _onContentChanged() {
+    _notifyTypingActivity();
+
     if (_isHandlingContentChange) return;
     _isHandlingContentChange = true;
 
@@ -149,6 +156,14 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
     }
   }
 
+  void _onContentControllerTextChanged() {
+    final current = widget.contentController.text;
+    if (current == _lastObservedContentForTyping) return;
+
+    _lastObservedContentForTyping = current;
+    _notifyTypingActivity();
+  }
+
   void _resetDebouncers() {
     _scriptDetectionDebouncer?.cancel();
     _scriptDetectionDebouncer = Timer(const Duration(milliseconds: 300), () {
@@ -165,6 +180,23 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
     _autoSaveDebounce?.cancel();
     _autoSaveDebounce = Timer(const Duration(milliseconds: 500), () {
       _handleSave(isAutoSave: true);
+    });
+  }
+
+  void _notifyTypingActivity() {
+    if (!_isUserTyping) {
+      setState(() {
+        _isUserTyping = true;
+      });
+    }
+
+    _typingDebounce?.cancel();
+    _typingDebounce = Timer(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        setState(() {
+          _isUserTyping = false;
+        });
+      }
     });
   }
 
@@ -534,9 +566,11 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
   @override
   void dispose() {
     widget.contentController.removeListener(_onContentChanged);
+    widget.contentController.removeListener(_onContentControllerTextChanged);
     widget.titleController.removeListener(_onTitleChanged);
     _scriptDetectionDebouncer?.cancel();
     _autoSaveDebounce?.cancel();
+    _typingDebounce?.cancel();
     _saveController.dispose();
     _scaleController.dispose();
     _currentBlockIndex.dispose();
@@ -621,7 +655,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                 contentPadding: EdgeInsets.zero,
                               ),
                               enabled: widget.isEditing && !_isReadMode,
-                              onChanged: (_) => widget.onTitleChanged(),
+                              onChanged: (_) => _notifyTypingActivity(),
                             ),
                             leading: IconButton(
                               icon: const Icon(Icons.arrow_back_rounded),
@@ -882,44 +916,64 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                   16 +
                                   (widget.isEditing && !_isReadMode ? 40 : 0),
                               right: 16,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  if (widget.isEditing && !_isReadMode) ...[
-                                    FloatingActionButton(
-                                      key: const ValueKey('save'),
-                                      heroTag: null,
-                                      onPressed: () => _handleSave(),
-                                      elevation: 4,
-                                      child: const Icon(Icons.save_rounded),
-                                    ),
-                                    const SizedBox(height: 16),
-                                  ],
-                                  Theme(
-                                    data: Theme.of(context).copyWith(
-                                      colorScheme: Theme.of(
-                                        context,
-                                      ).colorScheme.copyWith(
-                                        surfaceTint:
-                                            _isReadMode && _isScript
-                                                ? Colors.transparent
-                                                : null,
-                                      ),
-                                    ),
-                                    child: FloatingActionButton(
-                                      key: ValueKey('editButton_$_isReadMode'),
-                                      heroTag: null,
-                                      onPressed: _toggleReadMode,
-                                      elevation: 4,
-                                      child: Icon(
-                                        _isReadMode
-                                            ? Icons.edit_rounded
-                                            : Icons.visibility_rounded,
-                                      ),
+                              child: IgnorePointer(
+                                ignoring: _isUserTyping,
+                                child: AnimatedOpacity(
+                                  opacity: _isUserTyping ? 0 : 1,
+                                  duration: const Duration(milliseconds: 180),
+                                  child: AnimatedSlide(
+                                    offset:
+                                        _isUserTyping
+                                            ? const Offset(0, 0.12)
+                                            : Offset.zero,
+                                    duration: const Duration(milliseconds: 180),
+                                    curve: Curves.easeOut,
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        if (widget.isEditing && !_isReadMode) ...[
+                                          FloatingActionButton(
+                                            key: const ValueKey('save'),
+                                            heroTag: null,
+                                            onPressed: () => _handleSave(),
+                                            elevation: 4,
+                                            child: const Icon(
+                                              Icons.save_rounded,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                        ],
+                                        Theme(
+                                          data: Theme.of(context).copyWith(
+                                            colorScheme: Theme.of(
+                                              context,
+                                            ).colorScheme.copyWith(
+                                              surfaceTint:
+                                                  _isReadMode && _isScript
+                                                      ? Colors.transparent
+                                                      : null,
+                                            ),
+                                          ),
+                                          child: FloatingActionButton(
+                                            key: ValueKey(
+                                              'editButton_$_isReadMode',
+                                            ),
+                                            heroTag: null,
+                                            onPressed: _toggleReadMode,
+                                            elevation: 4,
+                                            child: Icon(
+                                              _isReadMode
+                                                  ? Icons.edit_rounded
+                                                  : Icons.visibility_rounded,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                         ],

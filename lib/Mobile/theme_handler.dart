@@ -98,6 +98,7 @@ class ThemeManager {
     return ThemeData(
       colorScheme: isDarkMode ? darkScheme : lightScheme,
       useMaterial3: true,
+      splashFactory: InkRipple.splashFactory,
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: (isDarkMode ? darkScheme : lightScheme).primary,
@@ -128,6 +129,7 @@ class ThemeManager {
     final baseLight = _buildSimpleLight(ColorScheme.light());
     return ThemeData(
       useMaterial3: true,
+      splashFactory: InkRipple.splashFactory,
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF222222),
@@ -194,6 +196,7 @@ class ThemeManager {
     final baseDark = _buildSimpleDark(ColorScheme.dark());
     return ThemeData(
       useMaterial3: true,
+      splashFactory: InkRipple.splashFactory,
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFDADADA),

@@ -32,6 +32,28 @@ class _SearchScreenState extends State<SearchScreen> {
   late NoteRepository _noteRepository;
   late NotebookRepository _notebookRepository;
 
+  IconData _resolveNotebookIconData(dynamic rawIcon) {
+    if (rawIcon is IconData) {
+      return rawIcon;
+    }
+
+    try {
+      final codePoint = rawIcon.codePoint as int;
+      final fontFamily = rawIcon.fontFamily as String?;
+      final fontPackage = rawIcon.fontPackage as String?;
+      final matchTextDirection = rawIcon.matchTextDirection as bool? ?? false;
+
+      return IconData(
+        codePoint,
+        fontFamily: fontFamily,
+        fontPackage: fontPackage,
+        matchTextDirection: matchTextDirection,
+      );
+    } catch (_) {
+      return Icons.folder_rounded;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -331,8 +353,9 @@ class _SearchScreenState extends State<SearchScreen> {
     if (isNotebook) {
       iconData =
           item.iconId != null
-              ? NotebookIconsRepository.getIconById(item.iconId!)?.icon ??
-                  Icons.folder_rounded
+              ? _resolveNotebookIconData(
+                NotebookIconsRepository.getIconById(item.iconId!)?.icon,
+              )
               : Icons.folder_rounded;
     } else {
       iconData = Icons.description_outlined;

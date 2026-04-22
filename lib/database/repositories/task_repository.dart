@@ -47,7 +47,7 @@ class TaskRepository {
       DatabaseHelper.notifyDatabaseChanged();
       return db.lastInsertRowId;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -144,7 +144,7 @@ class TaskRepository {
 
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -161,7 +161,7 @@ class TaskRepository {
       stmt.execute([isPinned ? 1 : 0, DateTime.now().toIso8601String(), id]);
       DatabaseHelper.notifyDatabaseChanged();
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -194,9 +194,9 @@ class TaskRepository {
       DatabaseHelper.notifyDatabaseChanged();
       return 1;
     } finally {
-      stmtSubtasks.dispose();
-      stmtTags.dispose();
-      stmtTask.dispose();
+      stmtSubtasks.close();
+      stmtTags.close();
+      stmtTask.close();
     }
   }
 
@@ -270,7 +270,7 @@ class TaskRepository {
       DatabaseHelper.notifyDatabaseChanged();
       return db.lastInsertRowId;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -325,7 +325,7 @@ class TaskRepository {
       DatabaseHelper.notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -342,7 +342,7 @@ class TaskRepository {
       DatabaseHelper.notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -401,7 +401,7 @@ class TaskRepository {
       DatabaseHelper.notifyDatabaseChanged();
       return db.lastInsertRowId;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -417,7 +417,7 @@ class TaskRepository {
       DatabaseHelper.notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -446,7 +446,7 @@ class TaskRepository {
       stmt.execute([tagName, taskId]);
       DatabaseHelper.notifyDatabaseChanged();
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -463,7 +463,7 @@ class TaskRepository {
       stmt.execute([tagName, taskId]);
       DatabaseHelper.notifyDatabaseChanged();
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 

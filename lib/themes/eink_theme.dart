@@ -61,6 +61,7 @@ class EInkTheme {
     return ThemeData(
       brightness: isLightMode ? Brightness.light : Brightness.dark,
       useMaterial3: true,
+      splashFactory: InkRipple.splashFactory,
       colorScheme: colorScheme,
 
       appBarTheme: AppBarTheme(

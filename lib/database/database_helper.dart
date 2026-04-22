@@ -1,5 +1,4 @@
 import 'package:sqlite3/sqlite3.dart' as sqlite;
-import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 import 'database_config.dart' as config;
 import 'dart:developer' as developer;
 import 'dart:async';
@@ -40,10 +39,6 @@ class DatabaseHelper {
 
       final dbDir = path.dirname(dbPath);
       await Directory(dbDir).create(recursive: true);
-
-      if (Platform.isAndroid) {
-        await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
-      }
 
       final db = sqlite.sqlite3.open(dbPath);
 
@@ -583,7 +578,7 @@ class DatabaseHelper {
     try {
       for (final connection in _activeConnections) {
         try {
-          connection.dispose();
+          connection.close();
         } catch (e) {
           developer.log(
             'Error disposing connection: $e',
@@ -704,7 +699,7 @@ class DatabaseHelper {
 
   Future<void> close() async {
     for (var connection in _activeConnections) {
-      connection.dispose();
+      connection.close();
     }
     _activeConnections.clear();
     _database = null;

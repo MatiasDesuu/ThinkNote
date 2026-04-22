@@ -282,6 +282,7 @@ class ThemeManager {
     return ThemeData(
       brightness: brightness,
       useMaterial3: true,
+      splashFactory: InkRipple.splashFactory,
       colorScheme: colorScheme,
       appBarTheme: AppBarTheme(
         scrolledUnderElevation: 2,

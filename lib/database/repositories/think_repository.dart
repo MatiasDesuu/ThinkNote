@@ -43,7 +43,7 @@ class ThinkRepository {
       DatabaseService().notifyDatabaseChanged();
       return db.lastInsertRowId;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -111,7 +111,7 @@ class ThinkRepository {
       DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -129,7 +129,7 @@ class ThinkRepository {
       DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -147,7 +147,7 @@ class ThinkRepository {
       DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -167,7 +167,7 @@ class ThinkRepository {
         stmt.execute([i, thinks[i].id]);
       }
 
-      stmt.dispose();
+      stmt.close();
       db.execute('COMMIT');
       DatabaseService().notifyDatabaseChanged();
     } catch (e) {
@@ -204,7 +204,7 @@ class ThinkRepository {
       DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -252,7 +252,7 @@ class ThinkRepository {
       DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
@@ -268,7 +268,7 @@ class ThinkRepository {
       DatabaseService().notifyDatabaseChanged();
       return 1;
     } finally {
-      stmt.dispose();
+      stmt.close();
     }
   }
 
