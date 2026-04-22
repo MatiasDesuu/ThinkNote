@@ -7,6 +7,12 @@ class ImmersiveNotesOverlay extends StatefulWidget {
   final VoidCallback onExpand;
   final VoidCallback onCollapse;
   final void Function(bool isHovering)? onHoverStateChanged;
+  final double leftOffset;
+  final double rightOffset;
+  final double panelLeftOffset;
+  final double panelRightOffset;
+  final double triggerWidth;
+  final bool useRightEdge;
 
   const ImmersiveNotesOverlay({
     super.key,
@@ -16,6 +22,12 @@ class ImmersiveNotesOverlay extends StatefulWidget {
     required this.onExpand,
     required this.onCollapse,
     this.onHoverStateChanged,
+    this.leftOffset = 0,
+    this.rightOffset = 0,
+    this.panelLeftOffset = 0,
+    this.panelRightOffset = 0,
+    this.triggerWidth = 10,
+    this.useRightEdge = false,
   });
 
   @override
@@ -55,21 +67,45 @@ class _ImmersiveNotesOverlayState extends State<ImmersiveNotesOverlay> {
       children: [
         widget.child,
         Positioned(
-          left: 0,
+          left: widget.useRightEdge ? null : widget.leftOffset,
+          right: widget.useRightEdge ? widget.rightOffset : null,
           top: 0,
           bottom: 0,
           child: MouseRegion(
+            opaque: false,
+            hitTestBehavior: HitTestBehavior.translucent,
             onEnter: (_) => _handleEnter(),
             onExit: (_) => _handleExit(),
-            child: Stack(
-              children: [
-                Container(
-                  color: Colors.transparent,
-                  width: 20,
-                ),
-                if (widget.overlayPanel != null) widget.overlayPanel!,
-              ],
-            ),
+            child: widget.useRightEdge
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.overlayPanel != null)
+                        Padding(
+                          padding: EdgeInsets.only(
+                            right: widget.panelRightOffset,
+                          ),
+                          child: widget.overlayPanel!,
+                        ),
+                      Container(
+                        color: Colors.transparent,
+                        width: widget.triggerWidth,
+                      ),
+                    ],
+                  )
+                : Stack(
+                    children: [
+                      Container(
+                        color: Colors.transparent,
+                        width: widget.triggerWidth,
+                      ),
+                      if (widget.overlayPanel != null)
+                        Padding(
+                          padding: EdgeInsets.only(left: widget.panelLeftOffset),
+                          child: widget.overlayPanel!,
+                        ),
+                    ],
+                  ),
           ),
         ),
       ],

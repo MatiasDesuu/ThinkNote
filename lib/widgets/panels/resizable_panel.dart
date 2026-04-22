@@ -14,6 +14,7 @@ class ResizablePanel extends StatefulWidget {
   final Widget? trailing;
   final bool showLeftSeparator;
   final VoidCallback? onTitleTap;
+  final ValueChanged<bool>? onExpandedChanged;
 
   const ResizablePanel({
     super.key,
@@ -26,6 +27,7 @@ class ResizablePanel extends StatefulWidget {
     this.trailing,
     this.showLeftSeparator = false,
     this.onTitleTap,
+    this.onExpandedChanged,
   });
 
   @override
@@ -40,6 +42,7 @@ class ResizablePanelLeft extends StatefulWidget {
   final String title;
   final String preferencesKey;
   final Widget? trailing;
+  final ValueChanged<bool>? onExpandedChanged;
 
   const ResizablePanelLeft({
     super.key,
@@ -50,6 +53,7 @@ class ResizablePanelLeft extends StatefulWidget {
     required this.title,
     required this.preferencesKey,
     this.trailing,
+    this.onExpandedChanged,
   });
 
   @override
@@ -60,6 +64,7 @@ class ResizablePanelState extends State<ResizablePanel>
     with SingleTickerProviderStateMixin {
   late double _width;
   bool _isExpanded = true;
+  bool _isOverlayPreviewVisible = false;
   late AnimationController _animationController;
   late Animation<double> _widthAnimation;
 
@@ -109,6 +114,7 @@ class ResizablePanelState extends State<ResizablePanel>
     } else {
       _animationController.value = 0;
     }
+    widget.onExpandedChanged?.call(_isExpanded);
   }
 
   Future<void> _saveExpandedState(bool isExpanded) async {
@@ -142,8 +148,10 @@ class ResizablePanelState extends State<ResizablePanel>
     final navigatorContext = context;
     setState(() {
       _isExpanded = !_isExpanded;
+      _isOverlayPreviewVisible = false;
     });
     _saveExpandedState(_isExpanded);
+    widget.onExpandedChanged?.call(_isExpanded);
 
     if (_isExpanded) {
       _animationController.forward();
@@ -165,8 +173,10 @@ class ResizablePanelState extends State<ResizablePanel>
     final navigatorContext = context;
     setState(() {
       _isExpanded = false;
+      _isOverlayPreviewVisible = false;
     });
     _saveExpandedState(_isExpanded);
+    widget.onExpandedChanged?.call(_isExpanded);
     _animationController.reverse();
 
     Future.delayed(const Duration(milliseconds: 300), () {
@@ -183,8 +193,10 @@ class ResizablePanelState extends State<ResizablePanel>
     final navigatorContext = context;
     setState(() {
       _isExpanded = true;
+      _isOverlayPreviewVisible = false;
     });
     _saveExpandedState(_isExpanded);
+    widget.onExpandedChanged?.call(_isExpanded);
     _animationController.forward();
 
     Future.delayed(const Duration(milliseconds: 300), () {
@@ -193,6 +205,20 @@ class ResizablePanelState extends State<ResizablePanel>
         FocusScope.of(navigatorContext).requestFocus(widget.appFocusNode);
       }
     });
+  }
+
+  void showOverlayPreview() {
+    if (_isExpanded || _isOverlayPreviewVisible) return;
+
+    _isOverlayPreviewVisible = true;
+    _animationController.forward();
+  }
+
+  void hideOverlayPreview() {
+    if (_isExpanded || !_isOverlayPreviewVisible) return;
+
+    _isOverlayPreviewVisible = false;
+    _animationController.reverse();
   }
 
   @override
@@ -357,6 +383,7 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     with SingleTickerProviderStateMixin {
   late double _width;
   bool _isExpanded = true;
+  bool _isOverlayPreviewVisible = false;
   late AnimationController _animationController;
   late Animation<double> _widthAnimation;
 
@@ -392,8 +419,10 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     final navigatorContext = context;
     setState(() {
       _isExpanded = expanded;
+      _isOverlayPreviewVisible = false;
     });
     _saveExpandedState(_isExpanded);
+    widget.onExpandedChanged?.call(_isExpanded);
 
     if (_isExpanded) {
       _animationController.forward();
@@ -427,6 +456,7 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     } else {
       _animationController.value = 0;
     }
+    widget.onExpandedChanged?.call(_isExpanded);
   }
 
   Future<void> _saveExpandedState(bool isExpanded) async {
@@ -460,8 +490,10 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     final navigatorContext = context;
     setState(() {
       _isExpanded = !_isExpanded;
+      _isOverlayPreviewVisible = false;
     });
     _saveExpandedState(_isExpanded);
+    widget.onExpandedChanged?.call(_isExpanded);
 
     if (_isExpanded) {
       _animationController.forward();
@@ -483,8 +515,10 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     final navigatorContext = context;
     setState(() {
       _isExpanded = false;
+      _isOverlayPreviewVisible = false;
     });
     _saveExpandedState(_isExpanded);
+    widget.onExpandedChanged?.call(_isExpanded);
     _animationController.reverse();
 
     Future.delayed(const Duration(milliseconds: 300), () {
@@ -501,8 +535,10 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     final navigatorContext = context;
     setState(() {
       _isExpanded = true;
+      _isOverlayPreviewVisible = false;
     });
     _saveExpandedState(_isExpanded);
+    widget.onExpandedChanged?.call(_isExpanded);
     _animationController.forward();
 
     Future.delayed(const Duration(milliseconds: 300), () {
@@ -511,6 +547,20 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
         FocusScope.of(navigatorContext).requestFocus(widget.appFocusNode);
       }
     });
+  }
+
+  void showOverlayPreview() {
+    if (_isExpanded || _isOverlayPreviewVisible) return;
+
+    _isOverlayPreviewVisible = true;
+    _animationController.forward();
+  }
+
+  void hideOverlayPreview() {
+    if (_isExpanded || !_isOverlayPreviewVisible) return;
+
+    _isOverlayPreviewVisible = false;
+    _animationController.reverse();
   }
 
   @override

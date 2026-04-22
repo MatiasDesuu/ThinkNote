@@ -704,6 +704,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   bool _isAdvancedSearch = false;
   StreamSubscription? _hideTabsInImmersiveSubscription;
   late TabManager _tabManager;
+  late final GlobalIconSidebarState _globalIconSidebarState;
   Timer? _dbChangeDebounceTimer;
   bool _isLoadingNoteContent = false;
   bool _isSyncing = false;
@@ -713,6 +714,8 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     super.initState();
     _noteController = SearchTextEditingController();
     _titleController = TextEditingController();
+    _globalIconSidebarState = GlobalIconSidebarState();
+    _globalIconSidebarState.addListener(_onIconSidebarStateChanged);
 
     _tabManager = TabManager();
     _tabManager.addListener(() {
@@ -779,6 +782,12 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   void _initializeImmersiveMode() {
     _immersiveModeService = ImmersiveModeService();
     _immersiveModeService.addListener(_onImmersiveModeChanged);
+  }
+
+  void _onIconSidebarStateChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _initializeFavoritesPanelState() async {
@@ -878,6 +887,32 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   }
 
   bool _isNotesForcedOpenInImmersive = false;
+  bool _isNotebooksPanelExpanded = true;
+  bool _isCalendarPanelExpanded = true;
+
+  bool _shouldShowNotebooksOverlay() {
+    if (_immersiveModeService.isImmersiveMode) {
+      return false;
+    }
+
+    final isExpanded =
+        _sidebarKey.currentState?.isExpanded ?? _isNotebooksPanelExpanded;
+    return !isExpanded;
+  }
+
+  bool _shouldShowCalendarOverlay() {
+    final isExpanded =
+        _calendarPanelKey.currentState?.isExpanded ?? _isCalendarPanelExpanded;
+    return !isExpanded;
+  }
+
+  double _getNotebooksOverlayLeftOffset() {
+    if (!_globalIconSidebarState.isExpanded) {
+      return 0;
+    }
+
+    return _globalIconSidebarState.width;
+  }
 
   void _onImmersiveModeChanged() {
     if (mounted) {
@@ -1911,6 +1946,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     _syncService.dispose();
     _autoSyncTimer?.cancel();
     _dbChangeDebounceTimer?.cancel();
+    _globalIconSidebarState.removeListener(_onIconSidebarStateChanged);
     _immersiveModeService.removeListener(_onImmersiveModeChanged);
     _hideTabsInImmersiveSubscription?.cancel();
     _tabManager.dispose();
@@ -1970,8 +2006,131 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     );
   }
 
+  Widget _buildNotebooksPanel() {
+    return ResizablePanel(
+      key: _sidebarKey,
+      minWidth: 200,
+      maxWidth: 400,
+      appFocusNode: _appFocusNode,
+      title: 'Notebooks',
+      preferencesKey: 'notebooks_panel',
+      showLeftSeparator: !_immersiveModeService.isImmersiveMode,
+      onExpandedChanged: (isExpanded) {
+        if (!mounted || _isNotebooksPanelExpanded == isExpanded) return;
+        setState(() {
+          _isNotebooksPanelExpanded = isExpanded;
+        });
+      },
+      onTitleTap: () {
+        final rootNotebook = Notebook(
+          id: null,
+          name: '',
+          parentId: null,
+          createdAt: DateTime.now(),
+          orderIndex: 0,
+        );
+        setState(() {
+          _selectedNotebook = rootNotebook;
+          _selectedTag = null;
+          _titleController.clear();
+          _noteController.clear();
+        });
+        _databaseSidebarKey.currentState?.clearSelectedTag();
+        _selectNote(null);
+        _saveLastSelectedNotebook(null);
+      },
+      trailing: Builder(
+        builder: (context) {
+          final databaseSidebarState = _databaseSidebarKey.currentState;
+          if (databaseSidebarState == null) {
+            return const SizedBox.shrink();
+          }
+          return databaseSidebarState.buildTrailingButton();
+        },
+      ),
+      child: DatabaseSidebar(
+        key: _databaseSidebarKey,
+        selectedNotebook: _selectedNotebook,
+        onNotebookSelected: (notebook) {
+          setState(() {
+            _selectedNotebook = notebook;
+            _selectedTag = null;
+            _titleController.clear();
+            _noteController.clear();
+          });
+
+          _databaseSidebarKey.currentState?.clearSelectedTag();
+          _selectNote(null);
+          _saveLastSelectedNotebook(notebook.id);
+        },
+        onTagSelected: (tag) {
+          setState(() {
+            _selectedTag = tag;
+            _selectedNotebook = null;
+            _titleController.clear();
+            _noteController.clear();
+          });
+          _selectNote(null);
+          _saveLastSelectedNotebook(null);
+        },
+        onTrashUpdated: () {
+          setState(() {
+            _titleController.clear();
+            _noteController.clear();
+          });
+          _selectNote(null);
+          _saveLastSelectedNotebook(null);
+        },
+        onExpansionChanged: () {
+          setState(() {});
+        },
+        onNotebookDeleted: _onNotebookDeleted,
+      ),
+    );
+  }
+
+  Widget _buildCalendarPanel() {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height,
+      child: ResizablePanelLeft(
+        key: _calendarPanelKey,
+        minWidth: 300,
+        maxWidth: 400,
+        appFocusNode: _appFocusNode,
+        title: '',
+        preferencesKey: 'calendar_panel',
+        onExpandedChanged: (isExpanded) {
+          if (!mounted || _isCalendarPanelExpanded == isExpanded) return;
+          setState(() {
+            _isCalendarPanelExpanded = isExpanded;
+          });
+        },
+        child: CalendarPanel(
+          key: _calendarPanelStateKey,
+          onNoteSelected: _onNoteSelected,
+          onNoteSelectedFromPanel: (note) {
+            if (mounted && _editorTabsKey.currentState != null) {
+              _editorTabsKey.currentState!.suppressNextUpdateAnimations();
+            }
+
+            _onNoteSelected(note);
+          },
+          onNoteOpenInNewTab: _onNoteOpenInNewTab,
+          onNotebookSelected: _onNotebookSelected,
+          onNotebookSelectedFromFavorite: _onNotebookSelectedFromFavorite,
+          onTaskSelected: _onTaskSelected,
+          appFocusNode: _appFocusNode,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final shouldShowNotebooksOverlay = _shouldShowNotebooksOverlay();
+    final shouldShowCalendarOverlay = _shouldShowCalendarOverlay();
+    final notebooksOverlayLeftOffset = _getNotebooksOverlayLeftOffset();
+
     return GlobalAppShortcuts(
       onCloseDialog: closeCurrentDialog,
       onToggleSidebar: _toggleSidebar,
@@ -2000,186 +2159,98 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
           body: Stack(
             children: [
               ImmersiveNotesOverlay(
-                isImmersiveMode: _immersiveModeService.isImmersiveMode &&
-                    !_isNotesForcedOpenInImmersive,
-                overlayPanel: _buildNotesPanel(),
-                onExpand: () => _notesPanelKey.currentState?.expandPanel(),
-                onCollapse: () => _notesPanelKey.currentState?.collapsePanel(),
-                child: Row(
-                  children: [
-                    ResizableIconSidebar(
-                    key: _iconSidebarKey,
-                    rootDir: Directory.current,
-                    onOpenNote: (note) => _onNoteSelected(note as Note),
-                    onOpenFolder:
-                        (folder) => _onNotebookSelected(folder as Notebook),
-                    onNotebookSelected: _onNotebookSelected,
-                    onNoteSelected: _onNoteSelected,
-                    onTaskSelected: _onTaskSelected,
-                    onNoteSelectedWithSearch: _onNoteSelectedWithSearch,
-                    onThemeUpdated: widget.onThemeUpdated,
-                    onFavoriteRemoved: () {
-                      if (mounted) {
-                        setState(() {});
-                      }
-                    },
-                    onCreateNewNote: createNewNote,
-                    onCreateNewNotebook: createNewNotebook,
-                    onCreateNewTodo: createNewTodo,
-                    onOpenTrash: _toggleTrashPanel,
-                    onTrashReload:
-                        () => _trashPanelStateKey.currentState?.reloadTrash(),
-                    onOpenFavorites: _toggleFavoritesPanel,
-                    onOpenTemplates: _toggleTemplatesPanel,
-                    onFavoritesReload:
-                        () =>
-                            _favoritesPanelStateKey.currentState
-                                ?.reloadFavorites(),
-                    showBackButton: false,
-                    calendarPanelKey: _calendarPanelKey,
-                    appFocusNode: _appFocusNode,
-                    onForceSync: _refreshAllPanels,
-                  ),
-                  ResizablePanel(
-                    key: _sidebarKey,
-                    minWidth: 200,
-                    maxWidth: 400,
-                    appFocusNode: _appFocusNode,
-                    title: 'Notebooks',
-                    preferencesKey: 'notebooks_panel',
-                    showLeftSeparator: !_immersiveModeService.isImmersiveMode,
-                    onTitleTap: () {
-                      final rootNotebook = Notebook(
-                        id: null,
-                        name: '',
-                        parentId: null,
-                        createdAt: DateTime.now(),
-                        orderIndex: 0,
-                      );
-                      setState(() {
-                        _selectedNotebook = rootNotebook;
-                        _selectedTag = null;
-                        _titleController.clear();
-                        _noteController.clear();
-                      });
-                      _databaseSidebarKey.currentState?.clearSelectedTag();
-                      _selectNote(null);
-                      _saveLastSelectedNotebook(null);
-                    },
-                    trailing: Builder(
-                      builder: (context) {
-                        final databaseSidebarState =
-                            _databaseSidebarKey.currentState;
-                        if (databaseSidebarState == null) {
-                          return const SizedBox.shrink();
-                        }
-                        return databaseSidebarState.buildTrailingButton();
-                      },
-                    ),
-                    child: DatabaseSidebar(
-                      key: _databaseSidebarKey,
-                      selectedNotebook: _selectedNotebook,
-                      onNotebookSelected: (notebook) {
-                        setState(() {
-                          _selectedNotebook = notebook;
-                          _selectedTag = null;
-                          _titleController.clear();
-                          _noteController.clear();
-                        });
-
-                        _databaseSidebarKey.currentState?.clearSelectedTag();
-                        _selectNote(null);
-                        _saveLastSelectedNotebook(notebook.id);
-                      },
-                      onTagSelected: (tag) {
-                        setState(() {
-                          _selectedTag = tag;
-                          _selectedNotebook = null;
-                          _titleController.clear();
-                          _noteController.clear();
-                        });
-                        _selectNote(null);
-                        _saveLastSelectedNotebook(null);
-                      },
-                      onTrashUpdated: () {
-                        setState(() {
-                          _titleController.clear();
-                          _noteController.clear();
-                        });
-                        _selectNote(null);
-                        _saveLastSelectedNotebook(null);
-                      },
-                      onExpansionChanged: () {
-                        setState(() {});
-                      },
-                      onNotebookDeleted: _onNotebookDeleted,
-                    ),
-                  ),
-                  if (!_immersiveModeService.isImmersiveMode ||
-                      _isNotesForcedOpenInImmersive)
-                    _buildNotesPanel(),
-                  Expanded(
-                    child: Stack(
+                isImmersiveMode: shouldShowNotebooksOverlay,
+                overlayPanel: _buildNotebooksPanel(),
+                onExpand: () => _sidebarKey.currentState?.showOverlayPreview(),
+                onCollapse: () => _sidebarKey.currentState?.hideOverlayPreview(),
+                panelLeftOffset: notebooksOverlayLeftOffset,
+                child: ImmersiveNotesOverlay(
+                  isImmersiveMode: _immersiveModeService.isImmersiveMode &&
+                      !_isNotesForcedOpenInImmersive,
+                  overlayPanel: _buildNotesPanel(),
+                  onExpand: () => _notesPanelKey.currentState?.expandPanel(),
+                  onCollapse: () => _notesPanelKey.currentState?.collapsePanel(),
+                  child: ImmersiveNotesOverlay(
+                    isImmersiveMode: shouldShowCalendarOverlay,
+                    overlayPanel: _buildCalendarPanel(),
+                    useRightEdge: true,
+                    onExpand:
+                        () => _calendarPanelKey.currentState?.showOverlayPreview(),
+                    onCollapse:
+                        () => _calendarPanelKey.currentState?.hideOverlayPreview(),
+                    child: Row(
                       children: [
-                        Column(
-                          children: [
-                            if (!_immersiveModeService.isImmersiveMode ||
-                                !EditorSettingsCache
-                                    .instance
-                                    .hideTabsInImmersive)
-                              EditorTabs(
-                                key: _editorTabsKey,
-                                tabs: _tabManager.tabs,
-                                activeTab: _tabManager.activeTab,
-                                onTabSelected: _onTabSelected,
-                                onTabClosed: _onTabClosed,
-                                onTabTogglePin:
-                                    (tab) => _tabManager.togglePin(tab),
-                                onNewTab: _onNewTab,
-                                onTabReorder: _onTabReorder,
-                                onOpenNotebook: _onOpenNotebookFromTab,
-                              ),
-
-                            Expanded(child: _buildEditorContent()),
-                          ],
+                        ResizableIconSidebar(
+                        key: _iconSidebarKey,
+                        rootDir: Directory.current,
+                        onOpenNote: (note) => _onNoteSelected(note as Note),
+                        onOpenFolder:
+                            (folder) => _onNotebookSelected(folder as Notebook),
+                        onNotebookSelected: _onNotebookSelected,
+                        onNoteSelected: _onNoteSelected,
+                        onTaskSelected: _onTaskSelected,
+                        onNoteSelectedWithSearch: _onNoteSelectedWithSearch,
+                        onThemeUpdated: widget.onThemeUpdated,
+                        onFavoriteRemoved: () {
+                          if (mounted) {
+                            setState(() {});
+                          }
+                        },
+                        onCreateNewNote: createNewNote,
+                        onCreateNewNotebook: createNewNotebook,
+                        onCreateNewTodo: createNewTodo,
+                        onOpenTrash: _toggleTrashPanel,
+                        onTrashReload:
+                            () => _trashPanelStateKey.currentState?.reloadTrash(),
+                        onOpenFavorites: _toggleFavoritesPanel,
+                        onOpenTemplates: _toggleTemplatesPanel,
+                        onFavoritesReload:
+                            () =>
+                                _favoritesPanelStateKey.currentState
+                                    ?.reloadFavorites(),
+                        showBackButton: false,
+                        calendarPanelKey: _calendarPanelKey,
+                        appFocusNode: _appFocusNode,
+                        onForceSync: _refreshAllPanels,
                         ),
+                        if (!shouldShowNotebooksOverlay) _buildNotebooksPanel(),
+                        if (!_immersiveModeService.isImmersiveMode ||
+                            _isNotesForcedOpenInImmersive)
+                          _buildNotesPanel(),
+                        Expanded(
+                          child: Stack(
+                            children: [
+                              Column(
+                                children: [
+                                  if (!_immersiveModeService.isImmersiveMode ||
+                                      !EditorSettingsCache
+                                          .instance
+                                          .hideTabsInImmersive)
+                                    EditorTabs(
+                                      key: _editorTabsKey,
+                                      tabs: _tabManager.tabs,
+                                      activeTab: _tabManager.activeTab,
+                                      onTabSelected: _onTabSelected,
+                                      onTabClosed: _onTabClosed,
+                                      onTabTogglePin:
+                                          (tab) => _tabManager.togglePin(tab),
+                                      onNewTab: _onNewTab,
+                                      onTabReorder: _onTabReorder,
+                                      onOpenNotebook: _onOpenNotebookFromTab,
+                                    ),
+
+                                  Expanded(child: _buildEditorContent()),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (!shouldShowCalendarOverlay) _buildCalendarPanel(),
                       ],
                     ),
                   ),
-
-                  SizedBox(
-                    height: MediaQuery.of(context).size.height,
-                    child: ResizablePanelLeft(
-                      key: _calendarPanelKey,
-                      minWidth: 300,
-                      maxWidth: 400,
-                      appFocusNode: _appFocusNode,
-                      title: '',
-                      preferencesKey: 'calendar_panel',
-                      child: CalendarPanel(
-                        key: _calendarPanelStateKey,
-                        onNoteSelected: _onNoteSelected,
-                        onNoteSelectedFromPanel: (note) {
-                          if (mounted && _editorTabsKey.currentState != null) {
-                            _editorTabsKey.currentState!
-                                .suppressNextUpdateAnimations();
-                          }
-
-                          _onNoteSelected(note);
-                        },
-                        onNoteOpenInNewTab: _onNoteOpenInNewTab,
-                        onNotebookSelected: _onNotebookSelected,
-                        onNotebookSelectedFromFavorite:
-                            _onNotebookSelectedFromFavorite,
-                        onTaskSelected: _onTaskSelected,
-                        appFocusNode: _appFocusNode,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-              ),
-
               Positioned(
                 right: 0,
                 top: 0,
