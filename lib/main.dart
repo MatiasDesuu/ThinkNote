@@ -895,15 +895,21 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       return false;
     }
 
-    final isExpanded =
-        _sidebarKey.currentState?.isExpanded ?? _isNotebooksPanelExpanded;
-    return !isExpanded;
+    final panelState = _sidebarKey.currentState;
+    if (panelState != null) {
+      return !panelState.shouldRenderInline;
+    }
+
+    return !_isNotebooksPanelExpanded;
   }
 
   bool _shouldShowCalendarOverlay() {
-    final isExpanded =
-        _calendarPanelKey.currentState?.isExpanded ?? _isCalendarPanelExpanded;
-    return !isExpanded;
+    final panelState = _calendarPanelKey.currentState;
+    if (panelState != null) {
+      return !panelState.shouldRenderInline;
+    }
+
+    return !_isCalendarPanelExpanded;
   }
 
   double _getNotebooksOverlayLeftOffset() {
@@ -2016,7 +2022,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       preferencesKey: 'notebooks_panel',
       showLeftSeparator: !_immersiveModeService.isImmersiveMode,
       onExpandedChanged: (isExpanded) {
-        if (!mounted || _isNotebooksPanelExpanded == isExpanded) return;
+        if (!mounted) return;
         setState(() {
           _isNotebooksPanelExpanded = isExpanded;
         });
@@ -2100,7 +2106,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
         title: '',
         preferencesKey: 'calendar_panel',
         onExpandedChanged: (isExpanded) {
-          if (!mounted || _isCalendarPanelExpanded == isExpanded) return;
+          if (!mounted) return;
           setState(() {
             _isCalendarPanelExpanded = isExpanded;
           });

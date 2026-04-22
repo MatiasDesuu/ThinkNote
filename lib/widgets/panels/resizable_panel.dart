@@ -4,6 +4,11 @@ import 'package:bitsdojo_window/bitsdojo_window.dart';
 import '../draggable_header.dart';
 import '../custom_tooltip.dart';
 
+Duration _durationForPanelWidth(double width) {
+  final milliseconds = width.clamp(200.0, 400.0).round();
+  return Duration(milliseconds: milliseconds);
+}
+
 class ResizablePanel extends StatefulWidget {
   final Widget child;
   final double minWidth;
@@ -64,6 +69,7 @@ class ResizablePanelState extends State<ResizablePanel>
     with SingleTickerProviderStateMixin {
   late double _width;
   bool _isExpanded = true;
+  bool _isCollapsingTransition = false;
   bool _isOverlayPreviewVisible = false;
   late AnimationController _animationController;
   late Animation<double> _widthAnimation;
@@ -73,6 +79,19 @@ class ResizablePanelState extends State<ResizablePanel>
   bool _isHovered = false;
 
   bool get isExpanded => _isExpanded;
+  bool get shouldRenderInline => _isExpanded || _isCollapsingTransition;
+  bool get shouldShowAsOverlay =>
+      !_isExpanded &&
+      !_isOverlayPreviewVisible &&
+      !_animationController.isAnimating &&
+      _animationController.value == 0;
+
+  void _syncAnimationDuration() {
+    final targetDuration = _durationForPanelWidth(_width);
+    if (_animationController.duration != targetDuration) {
+      _animationController.duration = targetDuration;
+    }
+  }
 
   @override
   void initState() {
@@ -80,18 +99,32 @@ class ResizablePanelState extends State<ResizablePanel>
     _width = widget.minWidth;
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: _durationForPanelWidth(_width),
       value: 1.0,
     );
     _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+    _animationController.addStatusListener(_onAnimationStatusChanged);
     _loadSavedSettings();
+  }
+
+  void _onAnimationStatusChanged(AnimationStatus status) {
+    if (status == AnimationStatus.dismissed && _isCollapsingTransition) {
+      if (mounted) {
+        setState(() {
+          _isCollapsingTransition = false;
+        });
+      }
+    }
+
+    widget.onExpandedChanged?.call(_isExpanded);
   }
 
   @override
   void dispose() {
     _panelFocusNode.dispose();
+    _animationController.removeStatusListener(_onAnimationStatusChanged);
     _animationController.dispose();
     super.dispose();
   }
@@ -105,10 +138,12 @@ class ResizablePanelState extends State<ResizablePanel>
       _width =
           prefs.getDouble('${widget.preferencesKey}_width') ?? widget.minWidth;
       _isExpanded = savedExpanded;
+      _isCollapsingTransition = false;
       _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
         CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
       );
     });
+    _syncAnimationDuration();
     if (_isExpanded) {
       _animationController.forward();
     } else {
@@ -134,6 +169,7 @@ class ResizablePanelState extends State<ResizablePanel>
         widget.minWidth,
         widget.maxWidth,
       );
+      _syncAnimationDuration();
       _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
         CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
       );
@@ -146,10 +182,13 @@ class ResizablePanelState extends State<ResizablePanel>
 
   void togglePanel() {
     final navigatorContext = context;
+    final nextExpanded = !_isExpanded;
     setState(() {
-      _isExpanded = !_isExpanded;
+      _isExpanded = nextExpanded;
+      _isCollapsingTransition = !nextExpanded;
       _isOverlayPreviewVisible = false;
     });
+    _syncAnimationDuration();
     _saveExpandedState(_isExpanded);
     widget.onExpandedChanged?.call(_isExpanded);
 
@@ -173,8 +212,10 @@ class ResizablePanelState extends State<ResizablePanel>
     final navigatorContext = context;
     setState(() {
       _isExpanded = false;
+      _isCollapsingTransition = true;
       _isOverlayPreviewVisible = false;
     });
+    _syncAnimationDuration();
     _saveExpandedState(_isExpanded);
     widget.onExpandedChanged?.call(_isExpanded);
     _animationController.reverse();
@@ -193,8 +234,10 @@ class ResizablePanelState extends State<ResizablePanel>
     final navigatorContext = context;
     setState(() {
       _isExpanded = true;
+      _isCollapsingTransition = false;
       _isOverlayPreviewVisible = false;
     });
+    _syncAnimationDuration();
     _saveExpandedState(_isExpanded);
     widget.onExpandedChanged?.call(_isExpanded);
     _animationController.forward();
@@ -211,6 +254,7 @@ class ResizablePanelState extends State<ResizablePanel>
     if (_isExpanded || _isOverlayPreviewVisible) return;
 
     _isOverlayPreviewVisible = true;
+    _syncAnimationDuration();
     _animationController.forward();
   }
 
@@ -218,6 +262,7 @@ class ResizablePanelState extends State<ResizablePanel>
     if (_isExpanded || !_isOverlayPreviewVisible) return;
 
     _isOverlayPreviewVisible = false;
+    _syncAnimationDuration();
     _animationController.reverse();
   }
 
@@ -383,6 +428,7 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     with SingleTickerProviderStateMixin {
   late double _width;
   bool _isExpanded = true;
+  bool _isCollapsingTransition = false;
   bool _isOverlayPreviewVisible = false;
   late AnimationController _animationController;
   late Animation<double> _widthAnimation;
@@ -390,6 +436,19 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
   final FocusNode _panelFocusNode = FocusNode();
 
   bool get isExpanded => _isExpanded;
+  bool get shouldRenderInline => _isExpanded || _isCollapsingTransition;
+  bool get shouldShowAsOverlay =>
+      !_isExpanded &&
+      !_isOverlayPreviewVisible &&
+      !_animationController.isAnimating &&
+      _animationController.value == 0;
+
+  void _syncAnimationDuration() {
+    final targetDuration = _durationForPanelWidth(_width);
+    if (_animationController.duration != targetDuration) {
+      _animationController.duration = targetDuration;
+    }
+  }
 
   @override
   void initState() {
@@ -397,18 +456,32 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     _width = widget.minWidth;
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: _durationForPanelWidth(_width),
       value: 1.0,
     );
     _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+    _animationController.addStatusListener(_onAnimationStatusChanged);
     _loadSavedSettings();
+  }
+
+  void _onAnimationStatusChanged(AnimationStatus status) {
+    if (status == AnimationStatus.dismissed && _isCollapsingTransition) {
+      if (mounted) {
+        setState(() {
+          _isCollapsingTransition = false;
+        });
+      }
+    }
+
+    widget.onExpandedChanged?.call(_isExpanded);
   }
 
   @override
   void dispose() {
     _panelFocusNode.dispose();
+    _animationController.removeStatusListener(_onAnimationStatusChanged);
     _animationController.dispose();
     super.dispose();
   }
@@ -419,8 +492,10 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     final navigatorContext = context;
     setState(() {
       _isExpanded = expanded;
+      _isCollapsingTransition = !expanded;
       _isOverlayPreviewVisible = false;
     });
+    _syncAnimationDuration();
     _saveExpandedState(_isExpanded);
     widget.onExpandedChanged?.call(_isExpanded);
 
@@ -447,10 +522,12 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
       _width =
           prefs.getDouble('${widget.preferencesKey}_width') ?? widget.minWidth;
       _isExpanded = savedExpanded;
+      _isCollapsingTransition = false;
       _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
         CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
       );
     });
+    _syncAnimationDuration();
     if (_isExpanded) {
       _animationController.forward();
     } else {
@@ -476,6 +553,7 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
         widget.minWidth,
         widget.maxWidth,
       );
+      _syncAnimationDuration();
       _widthAnimation = Tween<double>(begin: 0, end: _width).animate(
         CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
       );
@@ -488,10 +566,13 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
 
   void togglePanel() {
     final navigatorContext = context;
+    final nextExpanded = !_isExpanded;
     setState(() {
-      _isExpanded = !_isExpanded;
+      _isExpanded = nextExpanded;
+      _isCollapsingTransition = !nextExpanded;
       _isOverlayPreviewVisible = false;
     });
+    _syncAnimationDuration();
     _saveExpandedState(_isExpanded);
     widget.onExpandedChanged?.call(_isExpanded);
 
@@ -515,8 +596,10 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     final navigatorContext = context;
     setState(() {
       _isExpanded = false;
+      _isCollapsingTransition = true;
       _isOverlayPreviewVisible = false;
     });
+    _syncAnimationDuration();
     _saveExpandedState(_isExpanded);
     widget.onExpandedChanged?.call(_isExpanded);
     _animationController.reverse();
@@ -535,8 +618,10 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     final navigatorContext = context;
     setState(() {
       _isExpanded = true;
+      _isCollapsingTransition = false;
       _isOverlayPreviewVisible = false;
     });
+    _syncAnimationDuration();
     _saveExpandedState(_isExpanded);
     widget.onExpandedChanged?.call(_isExpanded);
     _animationController.forward();
@@ -553,6 +638,7 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     if (_isExpanded || _isOverlayPreviewVisible) return;
 
     _isOverlayPreviewVisible = true;
+    _syncAnimationDuration();
     _animationController.forward();
   }
 
@@ -560,6 +646,7 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
     if (_isExpanded || !_isOverlayPreviewVisible) return;
 
     _isOverlayPreviewVisible = false;
+    _syncAnimationDuration();
     _animationController.reverse();
   }
 

@@ -74,12 +74,13 @@ class _ImmersiveNotesOverlayState extends State<ImmersiveNotesOverlay> {
           child: MouseRegion(
             opaque: false,
             hitTestBehavior: HitTestBehavior.translucent,
-            onEnter: (_) => _handleEnter(),
             onExit: (_) => _handleExit(),
             child: widget.useRightEdge
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
+                ? Stack(
                     children: [
+                      SizedBox(
+                        width: widget.triggerWidth,
+                      ),
                       if (widget.overlayPanel != null)
                         Padding(
                           padding: EdgeInsets.only(
@@ -87,16 +88,23 @@ class _ImmersiveNotesOverlayState extends State<ImmersiveNotesOverlay> {
                           ),
                           child: widget.overlayPanel!,
                         ),
-                      Container(
-                        color: Colors.transparent,
-                        width: widget.triggerWidth,
+                      Positioned(
+                        top: 0,
+                        bottom: 0,
+                        right: 0,
+                        child: MouseRegion(
+                          onEnter: (_) => _handleEnter(),
+                          child: Container(
+                            color: Colors.transparent,
+                            width: widget.triggerWidth,
+                          ),
+                        ),
                       ),
                     ],
                   )
                 : Stack(
                     children: [
-                      Container(
-                        color: Colors.transparent,
+                      SizedBox(
                         width: widget.triggerWidth,
                       ),
                       if (widget.overlayPanel != null)
@@ -104,6 +112,18 @@ class _ImmersiveNotesOverlayState extends State<ImmersiveNotesOverlay> {
                           padding: EdgeInsets.only(left: widget.panelLeftOffset),
                           child: widget.overlayPanel!,
                         ),
+                      Positioned(
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        child: MouseRegion(
+                          onEnter: (_) => _handleEnter(),
+                          child: Container(
+                            color: Colors.transparent,
+                            width: widget.triggerWidth,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
           ),
