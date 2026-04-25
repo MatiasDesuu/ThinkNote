@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as p;
+import 'package:flutter/gestures.dart';
 import '../../scriptmode_handler.dart';
 import '../../Settings/editor_settings_panel.dart';
 import '../../animations/animations_handler.dart';
@@ -750,7 +751,7 @@ class _NotaEditorState extends State<NotaEditor>
     _fontSizeSubscription = EditorSettingsEvents.fontSizeStream.listen((size) {
       if (mounted) {
         setState(() {
-          _fontSize = size;
+          _fontSize = _customFontSize ?? size;
         });
       }
     });
@@ -1275,6 +1276,16 @@ class _NotaEditorState extends State<NotaEditor>
     }
   }
 
+  double? get _customFontSize {
+    if (widget.tabManager == null) return null;
+    try {
+      final tab = widget.tabManager!.tabs.firstWhere((t) => t.note?.id == widget.selectedNote.id);
+      return tab.customFontSize;
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<void> _initializeEditorSettings() async {
     final cache = EditorSettingsCache.instance;
 
@@ -1284,7 +1295,7 @@ class _NotaEditorState extends State<NotaEditor>
 
     if (mounted) {
       setState(() {
-        _fontSize = cache.fontSize;
+        _fontSize = _customFontSize ?? cache.fontSize;
         _lineSpacing = cache.lineSpacing;
         _useThemeFontColor = cache.useThemeFontColor;
         _fontColor = cache.useThemeFontColor ? null : cache.fontColor;
@@ -1299,7 +1310,7 @@ class _NotaEditorState extends State<NotaEditor>
   void _loadEditorSettings() {
     final cache = EditorSettingsCache.instance;
     setState(() {
-      _fontSize = cache.fontSize;
+      _fontSize = _customFontSize ?? cache.fontSize;
       _lineSpacing = cache.lineSpacing;
       _useThemeFontColor = cache.useThemeFontColor;
       _fontColor = cache.useThemeFontColor ? null : cache.fontColor;
@@ -1315,7 +1326,7 @@ class _NotaEditorState extends State<NotaEditor>
     final cache = EditorSettingsCache.instance;
     if (cache.isInitialized) {
       setState(() {
-        _fontSize = cache.fontSize;
+        _fontSize = _customFontSize ?? cache.fontSize;
         _lineSpacing = cache.lineSpacing;
         _useThemeFontColor = cache.useThemeFontColor;
         _fontColor = cache.useThemeFontColor ? null : cache.fontColor;
@@ -1363,9 +1374,32 @@ class _NotaEditorState extends State<NotaEditor>
           builder: (context, constraints) {
             _searchManager.updateTextStyle(_textStyle);
 
-            return Focus(
-              onKeyEvent: (node, event) {
-                if (_showFindBar) {
+            return Listener(
+              onPointerSignal: (pointerSignal) {
+                if (pointerSignal is PointerScrollEvent) {
+                  final isControlPressed = HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlLeft) ||
+                                           HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlRight);
+                  if (isControlPressed) {
+                    setState(() {
+                      if (pointerSignal.scrollDelta.dy < 0) {
+                        _fontSize = (_fontSize + 1.0).clamp(8.0, 72.0);
+                      } else if (pointerSignal.scrollDelta.dy > 0) {
+                        _fontSize = (_fontSize - 1.0).clamp(8.0, 72.0);
+                      }
+                      
+                      if (widget.tabManager != null) {
+                        try {
+                          final tab = widget.tabManager!.tabs.firstWhere((t) => t.note?.id == widget.selectedNote.id);
+                          widget.tabManager!.setTabCustomFontSize(tab, _fontSize);
+                        } catch (_) {}
+                      }
+                    });
+                  }
+                }
+              },
+              child: Focus(
+                onKeyEvent: (node, event) {
+                  if (_showFindBar) {
                   if (event is KeyDownEvent) {
                     if (event.logicalKey == LogicalKeyboardKey.enter) {
                       if (!_editorFocusNode.hasFocus) {
@@ -1647,7 +1681,8 @@ class _NotaEditorState extends State<NotaEditor>
                   ),
                 ],
               ),
-            );
+            ),
+          );
           },
         ),
       ),
@@ -1804,6 +1839,7 @@ class _NotaEditorState extends State<NotaEditor>
         hintText: 'Start writing...',
         onChanged: widget.onContentChanged,
         scrollController: _scrollController,
+        scrollPhysics: const CtrlScrollPhysics(),
         searchManager: _searchManager,
         searchQuery: _findController.text,
       ),
@@ -1850,11 +1886,16 @@ class _NotaEditorState extends State<NotaEditor>
             );
 
     if (overrideText != null) {
-      return SingleChildScrollView(controller: controller, child: content);
+      return SingleChildScrollView(
+        controller: controller,
+        physics: const CtrlScrollPhysics(),
+        child: content,
+      );
     }
 
     return SingleChildScrollView(
       controller: controller,
+      physics: const CtrlScrollPhysics(),
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
@@ -2074,5 +2115,22 @@ class EditorManager {
       selectedNote: selectedNote,
       noteController: noteController,
     );
+  }
+}
+
+class CtrlScrollPhysics extends ScrollPhysics {
+  const CtrlScrollPhysics({super.parent});
+
+  @override
+  CtrlScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return CtrlScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  bool shouldAcceptUserOffset(ScrollMetrics position) {
+    final isControlPressed = HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlLeft) ||
+                             HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlRight);
+    if (isControlPressed) return false;
+    return super.shouldAcceptUserOffset(position);
   }
 }

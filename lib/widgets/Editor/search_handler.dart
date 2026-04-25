@@ -246,6 +246,7 @@ class HighlightedTextField extends StatelessWidget {
   final String? searchQuery;
   final VoidCallback onChanged;
   final ScrollController scrollController;
+  final ScrollPhysics? scrollPhysics;
 
   const HighlightedTextField({
     super.key,
@@ -258,6 +259,7 @@ class HighlightedTextField extends StatelessWidget {
     required this.scrollController,
     this.searchManager,
     this.searchQuery,
+    this.scrollPhysics,
   });
 
   @override
@@ -270,6 +272,7 @@ class HighlightedTextField extends StatelessWidget {
       maxLines: null,
       expands: true,
       scrollController: scrollController,
+      scrollPhysics: scrollPhysics,
       decoration: InputDecoration(
         border: InputBorder.none,
         hintText: hintText,

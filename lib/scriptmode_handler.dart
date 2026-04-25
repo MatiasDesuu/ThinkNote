@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'widgets/Editor/unified_text_handler.dart';
 import 'database/models/note.dart';
 import 'Settings/editor_settings_panel.dart' show EditorSettingsCache;
@@ -57,6 +58,7 @@ class ScriptModeHandlerDesktop {
 
     return ListView.separated(
       controller: controller,
+      physics: const CtrlScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: blocks.length,
       separatorBuilder: (context, index) => const SizedBox(height: 8),
@@ -191,5 +193,22 @@ class DurationEstimatorDesktop extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class CtrlScrollPhysics extends ScrollPhysics {
+  const CtrlScrollPhysics({super.parent});
+
+  @override
+  CtrlScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return CtrlScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  bool shouldAcceptUserOffset(ScrollMetrics position) {
+    final isControlPressed = HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlLeft) ||
+                             HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlRight);
+    if (isControlPressed) return false;
+    return super.shouldAcceptUserOffset(position);
   }
 }

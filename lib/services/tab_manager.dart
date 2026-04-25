@@ -481,6 +481,20 @@ class TabManager extends ChangeNotifier {
     }
   }
 
+  void setTabCustomFontSize(EditorTab tab, double? fontSize) {
+    final index = _tabs.indexOf(tab);
+    if (index != -1) {
+      final updatedTab = tab.copyWith(customFontSize: fontSize);
+      _tabs[index] = updatedTab;
+
+      if (_activeTab == tab) {
+        _activeTab = updatedTab;
+      }
+
+      _saveTabsToStorage();
+    }
+  }
+
   void updateNoteInTab(Note updatedNote) {
     final index = _tabs.indexWhere(
       (tab) => tab.note != null && tab.note!.id == updatedNote.id,
@@ -625,6 +639,7 @@ class TabManager extends ChangeNotifier {
           'isEditorCentered': tab.isEditorCentered,
           'isSplitView': tab.isSplitView,
           'lastAccessed': tab.lastAccessed.toIso8601String(),
+          'customFontSize': tab.customFontSize,
         };
 
         if (tab.note != null) {
@@ -673,6 +688,7 @@ class TabManager extends ChangeNotifier {
           final lastAccessed = DateTime.parse(
             tabData['lastAccessed'] as String,
           );
+          final customFontSize = (tabData['customFontSize'] as num?)?.toDouble();
 
           Note? note;
           if (noteId != null) {
@@ -695,6 +711,7 @@ class TabManager extends ChangeNotifier {
               isSplitView: isSplitView,
               lastAccessed: lastAccessed,
               tabId: tabId,
+              customFontSize: customFontSize,
             );
             loadedTabs.add(tab);
           }

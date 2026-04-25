@@ -15,6 +15,7 @@ class EditorTab {
   final bool isSplitView;
   final DateTime lastAccessed;
   final String? tabId;
+  final double? customFontSize;
 
   const EditorTab({
     this.note,
@@ -29,6 +30,7 @@ class EditorTab {
     this.isSplitView = false,
     required this.lastAccessed,
     this.tabId,
+    this.customFontSize,
   });
 
   EditorTab copyWith({
@@ -44,6 +46,7 @@ class EditorTab {
     bool? isSplitView,
     DateTime? lastAccessed,
     String? tabId,
+    double? customFontSize,
   }) {
     return EditorTab(
       note: note ?? this.note,
@@ -58,6 +61,7 @@ class EditorTab {
       isSplitView: isSplitView ?? this.isSplitView,
       lastAccessed: lastAccessed ?? this.lastAccessed,
       tabId: tabId ?? this.tabId,
+      customFontSize: customFontSize ?? this.customFontSize,
     );
   }
 
