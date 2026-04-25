@@ -35,6 +35,11 @@ class _ToggleSidebarIntent extends Intent {
   const _ToggleSidebarIntent();
 }
 
+Duration _durationForPanelWidth(double width) {
+  final milliseconds = width.clamp(200.0, 400.0).round();
+  return Duration(milliseconds: milliseconds);
+}
+
 class ThinksScreen extends StatefulWidget {
   final Directory rootDir;
   final Function(File) onOpenNote;
@@ -81,7 +86,7 @@ class ThinksScreenState extends State<ThinksScreen>
     super.initState();
 
     _sidebarAnimController = AnimationController(
-      duration: const Duration(milliseconds: 200),
+      duration: _durationForPanelWidth(_sidebarWidth),
       vsync: this,
       value: 1.0,
     );
@@ -148,6 +153,13 @@ class ThinksScreenState extends State<ThinksScreen>
     _appFocusNode.dispose();
     _sidebarAnimController.dispose();
     super.dispose();
+  }
+
+  void _syncAnimationDuration() {
+    final targetDuration = _durationForPanelWidth(_sidebarWidth);
+    if (_sidebarAnimController.duration != targetDuration) {
+      _sidebarAnimController.duration = targetDuration;
+    }
   }
 
   Future<void> _loadThinks() async {
@@ -353,6 +365,7 @@ class ThinksScreenState extends State<ThinksScreen>
   void _onDragUpdate(DragUpdateDetails details) {
     setState(() {
       _sidebarWidth = (_sidebarWidth + details.delta.dx).clamp(200.0, 400.0);
+      _syncAnimationDuration();
     });
   }
 
@@ -361,6 +374,7 @@ class ThinksScreenState extends State<ThinksScreen>
   }
 
   void _toggleSidebar() {
+    _syncAnimationDuration();
     if (_isSidebarVisible) {
       _sidebarAnimController.reverse().then((_) {
         setState(() {

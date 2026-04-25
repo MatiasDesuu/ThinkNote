@@ -34,6 +34,11 @@ class LinksScreenDesktopDB extends StatefulWidget {
   State<LinksScreenDesktopDB> createState() => LinksScreenDesktopDBState();
 }
 
+Duration _durationForPanelWidth(double width) {
+  final milliseconds = width.clamp(200.0, 400.0).round();
+  return Duration(milliseconds: milliseconds);
+}
+
 class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
@@ -61,7 +66,7 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
     _linksHandler.resetSearch();
 
     _sidebarAnimController = AnimationController(
-      duration: const Duration(milliseconds: 200),
+      duration: _durationForPanelWidth(_sidebarWidth),
       vsync: this,
       value: 1.0,
     );
@@ -78,6 +83,13 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
         _loadBookmarks();
       }
     });
+  }
+
+  void _syncAnimationDuration() {
+    final targetDuration = _durationForPanelWidth(_sidebarWidth);
+    if (_sidebarAnimController.duration != targetDuration) {
+      _sidebarAnimController.duration = targetDuration;
+    }
   }
 
   Future<void> _loadSidebarSettings() async {
@@ -98,6 +110,7 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
   void _onDragUpdate(DragUpdateDetails details) {
     setState(() {
       _sidebarWidth = (_sidebarWidth + details.delta.dx).clamp(200.0, 400.0);
+      _syncAnimationDuration();
     });
   }
 
@@ -106,6 +119,7 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
   }
 
   void _toggleSidebar() {
+    _syncAnimationDuration();
     if (_isSidebarVisible) {
       _sidebarAnimController.reverse().then((_) {
         setState(() {
