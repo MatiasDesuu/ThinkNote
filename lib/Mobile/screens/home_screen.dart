@@ -896,23 +896,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (rawIcon is IconData) {
       return rawIcon;
     }
-
-    // Handles icon-like objects (e.g. FaIconData) that expose IconData fields.
-    try {
-      final codePoint = rawIcon.codePoint as int;
-      final fontFamily = rawIcon.fontFamily as String?;
-      final fontPackage = rawIcon.fontPackage as String?;
-      final matchTextDirection = rawIcon.matchTextDirection as bool? ?? false;
-
-      return IconData(
-        codePoint,
-        fontFamily: fontFamily,
-        fontPackage: fontPackage,
-        matchTextDirection: matchTextDirection,
-      );
-    } catch (_) {
-      return Icons.folder_rounded;
-    }
+    return Icons.folder_rounded;
   }
 
   Future<void> _toggleSortMode() async {
