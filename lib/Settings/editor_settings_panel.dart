@@ -879,12 +879,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 Row(
                   children: [
-                    Icon(
-                      Icons.center_focus_strong_rounded,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -912,12 +906,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 Row(
                   children: [
-                    Icon(
-                      Icons.construction_rounded,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -945,12 +933,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 Row(
                   children: [
-                    Icon(
-                      Icons.save_rounded,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -979,12 +961,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 if (Platform.isWindows) ...[
                   Row(
                     children: [
-                      Icon(
-                        Icons.launch_rounded,
-                        size: 20,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1012,12 +988,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 Row(
                   children: [
-                    Icon(
-                      Icons.book_rounded,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1045,12 +1015,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 Row(
                   children: [
-                    Icon(
-                      Icons.description_rounded,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1078,12 +1042,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 Row(
                   children: [
-                    Icon(
-                      Icons.tab_unselected_rounded,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1111,12 +1069,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 Row(
                   children: [
-                    Icon(
-                      Icons.unfold_more_rounded,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1147,12 +1099,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 Row(
                   children: [
-                    Icon(
-                      Icons.open_in_new_rounded,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1183,12 +1129,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 Row(
                   children: [
-                    Icon(
-                      Icons.link_rounded,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1217,52 +1157,48 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 const SizedBox(height: 20),
 
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.speed_rounded,
-                          size: 20,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 12),
-                        Text('Script mode words per second', style: textStyle),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 32.0),
-                      child: Text(
-                        'Adjust the reading speed for script mode duration estimation',
-                        style: TextStyle(
-                          color: colorScheme.onSurfaceVariant,
-                          fontSize: 13,
-                        ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Script mode words per second',
+                            style: textStyle,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Adjust the reading speed for script mode duration estimation',
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const SizedBox(width: 16),
+                              Text(
+                                '${_wordsPerSecond.toStringAsFixed(1)} WPS',
+                                style: TextStyle(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Expanded(
+                                child: Slider(
+                                  value: _wordsPerSecond,
+                                  min: 1.0,
+                                  max: 10.0,
+                                  divisions: 90,
+                                  onChanged: _updateWordsPerSecond,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const SizedBox(width: 32),
-                        Text(
-                          '${_wordsPerSecond.toStringAsFixed(1)} WPS',
-                          style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Expanded(
-                          child: Slider(
-                            value: _wordsPerSecond,
-                            min: 1.0,
-                            max: 10.0,
-                            divisions: 90,
-                            onChanged: _updateWordsPerSecond,
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
@@ -1274,30 +1210,21 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          Icons.timer_rounded,
-                          size: 20,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 12),
                         Text('Preview update delay', style: textStyle),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 32.0),
-                      child: Text(
-                        'Adjust how fast the split view preview updates while typing',
-                        style: TextStyle(
-                          color: colorScheme.onSurfaceVariant,
-                          fontSize: 13,
-                        ),
+                    Text(
+                      'Adjust how fast the split view preview updates while typing',
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 13,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const SizedBox(width: 32),
+                        const SizedBox(width: 16),
                         Text(
                           '${(_splitViewUpdateDelay / 1000).toStringAsFixed(2)} s',
                           style: TextStyle(
@@ -1358,12 +1285,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 Row(
                   children: [
-                    Icon(
-                      Icons.format_size_rounded,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
                     Text(
                       'Font size:',
                       style: textStyle?.copyWith(fontWeight: FontWeight.bold),
@@ -1373,7 +1294,14 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const SizedBox(width: 32),
+                    const SizedBox(width: 16),
+                    Text(
+                      '${_fontSize.round()} pt',
+                      style: TextStyle(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     Expanded(
                       child: Slider(
                         value: _fontSize,
@@ -1384,27 +1312,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
                         onChanged: _updateFontSize,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: colorScheme.outline.withAlpha(51),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        '${_fontSize.round()} pt',
-                        style: textStyle?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
 
@@ -1412,12 +1319,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 Row(
                   children: [
-                    Icon(
-                      Icons.format_line_spacing_rounded,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
                     Text(
                       'Line spacing:',
                       style: textStyle?.copyWith(fontWeight: FontWeight.bold),
@@ -1427,7 +1328,14 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const SizedBox(width: 32),
+                    const SizedBox(width: 16),
+                    Text(
+                      'x${_lineSpacing.toStringAsFixed(1)}',
+                      style: TextStyle(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     Expanded(
                       child: Slider(
                         value: _lineSpacing,
@@ -1438,27 +1346,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
                         onChanged: _updateLineSpacing,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: colorScheme.outline.withAlpha(51),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        'x${_lineSpacing.toStringAsFixed(1)}',
-                        style: textStyle?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
 
@@ -1466,12 +1353,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 Row(
                   children: [
-                    Icon(
-                      Icons.palette_rounded,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
                     Text(
                       'Text color:',
                       style: textStyle?.copyWith(fontWeight: FontWeight.bold),
@@ -1482,7 +1363,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 Row(
                   children: [
-                    const SizedBox(width: 32),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1509,7 +1389,7 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 if (!_useThemeFontColor) ...[
                   const SizedBox(height: 16),
                   Padding(
-                    padding: const EdgeInsets.only(left: 32.0),
+                    padding: const EdgeInsets.only(left: 16.0),
                     child: Text(
                       'Select custom color:',
                       style: textStyle?.copyWith(fontWeight: FontWeight.bold),
@@ -1517,7 +1397,7 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
                   ),
                   const SizedBox(height: 8),
                   Padding(
-                    padding: const EdgeInsets.only(left: 32.0),
+                    padding: const EdgeInsets.only(left: 16.0),
                     child: _buildColorGrid(),
                   ),
                 ],
@@ -1526,12 +1406,6 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 Row(
                   children: [
-                    Icon(
-                      Icons.font_download_rounded,
-                      size: 20,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
                     Text(
                       'Font family:',
                       style: textStyle?.copyWith(fontWeight: FontWeight.bold),
@@ -1540,7 +1414,7 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
                 ),
                 const SizedBox(height: 8),
                 Padding(
-                  padding: const EdgeInsets.only(left: 32.0),
+                  padding: const EdgeInsets.only(left: 16.0),
                   child: MouseRegion(
                     cursor: SystemMouseCursors.click,
                     child: Material(

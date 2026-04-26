@@ -252,12 +252,6 @@ class PersonalizationSettingsPanelState
 
                   Row(
                     children: [
-                      Icon(
-                        Icons.toggle_on_rounded,
-                        size: 20,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,12 +280,6 @@ class PersonalizationSettingsPanelState
 
                     Row(
                       children: [
-                        Icon(
-                          Icons.color_lens_rounded,
-                          size: 20,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 12),
                         Text(
                           'Flavor',
                           style: textStyle?.copyWith(
@@ -302,7 +290,7 @@ class PersonalizationSettingsPanelState
                     ),
                     const SizedBox(height: 8),
                     Padding(
-                      padding: const EdgeInsets.only(left: 32.0),
+                      padding: const EdgeInsets.only(left: 16.0),
                       child: _buildFlavorSelector(),
                     ),
 
@@ -310,12 +298,6 @@ class PersonalizationSettingsPanelState
 
                     Row(
                       children: [
-                        Icon(
-                          Icons.colorize_rounded,
-                          size: 20,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 12),
                         Text(
                           'Accent Color',
                           style: textStyle?.copyWith(
@@ -326,7 +308,7 @@ class PersonalizationSettingsPanelState
                     ),
                     const SizedBox(height: 8),
                     Padding(
-                      padding: const EdgeInsets.only(left: 32.0),
+                      padding: const EdgeInsets.only(left: 16.0),
                       child: _buildAccentSelector(),
                     ),
                   ],
@@ -370,12 +352,6 @@ class PersonalizationSettingsPanelState
 
                   Row(
                     children: [
-                      Icon(
-                        Icons.brightness_7_rounded,
-                        size: 20,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 12),
                       Text(
                         'Strong Colors',
                         style: textStyle?.copyWith(fontWeight: FontWeight.bold),
@@ -384,7 +360,7 @@ class PersonalizationSettingsPanelState
                   ),
                   const SizedBox(height: 8),
                   Padding(
-                    padding: const EdgeInsets.only(left: 32.0),
+                    padding: const EdgeInsets.only(left: 16.0),
                     child: _buildColorGrid(0, 17),
                   ),
 
@@ -392,12 +368,6 @@ class PersonalizationSettingsPanelState
 
                   Row(
                     children: [
-                      Icon(
-                        Icons.brightness_5_rounded,
-                        size: 20,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 12),
                       Text(
                         'Soft Colors',
                         style: textStyle?.copyWith(fontWeight: FontWeight.bold),
@@ -406,7 +376,7 @@ class PersonalizationSettingsPanelState
                   ),
                   const SizedBox(height: 8),
                   Padding(
-                    padding: const EdgeInsets.only(left: 32.0),
+                    padding: const EdgeInsets.only(left: 16.0),
                     child: _buildColorGrid(18, 35),
                   ),
                 ],
@@ -449,14 +419,6 @@ class PersonalizationSettingsPanelState
 
                   Row(
                     children: [
-                      Icon(
-                        _isDarkTheme
-                            ? Icons.light_mode_rounded
-                            : Icons.dark_mode_rounded,
-                        size: 20,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 12),
                       Expanded(child: Text('Light theme', style: textStyle)),
                       Switch(
                         value: !_isDarkTheme,
@@ -469,12 +431,6 @@ class PersonalizationSettingsPanelState
 
                   Row(
                     children: [
-                      Icon(
-                        Icons.contrast_rounded,
-                        size: 20,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -499,12 +455,6 @@ class PersonalizationSettingsPanelState
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        Icon(
-                          Icons.color_lens_rounded,
-                          size: 20,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -532,12 +482,6 @@ class PersonalizationSettingsPanelState
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          Icon(
-                            Icons.auto_fix_high_rounded,
-                            size: 20,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -998,7 +942,6 @@ class PersonalizationSettingsPanelState
         !_isDarkTheme ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
     final foregroundColor =
         !_isDarkTheme ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
-    final modeText = !_isDarkTheme ? 'Light Mode' : 'Dark Mode';
 
     return Column(
       children: [
@@ -1012,26 +955,6 @@ class PersonalizationSettingsPanelState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.book_rounded, color: foregroundColor, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'E-Ink Preview - $modeText',
-                    style: TextStyle(
-                      color: foregroundColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Pure black and white theme designed for e-ink displays',
-                style: TextStyle(color: foregroundColor, fontSize: 14),
-              ),
-              const SizedBox(height: 12),
               _buildEInkColorRow(
                 'Background',
                 backgroundColor,

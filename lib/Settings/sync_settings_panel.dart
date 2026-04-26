@@ -302,12 +302,6 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
 
                   Row(
                     children: [
-                      Icon(
-                        Icons.schedule_rounded,
-                        size: 20,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -339,30 +333,21 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
                       children: [
                         Row(
                           children: [
-                            Icon(
-                              Icons.timer_rounded,
-                              size: 20,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(width: 12),
                             Text('Auto sync interval', style: textStyle),
                           ],
                         ),
                         const SizedBox(height: 4),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 32.0),
-                          child: Text(
-                            'Adjust how often automatic sync occurs',
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 13,
-                            ),
+                        Text(
+                          'Adjust how often automatic sync occurs',
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
+                            fontSize: 13,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            const SizedBox(width: 32),
+                            const SizedBox(width: 16),
                             Text(
                               _formatInterval(_autoSyncIntervalMinutes),
                               style: TextStyle(
@@ -393,12 +378,6 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
 
                   Row(
                     children: [
-                      Icon(
-                        Icons.visibility_rounded,
-                        size: 20,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
