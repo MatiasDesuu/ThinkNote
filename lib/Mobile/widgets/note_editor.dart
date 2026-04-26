@@ -934,14 +934,10 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                           CrossAxisAlignment.end,
                                       children: [
                                         if (widget.isEditing && !_isReadMode) ...[
-                                          FloatingActionButton(
+                                          SaveButton(
                                             key: const ValueKey('save'),
-                                            heroTag: null,
+                                            controller: _saveController,
                                             onPressed: () => _handleSave(),
-                                            elevation: 4,
-                                            child: const Icon(
-                                              Icons.save_rounded,
-                                            ),
                                           ),
                                           const SizedBox(height: 16),
                                         ],

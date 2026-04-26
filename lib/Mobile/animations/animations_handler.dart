@@ -1,84 +1,154 @@
 import 'package:flutter/material.dart';
 
 class SaveAnimationController {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _rotationAnimation;
+  late Animation<double> _progressOpacityAnimation;
   final TickerProvider vsync;
-  late final AnimationController _controller;
-  late final Animation<double> _scaleAnimation;
-  late final Animation<double> _opacityAnimation;
-  bool _isAnimating = false;
+  bool _isDisposed = false;
 
   SaveAnimationController({required this.vsync}) {
     _controller = AnimationController(
+      duration: const Duration(milliseconds: 1800),
       vsync: vsync,
-      duration: const Duration(milliseconds: 800),
     );
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.8).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeInOut),
-        reverseCurve: const Interval(0.5, 1.0, curve: Curves.easeInOut),
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeInBack)),
+        weight: 20,
       ),
-    );
+      TweenSequenceItem(tween: ConstantTween<double>(0.0), weight: 60),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 20,
+      ),
+    ]).animate(_controller);
 
-    _opacityAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+    _progressOpacityAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: ConstantTween<double>(0.0), weight: 20),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
+        weight: 10,
+      ),
+      TweenSequenceItem(tween: ConstantTween<double>(1.0), weight: 40),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 10,
+      ),
+      TweenSequenceItem(tween: ConstantTween<double>(0.0), weight: 20),
+    ]).animate(_controller);
+
+    _rotationAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeInOut),
-        reverseCurve: const Interval(0.5, 1.0, curve: Curves.easeInOut),
+        curve: const Interval(0.2, 0.8, curve: Curves.easeInOutCubic),
       ),
     );
   }
 
-  bool get isAnimating => _isAnimating;
+  bool get isAnimating =>
+      !_isDisposed && (_controller.isAnimating || _controller.value > 0);
+  AnimationController get controller => _controller;
+  Animation<double> get scaleAnimation => _scaleAnimation;
+  Animation<double> get progressOpacityAnimation => _progressOpacityAnimation;
+  Animation<double> get rotationAnimation => _rotationAnimation;
 
   void start() {
-    _isAnimating = true;
-    _controller.forward();
+    if (!_isDisposed) {
+      _controller.animateTo(0.5, duration: const Duration(milliseconds: 700));
+    }
   }
 
   Future<void> complete() async {
-    await _controller.reverse();
-    _isAnimating = false;
+    if (!_isDisposed) {
+      await _controller.forward(from: _controller.value);
+      _controller.reset();
+    }
   }
 
   void reset() {
-    _controller.reset();
-    _isAnimating = false;
+    if (!_isDisposed) {
+      _controller.reset();
+    }
   }
 
   void dispose() {
-    _controller.dispose();
+    if (!_isDisposed) {
+      _isDisposed = true;
+      _controller.dispose();
+    }
   }
 }
 
 class SaveButton extends StatelessWidget {
-  final SaveAnimationController controller;
   final VoidCallback onPressed;
+  final SaveAnimationController controller;
 
   const SaveButton({
     super.key,
-    required this.controller,
     required this.onPressed,
+    required this.controller,
   });
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller._controller,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: controller._scaleAnimation.value,
-          child: Opacity(
-            opacity: controller._opacityAnimation.value,
-            child: FloatingActionButton(
-              heroTag: 'saveButton',
-              onPressed: onPressed,
-              child: const Icon(Icons.save_rounded),
+    return FloatingActionButton(
+      heroTag: 'saveButton',
+      onPressed: controller.isAnimating ? null : onPressed,
+      child: AnimatedBuilder(
+        animation: controller.controller,
+        builder: (context, child) {
+          final colorScheme = Theme.of(context).colorScheme;
+          final primaryColor = colorScheme.onPrimaryContainer;
+          final value = controller.controller.value;
+
+          return SizedBox(
+            width: 24,
+            height: 24,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (controller.progressOpacityAnimation.value > 0)
+                  Opacity(
+                    opacity: controller.progressOpacityAnimation.value,
+                    child: RotationTransition(
+                      turns: controller.rotationAnimation,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0,
+                        strokeCap: StrokeCap.round,
+                        value: null,
+                        valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                      ),
+                    ),
+                  ),
+                if (value <= 0.2 || (value >= 0.8))
+                  Transform.scale(
+                    scale: controller.scaleAnimation.value,
+                    child: Icon(
+                      Icons.save_rounded,
+                      size: 24,
+                      color: primaryColor,
+                    ),
+                  ),
+              ],
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
