@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../theme_handler.dart' as theme_handler;
 
 const List<Color> materialYouColors = [
@@ -201,6 +202,79 @@ class PersonalizationSettingsPanelState
     await _loadCurrentSettings();
   }
 
+  Future<void> _openCustomColorPicker() async {
+    Color tempColor = _currentColor;
+    final hexController = TextEditingController();
+
+    void updateHex() {
+      hexController.text =
+          tempColor.toARGB32().toRadixString(16).substring(2).toUpperCase();
+    }
+
+    updateHex();
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Custom color'),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  HueRingPicker(
+                    pickerColor: tempColor,
+                    onColorChanged: (color) {
+                      setState(() {
+                        tempColor = color;
+                        updateHex();
+                      });
+                    },
+                    enableAlpha: false,
+                    displayThumbColor: true,
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  TextField(
+                    controller: hexController,
+                    decoration: const InputDecoration(
+                      labelText: 'HEX',
+                      prefixText: '#',
+                    ),
+                    onSubmitted: (value) {
+                      try {
+                        final color = Color(int.parse('FF$value', radix: 16));
+                        setState(() {
+                          tempColor = color;
+                          updateHex();
+                        });
+                      } catch (_) {}
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _updateColor(tempColor);
+              },
+              child: const Text('Apply'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
@@ -378,6 +452,55 @@ class PersonalizationSettingsPanelState
                   Padding(
                     padding: const EdgeInsets.only(left: 16.0),
                     child: _buildColorGrid(18, 35),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  Row(
+                    children: [
+                      Text(
+                        'Custom Color',
+                        style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: _currentColor,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.outline,
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            '#${_currentColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: _openCustomColorPicker,
+                          icon: const Icon(Icons.colorize_rounded),
+                          label: const Text('Pick'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
