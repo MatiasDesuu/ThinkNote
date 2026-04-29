@@ -22,14 +22,22 @@ class DatabaseHelper {
     _onDatabaseChanged.add(null);
   }
 
+  static Future<sqlite.Database>? _initDbFuture;
+
   Future<sqlite.Database> get database async {
     if (_isDisposed) {
       _isDisposed = false;
       _database = null;
+      _initDbFuture = null;
     }
     if (_database != null) return _database!;
-    _database = await _initDatabase();
-    _activeConnections.add(_database!);
+    
+    _initDbFuture ??= _initDatabase();
+    _database = await _initDbFuture;
+    
+    if (!_activeConnections.contains(_database!)) {
+      _activeConnections.add(_database!);
+    }
     return _database!;
   }
 

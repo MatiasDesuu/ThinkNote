@@ -291,19 +291,29 @@ void main() async {
     );
   }
 
-  final iconSidebarState = GlobalIconSidebarState();
-  await iconSidebarState.initialize();
+  Future<void> initializeAppBackground() async {
+    try {
+      final iconSidebarState = GlobalIconSidebarState();
+      await iconSidebarState.initialize();
 
-  try {
-    await DatabaseService().initializeDatabase();
-    final syncService = SyncService();
-    await syncService.initialize();
+      await DatabaseService().initializeDatabase();
+      final syncService = SyncService();
+      await syncService.initialize();
 
-    final immersiveModeService = ImmersiveModeService();
-    await immersiveModeService.initialize();
-  } catch (e) {
-    debugPrint('Error al inicializar la base de datos: $e');
+      final immersiveModeService = ImmersiveModeService();
+      await immersiveModeService.initialize();
+    } catch (e) {
+      debugPrint('Error initializing background services: $e');
+    }
+
+    try {
+      await EditorSettings.preloadSettings();
+    } catch (e) {
+      debugPrint('Error initializing editor settings cache: $e');
+    }
   }
+
+  initializeAppBackground();
 
   final themeColor = await ThemeManager.getThemeColor();
   final themeBrightness = await ThemeManager.getThemeBrightness();
@@ -327,12 +337,6 @@ void main() async {
     catppuccinAccent: catppuccinAccent,
     einkEnabled: einkEnabled,
   );
-
-  try {
-    await EditorSettings.preloadSettings();
-  } catch (e) {
-    debugPrint('Error initializing editor settings cache: $e');
-  }
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await windowManager.ensureInitialized();
@@ -2168,56 +2172,66 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                 isImmersiveMode: shouldShowNotebooksOverlay,
                 overlayPanel: _buildNotebooksPanel(),
                 onExpand: () => _sidebarKey.currentState?.showOverlayPreview(),
-                onCollapse: () => _sidebarKey.currentState?.hideOverlayPreview(),
+                onCollapse:
+                    () => _sidebarKey.currentState?.hideOverlayPreview(),
                 panelLeftOffset: notebooksOverlayLeftOffset,
                 child: ImmersiveNotesOverlay(
-                  isImmersiveMode: _immersiveModeService.isImmersiveMode &&
+                  isImmersiveMode:
+                      _immersiveModeService.isImmersiveMode &&
                       !_isNotesForcedOpenInImmersive,
                   overlayPanel: _buildNotesPanel(),
                   onExpand: () => _notesPanelKey.currentState?.expandPanel(),
-                  onCollapse: () => _notesPanelKey.currentState?.collapsePanel(),
+                  onCollapse:
+                      () => _notesPanelKey.currentState?.collapsePanel(),
                   child: ImmersiveNotesOverlay(
                     isImmersiveMode: shouldShowCalendarOverlay,
                     overlayPanel: _buildCalendarPanel(),
                     useRightEdge: true,
                     onExpand:
-                        () => _calendarPanelKey.currentState?.showOverlayPreview(),
+                        () =>
+                            _calendarPanelKey.currentState
+                                ?.showOverlayPreview(),
                     onCollapse:
-                        () => _calendarPanelKey.currentState?.hideOverlayPreview(),
+                        () =>
+                            _calendarPanelKey.currentState
+                                ?.hideOverlayPreview(),
                     child: Row(
                       children: [
                         ResizableIconSidebar(
-                        key: _iconSidebarKey,
-                        rootDir: Directory.current,
-                        onOpenNote: (note) => _onNoteSelected(note as Note),
-                        onOpenFolder:
-                            (folder) => _onNotebookSelected(folder as Notebook),
-                        onNotebookSelected: _onNotebookSelected,
-                        onNoteSelected: _onNoteSelected,
-                        onTaskSelected: _onTaskSelected,
-                        onNoteSelectedWithSearch: _onNoteSelectedWithSearch,
-                        onThemeUpdated: widget.onThemeUpdated,
-                        onFavoriteRemoved: () {
-                          if (mounted) {
-                            setState(() {});
-                          }
-                        },
-                        onCreateNewNote: createNewNote,
-                        onCreateNewNotebook: createNewNotebook,
-                        onCreateNewTodo: createNewTodo,
-                        onOpenTrash: _toggleTrashPanel,
-                        onTrashReload:
-                            () => _trashPanelStateKey.currentState?.reloadTrash(),
-                        onOpenFavorites: _toggleFavoritesPanel,
-                        onOpenTemplates: _toggleTemplatesPanel,
-                        onFavoritesReload:
-                            () =>
-                                _favoritesPanelStateKey.currentState
-                                    ?.reloadFavorites(),
-                        showBackButton: false,
-                        calendarPanelKey: _calendarPanelKey,
-                        appFocusNode: _appFocusNode,
-                        onForceSync: _refreshAllPanels,
+                          key: _iconSidebarKey,
+                          rootDir: Directory.current,
+                          onOpenNote: (note) => _onNoteSelected(note as Note),
+                          onOpenFolder:
+                              (folder) =>
+                                  _onNotebookSelected(folder as Notebook),
+                          onNotebookSelected: _onNotebookSelected,
+                          onNoteSelected: _onNoteSelected,
+                          onTaskSelected: _onTaskSelected,
+                          onNoteSelectedWithSearch: _onNoteSelectedWithSearch,
+                          onThemeUpdated: widget.onThemeUpdated,
+                          onFavoriteRemoved: () {
+                            if (mounted) {
+                              setState(() {});
+                            }
+                          },
+                          onCreateNewNote: createNewNote,
+                          onCreateNewNotebook: createNewNotebook,
+                          onCreateNewTodo: createNewTodo,
+                          onOpenTrash: _toggleTrashPanel,
+                          onTrashReload:
+                              () =>
+                                  _trashPanelStateKey.currentState
+                                      ?.reloadTrash(),
+                          onOpenFavorites: _toggleFavoritesPanel,
+                          onOpenTemplates: _toggleTemplatesPanel,
+                          onFavoritesReload:
+                              () =>
+                                  _favoritesPanelStateKey.currentState
+                                      ?.reloadFavorites(),
+                          showBackButton: false,
+                          calendarPanelKey: _calendarPanelKey,
+                          appFocusNode: _appFocusNode,
+                          onForceSync: _refreshAllPanels,
                         ),
                         if (!shouldShowNotebooksOverlay) _buildNotebooksPanel(),
                         if (!_immersiveModeService.isImmersiveMode ||
