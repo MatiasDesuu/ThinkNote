@@ -120,6 +120,14 @@ class WebDAVService {
         if (await tempFile.exists()) {
           await tempFile.delete();
         }
+        final tempWalFile = io.File('$tempPath-wal');
+        if (await tempWalFile.exists()) {
+          await tempWalFile.delete();
+        }
+        final tempShmFile = io.File('$tempPath-shm');
+        if (await tempShmFile.exists()) {
+          await tempShmFile.delete();
+        }
       }
 
       DatabaseHelper.notifyDatabaseChanged();
@@ -146,6 +154,7 @@ class WebDAVService {
   }
 
   Future<void> _uploadLocalFile(String dbPath) async {
+    await _dbHelper.checkpoint();
     final localFile = io.File(dbPath);
     if (!await localFile.exists()) {
       throw Exception('Local file not found at $dbPath');
@@ -166,11 +175,21 @@ class WebDAVService {
   Future<void> _downloadRemoteFile(String dbPath) async {
     final localFile = io.File(dbPath);
     final backupPath = '$dbPath.backup';
+    final walFile = io.File('$dbPath-wal');
+    final shmFile = io.File('$dbPath-shm');
 
     try {
+      await _dbHelper.close();
+
       if (await localFile.exists()) {
         await localFile.copy(backupPath);
-        await _dbHelper.close();
+      }
+
+      if (await walFile.exists()) {
+        await walFile.delete();
+      }
+      if (await shmFile.exists()) {
+        await shmFile.delete();
       }
 
       await _client.read2File('/$_dbFileName', dbPath);
@@ -248,6 +267,15 @@ class WebDAVService {
     }
 
     await _dbHelper.close();
+
+    final walFile = io.File('$dbPath-wal');
+    if (await walFile.exists()) {
+      await walFile.delete();
+    }
+    final shmFile = io.File('$dbPath-shm');
+    if (await shmFile.exists()) {
+      await shmFile.delete();
+    }
 
     try {
       await _client.read2File('/$_dbFileName', dbPath);

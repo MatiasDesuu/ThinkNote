@@ -705,4 +705,14 @@ class DatabaseHelper {
     _database = null;
     _isDisposed = true;
   }
+
+  Future<void> checkpoint() async {
+    if (_database != null && !_isDisposed) {
+      try {
+        _database!.execute('PRAGMA wal_checkpoint(TRUNCATE);');
+      } catch (e) {
+        developer.log('Error during checkpoint: $e', name: 'DatabaseHelper');
+      }
+    }
+  }
 }
