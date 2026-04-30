@@ -646,6 +646,8 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                 fontSize: 18,
                               ),
                               textCapitalization: TextCapitalization.sentences,
+                              maxLines: 1,
+                              textInputAction: TextInputAction.next,
                               decoration: InputDecoration(
                                 border: InputBorder.none,
                                 hintText:
@@ -656,6 +658,11 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                               ),
                               enabled: widget.isEditing && !_isReadMode,
                               onChanged: (_) => _notifyTypingActivity(),
+                              onSubmitted: (_) {
+                                if (widget.isEditing && !_isReadMode) {
+                                  widget.contentFocusNode.requestFocus();
+                                }
+                              },
                             ),
                             leading: IconButton(
                               icon: const Icon(Icons.arrow_back_rounded),
