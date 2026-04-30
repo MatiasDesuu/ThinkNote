@@ -420,63 +420,15 @@ class TemplatesPanelState extends State<TemplatesPanel> {
   }
 
   Widget _buildNotebookTemplateItem(Notebook notebook) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     String displayName = notebook.name;
     if (displayName.toLowerCase().startsWith('#template_')) {
       displayName = displayName.substring(10).replaceAll('_', ' ');
     }
 
-    return MouseRegionHoverItem(
-      builder: (context, isHovering) {
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          color: colorScheme.surfaceContainerHighest,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => _applyNotebookTemplate(notebook),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.folder_copy_rounded,
-                      color: colorScheme.primary,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        displayName,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (isHovering)
-                      Icon(
-                        Icons.add_rounded,
-                        size: 18,
-                        color: colorScheme.primary,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+    return TemplatesPanelListItem(
+      leadingIcon: Icons.folder_copy_rounded,
+      title: displayName,
+      onTap: () => _applyNotebookTemplate(notebook),
     );
   }
 
@@ -515,62 +467,17 @@ class TemplatesPanelState extends State<TemplatesPanel> {
   }
 
   Widget _buildTemplateItem(Note note) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final leadingIcon =
+      note.title.toLowerCase().contains('#stack')
+        ? Icons.library_books_rounded
+        : note.isTask
+        ? Icons.add_task_rounded
+        : Icons.description_outlined;
 
-    return MouseRegionHoverItem(
-      builder: (context, isHovering) {
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          color: colorScheme.surfaceContainerHighest,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => _applyTemplate(note),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      note.title.toLowerCase().contains('#stack')
-                          ? Icons.library_books_rounded
-                          : note.isTask
-                          ? Icons.add_task_rounded
-                          : Icons.description_outlined,
-                      color: colorScheme.primary,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        note.title.isEmpty ? 'Untitled Template' : note.title,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (isHovering)
-                      Icon(
-                        Icons.add_rounded,
-                        size: 18,
-                        color: colorScheme.primary,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+    return TemplatesPanelListItem(
+      leadingIcon: leadingIcon,
+      title: note.title.isEmpty ? 'Untitled Template' : note.title,
+      onTap: () => _applyTemplate(note),
     );
   }
 
@@ -619,6 +526,77 @@ class MouseRegionHoverItem extends StatefulWidget {
 
   @override
   State<MouseRegionHoverItem> createState() => _MouseRegionHoverItemState();
+}
+
+class TemplatesPanelListItem extends StatelessWidget {
+  final IconData leadingIcon;
+  final String title;
+  final VoidCallback onTap;
+
+  const TemplatesPanelListItem({
+    super.key,
+    required this.leadingIcon,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return MouseRegionHoverItem(
+      builder: (context, isHovering) {
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          color: colorScheme.surfaceContainerHighest,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              mouseCursor: SystemMouseCursors.click,
+              borderRadius: BorderRadius.circular(12),
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      leadingIcon,
+                      color: colorScheme.primary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isHovering)
+                      Icon(
+                        Icons.add_rounded,
+                        size: 18,
+                        color: colorScheme.primary,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _MouseRegionHoverItemState extends State<MouseRegionHoverItem> {
