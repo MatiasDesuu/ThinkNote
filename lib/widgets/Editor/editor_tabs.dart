@@ -36,6 +36,8 @@ class EditorTabs extends StatefulWidget {
 class EditorTabsState extends State<EditorTabs> {
   final FocusNode _tabsFocusNode = FocusNode();
 
+  static const double _kPinnedEmojiOnlyTabWidth = 44.0;
+
   int? _dragTargetIndex;
   bool _dragTargetIsLeft = false;
   bool _isDragging = false;
@@ -200,6 +202,41 @@ class EditorTabsState extends State<EditorTabs> {
 
   void _ensureActiveTabVisible() {}
 
+  bool _isEmojiLikeGrapheme(String grapheme) {
+    if (grapheme.isEmpty) return false;
+    final int firstRune = grapheme.runes.first;
+
+    bool inRange(int start, int end) => firstRune >= start && firstRune <= end;
+
+    return inRange(0x1F1E6, 0x1F1FF) ||
+        inRange(0x1F300, 0x1F5FF) ||
+        inRange(0x1F600, 0x1F64F) ||
+        inRange(0x1F680, 0x1F6FF) ||
+        inRange(0x1F700, 0x1F77F) ||
+        inRange(0x1F780, 0x1F7FF) ||
+        inRange(0x1F800, 0x1F8FF) ||
+        inRange(0x1F900, 0x1F9FF) ||
+        inRange(0x1FA00, 0x1FAFF) ||
+        inRange(0x2600, 0x26FF) ||
+        inRange(0x2700, 0x27BF);
+  }
+
+  String? _leadingEmojiOrNull(String title) {
+    final trimmed = title.trimLeft();
+    if (trimmed.isEmpty) return null;
+
+    final firstGrapheme = trimmed.characters.first;
+    if (_isEmojiLikeGrapheme(firstGrapheme)) {
+      return firstGrapheme;
+    }
+    return null;
+  }
+
+  bool _isPinnedEmojiOnlyTab(EditorTab tab) {
+    if (!tab.isPinned) return false;
+    return _leadingEmojiOrNull(tab.displayTitle) != null;
+  }
+
   void _handleTabSelection(EditorTab tab) {
     widget.onTabSelected(tab);
   }
@@ -239,6 +276,54 @@ class EditorTabsState extends State<EditorTabs> {
         _currentVisualLineX = null;
       });
     }
+  }
+
+  // Builds emoji + rest-of-title as separate widgets to avoid mixed font metrics.
+  Widget _buildTitleWithEmoji({
+    required String title,
+    required String emoji,
+    required TextStyle textStyle,
+    required Color emojiColor,
+  }) {
+    final rest = title.trimLeft().substring(emoji.length);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Transform.translate(
+          offset: const Offset(0, -1),
+          child: Text(
+            emoji,
+            style: TextStyle(
+              fontSize: textStyle.fontSize,
+              height: 1.0,
+              leadingDistribution: TextLeadingDistribution.even,
+              color: emojiColor,
+            ),
+            strutStyle: const StrutStyle(
+              forceStrutHeight: true,
+              height: 1.0,
+              leading: 0,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.clip,
+            softWrap: false,
+          ),
+        ),
+        if (rest.isNotEmpty) ...[
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              rest,
+              style: textStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   @override
@@ -350,16 +435,21 @@ class EditorTabsState extends State<EditorTabs> {
                               final tab = entry.value;
                               final isActive = widget.activeTab == tab;
 
+                              final isPinnedEmojiOnly =
+                                  _isPinnedEmojiOnlyTab(tab);
+
                               final computedWidth =
-                                  tab.isPinned
-                                      ? rawPinnedWidth.clamp(
-                                        minPinnedWidth,
-                                        maxPinnedWidth,
-                                      )
-                                      : rawUnpinnedWidth.clamp(
-                                        minUnpinnedWidth,
-                                        maxUnpinnedWidth,
-                                      );
+                                  isPinnedEmojiOnly
+                                      ? _kPinnedEmojiOnlyTabWidth
+                                      : (tab.isPinned
+                                          ? rawPinnedWidth.clamp(
+                                            minPinnedWidth,
+                                            maxPinnedWidth,
+                                          )
+                                          : rawUnpinnedWidth.clamp(
+                                            minUnpinnedWidth,
+                                            maxUnpinnedWidth,
+                                          ));
 
                               final tabKey = _tabKey(tab);
                               final isClosing = _isClosing[tabKey] ?? false;
@@ -646,6 +736,9 @@ class EditorTabsState extends State<EditorTabs> {
   ) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    final leadingEmoji = _leadingEmojiOrNull(tab.displayTitle);
+    final isPinnedEmojiOnly = tab.isPinned && leadingEmoji != null;
+
     return Draggable<int>(
       data: index,
       onDragStarted: () {
@@ -680,22 +773,62 @@ class EditorTabsState extends State<EditorTabs> {
                 ),
               ],
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding:
+                isPinnedEmojiOnly
+                    ? const EdgeInsets.symmetric(horizontal: 0, vertical: 4)
+                    : const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (displayMode != TabDisplayMode.icon)
-                  Flexible(
-                    child: Text(
-                      tab.displayTitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
+                if (isPinnedEmojiOnly)
+                  Expanded(
+                    child: Center(
+                      child: Transform.translate(
+                        offset: const Offset(0, -1),
+                        child: Text(
+                          leadingEmoji,
+                          style: TextStyle(
+                            fontSize: 16,
+                            height: 1.0,
+                            leadingDistribution: TextLeadingDistribution.even,
+                            color: colorScheme.onSurface,
+                          ),
+                          strutStyle: const StrutStyle(
+                            forceStrutHeight: true,
+                            height: 1.0,
+                            leading: 0,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.clip,
+                          softWrap: false,
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
+                  )
+                else if (displayMode != TabDisplayMode.icon)
+                  Flexible(
+                    child:
+                        leadingEmoji != null
+                            ? _buildTitleWithEmoji(
+                              title: tab.displayTitle,
+                              emoji: leadingEmoji,
+                              textStyle: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurface,
+                              ),
+                              emojiColor: colorScheme.onSurface,
+                            )
+                            : Text(
+                              tab.displayTitle,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurface,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                   )
                 else
                   Icon(
@@ -704,7 +837,9 @@ class EditorTabsState extends State<EditorTabs> {
                     color: colorScheme.onSurface,
                   ),
 
-                if (tab.isPinned && displayMode != TabDisplayMode.icon)
+                if (!isPinnedEmojiOnly &&
+                    tab.isPinned &&
+                    displayMode != TabDisplayMode.icon)
                   Container(
                     margin: const EdgeInsets.only(left: 6),
                     child: Icon(
@@ -744,20 +879,60 @@ class EditorTabsState extends State<EditorTabs> {
         ),
         child: Container(
           height: 30,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding:
+              isPinnedEmojiOnly
+                  ? const EdgeInsets.symmetric(horizontal: 0, vertical: 4)
+                  : const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           child: Row(
             children: [
-              if (displayMode != TabDisplayMode.icon)
+              if (isPinnedEmojiOnly)
                 Expanded(
-                  child: Text(
-                    tab.displayTitle,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: colorScheme.onSurfaceVariant.withAlpha(100),
+                  child: Center(
+                    child: Transform.translate(
+                      offset: const Offset(0, -1),
+                      child: Text(
+                        leadingEmoji,
+                        style: TextStyle(
+                          fontSize: 16,
+                          height: 1.0,
+                          leadingDistribution: TextLeadingDistribution.even,
+                          color: colorScheme.onSurfaceVariant.withAlpha(140),
+                        ),
+                        strutStyle: const StrutStyle(
+                          forceStrutHeight: true,
+                          height: 1.0,
+                          leading: 0,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.clip,
+                        softWrap: false,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
+                )
+              else if (displayMode != TabDisplayMode.icon)
+                Expanded(
+                  child:
+                      leadingEmoji != null
+                          ? _buildTitleWithEmoji(
+                            title: tab.displayTitle,
+                            emoji: leadingEmoji,
+                            textStyle: TextStyle(
+                              fontSize: 13,
+                              color: colorScheme.onSurfaceVariant.withAlpha(100),
+                            ),
+                            emojiColor:
+                                colorScheme.onSurfaceVariant.withAlpha(100),
+                          )
+                          : Text(
+                            tab.displayTitle,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colorScheme.onSurfaceVariant.withAlpha(100),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                 )
               else
                 Expanded(
@@ -770,7 +945,9 @@ class EditorTabsState extends State<EditorTabs> {
                   ),
                 ),
 
-              if (tab.isPinned && displayMode != TabDisplayMode.icon)
+              if (!isPinnedEmojiOnly &&
+                  tab.isPinned &&
+                  displayMode != TabDisplayMode.icon)
                 Container(
                   margin: const EdgeInsets.only(left: 6),
                   child: Icon(
@@ -824,29 +1001,84 @@ class EditorTabsState extends State<EditorTabs> {
               },
               child: Container(
                 height: 30,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
+                padding:
+                    isPinnedEmojiOnly
+                        ? const EdgeInsets.symmetric(horizontal: 0, vertical: 4)
+                        : const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
                 child: Row(
                   children: [
-                    if (displayMode != TabDisplayMode.icon)
+                    if (isPinnedEmojiOnly)
                       Expanded(
-                        child: Text(
-                          tab.displayTitle,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight:
-                                isActive ? FontWeight.w600 : FontWeight.normal,
-                            color:
-                                isActive
-                                    ? colorScheme.onSurface
-                                    : colorScheme.onSurfaceVariant,
+                        child: Center(
+                          child: Transform.translate(
+                            offset: const Offset(0, -1),
+                            child: Text(
+                              leadingEmoji,
+                              style: TextStyle(
+                                fontSize: 16,
+                                height: 1.0,
+                                leadingDistribution:
+                                    TextLeadingDistribution.even,
+                                color:
+                                    isActive
+                                        ? colorScheme.onSurface
+                                        : colorScheme.onSurfaceVariant,
+                              ),
+                              strutStyle: const StrutStyle(
+                                forceStrutHeight: true,
+                                height: 1.0,
+                                leading: 0,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.clip,
+                              softWrap: false,
+                            ),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          softWrap: false,
                         ),
+                      )
+                    else if (displayMode != TabDisplayMode.icon)
+                      Expanded(
+                        child:
+                            leadingEmoji != null
+                                ? _buildTitleWithEmoji(
+                                  title: tab.displayTitle,
+                                  emoji: leadingEmoji,
+                                  textStyle: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight:
+                                        isActive
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                    color:
+                                        isActive
+                                            ? colorScheme.onSurface
+                                            : colorScheme.onSurfaceVariant,
+                                  ),
+                                  emojiColor:
+                                      isActive
+                                          ? colorScheme.onSurface
+                                          : colorScheme.onSurfaceVariant,
+                                )
+                                : Text(
+                                  tab.displayTitle,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight:
+                                        isActive
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                    color:
+                                        isActive
+                                            ? colorScheme.onSurface
+                                            : colorScheme.onSurfaceVariant,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: false,
+                                ),
                       )
                     else
                       Expanded(
@@ -862,7 +1094,9 @@ class EditorTabsState extends State<EditorTabs> {
                         ),
                       ),
 
-                    if (tab.isPinned && displayMode != TabDisplayMode.icon)
+                    if (!isPinnedEmojiOnly &&
+                        tab.isPinned &&
+                        displayMode != TabDisplayMode.icon)
                       Container(
                         margin: const EdgeInsets.only(left: 6),
                         child: Icon(
