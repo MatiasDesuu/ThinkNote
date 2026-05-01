@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../database/models/note.dart';
@@ -1123,12 +1124,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Icon(
-                widget.selectedNotebook?.iconId != null
+                widget.selectedTag != null
+                    ? Symbols.tag_rounded
+                    : widget.selectedNotebook?.iconId != null
                     ? _resolveNotebookIconData(
                       NotebookIconsRepository.getIconById(
-                            widget.selectedNotebook!.iconId!,
-                          )
-                          ?.icon,
+                        widget.selectedNotebook!.iconId!,
+                      )?.icon,
                     )
                     : Icons.folder_rounded,
                 size: 24,

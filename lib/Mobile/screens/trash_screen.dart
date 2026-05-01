@@ -9,6 +9,7 @@ import '../../database/repositories/think_repository.dart';
 import '../../database/database_helper.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../../widgets/confirmation_dialogue.dart';
+import '../../database/models/notebook_icons.dart';
 
 class TrashScreen extends StatefulWidget {
   final Function(Notebook)? onNotebookRestored;
@@ -293,6 +294,13 @@ class _TrashScreenState extends State<TrashScreen> {
     super.dispose();
   }
 
+  IconData _resolveNotebookIconData(dynamic rawIcon) {
+    if (rawIcon is IconData) {
+      return rawIcon;
+    }
+    return Icons.folder_rounded;
+  }
+
   @override
   Widget build(BuildContext context) {
     final allItems = [..._deletedNotebooks, ..._deletedNotes, ..._deletedThinks]
@@ -381,7 +389,11 @@ class _TrashScreenState extends State<TrashScreen> {
                     DateTime? deletedAt;
 
                     if (isNotebook) {
-                      iconData = Icons.folder_rounded;
+                      iconData = item.iconId != null
+                          ? _resolveNotebookIconData(
+                            NotebookIconsRepository.getIconById(item.iconId!)?.icon,
+                          )
+                          : Icons.folder_rounded;
                       iconColor = colorScheme.primary;
                       title = item.name;
                       deletedAt = item.deletedAt;

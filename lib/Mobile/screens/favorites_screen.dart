@@ -9,6 +9,7 @@ import '../../database/repositories/think_repository.dart';
 import '../../database/database_helper.dart';
 import '../../widgets/custom_snackbar.dart';
 import '../widgets/note_editor.dart';
+import '../../database/models/notebook_icons.dart';
 
 class FavoritesScreen extends StatefulWidget {
   final Function(Notebook)? onNotebookSelected;
@@ -191,6 +192,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
+  IconData _resolveNotebookIconData(dynamic rawIcon) {
+    if (rawIcon is IconData) {
+      return rawIcon;
+    }
+    return Icons.folder_rounded;
+  }
+
   Widget _buildItem(dynamic item) {
     final isNotebook = item is Notebook;
     final isNote = item is Note;
@@ -202,7 +210,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     String title;
 
     if (isNotebook) {
-      iconData = Icons.folder_rounded;
+      iconData =
+          item.iconId != null
+              ? _resolveNotebookIconData(
+                NotebookIconsRepository.getIconById(item.iconId!)?.icon,
+              )
+              : Icons.folder_rounded;
       iconColor = colorScheme.primary;
       title = item.name;
     } else if (isNote) {
