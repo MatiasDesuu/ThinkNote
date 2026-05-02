@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import '../../database/models/notebook.dart';
@@ -135,6 +136,21 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
         ),
       ],
     );
+  }
+
+  Widget _buildNotebookIcon(NotebookIcon icon, {double size = 24}) {
+    final color = Theme.of(context).colorScheme.primary;
+    final iconData = icon.icon;
+
+    if (iconData is FaIconData) {
+      return FaIcon(iconData, size: size, color: color);
+    }
+
+    if (iconData is IconData) {
+      return Icon(iconData, size: size, color: color);
+    }
+
+    return Icon(Icons.folder_rounded, size: size, color: color);
   }
 
   Future<void> toggleAllNotebooks() async {
@@ -894,15 +910,12 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (_showNotebookIcons) ...[
-                        Icon(
-                          (notebook.iconId != null
-                                      ? NotebookIconsRepository.getIconById(
-                                        notebook.iconId!,
-                                      )
-                                      : null)
-                                  ?.icon ??
-                              NotebookIconsRepository.getDefaultIcon().icon,
-                          color: Theme.of(context).colorScheme.primary,
+                        _buildNotebookIcon(
+                          notebook.iconId != null
+                              ? NotebookIconsRepository.getIconById(
+                                  notebook.iconId!,
+                                ) ?? NotebookIconsRepository.getDefaultIcon()
+                              : NotebookIconsRepository.getDefaultIcon(),
                           size: 20,
                         ),
                         const SizedBox(width: 8),
@@ -1141,12 +1154,7 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                     SizedBox(
                       height: 24,
                       child:
-                          _showNotebookIcons
-                              ? Icon(
-                                iconToShow.icon,
-                                color: Theme.of(context).colorScheme.primary,
-                              )
-                              : null,
+                          _showNotebookIcons ? _buildNotebookIcon(iconToShow) : null,
                     ),
                     if (_showNotebookIcons) const SizedBox(width: 8),
                     Expanded(

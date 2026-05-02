@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../database/models/notebook_icons.dart';
 import 'custom_dialog.dart';
 
@@ -133,14 +134,28 @@ class _IconSelectorDialogState extends State<IconSelectorDialog> {
                           )
                           : null,
                 ),
-                child: Icon(
-                  icon.icon,
-                  size: 28,
-                  color:
-                      isSelected
-                          ? Theme.of(context).colorScheme.onPrimaryContainer
-                          : Theme.of(context).colorScheme.onSurface,
-                ),
+                child:
+                    icon.icon is FaIconData
+                        ? FaIcon(
+                          icon.icon as FaIconData,
+                          size: 28,
+                          color:
+                              isSelected
+                                  ? Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer
+                                  : Theme.of(context).colorScheme.onSurface,
+                        )
+                        : Icon(
+                          icon.icon as IconData,
+                          size: 28,
+                          color:
+                              isSelected
+                                  ? Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer
+                                  : Theme.of(context).colorScheme.onSurface,
+                        ),
               ),
             );
           },
