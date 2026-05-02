@@ -11,25 +11,7 @@ RELEASE_TAG="v1.0.0-$(date +%Y%m%d-%H%M%S)"
 RELEASE_NAME="Release $RELEASE_TAG"
 RELEASE_BODY="Automatic release from build script"
 LINUX_DEST="/home/matiasdesu/Documents/Software/ThinkNote"
-
-# ─── Menu ────────────────────────────────────────────────────────────────────
-echo "Select the platforms for the build (comma-separated):"
-echo "1. Android (APK)"
-echo "2. Linux"
-echo "3. Clean Gitea Releases"
-read -rp "Choose options (1-3, e.g., 1,2): " raw_input
-
-IFS=',' read -ra choices <<< "$raw_input"
-
-for choice in "${choices[@]}"; do
-    choice="${choice// /}"
-    case "$choice" in
-        1) android_build ;;
-        2) linux_build ;;
-        3) clean_releases ;;
-        *) echo "Invalid option: $choice" ;;
-    esac
-done
+APP_EXECUTABLE="thinknote"
 
 # ─── Functions ───────────────────────────────────────────────────────────────
 android_build() {
@@ -71,10 +53,11 @@ linux_build() {
 
     echo "Creating desktop shortcut..."
     DESKTOP_FILE="$HOME/.local/share/applications/thinknote.desktop"
+    mkdir -p "$HOME/.local/share/applications"
     cat > "$DESKTOP_FILE" <<EOF
 [Desktop Entry]
 Name=ThinkNote
-Exec=$LINUX_DEST/thinknote
+Exec=$LINUX_DEST/$APP_EXECUTABLE
 Icon=$LINUX_DEST/app_icon.png
 Type=Application
 Categories=Utility;
@@ -101,3 +84,22 @@ clean_releases() {
 
     echo "All releases cleaned."
 }
+
+# ─── Menu ────────────────────────────────────────────────────────────────────
+echo "Select the platforms for the build (comma-separated):"
+echo "1. Android (APK)"
+echo "2. Linux"
+echo "3. Clean Gitea Releases"
+read -rp "Choose options (1-3, e.g., 1,2): " raw_input
+
+IFS=',' read -ra choices <<< "$raw_input"
+
+for choice in "${choices[@]}"; do
+    choice="${choice// /}"
+    case "$choice" in
+        1) android_build ;;
+        2) linux_build ;;
+        3) clean_releases ;;
+        *) echo "Invalid option: $choice" ;;
+    esac
+done
