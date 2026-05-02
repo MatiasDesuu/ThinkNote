@@ -66,7 +66,24 @@ linux_build() {
     mkdir -p "$LINUX_DEST"
     cp -r "$(pwd)/build/linux/x64/release/bundle/." "$LINUX_DEST"
 
+    echo "Copying icon..."
+    cp "$(pwd)/linux/icons/app_icon.png" "$LINUX_DEST/app_icon.png"
+
+    echo "Creating desktop shortcut..."
+    DESKTOP_FILE="$HOME/.local/share/applications/thinknote.desktop"
+    cat > "$DESKTOP_FILE" <<EOF
+[Desktop Entry]
+Name=ThinkNote
+Exec=$LINUX_DEST/thinknote
+Icon=$LINUX_DEST/app_icon.png
+Type=Application
+Categories=Utility;
+StartupWMClass=thinknote
+EOF
+    chmod +x "$DESKTOP_FILE"
+
     echo "Files copied to $LINUX_DEST"
+    echo "Shortcut created at $DESKTOP_FILE"
 }
 
 clean_releases() {
