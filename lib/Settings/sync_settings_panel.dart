@@ -79,6 +79,7 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
 
     setState(() => _isLoading = true);
     try {
+      await SyncService().suspendAutoSync();
       await SyncService().saveSettings(
         url: _urlController.text,
         username: _usernameController.text,
@@ -94,11 +95,18 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
         );
 
         if (_isEnabled) {
-          _showSyncDialog();
+          try {
+            await _showSyncDialog();
+          } finally {
+            await SyncService().resumeAutoSync();
+          }
+        } else {
+          await SyncService().resumeAutoSync();
         }
       }
     } catch (e) {
       setState(() => _isLoading = false);
+      await SyncService().resumeAutoSync();
       if (mounted) {
         CustomSnackbar.show(
           context: context,

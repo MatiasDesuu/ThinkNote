@@ -505,7 +505,7 @@ class NotebookIconsRepository {
       name: 'Calendar Today',
     ),
     NotebookIcon(id: 250, icon: Icons.alarm_rounded, name: 'Alarm'),
-    NotebookIcon(id: 251, icon: FontAwesomeIcons.docker, name: 'Docker'),
+    NotebookIcon(id: 251, icon: FontAwesomeIcons.docker.data, name: 'Docker'),
   ];
 
   static NotebookIcon? getIconById(int id) {

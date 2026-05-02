@@ -44,6 +44,7 @@ class SyncService {
   static const int _minChangesForSync = 1;
   static const Duration defaultAutoSyncInterval = Duration(minutes: 60);
   bool _ignoreChanges = false;
+  bool _suspended = false;
 
   final StreamController<bool> _autoSyncEnabledController =
       StreamController<bool>.broadcast();
@@ -100,7 +101,9 @@ class SyncService {
         _triggerSync();
       });
 
-      await forceSync();
+      if (!_suspended) {
+        await forceSync();
+      }
     } catch (e) {
       developer.log('Error initializing sync service: $e', name: 'SyncService');
     }
@@ -108,6 +111,7 @@ class SyncService {
 
   void _triggerSync() {
     if (!_isInitialized) return;
+    if (_suspended) return;
 
     _debounceTimer?.cancel();
 
@@ -127,6 +131,7 @@ class SyncService {
 
   Future<void> _performSync({bool isManual = false}) async {
     if (_isSyncing || !_isInitialized) return;
+    if (_suspended) return;
 
     try {
       _isSyncing = true;
@@ -237,8 +242,22 @@ class SyncService {
     await prefs.setString('webdav_password', password);
     await prefs.setBool('webdav_enabled', enabled);
 
-    if (enabled) {
+    if (enabled && !_suspended) {
       await _webdavService.initialize();
+    }
+  }
+
+  Future<void> suspendAutoSync() async {
+    _suspended = true;
+    _ignoreChanges = true;
+  }
+
+  Future<void> resumeAutoSync() async {
+    _suspended = false;
+    _ignoreChanges = false;
+    if (_isInitialized) {
+      _changeCount = 0;
+      _lastSyncTime = DateTime.now();
     }
   }
 
