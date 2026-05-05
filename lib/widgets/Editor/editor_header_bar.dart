@@ -24,10 +24,12 @@ class EditorHeaderBar extends StatelessWidget {
   final SaveAnimationController saveController;
   final Note selectedNote;
   final VoidCallback onTitleChanged;
+  final VoidCallback onContentChanged;
   final VoidCallback onSave;
   final VoidCallback onToggleReadMode;
   final VoidCallback onToggleSplitView;
   final VoidCallback onToggleEditorCentered;
+
 
   EditorHeaderBar({
     super.key,
@@ -43,10 +45,12 @@ class EditorHeaderBar extends StatelessWidget {
     required this.saveController,
     required this.selectedNote,
     required this.onTitleChanged,
+    required this.onContentChanged,
     required this.onSave,
     required this.onToggleReadMode,
     required this.onToggleSplitView,
     required this.onToggleEditorCentered,
+
   });
 
   final GlobalKey _exportButtonKey = GlobalKey();
@@ -178,12 +182,16 @@ class EditorHeaderBar extends StatelessWidget {
                 textAlignVertical: TextAlignVertical.center,
                 onSubmitted: (_) {
                   if (!isReadMode) {
-                    editorFocusNode.requestFocus();
-                    noteController.selection = const TextSelection.collapsed(
-                      offset: 0,
+                    final currentText = noteController.text;
+                    noteController.value = TextEditingValue(
+                      text: '\n$currentText',
+                      selection: const TextSelection.collapsed(offset: 0),
                     );
+                    onContentChanged();
+                    editorFocusNode.requestFocus();
                   }
                 },
+
               ),
             ),
           ),

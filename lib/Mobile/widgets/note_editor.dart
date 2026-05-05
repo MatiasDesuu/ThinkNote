@@ -660,9 +660,16 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                               onChanged: (_) => _notifyTypingActivity(),
                               onSubmitted: (_) {
                                 if (widget.isEditing && !_isReadMode) {
+                                  final currentText = widget.contentController.text;
+                                  widget.contentController.value = TextEditingValue(
+                                    text: '\n$currentText',
+                                    selection: const TextSelection.collapsed(offset: 0),
+                                  );
+                                  widget.onContentChanged();
                                   widget.contentFocusNode.requestFocus();
                                 }
                               },
+
                             ),
                             leading: IconButton(
                               icon: const Icon(Icons.arrow_back_rounded),

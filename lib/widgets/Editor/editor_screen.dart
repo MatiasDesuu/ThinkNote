@@ -1477,6 +1477,7 @@ class _NotaEditorState extends State<NotaEditor>
                         saveController: _saveController,
                         selectedNote: widget.selectedNote,
                         onTitleChanged: widget.onTitleChanged,
+                        onContentChanged: widget.onContentChanged,
                         onSave: () => _handleSave(),
                         onToggleReadMode: _toggleReadMode,
                         onToggleSplitView: _toggleSplitView,
