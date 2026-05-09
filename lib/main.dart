@@ -367,7 +367,7 @@ void main() async {
       await windowManager.setPosition(defaultPosition);
     }
 
-    if (Platform.isWindows || Platform.isLinux) {
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       doWhenWindowReady(() async {
         final win = appWindow;
         win.alignment = Alignment.center;
