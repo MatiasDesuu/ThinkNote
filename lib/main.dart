@@ -545,98 +545,99 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
                             onThemeUpdated: _updateTheme,
                           ),
                         ),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          height: 40,
-                          child: Container(
-                            color: Colors.transparent,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: 46,
-                                  height: 40,
-                                  child: MinimizeWindowButton(
-                                    colors: WindowButtonColors(
-                                      iconNormal: colorScheme.onSurface,
-                                      mouseOver:
-                                          colorScheme.surfaceContainerHighest,
-                                      mouseDown:
-                                          colorScheme.surfaceContainerHigh,
-                                      iconMouseOver: colorScheme.onSurface,
-                                      iconMouseDown: colorScheme.onSurface,
-                                    ),
-                                    onPressed: () {
-                                      appWindow.minimize();
-                                    },
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: 46,
-                                  height: 40,
-                                  child: MaximizeWindowButton(
-                                    colors: WindowButtonColors(
-                                      iconNormal: colorScheme.onSurface,
-                                      mouseOver:
-                                          colorScheme.surfaceContainerHighest,
-                                      mouseDown:
-                                          colorScheme.surfaceContainerHigh,
-                                      iconMouseOver: colorScheme.onSurface,
-                                      iconMouseDown: colorScheme.onSurface,
-                                    ),
-                                    onPressed: () async {
-                                      try {
-                                        final isMaximized =
-                                            await windowManager.isMaximized();
-
-                                        if (!isMaximized) {
-                                          await WindowStateManager.savePreMaximizeState();
-                                        }
-
-                                        appWindow.maximizeOrRestore();
-
-                                        await Future.delayed(
-                                          const Duration(milliseconds: 50),
-                                        );
-
-                                        await WindowStateManager.saveWindowState();
-                                      } catch (e) {
-                                        print('Error in maximize button: $e');
-                                      }
-                                    },
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: 46,
-                                  height: 40,
-                                  child: CloseWindowButton(
-                                    colors: WindowButtonColors(
-                                      iconNormal: colorScheme.onSurface,
-                                      mouseOver: colorScheme.error,
-                                      mouseDown: colorScheme.error.withAlpha(
-                                        128,
+                        if (!Platform.isMacOS)
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            height: 40,
+                            child: Container(
+                              color: Colors.transparent,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 46,
+                                    height: 40,
+                                    child: MinimizeWindowButton(
+                                      colors: WindowButtonColors(
+                                        iconNormal: colorScheme.onSurface,
+                                        mouseOver:
+                                            colorScheme.surfaceContainerHighest,
+                                        mouseDown:
+                                            colorScheme.surfaceContainerHigh,
+                                        iconMouseOver: colorScheme.onSurface,
+                                        iconMouseDown: colorScheme.onSurface,
                                       ),
-                                      iconMouseOver: colorScheme.onError,
-                                      iconMouseDown: colorScheme.onError,
+                                      onPressed: () {
+                                        appWindow.minimize();
+                                      },
                                     ),
-                                    onPressed: () async {
-                                      try {
-                                        await WindowStateManager.saveWindowState();
-                                        appWindow.close();
-                                      } catch (e) {
-                                        print(
-                                          'Error saving state before close: $e',
-                                        );
-                                        appWindow.close();
-                                      }
-                                    },
                                   ),
-                                ),
-                              ],
+                                  SizedBox(
+                                    width: 46,
+                                    height: 40,
+                                    child: MaximizeWindowButton(
+                                      colors: WindowButtonColors(
+                                        iconNormal: colorScheme.onSurface,
+                                        mouseOver:
+                                            colorScheme.surfaceContainerHighest,
+                                        mouseDown:
+                                            colorScheme.surfaceContainerHigh,
+                                        iconMouseOver: colorScheme.onSurface,
+                                        iconMouseDown: colorScheme.onSurface,
+                                      ),
+                                      onPressed: () async {
+                                        try {
+                                          final isMaximized =
+                                              await windowManager.isMaximized();
+
+                                          if (!isMaximized) {
+                                            await WindowStateManager.savePreMaximizeState();
+                                          }
+
+                                          appWindow.maximizeOrRestore();
+
+                                          await Future.delayed(
+                                            const Duration(milliseconds: 50),
+                                          );
+
+                                          await WindowStateManager.saveWindowState();
+                                        } catch (e) {
+                                          print('Error in maximize button: $e');
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 46,
+                                    height: 40,
+                                    child: CloseWindowButton(
+                                      colors: WindowButtonColors(
+                                        iconNormal: colorScheme.onSurface,
+                                        mouseOver: colorScheme.error,
+                                        mouseDown: colorScheme.error.withAlpha(
+                                          128,
+                                        ),
+                                        iconMouseOver: colorScheme.onError,
+                                        iconMouseDown: colorScheme.onError,
+                                      ),
+                                      onPressed: () async {
+                                        try {
+                                          await WindowStateManager.saveWindowState();
+                                          appWindow.close();
+                                        } catch (e) {
+                                          print(
+                                            'Error saving state before close: $e',
+                                          );
+                                          appWindow.close();
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   );

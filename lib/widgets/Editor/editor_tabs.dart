@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import '../../database/models/editor_tab.dart';
@@ -391,22 +392,23 @@ class EditorTabsState extends State<EditorTabs> {
             color: Theme.of(context).colorScheme.surfaceContainerLow,
           ),
 
-          if (!isImmersiveMode)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 40,
-              child: MoveWindow(),
-            )
-          else
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 138,
-              height: 40,
-              child: MoveWindow(),
-            ),
+          if (!Platform.isMacOS)
+            if (!isImmersiveMode)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 40,
+                child: MoveWindow(),
+              )
+            else
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 138,
+                height: 40,
+                child: MoveWindow(),
+              ),
 
           Padding(
             padding: EdgeInsets.only(right: isImmersiveMode ? 138.0 : 0.0),

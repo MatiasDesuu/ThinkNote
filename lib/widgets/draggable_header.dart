@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 
@@ -32,13 +33,14 @@ class DraggableHeader extends StatelessWidget {
 
     return Stack(
       children: [
-        Positioned(
-          top: 0,
-          left: 0,
-          right: trailing != null ? trailingExclusionWidth : 0,
-          height: height,
-          child: MoveWindow(),
-        ),
+        if (!Platform.isMacOS)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: trailing != null ? trailingExclusionWidth : 0,
+            height: height,
+            child: MoveWindow(),
+          ),
 
         Container(
           height: height,
@@ -76,6 +78,10 @@ class DraggableArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (Platform.isMacOS) {
+      return SizedBox.shrink();
+    }
+
     return Container(
       height: height,
       width: width,

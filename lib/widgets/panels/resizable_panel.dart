@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
@@ -382,18 +383,21 @@ class ResizablePanelState extends State<ResizablePanel>
                                   ),
                                 ),
 
-                                Positioned(
-                                  top: 0,
-                                  left: 0,
-                                  right: widget.trailing != null ? 100 : 0,
-                                  height: 48,
-                                  child: MoveWindow(),
-                                ),
+                                if (!Platform.isMacOS)
+                                  Positioned(
+                                    top: 0,
+                                    left: 0,
+                                    right: widget.trailing != null ? 100 : 0,
+                                    height: 48,
+                                    child: MoveWindow(),
+                                  ),
                               ],
                             ),
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.only(top: 0),
+                              padding: EdgeInsets.only(
+                                top: Platform.isMacOS ? 8.0 : 0.0,
+                              ),
                               child: widget.child,
                             ),
                           ),
@@ -688,7 +692,9 @@ class ResizablePanelLeftState extends State<ResizablePanelLeft>
                       DraggableArea(height: 40),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.only(top: 0),
+                        padding: EdgeInsets.only(
+                          top: Platform.isMacOS ? 8.0 : 0.0,
+                        ),
                         child: widget.child,
                       ),
                     ),

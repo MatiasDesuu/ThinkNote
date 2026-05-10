@@ -341,7 +341,7 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
 
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 40),
+                  padding: EdgeInsets.only(top: Platform.isMacOS ? 8.0 : 40),
                   child: Column(
                     children: [
                       Expanded(
@@ -374,75 +374,77 @@ class LinksScreenDesktopDBState extends State<LinksScreenDesktopDB>
             ],
           ),
 
-          Positioned(
-            top: 0,
-            right: 0,
-            height: 40,
-            child: Container(
-              color: colorScheme.surface,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 46,
-                    height: 40,
-                    child: MinimizeWindowButton(
-                      colors: WindowButtonColors(
-                        iconNormal: colorScheme.onSurface,
-                        mouseOver: colorScheme.surfaceContainerHighest,
-                        mouseDown: colorScheme.surfaceContainerHigh,
-                        iconMouseOver: colorScheme.onSurface,
-                        iconMouseDown: colorScheme.onSurface,
+          if (!Platform.isMacOS)
+            Positioned(
+              top: 0,
+              right: 0,
+              height: 40,
+              child: Container(
+                color: colorScheme.surface,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 46,
+                      height: 40,
+                      child: MinimizeWindowButton(
+                        colors: WindowButtonColors(
+                          iconNormal: colorScheme.onSurface,
+                          mouseOver: colorScheme.surfaceContainerHighest,
+                          mouseDown: colorScheme.surfaceContainerHigh,
+                          iconMouseOver: colorScheme.onSurface,
+                          iconMouseDown: colorScheme.onSurface,
+                        ),
+                        onPressed: () {
+                          appWindow.minimize();
+                        },
                       ),
-                      onPressed: () {
-                        appWindow.minimize();
-                      },
                     ),
-                  ),
-                  SizedBox(
-                    width: 46,
-                    height: 40,
-                    child: MaximizeWindowButton(
-                      colors: WindowButtonColors(
-                        iconNormal: colorScheme.onSurface,
-                        mouseOver: colorScheme.surfaceContainerHighest,
-                        mouseDown: colorScheme.surfaceContainerHigh,
-                        iconMouseOver: colorScheme.onSurface,
-                        iconMouseDown: colorScheme.onSurface,
+                    SizedBox(
+                      width: 46,
+                      height: 40,
+                      child: MaximizeWindowButton(
+                        colors: WindowButtonColors(
+                          iconNormal: colorScheme.onSurface,
+                          mouseOver: colorScheme.surfaceContainerHighest,
+                          mouseDown: colorScheme.surfaceContainerHigh,
+                          iconMouseOver: colorScheme.onSurface,
+                          iconMouseDown: colorScheme.onSurface,
+                        ),
+                        onPressed: () {
+                          appWindow.maximizeOrRestore();
+                        },
                       ),
-                      onPressed: () {
-                        appWindow.maximizeOrRestore();
-                      },
                     ),
-                  ),
-                  SizedBox(
-                    width: 46,
-                    height: 40,
-                    child: CloseWindowButton(
-                      colors: WindowButtonColors(
-                        iconNormal: colorScheme.onSurface,
-                        mouseOver: colorScheme.error,
-                        mouseDown: colorScheme.error.withAlpha(128),
-                        iconMouseOver: colorScheme.onError,
-                        iconMouseDown: colorScheme.onError,
+                    SizedBox(
+                      width: 46,
+                      height: 40,
+                      child: CloseWindowButton(
+                        colors: WindowButtonColors(
+                          iconNormal: colorScheme.onSurface,
+                          mouseOver: colorScheme.error,
+                          mouseDown: colorScheme.error.withAlpha(128),
+                          iconMouseOver: colorScheme.onError,
+                          iconMouseDown: colorScheme.onError,
+                        ),
+                        onPressed: () {
+                          appWindow.close();
+                        },
                       ),
-                      onPressed: () {
-                        appWindow.close();
-                      },
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
 
-          Positioned(
-            top: 0,
-            left: 60,
-            right: 138,
-            height: 48,
-            child: MoveWindow(child: Container(color: Colors.transparent)),
-          ),
+          if (!Platform.isMacOS)
+            Positioned(
+              top: 0,
+              left: 60,
+              right: 138,
+              height: 48,
+              child: MoveWindow(child: Container(color: Colors.transparent)),
+            ),
         ],
       ),
     );
