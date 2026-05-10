@@ -1852,10 +1852,7 @@ class _NotaEditorState extends State<NotaEditor>
     String? overrideText,
     ScrollController? controller,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
     final text = overrideText ?? widget.noteController.text;
-
-    final backgroundColor = colorScheme.surfaceContainerLow;
 
     final content =
         text.isEmpty
@@ -1886,27 +1883,10 @@ class _NotaEditorState extends State<NotaEditor>
               },
             );
 
-    if (overrideText != null) {
-      return SingleChildScrollView(
-        controller: controller,
-        physics: const CtrlScrollPhysics(),
-        child: content,
-      );
-    }
-
     return SingleChildScrollView(
       controller: controller,
       physics: const CtrlScrollPhysics(),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.all(16),
-        margin: const EdgeInsets.only(top: 8),
-        child: content,
-      ),
+      child: content,
     );
   }
 
