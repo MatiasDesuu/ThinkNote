@@ -264,25 +264,45 @@ class HighlightedTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      undoController: undoController,
-      focusNode: focusNode,
-      style: textStyle,
-      maxLines: null,
-      expands: true,
-      scrollController: scrollController,
-      scrollPhysics: scrollPhysics,
-      decoration: InputDecoration(
-        border: InputBorder.none,
-        hintText: hintText,
-        hintStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          fontSize: textStyle.fontSize,
-          height: textStyle.height,
-        ),
-      ),
-      onChanged: (_) => onChanged(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return GestureDetector(
+          onTap: () {
+            if (!focusNode.hasFocus) {
+              focusNode.requestFocus();
+              controller.selection = TextSelection.collapsed(
+                offset: controller.text.length,
+              );
+            }
+          },
+          child: SingleChildScrollView(
+            controller: scrollController,
+            physics: scrollPhysics,
+            child: Container(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              padding: const EdgeInsets.only(bottom: 32),
+              child: TextField(
+                controller: controller,
+                undoController: undoController,
+                focusNode: focusNode,
+                style: textStyle,
+                maxLines: null,
+                expands: false,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: hintText,
+                  hintStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: textStyle.fontSize,
+                    height: textStyle.height,
+                  ),
+                ),
+                onChanged: (_) => onChanged(),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

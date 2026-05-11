@@ -558,12 +558,30 @@ class _NotaEditorState extends State<NotaEditor>
   }
 
   void _toggleReadMode() {
+    double currentOffset = 0.0;
+    if (_isReadMode && _previewScrollController.hasClients) {
+      currentOffset = _previewScrollController.offset;
+    } else if (!_isReadMode && _scrollController.hasClients) {
+      currentOffset = _scrollController.offset;
+    }
+
     bool splitViewChanged = false;
     setState(() {
       _isReadMode = !_isReadMode;
       if (_isReadMode && _isSplitView) {
         _isSplitView = false;
         splitViewChanged = true;
+      }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_isReadMode && _previewScrollController.hasClients) {
+        _previewScrollController.jumpTo(
+            currentOffset.clamp(0.0, _previewScrollController.position.maxScrollExtent));
+      } else if (!_isReadMode && _scrollController.hasClients) {
+        _scrollController.jumpTo(
+            currentOffset.clamp(0.0, _scrollController.position.maxScrollExtent));
       }
     });
 
@@ -578,6 +596,13 @@ class _NotaEditorState extends State<NotaEditor>
   }
 
   void _toggleSplitView() {
+    double currentOffset = 0.0;
+    if (_isReadMode && _previewScrollController.hasClients) {
+      currentOffset = _previewScrollController.offset;
+    } else if (!_isReadMode && _scrollController.hasClients) {
+      currentOffset = _scrollController.offset;
+    }
+
     bool readModeChanged = false;
     setState(() {
       _isSplitView = !_isSplitView;
@@ -587,6 +612,18 @@ class _NotaEditorState extends State<NotaEditor>
           readModeChanged = true;
         }
         _splitViewPreviewText = widget.noteController.text;
+      }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(
+            currentOffset.clamp(0.0, _scrollController.position.maxScrollExtent));
+      }
+      if (_isSplitView && _previewScrollController.hasClients) {
+        _previewScrollController.jumpTo(
+            currentOffset.clamp(0.0, _previewScrollController.position.maxScrollExtent));
       }
     });
 
@@ -1279,7 +1316,9 @@ class _NotaEditorState extends State<NotaEditor>
   double? get _customFontSize {
     if (widget.tabManager == null) return null;
     try {
-      final tab = widget.tabManager!.tabs.firstWhere((t) => t.note?.id == widget.selectedNote.id);
+      final tab = widget.tabManager!.tabs.firstWhere(
+        (t) => t.note?.id == widget.selectedNote.id,
+      );
       return tab.customFontSize;
     } catch (e) {
       return null;
@@ -1377,8 +1416,13 @@ class _NotaEditorState extends State<NotaEditor>
             return Listener(
               onPointerSignal: (pointerSignal) {
                 if (pointerSignal is PointerScrollEvent) {
-                  final isControlPressed = HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlLeft) ||
-                                           HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlRight);
+                  final isControlPressed =
+                      HardwareKeyboard.instance.logicalKeysPressed.contains(
+                        LogicalKeyboardKey.controlLeft,
+                      ) ||
+                      HardwareKeyboard.instance.logicalKeysPressed.contains(
+                        LogicalKeyboardKey.controlRight,
+                      );
                   if (isControlPressed) {
                     setState(() {
                       if (pointerSignal.scrollDelta.dy < 0) {
@@ -1386,11 +1430,16 @@ class _NotaEditorState extends State<NotaEditor>
                       } else if (pointerSignal.scrollDelta.dy > 0) {
                         _fontSize = (_fontSize - 1.0).clamp(8.0, 72.0);
                       }
-                      
+
                       if (widget.tabManager != null) {
                         try {
-                          final tab = widget.tabManager!.tabs.firstWhere((t) => t.note?.id == widget.selectedNote.id);
-                          widget.tabManager!.setTabCustomFontSize(tab, _fontSize);
+                          final tab = widget.tabManager!.tabs.firstWhere(
+                            (t) => t.note?.id == widget.selectedNote.id,
+                          );
+                          widget.tabManager!.setTabCustomFontSize(
+                            tab,
+                            _fontSize,
+                          );
                         } catch (_) {}
                       }
                     });
@@ -1400,92 +1449,50 @@ class _NotaEditorState extends State<NotaEditor>
               child: Focus(
                 onKeyEvent: (node, event) {
                   if (_showFindBar) {
-                  if (event is KeyDownEvent) {
-                    if (event.logicalKey == LogicalKeyboardKey.enter) {
-                      if (!_editorFocusNode.hasFocus) {
-                        if (HardwareKeyboard.instance.isShiftPressed) {
-                          _previousMatch();
-                        } else {
-                          _nextMatch();
+                    if (event is KeyDownEvent) {
+                      if (event.logicalKey == LogicalKeyboardKey.enter) {
+                        if (!_editorFocusNode.hasFocus) {
+                          if (HardwareKeyboard.instance.isShiftPressed) {
+                            _previousMatch();
+                          } else {
+                            _nextMatch();
+                          }
+                          return KeyEventResult.handled;
                         }
+                        return KeyEventResult.ignored;
+                      } else if (event.logicalKey ==
+                          LogicalKeyboardKey.escape) {
+                        _hideFindBar();
                         return KeyEventResult.handled;
                       }
+                    }
+                    return KeyEventResult.ignored;
+                  }
+
+                  if (event is KeyDownEvent) {
+                    if (event.logicalKey == LogicalKeyboardKey.keyT &&
+                        HardwareKeyboard.instance.isControlPressed) {
                       return KeyEventResult.ignored;
-                    } else if (event.logicalKey == LogicalKeyboardKey.escape) {
-                      _hideFindBar();
-                      return KeyEventResult.handled;
+                    }
+                    if (event.logicalKey == LogicalKeyboardKey.keyN &&
+                        HardwareKeyboard.instance.isControlPressed) {
+                      return KeyEventResult.ignored;
+                    }
+                    if (event.logicalKey == LogicalKeyboardKey.keyW &&
+                        HardwareKeyboard.instance.isControlPressed) {
+                      return KeyEventResult.ignored;
                     }
                   }
+
                   return KeyEventResult.ignored;
-                }
+                },
+                child: Column(
+                  children: [
+                    if (_immersiveModeService.isImmersiveMode &&
+                        !Platform.isLinux &&
+                        EditorSettingsCache.instance.hideTabsInImmersive)
+                      const DraggableArea(height: 40),
 
-                if (event is KeyDownEvent) {
-                  if (event.logicalKey == LogicalKeyboardKey.keyT &&
-                      HardwareKeyboard.instance.isControlPressed) {
-                    return KeyEventResult.ignored;
-                  }
-                  if (event.logicalKey == LogicalKeyboardKey.keyN &&
-                      HardwareKeyboard.instance.isControlPressed) {
-                    return KeyEventResult.ignored;
-                  }
-                  if (event.logicalKey == LogicalKeyboardKey.keyW &&
-                      HardwareKeyboard.instance.isControlPressed) {
-                    return KeyEventResult.ignored;
-                  }
-                }
-
-                return KeyEventResult.ignored;
-              },
-              child: Column(
-                children: [
-                  if (_immersiveModeService.isImmersiveMode &&
-                      !Platform.isLinux &&
-                      EditorSettingsCache.instance.hideTabsInImmersive)
-                    const DraggableArea(height: 40),
-
-                  Container(
-                    padding: EdgeInsets.only(
-                      left:
-                          !_isSplitView &&
-                                  _isEditorCentered &&
-                                  constraints.maxWidth >= 600
-                              ? _calculateCenteredPaddingForEditor(
-                                constraints.maxWidth,
-                              )
-                              : 0,
-                      right:
-                          !_isSplitView &&
-                                  _isEditorCentered &&
-                                  constraints.maxWidth >= 600
-                              ? _calculateCenteredPaddingForEditor(
-                                constraints.maxWidth,
-                              )
-                              : 0,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: EditorHeaderBar(
-                        titleController: widget.titleController,
-                        noteController: widget.noteController,
-                        editorFocusNode: _editorFocusNode,
-                        isReadMode: _isReadMode,
-                        isScript: _isScript,
-                        isSplitView: _isSplitView,
-                        isEditorCentered: _isEditorCentered,
-                        showBottomBar: _showBottomBar,
-                        immersiveModeService: _immersiveModeService,
-                        saveController: _saveController,
-                        selectedNote: widget.selectedNote,
-                        onTitleChanged: widget.onTitleChanged,
-                        onContentChanged: widget.onContentChanged,
-                        onSave: () => _handleSave(),
-                        onToggleReadMode: _toggleReadMode,
-                        onToggleSplitView: _toggleSplitView,
-                        onToggleEditorCentered: _toggleEditorCentered,
-                      ),
-                    ),
-                  ),
-                  if (_showBottomBar)
                     Container(
                       padding: EdgeInsets.only(
                         left:
@@ -1507,183 +1514,227 @@ class _NotaEditorState extends State<NotaEditor>
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: EditorBottomBar(
-                          onUndo: () {
-                            if (_undoController.value.canUndo) {
-                              _undoController.undo();
-                            }
-                          },
-                          onRedo: () {
-                            if (_undoController.value.canRedo) {
-                              _undoController.redo();
-                            }
-                          },
-                          onNextNote: () => widget.onNextNote?.call(),
-                          onPreviousNote: () => widget.onPreviousNote?.call(),
-                          onFormatTap: _handleFormat,
+                        child: EditorHeaderBar(
+                          titleController: widget.titleController,
+                          noteController: widget.noteController,
+                          editorFocusNode: _editorFocusNode,
                           isReadMode: _isReadMode,
+                          isScript: _isScript,
+                          isSplitView: _isSplitView,
+                          isEditorCentered: _isEditorCentered,
+                          showBottomBar: _showBottomBar,
+                          immersiveModeService: _immersiveModeService,
+                          saveController: _saveController,
+                          selectedNote: widget.selectedNote,
+                          onTitleChanged: widget.onTitleChanged,
+                          onContentChanged: widget.onContentChanged,
+                          onSave: () => _handleSave(),
+                          onToggleReadMode: _toggleReadMode,
+                          onToggleSplitView: _toggleSplitView,
+                          onToggleEditorCentered: _toggleEditorCentered,
                         ),
                       ),
                     ),
-
-                  Expanded(
-                    child: Container(
-                      padding: EdgeInsets.only(
-                        left:
-                            !_isSplitView &&
-                                    _isEditorCentered &&
-                                    constraints.maxWidth >= 600
-                                ? _calculateCenteredPaddingForEditor(
-                                  constraints.maxWidth,
-                                )
-                                : 0,
-                        right:
-                            !_isSplitView &&
-                                    _isEditorCentered &&
-                                    constraints.maxWidth >= 600
-                                ? _calculateCenteredPaddingForEditor(
-                                  constraints.maxWidth,
-                                )
-                                : 0,
+                    if (_showBottomBar)
+                      Container(
+                        padding: EdgeInsets.only(
+                          left:
+                              !_isSplitView &&
+                                      _isEditorCentered &&
+                                      constraints.maxWidth >= 600
+                                  ? _calculateCenteredPaddingForEditor(
+                                    constraints.maxWidth,
+                                  )
+                                  : 0,
+                          right:
+                              !_isSplitView &&
+                                      _isEditorCentered &&
+                                      constraints.maxWidth >= 600
+                                  ? _calculateCenteredPaddingForEditor(
+                                    constraints.maxWidth,
+                                  )
+                                  : 0,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: EditorBottomBar(
+                            onUndo: () {
+                              if (_undoController.value.canUndo) {
+                                _undoController.undo();
+                              }
+                            },
+                            onRedo: () {
+                              if (_undoController.value.canRedo) {
+                                _undoController.redo();
+                              }
+                            },
+                            onNextNote: () => widget.onNextNote?.call(),
+                            onPreviousNote: () => widget.onPreviousNote?.call(),
+                            onFormatTap: _handleFormat,
+                            isReadMode: _isReadMode,
+                          ),
+                        ),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Stack(
-                          children: [
-                            _isReadMode
-                                ? RepaintBoundary(
-                                  child:
-                                      _isScript
-                                          ? ScriptModeHandlerDesktop.buildScriptPreview(
-                                            context,
-                                            widget.noteController.text,
-                                            textStyle: _textStyle,
-                                            onNoteLinkTap: (
-                                              note,
-                                              isMiddleClick,
-                                            ) {
-                                              _handleNoteLinkTap(
+
+                    Expanded(
+                      child: Container(
+                        padding: EdgeInsets.only(
+                          left:
+                              !_isSplitView &&
+                                      _isEditorCentered &&
+                                      constraints.maxWidth >= 600
+                                  ? _calculateCenteredPaddingForEditor(
+                                    constraints.maxWidth,
+                                  )
+                                  : 0,
+                          right:
+                              !_isSplitView &&
+                                      _isEditorCentered &&
+                                      constraints.maxWidth >= 600
+                                  ? _calculateCenteredPaddingForEditor(
+                                    constraints.maxWidth,
+                                  )
+                                  : 0,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Stack(
+                            children: [
+                              _isReadMode
+                                  ? RepaintBoundary(
+                                    child:
+                                        _isScript
+                                            ? ScriptModeHandlerDesktop.buildScriptPreview(
+                                              context,
+                                              widget.noteController.text,
+                                              textStyle: _textStyle,
+                                              onNoteLinkTap: (
                                                 note,
                                                 isMiddleClick,
-                                              );
-                                            },
-                                            onTextChanged: (newText) {
-                                              widget
-                                                  .noteController
-                                                  .value = widget
-                                                  .noteController
-                                                  .value
-                                                  .copyWith(
-                                                    text: newText,
-                                                    selection:
-                                                        widget
-                                                            .noteController
-                                                            .selection,
-                                                  );
-                                            },
-                                            controller:
-                                                _previewScrollController,
-                                          )
-                                          : _buildNoteReadPreview(
-                                            context,
-                                            controller:
-                                                _previewScrollController,
-                                          ),
-                                )
-                                : _isSplitView
-                                ? Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Expanded(
-                                      child: RepaintBoundary(
-                                        child: _buildHighlightedTextField(),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    VerticalDivider(
-                                      width: 1,
-                                      thickness: 1,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.outline.withAlpha(128),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: RepaintBoundary(
-                                        child:
-                                            _isScript
-                                                ? ScriptModeHandlerDesktop.buildScriptPreview(
-                                                  context,
-                                                  _splitViewPreviewText,
-                                                  textStyle: _textStyle,
-                                                  onNoteLinkTap: (
-                                                    note,
-                                                    isMiddleClick,
-                                                  ) {
-                                                    _handleNoteLinkTap(
-                                                      note,
-                                                      isMiddleClick,
-                                                    );
-                                                  },
-                                                  onTextChanged: (newText) {
-                                                    _updateControllerAndSplitView(
-                                                      newText,
+                                              ) {
+                                                _handleNoteLinkTap(
+                                                  note,
+                                                  isMiddleClick,
+                                                );
+                                              },
+                                              onTextChanged: (newText) {
+                                                widget
+                                                    .noteController
+                                                    .value = widget
+                                                    .noteController
+                                                    .value
+                                                    .copyWith(
+                                                      text: newText,
                                                       selection:
                                                           widget
                                                               .noteController
                                                               .selection,
                                                     );
-                                                  },
-                                                  controller:
-                                                      _previewScrollController,
-                                                )
-                                                : _buildNoteReadPreview(
-                                                  context,
-                                                  overrideText:
-                                                      _splitViewPreviewText,
-                                                  controller:
-                                                      _previewScrollController,
-                                                ),
+                                              },
+                                              controller:
+                                                  _previewScrollController,
+                                            )
+                                            : _buildNoteReadPreview(
+                                              context,
+                                              controller:
+                                                  _previewScrollController,
+                                            ),
+                                  )
+                                  : _isSplitView
+                                  ? Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Expanded(
+                                        child: RepaintBoundary(
+                                          child: _buildHighlightedTextField(),
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                )
-                                : RepaintBoundary(
-                                  child: _buildHighlightedTextField(),
-                                ),
+                                      const SizedBox(width: 16),
+                                      VerticalDivider(
+                                        width: 1,
+                                        thickness: 1,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outline.withAlpha(128),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: RepaintBoundary(
+                                          child:
+                                              _isScript
+                                                  ? ScriptModeHandlerDesktop.buildScriptPreview(
+                                                    context,
+                                                    _splitViewPreviewText,
+                                                    textStyle: _textStyle,
+                                                    onNoteLinkTap: (
+                                                      note,
+                                                      isMiddleClick,
+                                                    ) {
+                                                      _handleNoteLinkTap(
+                                                        note,
+                                                        isMiddleClick,
+                                                      );
+                                                    },
+                                                    onTextChanged: (newText) {
+                                                      _updateControllerAndSplitView(
+                                                        newText,
+                                                        selection:
+                                                            widget
+                                                                .noteController
+                                                                .selection,
+                                                      );
+                                                    },
+                                                    controller:
+                                                        _previewScrollController,
+                                                  )
+                                                  : _buildNoteReadPreview(
+                                                    context,
+                                                    overrideText:
+                                                        _splitViewPreviewText,
+                                                    controller:
+                                                        _previewScrollController,
+                                                  ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                  : RepaintBoundary(
+                                    child: _buildHighlightedTextField(),
+                                  ),
 
-                            if (_showFindBar)
-                              Positioned(
-                                bottom: 0,
-                                left: 0,
-                                right: 0,
-                                child: FindBar(
-                                  textController: _findController,
-                                  focusNode: _findBarFocusNode,
-                                  onClose: _hideFindBar,
-                                  onFind: (query) {
-                                    _searchManager.performFind(query, () {
-                                      if (mounted) setState(() {});
-                                    });
-                                  },
-                                  onNext: _nextMatch,
-                                  onPrevious: _previousMatch,
-                                  currentIndex: _searchManager.currentFindIndex,
-                                  totalMatches:
-                                      _searchManager.findMatches.length,
-                                  hasMatches: _searchManager.hasMatches,
+                              if (_showFindBar)
+                                Positioned(
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  child: FindBar(
+                                    textController: _findController,
+                                    focusNode: _findBarFocusNode,
+                                    onClose: _hideFindBar,
+                                    onFind: (query) {
+                                      _searchManager.performFind(query, () {
+                                        if (mounted) setState(() {});
+                                      });
+                                    },
+                                    onNext: _nextMatch,
+                                    onPrevious: _previousMatch,
+                                    currentIndex:
+                                        _searchManager.currentFindIndex,
+                                    totalMatches:
+                                        _searchManager.findMatches.length,
+                                    hasMatches: _searchManager.hasMatches,
+                                  ),
                                 ),
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
+            );
           },
         ),
       ),
@@ -1886,7 +1937,10 @@ class _NotaEditorState extends State<NotaEditor>
     return SingleChildScrollView(
       controller: controller,
       physics: const CtrlScrollPhysics(),
-      child: content,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 32),
+        child: content,
+      ),
     );
   }
 
@@ -2109,8 +2163,13 @@ class CtrlScrollPhysics extends ScrollPhysics {
 
   @override
   bool shouldAcceptUserOffset(ScrollMetrics position) {
-    final isControlPressed = HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlLeft) ||
-                             HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlRight);
+    final isControlPressed =
+        HardwareKeyboard.instance.logicalKeysPressed.contains(
+          LogicalKeyboardKey.controlLeft,
+        ) ||
+        HardwareKeyboard.instance.logicalKeysPressed.contains(
+          LogicalKeyboardKey.controlRight,
+        );
     if (isControlPressed) return false;
     return super.shouldAcceptUserOffset(position);
   }
