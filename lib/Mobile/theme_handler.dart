@@ -54,9 +54,13 @@ class ThemeManager {
     required bool colorModeEnabled,
     required bool monochromeEnabled,
     required bool einkEnabled,
+    String fontFamily = 'Roboto',
   }) {
     if (einkEnabled) {
-      return EInkTheme.buildEInkTheme(isLightMode: !isDarkMode);
+      return EInkTheme.buildEInkTheme(
+        isLightMode: !isDarkMode,
+        fontFamily: fontFamily,
+      );
     }
 
     final baseLight = ColorScheme.fromSeed(

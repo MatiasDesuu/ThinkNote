@@ -322,6 +322,7 @@ void main() async {
   final catppuccinEnabled = await ThemeManager.getCatppuccinEnabled();
   final catppuccinFlavor = await ThemeManager.getCatppuccinFlavor();
   final catppuccinAccent = await ThemeManager.getCatppuccinAccent();
+  final appFontFamily = await ThemeManager.getAppFontFamily();
   final einkEnabled = await ThemeManager.getEInkEnabled();
 
   final initialTheme = ThemeManager.buildTheme(
@@ -335,6 +336,7 @@ void main() async {
     catppuccinEnabled: catppuccinEnabled,
     catppuccinFlavor: catppuccinFlavor,
     catppuccinAccent: catppuccinAccent,
+    fontFamily: appFontFamily,
     einkEnabled: einkEnabled,
   );
 
@@ -449,6 +451,7 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
         ThemeManager.getCatppuccinEnabled(),
         ThemeManager.getCatppuccinFlavor(),
         ThemeManager.getCatppuccinAccent(),
+        ThemeManager.getAppFontFamily(),
         ThemeManager.getEInkEnabled(),
       ]);
 
@@ -465,7 +468,8 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
             catppuccinEnabled: results[4] as bool,
             catppuccinFlavor: results[5] as String,
             catppuccinAccent: results[6] as String,
-            einkEnabled: results[7] as bool,
+            fontFamily: results[7] as String,
+            einkEnabled: results[8] as bool,
           );
         });
 
@@ -497,6 +501,7 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
         ThemeManager.getCatppuccinEnabled(),
         ThemeManager.getCatppuccinFlavor(),
         ThemeManager.getCatppuccinAccent(),
+        ThemeManager.getAppFontFamily(),
         ThemeManager.getEInkEnabled(),
       ]);
 
@@ -513,7 +518,8 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
             catppuccinEnabled: results[4] as bool,
             catppuccinFlavor: results[5] as String,
             catppuccinAccent: results[6] as String,
-            einkEnabled: results[7] as bool,
+            fontFamily: results[7] as String,
+            einkEnabled: results[8] as bool,
           );
         });
       }

@@ -387,7 +387,7 @@ class EditorSettings {
   static const bool defaultShowBottomBar = true;
   static const double defaultSplitViewUpdateDelay = 500.0;
 
-  static const List<String> availableFonts = [
+  static const List<String> googleFonts = [
     'Roboto',
     'Inter',
     'Montserrat',
@@ -404,6 +404,70 @@ class EditorSettings {
     'Roboto Mono',
     'Dancing Script',
   ];
+
+  static const List<String> appleFonts = [
+    'Menlo',
+    'Monaco',
+    'SF Mono',
+    'SF Pro Display',
+    'SF Pro Text',
+    'Helvetica Neue',
+    'Helvetica',
+    'Avenir',
+    'Avenir Next',
+    'Palatino',
+    'Optima',
+    'American Typewriter',
+    'Baskerville',
+    'Gill Sans',
+    'Copperplate',
+    'Futura',
+    'Noteworthy',
+    'Didot',
+    'Courier New',
+  ];
+
+  static List<String> get availableFonts => [...googleFonts, ...appleFonts];
+
+  static TextStyle getStyle(
+    String fontFamily, {
+    double? fontSize,
+    double? height,
+    Color? color,
+    FontWeight? fontWeight,
+    FontStyle? fontStyle,
+  }) {
+    if (googleFonts.contains(fontFamily)) {
+      try {
+        return GoogleFonts.getFont(
+          fontFamily,
+          fontSize: fontSize,
+          height: height,
+          color: color,
+          fontWeight: fontWeight,
+          fontStyle: fontStyle,
+        );
+      } catch (e) {
+        return TextStyle(
+          fontFamily: fontFamily,
+          fontSize: fontSize,
+          height: height,
+          color: color,
+          fontWeight: fontWeight,
+          fontStyle: fontStyle,
+        );
+      }
+    } else {
+      return TextStyle(
+        fontFamily: fontFamily,
+        fontSize: fontSize,
+        height: height,
+        color: color,
+        fontWeight: fontWeight,
+        fontStyle: fontStyle,
+      );
+    }
+  }
 
   static List<Color> get predefinedTextColors => [
     const Color(0xFFFFFFFF),
@@ -1514,7 +1578,7 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
                   ),
                   child: Text(
                     'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec suscipit arcu id sem sodales, vel eleifend nunc tincidunt. Nulla faucibus et nulla ut convallis. Vivamus viverra magna venenatis tempor pellentesque. Aliquam erat volutpat. Suspendisse semper gravida sapien id suscipit. Donec non vestibulum lacus. In id lorem ac nisi faucibus dapibus vitae sit amet odio. Sed euismod venenatis libero at blandit. Aenean dictum ante ut viverra ullamcorper. Morbi quis tortor in purus mollis interdum. Sed ullamcorper ex velit, vitae fringilla ligula pellentesque eu. Integer tincidunt faucibus nisl eget condimentum. Curabitur posuere aliquam mollis.\n',
-                    style: GoogleFonts.getFont(
+                    style: EditorSettings.getStyle(
                       _fontFamily,
                       fontSize: _fontSize,
                       height: _lineSpacing,
@@ -1684,7 +1748,7 @@ class _FontSelectorDialog extends StatelessWidget {
                         Expanded(
                           child: Text(
                             font,
-                            style: GoogleFonts.getFont(
+                            style: EditorSettings.getStyle(
                               font,
                               fontSize: 16,
                               color: colorScheme.onSurface,

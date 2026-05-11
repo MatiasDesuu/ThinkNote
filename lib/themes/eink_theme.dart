@@ -53,7 +53,10 @@ class EInkTheme {
     );
   }
 
-  static ThemeData buildEInkTheme({required bool isLightMode}) {
+  static ThemeData buildEInkTheme({
+    required bool isLightMode,
+    required String fontFamily,
+  }) {
     final colorScheme = buildEInkColorScheme(isLightMode: isLightMode);
     final backgroundColor = isLightMode ? pureWhite : pureBlack;
     final foregroundColor = isLightMode ? pureBlack : pureWhite;
@@ -63,6 +66,7 @@ class EInkTheme {
       useMaterial3: true,
       splashFactory: InkRipple.splashFactory,
       colorScheme: colorScheme,
+      fontFamily: fontFamily,
 
       appBarTheme: AppBarTheme(
         scrolledUnderElevation: 0,

@@ -14,6 +14,7 @@ class ThemeManager {
   static const String _catppuccinFlavorKey = 'catppuccin_flavor';
   static const String _catppuccinAccentKey = 'catppuccin_accent';
   static const String _einkEnabledKey = 'eink_enabled';
+  static const String _appFontFamilyKey = 'app_font_family';
 
   static const Map<String, Map<String, Color>> catppuccinColors = {
     'latte': {
@@ -179,6 +180,13 @@ class ThemeManager {
     return await PlatformSettings.get(_einkEnabledKey, false);
   }
 
+  static Future<String> getAppFontFamily() async {
+    return await PlatformSettings.get(
+      _appFontFamilyKey,
+      EditorSettings.defaultFontFamily,
+    );
+  }
+
   static Future<double> getSaturation() async {
     return await PlatformSettings.get(_saturationKey, 1.0);
   }
@@ -197,6 +205,7 @@ class ThemeManager {
     String? catppuccinFlavor,
     String? catppuccinAccent,
     bool? einkEnabled,
+    String? appFontFamily,
     double? saturation,
     double? brightnessValue,
   }) async {
@@ -227,6 +236,9 @@ class ThemeManager {
     if (einkEnabled != null) {
       await PlatformSettings.set(_einkEnabledKey, einkEnabled);
     }
+    if (appFontFamily != null) {
+      await PlatformSettings.set(_appFontFamilyKey, appFontFamily);
+    }
     if (saturation != null) {
       await PlatformSettings.set(_saturationKey, saturation);
     }
@@ -248,11 +260,13 @@ class ThemeManager {
     required bool catppuccinEnabled,
     required String catppuccinFlavor,
     required String catppuccinAccent,
+    required String fontFamily,
     required bool einkEnabled,
   }) {
     if (einkEnabled) {
       return EInkTheme.buildEInkTheme(
         isLightMode: brightness == Brightness.light,
+        fontFamily: fontFamily,
       );
     }
 
@@ -284,6 +298,7 @@ class ThemeManager {
       useMaterial3: true,
       splashFactory: InkRipple.splashFactory,
       colorScheme: colorScheme,
+      fontFamily: fontFamily,
       appBarTheme: AppBarTheme(
         scrolledUnderElevation: 2,
         surfaceTintColor: Colors.transparent,

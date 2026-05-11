@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../widgets/custom_dialog.dart';
 import '../theme_handler.dart' as theme_handler;
 
 const List<Color> materialYouColors = [
@@ -42,6 +44,93 @@ const List<Color> materialYouColors = [
   Color(0xFF90A4AE),
 ];
 
+const List<String> appTextFonts = [
+  'Roboto',
+  'Inter',
+  'Montserrat',
+  'Poppins',
+  'Ubuntu',
+  'Open Sans',
+  'Merriweather',
+  'Lora',
+  'Playfair Display',
+  'Fira Code',
+  'JetBrains Mono',
+  'Source Code Pro',
+  'IBM Plex Mono',
+  'Roboto Mono',
+  'Dancing Script',
+  'Menlo',
+  'Monaco',
+  'SF Mono',
+  'SF Pro Display',
+  'SF Pro Text',
+  'Helvetica Neue',
+  'Helvetica',
+  'Avenir',
+  'Avenir Next',
+  'Palatino',
+  'Optima',
+  'American Typewriter',
+  'Baskerville',
+  'Gill Sans',
+  'Copperplate',
+  'Futura',
+  'Noteworthy',
+  'Didot',
+  'Courier New',
+];
+
+TextStyle appFontStyle(
+  String fontFamily, {
+  double? fontSize,
+  Color? color,
+  FontWeight? fontWeight,
+}) {
+  const googleFonts = {
+    'Roboto',
+    'Inter',
+    'Montserrat',
+    'Poppins',
+    'Ubuntu',
+    'Open Sans',
+    'Merriweather',
+    'Lora',
+    'Playfair Display',
+    'Fira Code',
+    'JetBrains Mono',
+    'Source Code Pro',
+    'IBM Plex Mono',
+    'Roboto Mono',
+    'Dancing Script',
+  };
+
+  if (googleFonts.contains(fontFamily)) {
+    try {
+      return GoogleFonts.getFont(
+        fontFamily,
+        fontSize: fontSize,
+        color: color,
+        fontWeight: fontWeight,
+      );
+    } catch (_) {
+      return TextStyle(
+        fontFamily: fontFamily,
+        fontSize: fontSize,
+        color: color,
+        fontWeight: fontWeight,
+      );
+    }
+  }
+
+  return TextStyle(
+    fontFamily: fontFamily,
+    fontSize: fontSize,
+    color: color,
+    fontWeight: fontWeight,
+  );
+}
+
 class PersonalizationSettingsPanel extends StatefulWidget {
   final VoidCallback? onThemeUpdated;
 
@@ -63,6 +152,7 @@ class PersonalizationSettingsPanelState
   String _catppuccinFlavor = 'mocha';
   String _catppuccinAccent = 'mauve';
   bool _isLoading = true;
+  String _appFontFamily = 'Roboto';
 
   @override
   void initState() {
@@ -79,7 +169,8 @@ class PersonalizationSettingsPanelState
     final catppuccinEnabled =
         await theme_handler.ThemeManager.getCatppuccinEnabled();
     final catppuccinFlavor =
-        await theme_handler.ThemeManager.getCatppuccinFlavor();
+      await theme_handler.ThemeManager.getCatppuccinFlavor();
+    final appFontFamily = await theme_handler.ThemeManager.getAppFontFamily();
     final catppuccinAccent =
         await theme_handler.ThemeManager.getCatppuccinAccent();
     final einkEnabled = await theme_handler.ThemeManager.getEInkEnabled();
@@ -91,6 +182,7 @@ class PersonalizationSettingsPanelState
       _isMonochromeEnabled = monochromeEnabled;
       _isCatppuccinEnabled = catppuccinEnabled;
       _isEInkEnabled = einkEnabled;
+      _appFontFamily = appFontFamily;
       _catppuccinFlavor = catppuccinFlavor;
       _catppuccinAccent = catppuccinAccent;
       _isLoading = false;
@@ -197,9 +289,18 @@ class PersonalizationSettingsPanelState
       catppuccinFlavor: _catppuccinFlavor,
       catppuccinAccent: _catppuccinAccent,
       einkEnabled: _isEInkEnabled,
+      appFontFamily: _appFontFamily,
     );
     widget.onThemeUpdated?.call();
     await _loadCurrentSettings();
+  }
+
+  void _updateAppFontFamily(String fontFamily) {
+    setState(() => _appFontFamily = fontFamily);
+    _saveSettings();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onThemeUpdated?.call();
+    });
   }
 
   Future<void> _openCustomColorPicker() async {
@@ -213,65 +314,199 @@ class PersonalizationSettingsPanelState
 
     updateHex();
 
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Custom color'),
-          content: StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return CustomDialog(
+            title: 'Custom color',
+            icon: Icons.color_lens_rounded,
+            width: 520,
+            height: 440,
+            bottomBar: Container(
+              height: 56,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Row(
                 children: [
-                  HueRingPicker(
-                    pickerColor: tempColor,
-                    onColorChanged: (color) {
-                      setState(() {
-                        tempColor = color;
-                        updateHex();
-                      });
-                    },
-                    enableAlpha: false,
-                    displayThumbColor: true,
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  TextField(
-                    controller: hexController,
-                    decoration: const InputDecoration(
-                      labelText: 'HEX',
-                      prefixText: '#',
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      style: TextButton.styleFrom(
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surfaceContainerHigh,
+                        foregroundColor: Theme.of(context).colorScheme.onSurface,
+                        minimumSize: const Size(0, 44),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.normal,
+                          fontSize: 15,
+                        ),
+                      ),
                     ),
-                    onSubmitted: (value) {
-                      try {
-                        final color = Color(int.parse('FF$value', radix: 16));
-                        setState(() {
-                          tempColor = color;
-                          updateHex();
-                        });
-                      } catch (_) {}
-                    },
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(dialogContext);
+                        _updateColor(tempColor);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        minimumSize: const Size(0, 44),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Apply',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
-              );
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
+              ),
             ),
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                _updateColor(tempColor);
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      HueRingPicker(
+                        pickerColor: tempColor,
+                        onColorChanged: (color) {
+                          setState(() {
+                            tempColor = color;
+                            updateHex();
+                          });
+                        },
+                        enableAlpha: false,
+                        displayThumbColor: true,
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: hexController,
+                        decoration: const InputDecoration(
+                          labelText: 'HEX',
+                          prefixText: '#',
+                        ),
+                        onSubmitted: (value) {
+                          try {
+                            final color = Color(int.parse('FF$value', radix: 16));
+                            setState(() {
+                              tempColor = color;
+                              updateHex();
+                            });
+                          } catch (_) {}
+                        },
+                      ),
+                    ],
+                  ),
+                );
               },
-              child: const Text('Apply'),
             ),
-          ],
-        );
-      },
+          );
+        },
+      );
+    } finally {
+      hexController.dispose();
+    }
+  }
+
+  Future<void> _openAppFontSelector() async {
+    await showDialog<void>(
+      context: context,
+      builder:
+          (dialogContext) => CustomDialog(
+            title: 'App Text Font',
+            icon: Icons.text_fields_rounded,
+            width: 500,
+            height: 400,
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: appTextFonts.length,
+              itemBuilder: (context, index) {
+                final font = appTextFonts[index];
+                final isSelected = font == _appFontFamily;
+
+                return Card(
+                  elevation: 0,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outlineVariant.withAlpha(127),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      mouseCursor: SystemMouseCursors.click,
+                      onTap: () {
+                        Navigator.pop(dialogContext);
+                        _updateAppFontFamily(font);
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        height: 56,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              isSelected
+                                  ? Icons.check_circle_rounded
+                                  : Icons.circle_outlined,
+                              color:
+                                  isSelected
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                font,
+                                style: appFontStyle(
+                                  font,
+                                  fontSize: 16,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            if (isSelected)
+                              Icon(
+                                Icons.check_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 20,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
     );
   }
 
@@ -491,12 +726,20 @@ class PersonalizationSettingsPanelState
                         ElevatedButton.icon(
                           onPressed: _openCustomColorPicker,
                           icon: const Icon(Icons.colorize_rounded),
-                          label: const Text('Pick'),
+                          label: const Text(
+                            'Pick',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
                                 Theme.of(context).colorScheme.primary,
                             foregroundColor:
                                 Theme.of(context).colorScheme.onPrimary,
+                            minimumSize: const Size(0, 50),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                         ),
                       ],
@@ -509,6 +752,80 @@ class PersonalizationSettingsPanelState
 
           const SizedBox(height: 16),
         ],
+
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.text_fields_rounded, color: colorScheme.primary),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'App Text Font',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Change the default font used across the app UI without affecting the editor',
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.only(left: 16.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _appFontFamily,
+                          style: appFontStyle(
+                            _appFontFamily,
+                            fontSize: 16,
+                            color: colorScheme.onSurface,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        onPressed: _openAppFontSelector,
+                        icon: const Icon(Icons.text_fields_rounded),
+                        label: const Text(
+                          'Pick',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
+                          minimumSize: const Size(0, 50),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
 
         if (!_isCatppuccinEnabled) ...[
           Card(

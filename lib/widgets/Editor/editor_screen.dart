@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter/gestures.dart';
@@ -131,7 +130,7 @@ class _NotaEditorState extends State<NotaEditor>
   String _lastTitleText = '';
   String _lastContentText = '';
 
-  TextStyle get _textStyle => GoogleFonts.getFont(
+  TextStyle get _textStyle => EditorSettings.getStyle(
     _fontFamily,
     fontSize: _fontSize,
     height: _lineSpacing,
@@ -235,7 +234,7 @@ class _NotaEditorState extends State<NotaEditor>
     _searchManager = SearchManager(
       noteController: widget.noteController,
       scrollController: _scrollController,
-      textStyle: GoogleFonts.getFont(
+      textStyle: EditorSettings.getStyle(
         _fontFamily,
         fontSize: _fontSize,
         height: _lineSpacing,
@@ -578,10 +577,15 @@ class _NotaEditorState extends State<NotaEditor>
       if (!mounted) return;
       if (_isReadMode && _previewScrollController.hasClients) {
         _previewScrollController.jumpTo(
-            currentOffset.clamp(0.0, _previewScrollController.position.maxScrollExtent));
+          currentOffset.clamp(
+            0.0,
+            _previewScrollController.position.maxScrollExtent,
+          ),
+        );
       } else if (!_isReadMode && _scrollController.hasClients) {
         _scrollController.jumpTo(
-            currentOffset.clamp(0.0, _scrollController.position.maxScrollExtent));
+          currentOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+        );
       }
     });
 
@@ -619,11 +623,16 @@ class _NotaEditorState extends State<NotaEditor>
       if (!mounted) return;
       if (_scrollController.hasClients) {
         _scrollController.jumpTo(
-            currentOffset.clamp(0.0, _scrollController.position.maxScrollExtent));
+          currentOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+        );
       }
       if (_isSplitView && _previewScrollController.hasClients) {
         _previewScrollController.jumpTo(
-            currentOffset.clamp(0.0, _previewScrollController.position.maxScrollExtent));
+          currentOffset.clamp(
+            0.0,
+            _previewScrollController.position.maxScrollExtent,
+          ),
+        );
       }
     });
 
