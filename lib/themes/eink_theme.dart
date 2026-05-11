@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class EInkTheme {
   static const Color pureBlack = Color(0xFF000000);
@@ -53,6 +54,55 @@ class EInkTheme {
     );
   }
 
+  static TextTheme _buildEInkTextTheme(String fontFamily, Color foregroundColor) {
+    const googleFonts = {
+      'Roboto',
+      'Inter',
+      'Montserrat',
+      'Poppins',
+      'Ubuntu',
+      'Open Sans',
+      'Merriweather',
+      'Lora',
+      'Playfair Display',
+      'Fira Code',
+      'JetBrains Mono',
+      'Source Code Pro',
+      'IBM Plex Mono',
+      'Roboto Mono',
+      'Dancing Script',
+    };
+
+    TextTheme baseTheme = const TextTheme(
+      bodyLarge: TextStyle(),
+      bodyMedium: TextStyle(),
+      bodySmall: TextStyle(),
+      displayLarge: TextStyle(),
+      displayMedium: TextStyle(),
+      displaySmall: TextStyle(),
+      headlineLarge: TextStyle(),
+      headlineMedium: TextStyle(),
+      headlineSmall: TextStyle(),
+      titleLarge: TextStyle(),
+      titleMedium: TextStyle(),
+      titleSmall: TextStyle(),
+      labelLarge: TextStyle(),
+      labelMedium: TextStyle(),
+      labelSmall: TextStyle(),
+    );
+
+    if (googleFonts.contains(fontFamily)) {
+      try {
+        baseTheme = GoogleFonts.getTextTheme(fontFamily);
+      } catch (_) {
+        // Use system font if Google Fonts fails
+      }
+    }
+
+    // Apply foreground color to all text styles
+    return baseTheme.apply(bodyColor: foregroundColor, displayColor: foregroundColor);
+  }
+
   static ThemeData buildEInkTheme({
     required bool isLightMode,
     required String fontFamily,
@@ -89,23 +139,7 @@ class EInkTheme {
 
       dividerTheme: DividerThemeData(color: foregroundColor, thickness: 1),
 
-      textTheme: TextTheme(
-        bodyLarge: TextStyle(color: foregroundColor),
-        bodyMedium: TextStyle(color: foregroundColor),
-        bodySmall: TextStyle(color: foregroundColor),
-        displayLarge: TextStyle(color: foregroundColor),
-        displayMedium: TextStyle(color: foregroundColor),
-        displaySmall: TextStyle(color: foregroundColor),
-        headlineLarge: TextStyle(color: foregroundColor),
-        headlineMedium: TextStyle(color: foregroundColor),
-        headlineSmall: TextStyle(color: foregroundColor),
-        titleLarge: TextStyle(color: foregroundColor),
-        titleMedium: TextStyle(color: foregroundColor),
-        titleSmall: TextStyle(color: foregroundColor),
-        labelLarge: TextStyle(color: foregroundColor),
-        labelMedium: TextStyle(color: foregroundColor),
-        labelSmall: TextStyle(color: foregroundColor),
-      ),
+      textTheme: _buildEInkTextTheme(fontFamily, foregroundColor),
 
       iconTheme: IconThemeData(color: foregroundColor),
       primaryIconTheme: IconThemeData(color: foregroundColor),

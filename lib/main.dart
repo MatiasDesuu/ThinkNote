@@ -405,12 +405,22 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
   final GlobalKey<_ThinkNoteHomeState> thinkNoteHomeKey =
       GlobalKey<_ThinkNoteHomeState>();
 
+  late VoidCallback _themeListenerCallback;
+
   @override
   void initState() {
     super.initState();
     _currentTheme = widget.initialTheme;
+    _themeListenerCallback = _updateTheme;
+    themeNotifier.addListener(_themeListenerCallback);
     _initializeTheme();
     _handleDelayedMaximize();
+  }
+
+  @override
+  void dispose() {
+    themeNotifier.removeListener(_themeListenerCallback);
+    super.dispose();
   }
 
   Future<void> _handleDelayedMaximize() async {

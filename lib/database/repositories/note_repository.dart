@@ -3,6 +3,7 @@ import '../database_config.dart' as config;
 import '../models/note.dart';
 import '../database_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/note_date_service.dart';
 
 class NoteRepository {
   final DatabaseHelper _dbHelper;
@@ -188,6 +189,11 @@ class NoteRepository {
       );
 
       DatabaseService().notifyDatabaseChanged();
+      await NoteDateService().syncNoteDates(
+        noteId: note.id!,
+        title: note.title,
+        content: note.content,
+      );
       NotificationService().notifyNoteUpdate(note);
       return 1;
     } finally {
@@ -437,6 +443,11 @@ class NoteRepository {
       );
 
       DatabaseService().notifyDatabaseChanged();
+      await NoteDateService().syncNoteDates(
+        noteId: noteId,
+        title: title,
+        content: content,
+      );
     } finally {
       stmt.close();
     }

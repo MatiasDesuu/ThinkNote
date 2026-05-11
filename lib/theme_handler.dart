@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'Settings/editor_settings_panel.dart';
 import 'themes/eink_theme.dart';
 
@@ -249,6 +250,35 @@ class ThemeManager {
     themeNotifier.refreshTheme();
   }
 
+  static TextTheme _buildTextTheme(String fontFamily, TextTheme baseTextTheme) {
+    const googleFonts = {
+      'Roboto',
+      'Inter',
+      'Montserrat',
+      'Poppins',
+      'Ubuntu',
+      'Open Sans',
+      'Merriweather',
+      'Lora',
+      'Playfair Display',
+      'Fira Code',
+      'JetBrains Mono',
+      'Source Code Pro',
+      'IBM Plex Mono',
+      'Roboto Mono',
+      'Dancing Script',
+    };
+
+    if (googleFonts.contains(fontFamily)) {
+      try {
+        return GoogleFonts.getTextTheme(fontFamily, baseTextTheme);
+      } catch (_) {
+        return baseTextTheme;
+      }
+    }
+    return baseTextTheme;
+  }
+
   static ThemeData buildTheme({
     required Color color,
     required Brightness brightness,
@@ -293,12 +323,19 @@ class ThemeManager {
       catppuccinAccent: catppuccinAccent,
     );
 
+    final baseTextTheme = ThemeData(
+      brightness: brightness,
+      colorScheme: colorScheme,
+      useMaterial3: true,
+    ).textTheme;
+
     return ThemeData(
       brightness: brightness,
       useMaterial3: true,
       splashFactory: InkRipple.splashFactory,
       colorScheme: colorScheme,
       fontFamily: fontFamily,
+      textTheme: _buildTextTheme(fontFamily, baseTextTheme),
       appBarTheme: AppBarTheme(
         scrolledUnderElevation: 2,
         surfaceTintColor: Colors.transparent,
