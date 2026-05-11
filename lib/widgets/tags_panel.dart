@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/tags_service.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class TagsPanel extends StatefulWidget {
   final Function(String tag)? onTagSelected;
@@ -174,10 +174,10 @@ class _TagsPanelState extends State<TagsPanel> {
                                           Symbols.tag_rounded,
                                           size: 16,
                                           color:
-                                              isSelected
-                                                  ? colorScheme
-                                                      .onPrimaryContainer
-                                                  : colorScheme.primary,
+                                            isSelected
+                                              ? colorScheme
+                                                .onPrimaryContainer
+                                              : colorScheme.primary,
                                         ),
                                         Flexible(
                                           child: Text(
