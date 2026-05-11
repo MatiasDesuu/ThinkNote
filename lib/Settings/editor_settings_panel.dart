@@ -1470,66 +1470,37 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
 
                 Row(
                   children: [
-                    Text(
-                      'Font family:',
-                      style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+                    Expanded(
+                      child: Text(
+                        _fontFamily,
+                        style: TextStyle(
+                          fontFamily: _fontFamily,
+                          fontSize: 16,
+                          color: colorScheme.onSurface,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.only(left: 16.0),
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                      child: InkWell(
-                        mouseCursor: SystemMouseCursors.click,
-                        onTap: _showFontSelector,
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHighest
-                                .withAlpha(127),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: colorScheme.outline,
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.text_fields_rounded,
-                                color: colorScheme.primary,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  _fontFamily,
-                                  style: TextStyle(
-                                    fontFamily: _fontFamily,
-                                    fontSize: 16,
-                                    color: colorScheme.onSurface,
-                                  ),
-                                ),
-                              ),
-                              Icon(
-                                Icons.arrow_drop_down_rounded,
-                                color: colorScheme.onSurface,
-                              ),
-                            ],
-                          ),
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: _showFontSelector,
+                      icon: const Icon(Icons.text_fields_rounded),
+                      label: const Text(
+                        'Pick',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                        minimumSize: const Size(0, 50),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),

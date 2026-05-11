@@ -265,39 +265,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ? colorScheme.surfaceContainerHighest
                 : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: () => setState(() => _selectedIndex = index),
-          child: SizedBox(
-            height: 48,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: [
-                  Icon(
-                    icon,
-                    color:
-                        isSelected
-                            ? colorScheme.primary
-                            : colorScheme.onSurfaceVariant,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      text,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color:
-                            isSelected
-                                ? colorScheme.primary
-                                : colorScheme.onSurface,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            mouseCursor: SystemMouseCursors.click,
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => setState(() => _selectedIndex = index),
+            child: SizedBox(
+              height: 48,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      icon,
+                      color:
+                          isSelected
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        text,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color:
+                              isSelected
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurface,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
