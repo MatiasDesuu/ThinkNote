@@ -89,6 +89,75 @@ class HelpFormatsPanel extends StatelessWidget {
               children: [
                 Row(
                   children: [
+                    Icon(
+                      Icons.calendar_month_rounded,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Calendar Dates',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Use @date(...) to attach notes to calendar days',
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Single date (ISO)',
+                  syntax: '@date(2026-05-25)',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Single date (slashes)',
+                  syntax: '@date(25/05/2026)',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Single date (month name)',
+                  syntax: '@date(25 May 2026)',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Month name (alternate)',
+                  syntax: '@date(May 25, 2026)',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Multiple dates',
+                  syntax: '@date(2026-05-11) @date(2026-05-15)',
+                ),
+                _buildFormatItem(
+                  context: context,
+                  label: 'Date range',
+                  syntax: '@date(2026-05-11 -> 2026-05-15)',
+                  showDivider: false,
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
                     Icon(Icons.title_rounded, color: colorScheme.primary),
                     const SizedBox(width: 8),
                     const Text(
