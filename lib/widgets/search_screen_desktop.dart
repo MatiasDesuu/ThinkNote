@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:async';
 import '../database/models/note.dart';
 import '../database/models/notebook.dart';
@@ -132,6 +133,10 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
     }
   }
 
+  void _closeSearch() {
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -145,143 +150,153 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
             ? (screenSize.height * 0.7 > 500 ? 500.0 : screenSize.height * 0.7)
             : 80.0;
 
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(color: Colors.black.withAlpha(77)),
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(
+          LogicalKeyboardKey.keyF,
+          control: true,
+          shift: true,
+        ): _closeSearch,
+        const SingleActivator(LogicalKeyboardKey.f9): _closeSearch,
+      },
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _closeSearch,
+              child: Container(color: Colors.black.withAlpha(77)),
+            ),
           ),
-        ),
 
-        Positioned(
-          top: 20,
-          left: (screenSize.width - dialogWidth) / 2,
-          child: Material(
-            color: Colors.transparent,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                width: dialogWidth,
-                height: dialogHeight,
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainer,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(51),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _searchController,
-                              focusNode: _searchFocusNode,
-                              autofocus: true,
-                              decoration: InputDecoration(
-                                hintText: 'Search notebooks and notes...',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                filled: true,
-                                fillColor: colorScheme.surfaceContainerHighest
-                                    .withAlpha(76),
-                                prefixIcon: Icon(
-                                  Icons.search_rounded,
-                                  color: colorScheme.primary,
-                                ),
-                                suffixIcon:
-                                    _searchController.text.isNotEmpty
-                                        ? IconButton(
-                                          icon: Icon(
-                                            Icons.clear_all_rounded,
-                                            color: colorScheme.onSurface,
-                                          ),
-                                          onPressed: () {
-                                            _searchController.clear();
-                                            setState(() {
-                                              _searchResults = [];
-                                            });
-                                          },
-                                        )
-                                        : null,
-                              ),
-                              style: TextStyle(
-                                color: colorScheme.onSurface,
-                                fontSize: 16,
-                              ),
-                              onSubmitted: (value) {
-                                if (_searchResults.isNotEmpty) {
-                                  _handleItemTap(_searchResults.first);
-                                }
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-
-                          CustomTooltip(
-                            message:
-                                _isAdvancedSearchEnabled
-                                    ? 'Disable advanced search (title only)'
-                                    : 'Enable advanced search (title + content)',
-                            builder:
-                                (context, isHovering) => IconButton(
-                                  icon: Icon(
-                                    _isAdvancedSearchEnabled
-                                        ? Icons.insights_rounded
-                                        : Icons.insights_outlined,
-                                    color:
-                                        _isAdvancedSearchEnabled
-                                            ? colorScheme.primary
-                                            : colorScheme.onSurface,
-                                  ),
-                                  onPressed: _toggleAdvancedSearch,
-                                ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: Icon(
-                              Icons.close_rounded,
-                              color: colorScheme.onSurface,
-                            ),
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                        ],
+          Positioned(
+            top: 20,
+            left: (screenSize.width - dialogWidth) / 2,
+            child: Material(
+              color: Colors.transparent,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  width: dialogWidth,
+                  height: dialogHeight,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainer,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(51),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
-                    ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _searchController,
+                                focusNode: _searchFocusNode,
+                                autofocus: true,
+                                decoration: InputDecoration(
+                                  hintText: 'Search notebooks and notes...',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  filled: true,
+                                  fillColor: colorScheme.surfaceContainerHighest
+                                      .withAlpha(76),
+                                  prefixIcon: Icon(
+                                    Icons.search_rounded,
+                                    color: colorScheme.primary,
+                                  ),
+                                  suffixIcon:
+                                      _searchController.text.isNotEmpty
+                                          ? IconButton(
+                                            icon: Icon(
+                                              Icons.clear_all_rounded,
+                                              color: colorScheme.onSurface,
+                                            ),
+                                            onPressed: () {
+                                              _searchController.clear();
+                                              setState(() {
+                                                _searchResults = [];
+                                              });
+                                            },
+                                          )
+                                          : null,
+                                ),
+                                style: TextStyle(
+                                  color: colorScheme.onSurface,
+                                  fontSize: 16,
+                                ),
+                                onSubmitted: (value) {
+                                  if (_searchResults.isNotEmpty) {
+                                    _handleItemTap(_searchResults.first);
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
 
-                    if (hasResults)
-                      Expanded(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 8,
-                            horizontal: 8,
-                          ),
-                          itemCount: _searchResults.length,
-                          itemBuilder: (context, index) {
-                            return _buildSearchResultItem(
-                              _searchResults[index],
-                            );
-                          },
+                            CustomTooltip(
+                              message:
+                                  _isAdvancedSearchEnabled
+                                      ? 'Disable advanced search (title only)'
+                                      : 'Enable advanced search (title + content)',
+                              builder:
+                                  (context, isHovering) => IconButton(
+                                    icon: Icon(
+                                      _isAdvancedSearchEnabled
+                                          ? Icons.insights_rounded
+                                          : Icons.insights_outlined,
+                                      color:
+                                          _isAdvancedSearchEnabled
+                                              ? colorScheme.primary
+                                              : colorScheme.onSurface,
+                                    ),
+                                    onPressed: _toggleAdvancedSearch,
+                                  ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: colorScheme.onSurface,
+                              ),
+                              onPressed: _closeSearch,
+                            ),
+                          ],
                         ),
                       ),
-                  ],
+
+                      if (hasResults)
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 8,
+                            ),
+                            itemCount: _searchResults.length,
+                            itemBuilder: (context, index) {
+                              return _buildSearchResultItem(
+                                _searchResults[index],
+                              );
+                            },
+                                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

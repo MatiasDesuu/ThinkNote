@@ -1265,6 +1265,11 @@ class _NotaEditorState extends State<NotaEditor>
   }
 
   void _handleFindInEditor() {
+    if (_showFindBar) {
+      _hideFindBar();
+      return;
+    }
+
     if (_isReadMode) return;
 
     setState(() {
