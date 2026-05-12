@@ -10,6 +10,7 @@ import '../../database/repositories/think_repository.dart';
 import '../../database/database_helper.dart';
 import '../../database/database_service.dart';
 import '../confirmation_dialogue.dart';
+import 'trash_item_preview_panel.dart';
 
 class TrashPanel extends StatefulWidget {
   final Function(Notebook)? onNotebookRestored;
@@ -40,6 +41,8 @@ class TrashPanelState extends State<TrashPanel> {
   late StreamController<List<dynamic>> _trashController;
   late Stream<List<dynamic>> _trashStream;
   late StreamSubscription<void> _databaseChangeSubscription;
+  OverlayEntry? _itemPreviewOverlay;
+  String? _previewedItemKey;
 
   @override
   void initState() {
@@ -57,6 +60,7 @@ class TrashPanelState extends State<TrashPanel> {
 
   @override
   void dispose() {
+    _closeItemPreview();
     _trashController.close();
     _databaseChangeSubscription.cancel();
     super.dispose();
@@ -95,6 +99,9 @@ class TrashPanelState extends State<TrashPanel> {
 
   Future<void> _restoreNote(Note note) async {
     await _noteRepository.restoreNote(note.id!);
+    if (_previewedItemKey == _previewKey(note)) {
+      _closeItemPreview();
+    }
     widget.onNoteRestored?.call(note);
     widget.onTrashUpdated?.call();
     reloadTrash();
@@ -102,6 +109,9 @@ class TrashPanelState extends State<TrashPanel> {
 
   Future<void> _restoreThink(Think think) async {
     await _thinkRepository.restoreThink(think.id!);
+    if (_previewedItemKey == _previewKey(think)) {
+      _closeItemPreview();
+    }
     widget.onThinkRestored?.call(think);
     widget.onTrashUpdated?.call();
     reloadTrash();
@@ -116,6 +126,7 @@ class TrashPanelState extends State<TrashPanel> {
           'Are you sure you want to permanently delete this notebook and all its contents?\n${notebook.name}\nThis action cannot be undone.',
       confirmText: 'Delete',
       confirmColor: colorScheme.error,
+      useRootNavigator: true,
     );
 
     if (confirmed == true) {
@@ -125,8 +136,13 @@ class TrashPanelState extends State<TrashPanel> {
     }
   }
 
-  Future<void> _permanentlyDeleteNote(Note note) async {
+  Future<bool> _permanentlyDeleteNote(Note note) async {
     final colorScheme = Theme.of(context).colorScheme;
+    final wasPreviewing = _previewedItemKey == _previewKey(note);
+    if (wasPreviewing) {
+      _closeItemPreview();
+    }
+
     final confirmed = await showDeleteConfirmationDialog(
       context: context,
       title: 'Delete Permanently',
@@ -134,17 +150,29 @@ class TrashPanelState extends State<TrashPanel> {
           'Are you sure you want to permanently delete this note?\n${note.title}\nThis action cannot be undone.',
       confirmText: 'Delete',
       confirmColor: colorScheme.error,
+      useRootNavigator: true,
     );
 
     if (confirmed == true) {
       await _noteRepository.hardDeleteNote(note.id!);
       widget.onTrashUpdated?.call();
       reloadTrash();
+      return true;
     }
+
+    if (wasPreviewing && mounted) {
+      _showNotePreview(note);
+    }
+    return false;
   }
 
-  Future<void> _permanentlyDeleteThink(Think think) async {
+  Future<bool> _permanentlyDeleteThink(Think think) async {
     final colorScheme = Theme.of(context).colorScheme;
+    final wasPreviewing = _previewedItemKey == _previewKey(think);
+    if (wasPreviewing) {
+      _closeItemPreview();
+    }
+
     final confirmed = await showDeleteConfirmationDialog(
       context: context,
       title: 'Delete Permanently',
@@ -152,13 +180,20 @@ class TrashPanelState extends State<TrashPanel> {
           'Are you sure you want to permanently delete this think?\n${think.title}\nThis action cannot be undone.',
       confirmText: 'Delete',
       confirmColor: colorScheme.error,
+      useRootNavigator: true,
     );
 
     if (confirmed == true) {
       await _thinkRepository.permanentlyDeleteThink(think.id!);
       widget.onTrashUpdated?.call();
       reloadTrash();
+      return true;
     }
+
+    if (wasPreviewing && mounted) {
+      _showThinkPreview(think);
+    }
+    return false;
   }
 
   Future<void> _deleteAllItems() async {
@@ -186,8 +221,98 @@ class TrashPanelState extends State<TrashPanel> {
         await _thinkRepository.permanentlyDeleteThink(think.id!);
       }
       widget.onTrashUpdated?.call();
+      _closeItemPreview();
       reloadTrash();
     }
+  }
+
+  void _showNotePreview(Note note) {
+    _showItemPreview(
+      itemKey: _previewKey(note),
+      title: note.title,
+      content: note.content,
+      deletedAt: note.deletedAt,
+      icon: Icons.description_outlined,
+      onRestore: () => _restoreNote(note),
+      onDeletePermanently: () => _permanentlyDeleteNote(note),
+    );
+  }
+
+  void _showThinkPreview(Think think) {
+    _showItemPreview(
+      itemKey: _previewKey(think),
+      title: think.title,
+      content: think.content,
+      deletedAt: think.deletedAt,
+      icon: Icons.lightbulb_outline_rounded,
+      onRestore: () => _restoreThink(think),
+      onDeletePermanently: () => _permanentlyDeleteThink(think),
+    );
+  }
+
+  void _showItemPreview({
+    required String itemKey,
+    required String title,
+    required String content,
+    required DateTime? deletedAt,
+    required IconData icon,
+    required Future<void> Function() onRestore,
+    required Future<bool> Function() onDeletePermanently,
+  }) {
+    _closeItemPreview();
+
+    final panelBox = context.findRenderObject() as RenderBox?;
+    final overlayState = Overlay.of(context);
+    if (panelBox == null) return;
+
+    final panelOffset = panelBox.localToGlobal(Offset.zero);
+    final panelSize = panelBox.size;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final previewWidth = (screenWidth * 0.34).clamp(360.0, 520.0);
+    final left = (panelOffset.dx - previewWidth - 12).clamp(
+      12.0,
+      screenWidth - previewWidth - 12,
+    );
+    final top = panelOffset.dy + 52;
+    final height = (panelSize.height - 76).clamp(320.0, panelSize.height);
+    final theme = Theme.of(context);
+
+    _previewedItemKey = itemKey;
+    _itemPreviewOverlay = OverlayEntry(
+      builder:
+          (context) => Theme(
+            data: theme,
+            child: Positioned(
+              left: left,
+              top: top,
+              width: previewWidth,
+              height: height,
+              child: TrashItemPreviewPanel(
+                title: title,
+                content: content,
+                deletedAt: deletedAt,
+                icon: icon,
+                onClose: _closeItemPreview,
+                onCancel: _closeItemPreview,
+                onRestore: onRestore,
+                onDeletePermanently: onDeletePermanently,
+                formatDate: _formatDate,
+              ),
+            ),
+          ),
+    );
+
+    overlayState.insert(_itemPreviewOverlay!);
+  }
+
+  void _closeItemPreview() {
+    _itemPreviewOverlay?.remove();
+    _itemPreviewOverlay = null;
+    _previewedItemKey = null;
+  }
+
+  String _previewKey(dynamic item) {
+    return '${item.runtimeType}_${item.id}';
   }
 
   @override
@@ -368,123 +493,133 @@ class TrashPanelState extends State<TrashPanel> {
 
     return MouseRegionHoverItem(
       builder: (context, isHovering) {
-        return Card(
-          key: Key('${item.runtimeType}_${item.id}'),
-          margin: const EdgeInsets.only(bottom: 8),
-          color: colorScheme.surfaceContainerHighest,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Row(
-              children: [
-                Icon(iconData, color: colorScheme.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        title,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (deletedAt != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            'Deleted on ${_formatDate(deletedAt)}',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 10,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-
-                Opacity(
-                  opacity: isHovering ? 1.0 : 0.0,
-                  child: IgnorePointer(
-                    ignoring: !isHovering,
-                    child: Row(
+        return GestureDetector(
+          onTap:
+              isNote
+                  ? () => _showNotePreview(item)
+                  : isThink
+                  ? () => _showThinkPreview(item)
+                  : null,
+          child: Card(
+            key: Key('${item.runtimeType}_${item.id}'),
+            margin: const EdgeInsets.only(bottom: 8),
+            color: colorScheme.surfaceContainerHighest,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: Row(
+                children: [
+                  Icon(iconData, color: colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4),
-                          child: MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: GestureDetector(
-                              onTap: () {
-                                if (isNotebook) {
-                                  _restoreNotebook(item);
-                                } else if (isNote) {
-                                  _restoreNote(item);
-                                } else if (isThink) {
-                                  _restoreThink(item);
-                                }
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.tertiary.withAlpha(20),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Icon(
-                                  Icons.restore_rounded,
-                                  size: 14,
-                                  color: colorScheme.tertiary,
-                                ),
+                        Text(
+                          title,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (deletedAt != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              'Deleted on ${_formatDate(deletedAt)}',
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 10,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ),
-
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4),
-                          child: MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: GestureDetector(
-                              onTap: () {
-                                if (isNotebook) {
-                                  _permanentlyDeleteNotebook(item);
-                                } else if (isNote) {
-                                  _permanentlyDeleteNote(item);
-                                } else if (isThink) {
-                                  _permanentlyDeleteThink(item);
-                                }
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.error.withAlpha(20),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Icon(
-                                  Icons.delete_forever_rounded,
-                                  size: 14,
-                                  color: colorScheme.error,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
-                ),
-              ],
+
+                  Opacity(
+                    opacity: isHovering ? 1.0 : 0.0,
+                    child: IgnorePointer(
+                      ignoring: !isHovering,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: GestureDetector(
+                                onTap: () {
+                                  if (isNotebook) {
+                                    _restoreNotebook(item);
+                                  } else if (isNote) {
+                                    _restoreNote(item);
+                                  } else if (isThink) {
+                                    _restoreThink(item);
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.tertiary.withAlpha(20),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Icon(
+                                    Icons.restore_rounded,
+                                    size: 14,
+                                    color: colorScheme.tertiary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: GestureDetector(
+                                onTap: () {
+                                  if (isNotebook) {
+                                    _permanentlyDeleteNotebook(item);
+                                  } else if (isNote) {
+                                    _permanentlyDeleteNote(item);
+                                  } else if (isThink) {
+                                    _permanentlyDeleteThink(item);
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.error.withAlpha(20),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Icon(
+                                    Icons.delete_forever_rounded,
+                                    size: 14,
+                                    color: colorScheme.error,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );

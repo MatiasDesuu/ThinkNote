@@ -9,6 +9,7 @@ Future<bool?> showDeleteConfirmationDialog({
   String confirmText = 'Yes, delete',
   Color? confirmColor,
   bool barrierDismissible = true,
+  bool useRootNavigator = false,
 }) {
   final colorScheme = Theme.of(context).colorScheme;
   final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -19,7 +20,7 @@ Future<bool?> showDeleteConfirmationDialog({
   return showDialog<bool>(
     context: context,
     barrierDismissible: barrierDismissible,
-    useRootNavigator: false,
+    useRootNavigator: useRootNavigator,
     builder:
         (context) => AppShortcuts(
           shortcuts: ShortcutsHandler.getDialogShortcuts(
