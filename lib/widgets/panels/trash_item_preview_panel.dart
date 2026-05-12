@@ -82,19 +82,9 @@ class TrashItemPreviewPanel extends StatelessWidget {
             ),
             Divider(height: 1, color: colorScheme.outline.withAlpha(80)),
             Expanded(
-              child: Container(
+              child: SizedBox(
                 width: double.infinity,
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerLow,
-                  border: Border(
-                    left: BorderSide(
-                      color: colorScheme.outline.withAlpha(110),
-                    ),
-                    right: BorderSide(
-                      color: colorScheme.outline.withAlpha(110),
-                    ),
-                  ),
-                ),
+
                 child: Scrollbar(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
