@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'shortcuts_handler.dart';
 import 'widgets/Editor/unified_text_handler.dart';
 import 'database/models/note.dart';
 import 'Settings/editor_settings_panel.dart' show EditorSettingsCache;
@@ -206,9 +206,7 @@ class CtrlScrollPhysics extends ScrollPhysics {
 
   @override
   bool shouldAcceptUserOffset(ScrollMetrics position) {
-    final isControlPressed = HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlLeft) ||
-                             HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlRight);
-    if (isControlPressed) return false;
+    if (ShortcutsHandler.isPrimaryModifierPressed) return false;
     return super.shouldAcceptUserOffset(position);
   }
 }

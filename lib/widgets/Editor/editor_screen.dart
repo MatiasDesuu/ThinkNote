@@ -1405,7 +1405,7 @@ class _NotaEditorState extends State<NotaEditor>
           onCreateScriptBlock: _handleCreateScriptBlock,
           onFindInEditor: _handleFindInEditor,
         ),
-        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyS):
+        ShortcutsHandler.primaryActivator(LogicalKeyboardKey.keyS):
             const SaveIntent(),
       },
       child: Actions(
@@ -1430,14 +1430,7 @@ class _NotaEditorState extends State<NotaEditor>
             return Listener(
               onPointerSignal: (pointerSignal) {
                 if (pointerSignal is PointerScrollEvent) {
-                  final isControlPressed =
-                      HardwareKeyboard.instance.logicalKeysPressed.contains(
-                        LogicalKeyboardKey.controlLeft,
-                      ) ||
-                      HardwareKeyboard.instance.logicalKeysPressed.contains(
-                        LogicalKeyboardKey.controlRight,
-                      );
-                  if (isControlPressed) {
+                  if (ShortcutsHandler.isPrimaryModifierPressed) {
                     setState(() {
                       if (pointerSignal.scrollDelta.dy < 0) {
                         _fontSize = (_fontSize + 1.0).clamp(8.0, 72.0);
@@ -1485,15 +1478,15 @@ class _NotaEditorState extends State<NotaEditor>
 
                   if (event is KeyDownEvent) {
                     if (event.logicalKey == LogicalKeyboardKey.keyT &&
-                        HardwareKeyboard.instance.isControlPressed) {
+                        ShortcutsHandler.isPrimaryModifierPressed) {
                       return KeyEventResult.ignored;
                     }
                     if (event.logicalKey == LogicalKeyboardKey.keyN &&
-                        HardwareKeyboard.instance.isControlPressed) {
+                        ShortcutsHandler.isPrimaryModifierPressed) {
                       return KeyEventResult.ignored;
                     }
                     if (event.logicalKey == LogicalKeyboardKey.keyW &&
-                        HardwareKeyboard.instance.isControlPressed) {
+                        ShortcutsHandler.isPrimaryModifierPressed) {
                       return KeyEventResult.ignored;
                     }
                   }
@@ -1875,7 +1868,7 @@ class _NotaEditorState extends State<NotaEditor>
 
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.keyS &&
-            HardwareKeyboard.instance.isControlPressed &&
+            ShortcutsHandler.isPrimaryModifierPressed &&
             !HardwareKeyboard.instance.isShiftPressed) {
           _handleSave();
           return KeyEventResult.handled;
@@ -1883,15 +1876,15 @@ class _NotaEditorState extends State<NotaEditor>
 
         if (event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.keyT &&
-              HardwareKeyboard.instance.isControlPressed) {
+              ShortcutsHandler.isPrimaryModifierPressed) {
             return KeyEventResult.ignored;
           }
           if (event.logicalKey == LogicalKeyboardKey.keyN &&
-              HardwareKeyboard.instance.isControlPressed) {
+              ShortcutsHandler.isPrimaryModifierPressed) {
             return KeyEventResult.ignored;
           }
           if (event.logicalKey == LogicalKeyboardKey.keyW &&
-              HardwareKeyboard.instance.isControlPressed) {
+              ShortcutsHandler.isPrimaryModifierPressed) {
             return KeyEventResult.ignored;
           }
         }
@@ -2177,14 +2170,7 @@ class CtrlScrollPhysics extends ScrollPhysics {
 
   @override
   bool shouldAcceptUserOffset(ScrollMetrics position) {
-    final isControlPressed =
-        HardwareKeyboard.instance.logicalKeysPressed.contains(
-          LogicalKeyboardKey.controlLeft,
-        ) ||
-        HardwareKeyboard.instance.logicalKeysPressed.contains(
-          LogicalKeyboardKey.controlRight,
-        );
-    if (isControlPressed) return false;
+    if (ShortcutsHandler.isPrimaryModifierPressed) return false;
     return super.shouldAcceptUserOffset(position);
   }
 }

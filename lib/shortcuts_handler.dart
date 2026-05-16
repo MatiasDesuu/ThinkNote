@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -14,6 +15,25 @@ class GlobalSearchIntent extends Intent {
 }
 
 class ShortcutsHandler {
+  static bool get isMacOS => defaultTargetPlatform == TargetPlatform.macOS;
+
+  static bool get isPrimaryModifierPressed =>
+      isMacOS
+          ? HardwareKeyboard.instance.isMetaPressed
+          : HardwareKeyboard.instance.isControlPressed;
+
+  static SingleActivator primaryActivator(
+    LogicalKeyboardKey key, {
+    bool shift = false,
+  }) {
+    return SingleActivator(
+      key,
+      control: !isMacOS,
+      meta: isMacOS,
+      shift: shift,
+    );
+  }
+
   static Map<ShortcutActivator, VoidCallback> getAppShortcuts({
     required VoidCallback onCloseDialog,
     required VoidCallback onToggleSidebar,
@@ -42,46 +62,24 @@ class ShortcutsHandler {
           onToggleSidebar,
       const SingleActivator(LogicalKeyboardKey.f3): onToggleNotesPanel,
       const SingleActivator(LogicalKeyboardKey.f1): onToggleEditorCentered,
-      const SingleActivator(LogicalKeyboardKey.keyN, control: true):
-          onCreateNote,
-      const SingleActivator(
-            LogicalKeyboardKey.keyN,
-            control: true,
-            shift: true,
-          ):
-          onCreateNotebook,
-      const SingleActivator(LogicalKeyboardKey.keyT, control: true): onNewTab,
-      const SingleActivator(LogicalKeyboardKey.keyD, control: true):
-          onCreateTodo,
-      const SingleActivator(
-            LogicalKeyboardKey.keyT,
-            control: true,
-            shift: true,
-          ):
+        primaryActivator(LogicalKeyboardKey.keyN): onCreateNote,
+        primaryActivator(LogicalKeyboardKey.keyN, shift: true): onCreateNotebook,
+        primaryActivator(LogicalKeyboardKey.keyT): onNewTab,
+        primaryActivator(LogicalKeyboardKey.keyD): onCreateTodo,
+        primaryActivator(LogicalKeyboardKey.keyT, shift: true):
           onToggleTemplatesPanel,
-      const SingleActivator(LogicalKeyboardKey.keyS, control: true): onSaveNote,
-      const SingleActivator(LogicalKeyboardKey.keyF, control: true): onSearch,
+        primaryActivator(LogicalKeyboardKey.keyS): onSaveNote,
+        primaryActivator(LogicalKeyboardKey.keyF): onSearch,
       const SingleActivator(LogicalKeyboardKey.f4): onToggleImmersiveMode,
       const SingleActivator(LogicalKeyboardKey.f5): onForceSync,
       const SingleActivator(LogicalKeyboardKey.f6): onToggleCalendarPanel,
       const SingleActivator(LogicalKeyboardKey.f7): onToggleFavoritesPanel,
       const SingleActivator(LogicalKeyboardKey.f8): onToggleTrashPanel,
       const SingleActivator(LogicalKeyboardKey.f9): onGlobalSearch,
-      const SingleActivator(
-            LogicalKeyboardKey.keyF,
-            control: true,
-            shift: true,
-          ):
-          onGlobalSearch,
-      const SingleActivator(LogicalKeyboardKey.keyW, control: true): onCloseTab,
-      const SingleActivator(LogicalKeyboardKey.keyP, control: true):
-          onToggleReadMode,
-      const SingleActivator(
-            LogicalKeyboardKey.keyP,
-            control: true,
-            shift: true,
-          ):
-          onToggleSplitView,
+      primaryActivator(LogicalKeyboardKey.keyF, shift: true): onGlobalSearch,
+      primaryActivator(LogicalKeyboardKey.keyW): onCloseTab,
+      primaryActivator(LogicalKeyboardKey.keyP): onToggleReadMode,
+      primaryActivator(LogicalKeyboardKey.keyP, shift: true): onToggleSplitView,
     };
   }
 
@@ -110,12 +108,13 @@ class ShortcutsHandler {
   }) {
     if (event is! KeyDownEvent) return false;
 
-    final bool isControlPressed = HardwareKeyboard.instance.isControlPressed;
+    final bool isPrimaryModifierPressed =
+      ShortcutsHandler.isPrimaryModifierPressed;
     final bool isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
     final bool isAltPressed = HardwareKeyboard.instance.isAltPressed;
     final LogicalKeyboardKey key = event.logicalKey;
 
-    if (isControlPressed && isShiftPressed && !isAltPressed) {
+    if (isPrimaryModifierPressed && isShiftPressed && !isAltPressed) {
       if (key == LogicalKeyboardKey.keyN) {
         onCreateNotebook();
         return true;
@@ -134,7 +133,7 @@ class ShortcutsHandler {
       }
     }
 
-    if (isControlPressed && !isShiftPressed && !isAltPressed) {
+    if (isPrimaryModifierPressed && !isShiftPressed && !isAltPressed) {
       if (key == LogicalKeyboardKey.keyN) {
         onCreateNote();
         return true;
@@ -158,7 +157,7 @@ class ShortcutsHandler {
       }
     }
 
-    if (!isControlPressed && !isShiftPressed && !isAltPressed) {
+    if (!isPrimaryModifierPressed && !isShiftPressed && !isAltPressed) {
       if (key == LogicalKeyboardKey.escape) {
         onCloseDialog();
         return true;
@@ -209,14 +208,9 @@ class ShortcutsHandler {
     required VoidCallback onFindInEditor,
   }) {
     return {
-      const SingleActivator(
-            LogicalKeyboardKey.keyD,
-            control: true,
-            shift: true,
-          ):
+      primaryActivator(LogicalKeyboardKey.keyD, shift: true):
           const CreateScriptBlockIntent(),
-      const SingleActivator(LogicalKeyboardKey.keyF, control: true):
-          const FindInEditorIntent(),
+      primaryActivator(LogicalKeyboardKey.keyF): const FindInEditorIntent(),
     };
   }
 

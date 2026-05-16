@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import '../../shortcuts_handler.dart';
 import '../../services/immersive_mode_service.dart';
 import '../../Settings/editor_settings_panel.dart';
 import '../custom_tooltip.dart';
@@ -141,15 +142,15 @@ class EditorHeaderBar extends StatelessWidget {
               onKeyEvent: (node, event) {
                 if (event is KeyDownEvent) {
                   if (event.logicalKey == LogicalKeyboardKey.keyT &&
-                      HardwareKeyboard.instance.isControlPressed) {
+                      ShortcutsHandler.isPrimaryModifierPressed) {
                     return KeyEventResult.ignored;
                   }
                   if (event.logicalKey == LogicalKeyboardKey.keyN &&
-                      HardwareKeyboard.instance.isControlPressed) {
+                      ShortcutsHandler.isPrimaryModifierPressed) {
                     return KeyEventResult.ignored;
                   }
                   if (event.logicalKey == LogicalKeyboardKey.keyW &&
-                      HardwareKeyboard.instance.isControlPressed) {
+                      ShortcutsHandler.isPrimaryModifierPressed) {
                     return KeyEventResult.ignored;
                   }
                   if (event.logicalKey == LogicalKeyboardKey.tab) {

@@ -22,6 +22,7 @@ import '../widgets/custom_snackbar.dart';
 import '../widgets/context_menu.dart';
 import '../widgets/confirmation_dialogue.dart';
 import '../widgets/resizable_icon_sidebar.dart';
+import '../shortcuts_handler.dart';
 
 class SaveThinkIntent extends Intent {
   const SaveThinkIntent();
@@ -618,11 +619,11 @@ class ThinksScreenState extends State<ThinksScreen>
     }
 
     return Shortcuts(
-      shortcuts: <LogicalKeySet, Intent>{
-        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyS):
-            const SaveThinkIntent(),
-        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyN):
-            const NewThinkIntent(),
+      shortcuts: <ShortcutActivator, Intent>{
+      ShortcutsHandler.primaryActivator(LogicalKeyboardKey.keyS):
+        const SaveThinkIntent(),
+      ShortcutsHandler.primaryActivator(LogicalKeyboardKey.keyN):
+        const NewThinkIntent(),
         LogicalKeySet(LogicalKeyboardKey.f2): const _ToggleSidebarIntent(),
       },
       child: Actions(

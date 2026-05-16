@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../shortcuts_handler.dart';
 import '../../database/database_service.dart';
 import '../../database/models/note.dart';
 import '../../database/repositories/note_repository.dart';
@@ -1479,7 +1480,8 @@ class NotesPanelState extends State<NotesPanel> {
         child: Listener(
           onPointerDown: (event) {
             if (event.down && event.buttons == 1) {
-              final isCtrlPressed = HardwareKeyboard.instance.isControlPressed;
+              final isCtrlPressed =
+                  ShortcutsHandler.isPrimaryModifierPressed;
               final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
               final isNoteAlreadySelected = _selectedNoteIds.contains(note.id);
 

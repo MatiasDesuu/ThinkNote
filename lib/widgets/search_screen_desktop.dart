@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
+import '../shortcuts_handler.dart';
 import '../database/models/note.dart';
 import '../database/models/notebook.dart';
 import '../database/models/notebook_icons.dart';
@@ -152,9 +153,8 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
 
     return CallbackShortcuts(
       bindings: {
-        const SingleActivator(
+        ShortcutsHandler.primaryActivator(
           LogicalKeyboardKey.keyF,
-          control: true,
           shift: true,
         ): _closeSearch,
         const SingleActivator(LogicalKeyboardKey.f9): _closeSearch,
