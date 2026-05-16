@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../custom_font_manager.dart';
 import 'personalization_settings_panel.dart' show materialYouColors;
 
 class EditorSettingsCache {
@@ -427,7 +428,11 @@ class EditorSettings {
     'Courier New',
   ];
 
-  static List<String> get availableFonts => [...googleFonts, ...appleFonts];
+  static List<String> get availableFonts => [
+    ...CustomFontManager.customFonts,
+    ...googleFonts, 
+    ...appleFonts
+  ];
 
   static TextStyle getStyle(
     String fontFamily, {
@@ -1659,7 +1664,7 @@ class PlatformSettings {
   }
 }
 
-class _FontSelectorDialog extends StatelessWidget {
+class _FontSelectorDialog extends StatefulWidget {
   final String selectedFont;
   final Function(String) onFontSelected;
 
@@ -1669,6 +1674,11 @@ class _FontSelectorDialog extends StatelessWidget {
   });
 
   @override
+  State<_FontSelectorDialog> createState() => _FontSelectorDialogState();
+}
+
+class _FontSelectorDialogState extends State<_FontSelectorDialog> {
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -1677,13 +1687,25 @@ class _FontSelectorDialog extends StatelessWidget {
       icon: Icons.text_fields_rounded,
       width: 500,
       height: 400,
-      child: Expanded(
-        child: ListView.builder(
+      headerActions: [
+        TextButton.icon(
+          onPressed: () async {
+            final newFont = await CustomFontManager.pickAndLoadFont();
+            if (newFont != null) {
+              setState(() {});
+              widget.onFontSelected(newFont);
+            }
+          },
+          icon: const Icon(Icons.upload_file_rounded),
+          label: const Text('Upload Font'),
+        ),
+      ],
+      child: ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           itemCount: EditorSettings.availableFonts.length,
           itemBuilder: (context, index) {
             final font = EditorSettings.availableFonts[index];
-            final isSelected = font == selectedFont;
+            final isSelected = font == widget.selectedFont;
             return Card(
               elevation: 0,
               margin: const EdgeInsets.only(bottom: 8),
@@ -1698,7 +1720,7 @@ class _FontSelectorDialog extends StatelessWidget {
                 color: Colors.transparent,
                 child: InkWell(
                   mouseCursor: SystemMouseCursors.click,
-                  onTap: () => onFontSelected(font),
+                  onTap: () => widget.onFontSelected(font),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     height: 56,
@@ -1740,7 +1762,6 @@ class _FontSelectorDialog extends StatelessWidget {
             );
           },
         ),
-      ),
     );
   }
 }

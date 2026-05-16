@@ -3,6 +3,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/custom_dialog.dart';
 import '../theme_handler.dart' as theme_handler;
+import '../custom_font_manager.dart';
 
 const List<Color> materialYouColors = [
   Color(0xFFE53935),
@@ -44,7 +45,8 @@ const List<Color> materialYouColors = [
   Color(0xFF90A4AE),
 ];
 
-const List<String> appTextFonts = [
+List<String> get appTextFonts => [
+  ...CustomFontManager.customFonts,
   'Roboto',
   'Inter',
   'Montserrat',
@@ -431,81 +433,97 @@ class PersonalizationSettingsPanelState
     await showDialog<void>(
       context: context,
       builder:
-          (dialogContext) => CustomDialog(
-            title: 'App Text Font',
-            icon: Icons.text_fields_rounded,
-            width: 500,
-            height: 400,
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: appTextFonts.length,
-              itemBuilder: (context, index) {
-                final font = appTextFonts[index];
-                final isSelected = font == _appFontFamily;
-
-                return Card(
-                  elevation: 0,
-                  margin: const EdgeInsets.only(bottom: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.outlineVariant.withAlpha(127),
-                      width: 0.5,
-                    ),
+          (dialogContext) => StatefulBuilder(
+            builder: (context, setDialogState) {
+              return CustomDialog(
+                title: 'App Text Font',
+                icon: Icons.text_fields_rounded,
+                width: 500,
+                height: 400,
+                headerActions: [
+                  TextButton.icon(
+                    onPressed: () async {
+                      final newFont = await CustomFontManager.pickAndLoadFont();
+                      if (newFont != null) {
+                        setDialogState(() {});
+                      }
+                    },
+                    icon: const Icon(Icons.upload_file_rounded),
+                    label: const Text('Upload Font'),
                   ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      mouseCursor: SystemMouseCursors.click,
-                      onTap: () {
-                        Navigator.pop(dialogContext);
-                        _updateAppFontFamily(font);
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        height: 56,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            Icon(
-                              isSelected
-                                  ? Icons.check_circle_rounded
-                                  : Icons.circle_outlined,
-                              color:
-                                  isSelected
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                font,
-                                style: appFontStyle(
-                                  font,
-                                  fontSize: 16,
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                            ),
-                            if (isSelected)
-                              Icon(
-                                Icons.check_rounded,
-                                color: Theme.of(context).colorScheme.primary,
-                                size: 20,
-                              ),
-                          ],
+                ],
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: appTextFonts.length,
+                  itemBuilder: (context, index) {
+                    final font = appTextFonts[index];
+                    final isSelected = font == _appFontFamily;
+
+                    return Card(
+                      elevation: 0,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outlineVariant.withAlpha(127),
+                          width: 0.5,
                         ),
                       ),
-                    ),
-                  ),
-                );
-              },
-            ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          mouseCursor: SystemMouseCursors.click,
+                          onTap: () {
+                            Navigator.pop(dialogContext);
+                            _updateAppFontFamily(font);
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            height: 56,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isSelected
+                                      ? Icons.check_circle_rounded
+                                      : Icons.circle_outlined,
+                                  color:
+                                      isSelected
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Text(
+                                    font,
+                                    style: appFontStyle(
+                                      font,
+                                      fontSize: 16,
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Icon(
+                                    Icons.check_rounded,
+                                    color: Theme.of(context).colorScheme.primary,
+                                    size: 20,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }
           ),
     );
   }

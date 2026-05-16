@@ -273,10 +273,10 @@ class ThemeManager {
       try {
         return GoogleFonts.getTextTheme(fontFamily, baseTextTheme);
       } catch (_) {
-        return baseTextTheme;
+        return baseTextTheme.apply(fontFamily: fontFamily);
       }
     }
-    return baseTextTheme;
+    return baseTextTheme.apply(fontFamily: fontFamily);
   }
 
   static ThemeData buildTheme({

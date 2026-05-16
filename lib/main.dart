@@ -40,6 +40,7 @@ import 'services/tab_manager.dart';
 import 'Settings/editor_settings_panel.dart';
 import 'widgets/draggable_header.dart';
 import 'widgets/panels/templates_panel.dart';
+import 'custom_font_manager.dart';
 
 class WindowStateManager {
   static const String _windowWidthKey = 'window_width';
@@ -307,6 +308,7 @@ void main() async {
     }
 
     try {
+      await CustomFontManager.initialize();
       await EditorSettings.preloadSettings();
     } catch (e) {
       debugPrint('Error initializing editor settings cache: $e');
