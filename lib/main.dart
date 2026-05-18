@@ -1026,7 +1026,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     }
   }
 
-  Future<void> _handleSave() async {
+  Future<void> _handleSave({bool triggerSync = false}) async {
     final activeTab = _tabManager.activeTab;
     if (activeTab?.note == null || isSaving || _isLoadingNoteContent) {
       return;
@@ -1069,6 +1069,12 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       _tabManager.updateNoteInTab(updatedNote);
 
       DatabaseHelper.notifyDatabaseChanged();
+
+      if (triggerSync) {
+        _syncService.forceSync(isManual: true).catchError((e) {
+          debugPrint('Error syncing after save: $e');
+        });
+      }
     } catch (e) {
       debugPrint('Error saving note: $e');
       if (mounted) {
@@ -2166,7 +2172,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       onCreateNote: createNewNote,
       onCreateNotebook: createNewNotebook,
       onCreateTodo: createNewTodo,
-      onSaveNote: _handleSave,
+      onSaveNote: () => _handleSave(triggerSync: true),
       onToggleNotesPanel: _toggleNotesPanel,
       onForceSync: _forceSync,
       onSearch: _openSearchScreen,

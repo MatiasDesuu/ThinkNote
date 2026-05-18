@@ -12,6 +12,7 @@ import '../../database/models/note.dart';
 import '../../database/models/notebook.dart';
 import '../../database/database_helper.dart';
 import '../../database/repositories/note_repository.dart';
+import '../../database/sync_service.dart';
 import '../../shortcuts_handler.dart';
 import '../../services/immersive_mode_service.dart';
 import '../find_bar.dart';
@@ -651,6 +652,12 @@ class _NotaEditorState extends State<NotaEditor>
     widget.onEditorCenteredChanged?.call(_isEditorCentered);
   }
 
+  void _triggerSyncAfterSave({required bool isManual}) {
+    SyncService().forceSync(isManual: isManual).catchError((e) {
+      debugPrint('Error syncing after save: $e');
+    });
+  }
+
   Future<void> _handleSave({bool isAutoSave = false}) async {
     if (!mounted) return;
 
@@ -661,6 +668,7 @@ class _NotaEditorState extends State<NotaEditor>
     if (isAutoSave) {
       try {
         await _performAutoSave();
+        _triggerSyncAfterSave(isManual: false);
       } catch (e) {
         print('Error in auto-save: $e');
       }
@@ -675,6 +683,8 @@ class _NotaEditorState extends State<NotaEditor>
       await _performBackgroundSave();
 
       await _saveController.complete();
+
+      _triggerSyncAfterSave(isManual: true);
 
       if (hadFocus && !_editorFocusNode.hasFocus) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -753,6 +763,7 @@ class _NotaEditorState extends State<NotaEditor>
 
     try {
       await _performAutoSave();
+      _triggerSyncAfterSave(isManual: false);
     } catch (e) {
       print('Error in silent auto-save: $e');
     }

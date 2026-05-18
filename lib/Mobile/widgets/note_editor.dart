@@ -6,6 +6,7 @@ import '../../database/models/note.dart';
 import '../../database/models/notebook.dart';
 import '../../database/models/think.dart';
 import '../../database/database_helper.dart';
+import '../../database/sync_service.dart';
 import '../animations/animations_handler.dart';
 import '../scriptmode_handler.dart';
 import '../theme_handler.dart';
@@ -228,11 +229,18 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
     }
   }
 
+  void _triggerSyncAfterSave({required bool isManual}) {
+    SyncService().forceSync(isManual: isManual).catchError((e) {
+      debugPrint('Error syncing after save: $e');
+    });
+  }
+
   Future<void> _handleSave({bool isAutoSave = false}) async {
     if (!mounted) return;
 
     if (isAutoSave && _saveController.isAnimating) {
       await widget.onSave();
+      _triggerSyncAfterSave(isManual: false);
       return;
     }
 
@@ -252,6 +260,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
 
       if (mounted) {
         await _saveController.complete();
+        _triggerSyncAfterSave(isManual: !isAutoSave);
         setState(() {});
       }
     } catch (e) {

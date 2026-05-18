@@ -1,8 +1,7 @@
 import 'dart:async';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'database_helper.dart';
-import '../Mobile/services/webdav_service.dart';
 import 'dart:developer' as developer;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../Mobile/services/webdav_service.dart';
 
 enum SyncStep {
   initializing,
@@ -34,16 +33,9 @@ class SyncStatus {
 class SyncService {
   static final SyncService _instance = SyncService._internal();
   final WebDAVService _webdavService = WebDAVService();
-  Timer? _debounceTimer;
   bool _isSyncing = false;
   bool _isInitialized = false;
-  StreamSubscription? _dbChangeSubscription;
-  int _changeCount = 0;
-  DateTime? _lastSyncTime;
-  static const Duration _minSyncInterval = Duration(seconds: 10);
-  static const int _minChangesForSync = 1;
   static const Duration defaultAutoSyncInterval = Duration(minutes: 60);
-  bool _ignoreChanges = false;
   bool _suspended = false;
 
   final StreamController<bool> _autoSyncEnabledController =
@@ -92,41 +84,9 @@ class SyncService {
 
       await _webdavService.initialize();
       _isInitialized = true;
-
-      _dbChangeSubscription = DatabaseHelper.onDatabaseChanged.listen((_) {
-        if (_ignoreChanges) {
-          return;
-        }
-        _changeCount++;
-        _triggerSync();
-      });
-
-      if (!_suspended) {
-        await forceSync();
-      }
     } catch (e) {
       developer.log('Error initializing sync service: $e', name: 'SyncService');
     }
-  }
-
-  void _triggerSync() {
-    if (!_isInitialized) return;
-    if (_suspended) return;
-
-    _debounceTimer?.cancel();
-
-    final now = DateTime.now();
-    if (_lastSyncTime != null &&
-        now.difference(_lastSyncTime!) < _minSyncInterval &&
-        _changeCount < _minChangesForSync) {
-      return;
-    }
-
-    _debounceTimer = Timer(const Duration(seconds: 2), () async {
-      if (!_isSyncing && _changeCount >= _minChangesForSync) {
-        await _performSync();
-      }
-    });
   }
 
   Future<void> _performSync({bool isManual = false}) async {
@@ -135,7 +95,6 @@ class SyncService {
 
     try {
       _isSyncing = true;
-      _ignoreChanges = true;
 
       if (isManual) {
         _updateStatus(SyncStep.initializing, 0.1, 'Connecting to server...');
@@ -167,9 +126,6 @@ class SyncService {
                 : null,
       );
 
-      _lastSyncTime = DateTime.now();
-      _changeCount = 0;
-
       if (isManual) {
         _updateStatus(SyncStep.completed, 1.0, 'Sync completed');
 
@@ -187,7 +143,6 @@ class SyncService {
       }
     } finally {
       _isSyncing = false;
-      _ignoreChanges = false;
     }
   }
 
@@ -210,7 +165,6 @@ class SyncService {
       }
     }
 
-    _changeCount = _minChangesForSync;
     await _performSync(isManual: isManual);
   }
 
@@ -249,16 +203,10 @@ class SyncService {
 
   Future<void> suspendAutoSync() async {
     _suspended = true;
-    _ignoreChanges = true;
   }
 
   Future<void> resumeAutoSync() async {
     _suspended = false;
-    _ignoreChanges = false;
-    if (_isInitialized) {
-      _changeCount = 0;
-      _lastSyncTime = DateTime.now();
-    }
   }
 
   Future<bool> getAutoSyncEnabled() async {
@@ -325,7 +273,6 @@ class SyncService {
     }
 
     try {
-      _ignoreChanges = true;
       await _webdavService.uploadLocalDatabase();
       developer.log(
         'Local database uploaded successfully',
@@ -334,8 +281,6 @@ class SyncService {
     } catch (e) {
       developer.log('Error uploading local database: $e', name: 'SyncService');
       rethrow;
-    } finally {
-      _ignoreChanges = false;
     }
   }
 
@@ -345,7 +290,6 @@ class SyncService {
     }
 
     try {
-      _ignoreChanges = true;
       developer.log(
         'Starting forced download from server...',
         name: 'SyncService',
@@ -361,14 +305,10 @@ class SyncService {
         name: 'SyncService',
       );
       rethrow;
-    } finally {
-      _ignoreChanges = false;
     }
   }
 
   void dispose() {
-    _debounceTimer?.cancel();
-    _dbChangeSubscription?.cancel();
     _autoSyncEnabledController.close();
     _autoSyncIntervalController.close();
     _screenOpenAutoSyncController.close();
