@@ -730,6 +730,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   Timer? _dbChangeDebounceTimer;
   bool _isLoadingNoteContent = false;
   bool _isSyncing = false;
+  bool _didRunStartupSync = false;
 
   @override
   void initState() {
@@ -995,6 +996,29 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
     _syncService.autoSyncIntervalStream.listen((interval) {
       _startAutoSyncTimer();
+    });
+  }
+
+  void _scheduleStartupSync() {
+    if (_didRunStartupSync) return;
+    _didRunStartupSync = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+
+      final settings = await _syncService.getSettings();
+      if (settings['enabled'] != true ||
+          settings['startupAutoSyncEnabled'] != true) {
+        return;
+      }
+
+      try {
+        await _syncService.forceSync(isManual: true);
+        await _refreshAllPanels();
+      } catch (e) {
+        debugPrint('Startup sync error: $e');
+      }
     });
   }
 
@@ -2479,6 +2503,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
       _startAutoSyncTimer();
       _setupAutoSyncListener();
+      _scheduleStartupSync();
     } catch (e) {
       debugPrint('Error initializing repositories: $e');
       if (mounted) {

@@ -21,7 +21,6 @@ import '../database/database_helper.dart';
 import '../database/repositories/note_repository.dart';
 import '../database/repositories/think_repository.dart';
 import '../database/services/think_service.dart';
-import 'services/webdav_service.dart';
 import 'services/bookmark_sharing_handler.dart';
 import '../database/sync_service.dart';
 import '../widgets/custom_snackbar.dart';
@@ -29,7 +28,6 @@ import 'dart:async';
 import 'widgets/note_editor.dart';
 import 'screens/calendar_screen.dart';
 import '../widgets/sync_progress_overlay.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ThinkNoteMobile extends StatefulWidget {
   const ThinkNoteMobile({super.key});
@@ -77,7 +75,6 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
     _noteController.addListener(_onNoteChanged);
     _titleController.addListener(_onTitleChanged);
     _initializeScreens();
-    _initializeWebDAV();
     _initializeSharing();
 
     _syncOverlayManager = SyncProgressOverlayManager(
@@ -85,22 +82,24 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
       isMobile: true,
     );
     _syncOverlayManager.initialize();
+    _initializeWebDAV();
   }
 
   Future<void> _initializeWebDAV() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final isEnabled = prefs.getBool('webdav_enabled') ?? false;
+      final syncService = SyncService();
+      await syncService.initialize();
 
-      if (!isEnabled) {
+      final settings = await syncService.getSettings();
+      if (settings['enabled'] != true ||
+          settings['startupAutoSyncEnabled'] != true) {
         return;
       }
 
-      final webdavService = WebDAVService();
-      await webdavService.initialize();
-
-      webdavService.sync().catchError((e) {
-        print('WebDAV sync error: $e');
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await Future.delayed(const Duration(milliseconds: 300));
+        if (!mounted) return;
+        await syncService.forceSync(isManual: true);
       });
     } catch (e) {
       print('Error initializing WebDAV: $e');

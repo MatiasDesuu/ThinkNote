@@ -40,6 +40,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _isEInkEnabled;
   bool _isAnimationDisabled = false;
   bool _isWebDAVEnabled = false;
+  bool _startupAutoSyncEnabled = true;
   bool _showNotebookIcons = true;
   bool _showNoteIcons = true;
   double _wordsPerSecond = 5.0;
@@ -76,6 +77,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final showNotebookIcons = await EditorSettings.getShowNotebookIcons();
       final showNoteIcons = await EditorSettings.getShowNoteIcons();
       final wordsPerSecond = await EditorSettings.getWordsPerSecond();
+      final startupAutoSyncEnabled =
+          await SyncService().getStartupAutoSyncEnabled();
 
       if (mounted) {
         setState(() {
@@ -84,6 +87,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _webdavUrlController.text = prefs.getString('webdav_url') ?? '';
           _webdavUserController.text = prefs.getString('webdav_username') ?? '';
           _webdavPassController.text = prefs.getString('webdav_password') ?? '';
+          _startupAutoSyncEnabled = startupAutoSyncEnabled;
           _showNotebookIcons = showNotebookIcons;
           _showNoteIcons = showNoteIcons;
           _wordsPerSecond = wordsPerSecond;
@@ -101,6 +105,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _webdavUrlController.text = '';
           _webdavUserController.text = '';
           _webdavPassController.text = '';
+          _startupAutoSyncEnabled =
+              SyncService.defaultStartupAutoSyncEnabled;
           _showNotebookIcons = true;
           _showNoteIcons = true;
           _wordsPerSecond = 5.0;
@@ -232,6 +238,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('webdav_enabled', value);
+  }
+
+  void _toggleStartupAutoSync(bool value) async {
+    setState(() {
+      _startupAutoSyncEnabled = value;
+    });
+    await SyncService().setStartupAutoSyncEnabled(value);
   }
 
   void _toggleShowNotebookIcons(bool value) async {
@@ -502,6 +515,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ),
                                 value: _isWebDAVEnabled,
                                 onChanged: _toggleWebDAV,
+                              ),
+                              SwitchListTile(
+                                title: const Text('Sync on app startup'),
+                                subtitle: const Text(
+                                  'Run a sync after the app finishes loading',
+                                ),
+                                value: _startupAutoSyncEnabled,
+                                onChanged: _toggleStartupAutoSync,
                               ),
                               if (_isWebDAVEnabled) ...[
                                 Padding(

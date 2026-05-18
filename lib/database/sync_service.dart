@@ -36,6 +36,7 @@ class SyncService {
   bool _isSyncing = false;
   bool _isInitialized = false;
   static const Duration defaultAutoSyncInterval = Duration(minutes: 60);
+  static const bool defaultStartupAutoSyncEnabled = true;
   bool _suspended = false;
 
   final StreamController<bool> _autoSyncEnabledController =
@@ -179,6 +180,9 @@ class SyncService {
       'autoSyncIntervalMinutes':
           prefs.getInt('webdav_auto_sync_interval_minutes') ??
           defaultAutoSyncInterval.inMinutes,
+      'startupAutoSyncEnabled':
+          prefs.getBool('webdav_startup_auto_sync_enabled') ??
+          defaultStartupAutoSyncEnabled,
       'screenOpenAutoSyncEnabled':
           prefs.getBool('webdav_screen_open_auto_sync_enabled') ?? true,
     };
@@ -218,6 +222,17 @@ class SyncService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('webdav_auto_sync_enabled', enabled);
     _autoSyncEnabledController.add(enabled);
+  }
+
+  Future<bool> getStartupAutoSyncEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('webdav_startup_auto_sync_enabled') ??
+        defaultStartupAutoSyncEnabled;
+  }
+
+  Future<void> setStartupAutoSyncEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('webdav_startup_auto_sync_enabled', enabled);
   }
 
   Future<Duration> getAutoSyncInterval() async {

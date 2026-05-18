@@ -18,6 +18,7 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
   bool _isEnabled = false;
   bool _autoSyncEnabled = true;
   int _autoSyncIntervalMinutes = 60;
+  bool _startupAutoSyncEnabled = true;
   bool _screenOpenAutoSyncEnabled = true;
   bool _isLoading = true;
   bool _isTesting = false;
@@ -55,6 +56,8 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
       final settings = await SyncService().getSettings();
       final autoSyncEnabled = await SyncService().getAutoSyncEnabled();
       final autoSyncInterval = await SyncService().getAutoSyncInterval();
+      final startupAutoSyncEnabled =
+          await SyncService().getStartupAutoSyncEnabled();
       final screenOpenAutoSyncEnabled =
           await SyncService().getScreenOpenAutoSyncEnabled();
       setState(() {
@@ -64,6 +67,7 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
         _isEnabled = settings['enabled'] as bool;
         _autoSyncEnabled = autoSyncEnabled;
         _autoSyncIntervalMinutes = autoSyncInterval.inMinutes;
+        _startupAutoSyncEnabled = startupAutoSyncEnabled;
         _screenOpenAutoSyncEnabled = screenOpenAutoSyncEnabled;
         _isLoading = false;
       });
@@ -125,6 +129,11 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
   Future<void> _updateAutoSyncInterval(int minutes) async {
     setState(() => _autoSyncIntervalMinutes = minutes);
     await SyncService().setAutoSyncInterval(Duration(minutes: minutes));
+  }
+
+  Future<void> _updateStartupAutoSyncEnabled(bool enabled) async {
+    setState(() => _startupAutoSyncEnabled = enabled);
+    await SyncService().setStartupAutoSyncEnabled(enabled);
   }
 
   Future<void> _updateScreenOpenAutoSyncEnabled(bool enabled) async {
@@ -383,6 +392,33 @@ class _SyncSettingsPanelState extends State<SyncSettingsPanel> {
                     ),
                     const SizedBox(height: 16),
                   ],
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Sync on app startup', style: textStyle),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Run a sync after the app finishes loading',
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _startupAutoSyncEnabled,
+                        onChanged: _updateStartupAutoSyncEnabled,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
 
                   Row(
                     children: [
