@@ -75,6 +75,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
   late Future<bool> _colorModeFuture;
   late Future<bool> _monochromeFuture;
   late Future<bool> _einkFuture;
+  late Future<bool> _amoledFuture;
   String _lastTextContent = '';
   bool _isHandlingContentChange = false;
   bool _isNavigatingAway = false;
@@ -103,6 +104,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
     _colorModeFuture = ThemeManager.getColorModeEnabled();
     _monochromeFuture = ThemeManager.getMonochromeEnabled();
     _einkFuture = ThemeManager.getEInkEnabled();
+    _amoledFuture = ThemeManager.getAmoledEnabled();
   }
 
   void _onTitleChanged() {
@@ -600,6 +602,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
             _colorModeFuture,
             _monochromeFuture,
             _einkFuture,
+            _amoledFuture,
           ]),
           builder: (context, snapshot) {
             if (!snapshot.hasData) return const SizedBox.shrink();
@@ -608,6 +611,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
             final colorMode = snapshot.data![1];
             final monochromeMode = snapshot.data![2];
             final einkMode = snapshot.data![3];
+            final amoledMode = snapshot.data![4];
 
             final theme = ThemeManager.buildTheme(
               lightDynamic: lightDynamic,
@@ -616,6 +620,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
               colorModeEnabled: colorMode,
               monochromeEnabled: monochromeMode,
               einkEnabled: einkMode,
+              amoledEnabled: amoledMode,
             );
 
             return Theme(

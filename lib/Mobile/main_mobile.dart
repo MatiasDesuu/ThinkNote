@@ -45,6 +45,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
   late Future<bool> _colorModeFuture;
   late Future<bool> _monochromeFuture;
   late Future<bool> _einkFuture;
+  late Future<bool> _amoledFuture;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey<TasksScreenState> _tasksKey = GlobalKey<TasksScreenState>();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
@@ -167,6 +168,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
     _colorModeFuture = ThemeManager.getColorModeEnabled();
     _monochromeFuture = ThemeManager.getMonochromeEnabled();
     _einkFuture = ThemeManager.getEInkEnabled();
+    _amoledFuture = ThemeManager.getAmoledEnabled();
   }
 
   void _onItemTapped(int index) {
@@ -223,12 +225,14 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
     bool? isColorMode,
     bool? isMonochrome,
     bool? isEInk,
+    bool? isAmoled,
   }) async {
     await ThemeManager.saveTheme(
       isDarkMode: isDarkMode ?? false,
       colorModeEnabled: isColorMode,
       monochromeEnabled: isMonochrome,
       einkEnabled: isEInk,
+      amoledEnabled: isAmoled,
     );
     setState(() {
       _loadThemePreferences();
@@ -393,6 +397,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                         _colorModeFuture,
                         _monochromeFuture,
                         _einkFuture,
+                        _amoledFuture,
                       ]),
                       builder: (context, snapshot) {
                         if (!snapshot.hasData) return const SizedBox.shrink();
@@ -401,6 +406,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                         final colorMode = snapshot.data![1];
                         final monochromeMode = snapshot.data![2];
                         final einkMode = snapshot.data![3];
+                        final amoledMode = snapshot.data![4];
 
                         return Theme(
                           data: ThemeManager.buildTheme(
@@ -410,6 +416,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                             colorModeEnabled: colorMode,
                             monochromeEnabled: monochromeMode,
                             einkEnabled: einkMode,
+                            amoledEnabled: amoledMode,
                           ),
                           child: ThinksScreen(
                             initialThinks: preloadedThinks,
@@ -451,6 +458,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
         _colorModeFuture,
         _monochromeFuture,
         _einkFuture,
+        _amoledFuture,
       ]);
 
       if (!mounted) return;
@@ -459,6 +467,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
       final colorMode = themeResults[1];
       final monochromeMode = themeResults[2];
       final einkMode = themeResults[3];
+      final amoledMode = themeResults[4];
 
       final createdThink = await thinkService.createThink();
       if (createdThink != null) {
@@ -487,6 +496,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                           colorModeEnabled: colorMode,
                           monochromeEnabled: monochromeMode,
                           einkEnabled: einkMode,
+                          amoledEnabled: amoledMode,
                         ),
                         child: NoteEditor(
                           selectedThink: createdThink,
@@ -565,6 +575,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
             _colorModeFuture,
             _monochromeFuture,
             _einkFuture,
+            _amoledFuture,
           ]),
           builder: (context, snapshot) {
             if (!snapshot.hasData) return const SizedBox.shrink();
@@ -573,6 +584,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
             final colorMode = snapshot.data![1];
             final monochromeMode = snapshot.data![2];
             final einkMode = snapshot.data![3];
+            final amoledMode = snapshot.data![4];
 
             return PopScope(
               canPop: true,
@@ -592,6 +604,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                   colorModeEnabled: colorMode,
                   monochromeEnabled: monochromeMode,
                   einkEnabled: einkMode,
+                  amoledEnabled: amoledMode,
                 ),
                 home: Builder(
                   builder: (context) {
@@ -820,6 +833,7 @@ class _ThinkNoteMobileState extends State<ThinkNoteMobile>
                                         isColorModeEnabled: colorMode,
                                         isMonochromeEnabled: monochromeMode,
                                         isEInkEnabled: einkMode,
+                                        isAmoledEnabled: amoledMode,
                                       ),
                                 ),
                               );

@@ -31,10 +31,15 @@ android {
     }
 
     buildTypes {
-        release {
+        getByName("release") {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+        }
+        getByName("debug") {
+            applicationIdSuffix = ".debug"
+            // Change the app name at build time for debug installs
+            resValue("string", "app_name", "ThinkNote (debug)")
         }
     }
 }

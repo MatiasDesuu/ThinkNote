@@ -13,12 +13,14 @@ class SettingsScreen extends StatefulWidget {
     bool? isColorMode,
     bool? isMonochrome,
     bool? isEInk,
+    bool? isAmoled,
   })
   onUpdateTheme;
   final bool isDarkMode;
   final bool isColorModeEnabled;
   final bool isMonochromeEnabled;
   final bool isEInkEnabled;
+  final bool isAmoledEnabled;
 
   const SettingsScreen({
     super.key,
@@ -27,6 +29,7 @@ class SettingsScreen extends StatefulWidget {
     required this.isColorModeEnabled,
     required this.isMonochromeEnabled,
     required this.isEInkEnabled,
+    required this.isAmoledEnabled,
   });
 
   @override
@@ -38,6 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _isColorModeEnabled;
   late bool _isMonochromeEnabled;
   late bool _isEInkEnabled;
+  late bool _isAmoledEnabled;
   bool _isAnimationDisabled = false;
   bool _isWebDAVEnabled = false;
   bool _startupAutoSyncEnabled = true;
@@ -58,6 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _isColorModeEnabled = widget.isColorModeEnabled;
     _isMonochromeEnabled = widget.isMonochromeEnabled;
     _isEInkEnabled = widget.isEInkEnabled;
+    _isAmoledEnabled = widget.isAmoledEnabled;
     _loadInitialSettingsSync();
   }
 
@@ -218,6 +223,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       isColorMode: _isColorModeEnabled,
       isMonochrome: _isMonochromeEnabled,
       isEInk: _isEInkEnabled,
+      isAmoled: _isAmoledEnabled,
     );
   }
 
@@ -335,10 +341,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         value: _isDarkMode,
                         onChanged: (value) {
-                          setState(() => _isDarkMode = value);
+                          setState(() {
+                            _isDarkMode = value;
+                            if (!value) {
+                              _isAmoledEnabled = false;
+                            }
+                          });
                           _updatePreferences();
                         },
                       ),
+
+                      if (_isDarkMode && !_isEInkEnabled)
+                        SwitchListTile(
+                          title: const Text('AMOLED Style'),
+                          subtitle: const Text(
+                            'Pitch black backgrounds for dark mode',
+                          ),
+                          value: _isAmoledEnabled,
+                          onChanged: (value) {
+                            setState(() => _isAmoledEnabled = value);
+                            _updatePreferences();
+                          },
+                        ),
 
                       SwitchListTile(
                         title: const Text('E-Ink Mode'),

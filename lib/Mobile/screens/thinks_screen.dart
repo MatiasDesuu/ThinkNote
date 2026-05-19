@@ -214,6 +214,7 @@ class _ThinksScreenState extends State<ThinksScreen> {
         ThemeManager.getColorModeEnabled(),
         ThemeManager.getMonochromeEnabled(),
         ThemeManager.getEInkEnabled(),
+        ThemeManager.getAmoledEnabled(),
       ]);
 
       if (!mounted) return;
@@ -222,6 +223,7 @@ class _ThinksScreenState extends State<ThinksScreen> {
       final colorMode = themeResults[1];
       final monochromeMode = themeResults[2];
       final einkMode = themeResults[3];
+      final amoledMode = themeResults[4];
 
       final editorTitleController = TextEditingController(text: think.title);
       final editorContentController = TextEditingController(
@@ -246,6 +248,7 @@ class _ThinksScreenState extends State<ThinksScreen> {
                           colorModeEnabled: colorMode,
                           monochromeEnabled: monochromeMode,
                           einkEnabled: einkMode,
+                          amoledEnabled: amoledMode,
                         ),
                         child: NoteEditor(
                           selectedThink: think,
