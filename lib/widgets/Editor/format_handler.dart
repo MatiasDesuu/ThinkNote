@@ -115,6 +115,21 @@ class FormatDetector {
       contentExtractor: (m) => m.group(0)!,
     ),
     _FormatPattern(
+      type: FormatType.link,
+      regex: RegExp(r'\[([^\]]+)\]\(([^)]+)\)'),
+      contentExtractor: (m) => m.group(1) ?? '',
+      dataExtractor: (m) => m.group(2) ?? '',
+    ),
+    _FormatPattern(
+      type: FormatType.url,
+      regex: RegExp(
+        r'(?:https?://|www\.)[^\s<>"{}|\\^`[\]]+',
+        caseSensitive: false,
+      ),
+      contentExtractor: (m) => m.group(0)!,
+      dataExtractor: (m) => m.group(0)!,
+    ),
+    _FormatPattern(
       type: FormatType.bold,
       regex: RegExp(r'\*\*(.*?)\*\*|__(.*?)__', dotAll: true),
       contentExtractor: (m) => m.group(1) ?? m.group(2) ?? '',

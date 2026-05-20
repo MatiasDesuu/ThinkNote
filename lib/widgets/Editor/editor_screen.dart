@@ -25,6 +25,7 @@ import 'editor_tool_bar.dart';
 import 'format_handler.dart';
 import '../../services/tab_manager.dart';
 import '../draggable_header.dart';
+import 'at_mention_dropdown.dart';
 
 VoidCallback? _currentActiveEditorToggleReadMode;
 
@@ -105,6 +106,9 @@ class _NotaEditorState extends State<NotaEditor>
   final FocusNode _editorFocusNode = FocusNode();
   final FocusNode _findBarFocusNode = FocusNode();
   final TextEditingController _findController = TextEditingController();
+  final LayerLink _editorLayerLink = LayerLink();
+  final ValueNotifier<Offset> _dropdownOffsetNotifier = ValueNotifier<Offset>(Offset.zero);
+  final ValueNotifier<double> _dropdownLineHeightNotifier = ValueNotifier<double>(0.0);
   double _fontSize = 16.0;
   double _lineSpacing = 1.0;
   Color? _fontColor;
@@ -190,9 +194,12 @@ class _NotaEditorState extends State<NotaEditor>
     _saveController = SaveAnimationController(vsync: this);
     widget.noteController.addListener(_onContentChanged);
     widget.titleController.addListener(_onTitleChanged);
-    _scrollController.addListener(
-      () => _syncScroll(_scrollController, _previewScrollController),
-    );
+    _scrollController.addListener(() {
+      _syncScroll(_scrollController, _previewScrollController);
+      if (AtMentionDropdownController.instance.isOpen) {
+        _updateDropdownOffset();
+      }
+    });
     _previewScrollController.addListener(
       () => _syncScroll(_previewScrollController, _scrollController),
     );
@@ -264,6 +271,9 @@ class _NotaEditorState extends State<NotaEditor>
     final findBarHadFocus = _findBarFocusNode.hasFocus;
 
     if (noteChanged) {
+      if (AtMentionDropdownController.instance.isOpen) {
+        AtMentionDropdownController.instance.hide();
+      }
       _reconfigureListeners(oldWidget);
       _detectScriptMode();
       _splitViewUpdateTimer?.cancel();
@@ -356,6 +366,9 @@ class _NotaEditorState extends State<NotaEditor>
 
   @override
   void dispose() {
+    if (AtMentionDropdownController.instance.isOpen) {
+      AtMentionDropdownController.instance.hide();
+    }
     WidgetsBinding.instance.removeObserver(this);
     widget.noteController.removeListener(_onContentChanged);
     widget.titleController.removeListener(_onTitleChanged);
@@ -366,6 +379,8 @@ class _NotaEditorState extends State<NotaEditor>
     _editorFocusNode.dispose();
     _findBarFocusNode.dispose();
     _findController.dispose();
+    _dropdownOffsetNotifier.dispose();
+    _dropdownLineHeightNotifier.dispose();
     _splitViewUpdateTimer?.cancel();
     _fontSizeSubscription?.cancel();
     _lineSpacingSubscription?.cancel();
@@ -461,10 +476,15 @@ class _NotaEditorState extends State<NotaEditor>
 
     widget.onTitleChanged();
 
+    if (_shouldPauseAutoSave()) {
+      _autoSaveDebounce?.cancel();
+      return;
+    }
+
     if (_isAutoSaveEnabled) {
       _autoSaveDebounce?.cancel();
       _autoSaveDebounce = Timer(const Duration(milliseconds: 1000), () {
-        if (mounted && _isAutoSaveEnabled) {
+        if (mounted && _isAutoSaveEnabled && !_shouldPauseAutoSave()) {
           _performSilentAutoSave();
         }
       });
@@ -496,6 +516,7 @@ class _NotaEditorState extends State<NotaEditor>
     _lastContentText = widget.noteController.text;
 
     widget.onContentChanged();
+    _checkAtMentionTrigger();
 
     _scriptDetectionDebouncer?.cancel();
     _scriptDetectionDebouncer = Timer(const Duration(milliseconds: 300), () {
@@ -526,10 +547,15 @@ class _NotaEditorState extends State<NotaEditor>
       }
     }
 
+    if (_shouldPauseAutoSave()) {
+      _autoSaveDebounce?.cancel();
+      return;
+    }
+
     if (_isAutoSaveEnabled) {
       _autoSaveDebounce?.cancel();
       _autoSaveDebounce = Timer(const Duration(milliseconds: 1000), () {
-        if (mounted && _isAutoSaveEnabled) {
+        if (mounted && _isAutoSaveEnabled && !_shouldPauseAutoSave()) {
           _performSilentAutoSave();
         }
       });
@@ -661,6 +687,10 @@ class _NotaEditorState extends State<NotaEditor>
   Future<void> _handleSave({bool isAutoSave = false}) async {
     if (!mounted) return;
 
+    if (isAutoSave && _shouldPauseAutoSave()) {
+      return;
+    }
+
     final bool hadFocus = _editorFocusNode.hasFocus;
     final TextSelection currentSelection = widget.noteController.selection;
     final int? originalNoteId = widget.selectedNote.id;
@@ -761,6 +791,10 @@ class _NotaEditorState extends State<NotaEditor>
   void _performSilentAutoSave() async {
     if (!mounted) return;
 
+    if (_shouldPauseAutoSave()) {
+      return;
+    }
+
     try {
       await _performAutoSave();
       _triggerSyncAfterSave(isManual: false);
@@ -777,6 +811,10 @@ class _NotaEditorState extends State<NotaEditor>
         }
       });
     }
+  }
+
+  bool _shouldPauseAutoSave() {
+    return AtMentionDropdownController.instance.isOpen;
   }
 
   void _setupSettingsListeners() {
@@ -1780,10 +1818,17 @@ class _NotaEditorState extends State<NotaEditor>
   }
 
   Widget _buildHighlightedTextField() {
-    return Focus(
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.enter) {
+    return CompositedTransformTarget(
+      link: _editorLayerLink,
+      child: Focus(
+        onKeyEvent: (node, event) {
+          if (AtMentionDropdownController.instance.isOpen) {
+            if (AtMentionDropdownController.instance.handleKeyEvent(event)) {
+              return KeyEventResult.handled;
+            }
+          }
+          if (event is KeyDownEvent &&
+              event.logicalKey == LogicalKeyboardKey.enter) {
           final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
 
           if (ListContinuationHandler.handleEnterKey(
@@ -1913,8 +1958,9 @@ class _NotaEditorState extends State<NotaEditor>
         searchManager: _searchManager,
         searchQuery: _findController.text,
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildNoteReadPreview(
     BuildContext context, {
@@ -1957,7 +2003,13 @@ class _NotaEditorState extends State<NotaEditor>
       physics: const CtrlScrollPhysics(),
       child: Padding(
         padding: const EdgeInsets.only(bottom: 32),
-        child: content,
+        child: SizedBox(
+          width: double.infinity,
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: content,
+          ),
+        ),
       ),
     );
   }
@@ -1985,6 +2037,97 @@ class _NotaEditorState extends State<NotaEditor>
     } else {
       widget.tabManager!.replaceNoteInActiveTabWithNotebookChange(targetNote);
     }
+  }
+
+  void _checkAtMentionTrigger() {
+    final controller = widget.noteController;
+    final selection = controller.selection;
+    if (!selection.isValid || !selection.isCollapsed) {
+      if (AtMentionDropdownController.instance.isOpen) {
+        AtMentionDropdownController.instance.hide();
+      }
+      return;
+    }
+
+    final text = controller.text;
+    final cursorOffset = selection.baseOffset;
+
+    if (cursorOffset > 0) {
+      final textBeforeCursor = text.substring(0, cursorOffset);
+      final lastAt = textBeforeCursor.lastIndexOf('@');
+
+      if (lastAt != -1 && lastAt < cursorOffset) {
+        final queryText = textBeforeCursor.substring(lastAt + 1);
+        final hasSpace = queryText.contains(' ');
+
+        if (!hasSpace) {
+          _updateDropdownOffset();
+          _showAtMentionDropdown(queryText, lastAt);
+          return;
+        }
+      }
+    }
+
+    if (AtMentionDropdownController.instance.isOpen) {
+      AtMentionDropdownController.instance.hide();
+    }
+  }
+
+  void _showAtMentionDropdown(String query, int triggerIndex) {
+    AtMentionDropdownController.instance.showEditorDropdown(
+      context: context,
+      layerLink: _editorLayerLink,
+      offsetNotifier: _dropdownOffsetNotifier,
+      lineHeightNotifier: _dropdownLineHeightNotifier,
+      query: query,
+      triggerIndex: triggerIndex,
+      currentText: () => widget.noteController.text,
+      currentSelection: () => widget.noteController.selection,
+      applyText: (newText, {TextSelection? selection}) {
+        widget.noteController.value = widget.noteController.value.copyWith(
+          text: newText,
+          selection: selection ?? widget.noteController.selection,
+          composing: TextRange.empty,
+        );
+      },
+      onContentChanged: widget.onContentChanged,
+      requestFocus: () => _editorFocusNode.requestFocus(),
+    );
+  }
+
+  void _updateDropdownOffset() {
+    _dropdownOffsetNotifier.value = _getCursorOffset();
+    _dropdownLineHeightNotifier.value = _getCursorLineHeight();
+  }
+
+  Offset _getCursorOffset() {
+    if (!mounted) return Offset.zero;
+    final controller = widget.noteController;
+    final selection = controller.selection;
+    if (!selection.isValid) return Offset.zero;
+
+    final text = controller.text;
+    final cursorPosition = selection.baseOffset;
+
+    final textBeforeCursor = text.substring(0, cursorPosition);
+    final lines = textBeforeCursor.split('\n');
+    final lineNumber = lines.length - 1;
+    final currentLineText = lines.last;
+
+    final textPainter = TextPainter(
+      text: TextSpan(text: currentLineText, style: _textStyle),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    final double x = textPainter.width.clamp(16.0, 500.0);
+    final double lineHeight = _getCursorLineHeight();
+    final double y = (lineNumber + 1) * lineHeight - _scrollController.offset;
+
+    return Offset(x, y + 8);
+  }
+
+  double _getCursorLineHeight() {
+    return _fontSize * (_lineSpacing > 0 ? _lineSpacing : 1.2);
   }
 }
 

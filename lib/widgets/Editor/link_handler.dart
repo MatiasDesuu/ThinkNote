@@ -89,7 +89,8 @@ class LinkDetector {
   static bool isValidUrl(String url) {
     try {
       final uri = Uri.parse(url);
-      return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
+      return uri.hasScheme &&
+          (uri.scheme == 'http' || uri.scheme == 'https' || uri.scheme == 'file');
     } catch (e) {
       return false;
     }
@@ -100,7 +101,9 @@ class LinkLauncher {
   static Future<void> launchURL(String url) async {
     try {
       String formattedUrl = url.trim();
-      if (!formattedUrl.startsWith('http://') &&
+      final isFile = formattedUrl.toLowerCase().startsWith('file://');
+      if (!isFile &&
+          !formattedUrl.startsWith('http://') &&
           !formattedUrl.startsWith('https://')) {
         formattedUrl = 'https://$formattedUrl';
       }
