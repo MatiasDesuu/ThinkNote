@@ -326,6 +326,7 @@ void main() async {
   final catppuccinAccent = await ThemeManager.getCatppuccinAccent();
   final appFontFamily = await ThemeManager.getAppFontFamily();
   final einkEnabled = await ThemeManager.getEInkEnabled();
+  final amoledEnabled = await ThemeManager.getAmoledEnabled();
 
   final initialTheme = ThemeManager.buildTheme(
     color: themeColor,
@@ -340,6 +341,7 @@ void main() async {
     catppuccinAccent: catppuccinAccent,
     fontFamily: appFontFamily,
     einkEnabled: einkEnabled,
+    amoledEnabled: amoledEnabled,
   );
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
@@ -465,6 +467,7 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
         ThemeManager.getCatppuccinAccent(),
         ThemeManager.getAppFontFamily(),
         ThemeManager.getEInkEnabled(),
+        ThemeManager.getAmoledEnabled(),
       ]);
 
       if (mounted) {
@@ -482,6 +485,7 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
             catppuccinAccent: results[6] as String,
             fontFamily: results[7] as String,
             einkEnabled: results[8] as bool,
+            amoledEnabled: results[9] as bool,
           );
         });
 
@@ -515,6 +519,7 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
         ThemeManager.getCatppuccinAccent(),
         ThemeManager.getAppFontFamily(),
         ThemeManager.getEInkEnabled(),
+        ThemeManager.getAmoledEnabled(),
       ]);
 
       if (mounted) {
@@ -532,6 +537,7 @@ class _ThinkNoteAppState extends State<ThinkNoteApp> {
             catppuccinAccent: results[6] as String,
             fontFamily: results[7] as String,
             einkEnabled: results[8] as bool,
+            amoledEnabled: results[9] as bool,
           );
         });
       }

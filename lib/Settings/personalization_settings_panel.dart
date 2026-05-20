@@ -151,6 +151,7 @@ class PersonalizationSettingsPanelState
   bool _isMonochromeEnabled = false;
   bool _isCatppuccinEnabled = false;
   bool _isEInkEnabled = false;
+  bool _isAmoledEnabled = false;
   String _catppuccinFlavor = 'mocha';
   String _catppuccinAccent = 'mauve';
   bool _isLoading = true;
@@ -176,6 +177,7 @@ class PersonalizationSettingsPanelState
     final catppuccinAccent =
         await theme_handler.ThemeManager.getCatppuccinAccent();
     final einkEnabled = await theme_handler.ThemeManager.getEInkEnabled();
+    final amoledEnabled = await theme_handler.ThemeManager.getAmoledEnabled();
 
     setState(() {
       _currentColor = color;
@@ -184,6 +186,7 @@ class PersonalizationSettingsPanelState
       _isMonochromeEnabled = monochromeEnabled;
       _isCatppuccinEnabled = catppuccinEnabled;
       _isEInkEnabled = einkEnabled;
+      _isAmoledEnabled = amoledEnabled;
       _appFontFamily = appFontFamily;
       _catppuccinFlavor = catppuccinFlavor;
       _catppuccinAccent = catppuccinAccent;
@@ -197,8 +200,23 @@ class PersonalizationSettingsPanelState
   }
 
   void _toggleTheme(bool value) {
-    setState(() => _isDarkTheme = !value);
+    setState(() {
+      _isDarkTheme = !value;
+      if (value) {
+        _isAmoledEnabled = false;
+      }
+    });
     _saveSettings();
+  }
+
+  void _toggleAmoled(bool value) {
+    setState(() {
+      _isAmoledEnabled = value;
+    });
+    _saveSettings();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onThemeUpdated?.call();
+    });
   }
 
   void _toggleColorMode(bool value) {
@@ -257,6 +275,7 @@ class PersonalizationSettingsPanelState
         _isColorMode = false;
         _isMonochromeEnabled = false;
         _isCatppuccinEnabled = false;
+        _isAmoledEnabled = false;
       }
     });
     _saveSettings();
@@ -292,6 +311,7 @@ class PersonalizationSettingsPanelState
       catppuccinAccent: _catppuccinAccent,
       einkEnabled: _isEInkEnabled,
       appFontFamily: _appFontFamily,
+      amoledEnabled: _isAmoledEnabled,
     );
     widget.onThemeUpdated?.call();
     await _loadCurrentSettings();
@@ -885,6 +905,34 @@ class PersonalizationSettingsPanelState
                     ],
                   ),
 
+                  if (_isDarkTheme && !_isEInkEnabled) ...[
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('AMOLED Mode', style: textStyle),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Pitch black backgrounds for dark theme',
+                                style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _isAmoledEnabled,
+                          onChanged: _toggleAmoled,
+                        ),
+                      ],
+                    ),
+                  ],
+
                   const SizedBox(height: 16),
 
                   Row(
@@ -1019,10 +1067,17 @@ class PersonalizationSettingsPanelState
                         Expanded(
                           child: _buildThemeSection(
                             'Dark',
-                            ColorScheme.fromSeed(
-                              seedColor: _currentColor,
-                              brightness: Brightness.dark,
-                            ),
+                            _isAmoledEnabled
+                                ? theme_handler.ThemeManager.applyAmoledSurfaces(
+                                    ColorScheme.fromSeed(
+                                      seedColor: _currentColor,
+                                      brightness: Brightness.dark,
+                                    ),
+                                  )
+                                : ColorScheme.fromSeed(
+                                    seedColor: _currentColor,
+                                    brightness: Brightness.dark,
+                                  ),
                           ),
                         ),
                       ],

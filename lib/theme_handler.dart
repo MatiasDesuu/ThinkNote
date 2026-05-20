@@ -16,6 +16,7 @@ class ThemeManager {
   static const String _catppuccinAccentKey = 'catppuccin_accent';
   static const String _einkEnabledKey = 'eink_enabled';
   static const String _appFontFamilyKey = 'app_font_family';
+  static const String _amoledEnabledKey = 'amoled_enabled';
 
   static const Map<String, Map<String, Color>> catppuccinColors = {
     'latte': {
@@ -181,6 +182,10 @@ class ThemeManager {
     return await PlatformSettings.get(_einkEnabledKey, false);
   }
 
+  static Future<bool> getAmoledEnabled() async {
+    return await PlatformSettings.get(_amoledEnabledKey, false);
+  }
+
   static Future<String> getAppFontFamily() async {
     return await PlatformSettings.get(
       _appFontFamilyKey,
@@ -209,6 +214,7 @@ class ThemeManager {
     String? appFontFamily,
     double? saturation,
     double? brightnessValue,
+    bool? amoledEnabled,
   }) async {
     await PlatformSettings.set(_colorKey, color.toARGB32());
     await PlatformSettings.set(_brightnessKey, brightness == Brightness.light);
@@ -245,6 +251,9 @@ class ThemeManager {
     }
     if (brightnessValue != null) {
       await PlatformSettings.set(_brightnessValueKey, brightnessValue);
+    }
+    if (amoledEnabled != null) {
+      await PlatformSettings.set(_amoledEnabledKey, amoledEnabled);
     }
 
     themeNotifier.refreshTheme();
@@ -292,6 +301,7 @@ class ThemeManager {
     required String catppuccinAccent,
     required String fontFamily,
     required bool einkEnabled,
+    bool amoledEnabled = false,
   }) {
     if (einkEnabled) {
       return EInkTheme.buildEInkTheme(
@@ -321,13 +331,15 @@ class ThemeManager {
       catppuccinEnabled: catppuccinEnabled,
       catppuccinFlavor: catppuccinFlavor,
       catppuccinAccent: catppuccinAccent,
+      amoledEnabled: amoledEnabled,
     );
 
-    final baseTextTheme = ThemeData(
-      brightness: brightness,
-      colorScheme: colorScheme,
-      useMaterial3: true,
-    ).textTheme;
+    final baseTextTheme =
+        ThemeData(
+          brightness: brightness,
+          colorScheme: colorScheme,
+          useMaterial3: true,
+        ).textTheme;
 
     return ThemeData(
       brightness: brightness,
@@ -337,12 +349,15 @@ class ThemeManager {
       fontFamily: fontFamily,
       textTheme: _buildTextTheme(fontFamily, baseTextTheme),
       appBarTheme: AppBarTheme(
-        scrolledUnderElevation: 2,
+        scrolledUnderElevation: amoledEnabled ? 0 : 2,
         surfaceTintColor: Colors.transparent,
         backgroundColor:
-            brightness == Brightness.light
+            amoledEnabled
+                ? const Color(0xFF000000)
+                : brightness == Brightness.light
                 ? const Color.fromRGBO(19, 19, 19, 1)
                 : const Color(0xFF252525),
+        shadowColor: amoledEnabled ? const Color(0xFF1A1A1A) : null,
       ),
 
       navigationBarTheme:
@@ -411,6 +426,30 @@ class ThemeManager {
     );
   }
 
+  static ColorScheme applyAmoledSurfaces(ColorScheme scheme) {
+    final p = scheme.primary;
+
+    final tintedContainer = Color.lerp(const Color(0xFF1C1C2E), p, 0.15)!;
+
+    return scheme.copyWith(
+      surfaceContainerLowest: const Color(0xFF0A0A0A),
+      surfaceContainerLow: const Color(0xFF111111),
+      surface: const Color(0xFF1A1A1A),
+      surfaceContainer: const Color(0xFF222222),
+      surfaceContainerHigh: const Color(0xFF2C2C2C),
+      surfaceContainerHighest: const Color(0xFF383838),
+      primaryContainer: tintedContainer,
+      onPrimaryContainer: const Color(0xFFEAEAEA),
+      secondaryContainer: const Color(0xFF1E1E1E),
+      onSecondaryContainer: scheme.secondary,
+      tertiary: scheme.tertiary,
+      outline: const Color(0xFF444444),
+      outlineVariant: const Color(0xFF333333),
+      shadow: Colors.black,
+      scrim: Colors.black,
+    );
+  }
+
   static ColorScheme _buildColorScheme({
     required Color color,
     required Brightness brightness,
@@ -419,24 +458,31 @@ class ThemeManager {
     required bool catppuccinEnabled,
     required String catppuccinFlavor,
     required String catppuccinAccent,
+    bool amoledEnabled = false,
   }) {
+    final ColorScheme scheme;
     if (catppuccinEnabled) {
-      return _buildCatppuccinColorScheme(
+      scheme = _buildCatppuccinColorScheme(
         brightness,
         catppuccinFlavor,
         catppuccinAccent,
       );
     } else if (!colorMode && monochromeEnabled) {
       if (brightness == Brightness.light) {
-        return _buildMonochromeLight();
+        scheme = _buildMonochromeLight();
       } else {
-        return _buildMonochromeDark();
+        scheme = _buildMonochromeDark();
       }
     } else if (!colorMode) {
-      return _defaultColorScheme(color, brightness);
+      scheme = _defaultColorScheme(color, brightness);
     } else {
-      return _buildFullColorScheme(color, brightness);
+      scheme = _buildFullColorScheme(color, brightness);
     }
+
+    if (amoledEnabled && brightness == Brightness.dark && !catppuccinEnabled) {
+      return applyAmoledSurfaces(scheme);
+    }
+    return scheme;
   }
 
   static ColorScheme _buildCatppuccinColorScheme(
