@@ -225,24 +225,78 @@ class FormatDetector {
 
   static String stripFormatting(String text) {
     return text
-        .replaceAll(RegExp(r'\*\*(.*?)\*\*|__(.*?)__'), r'$1$2')
-        .replaceAll(RegExp(r'\*(.*?)\*|_(.*?)_'), r'$1$2')
-        .replaceAll(RegExp(r'~~(.*?)~~'), r'$1')
-        .replaceAll(RegExp(r'`(.*?)`'), r'$1')
-        .replaceAll(RegExp(r'^#\s+(.+)$', multiLine: true), r'$1')
-        .replaceAll(RegExp(r'^##\s+(.+)$', multiLine: true), r'$1')
-        .replaceAll(RegExp(r'^###\s+(.+)$', multiLine: true), r'$1')
-        .replaceAll(RegExp(r'^####\s+(.+)$', multiLine: true), r'$1')
-        .replaceAll(RegExp(r'^#####\s+(.+)$', multiLine: true), r'$1')
-        .replaceAll(RegExp(r'^\d+\.\s+(.+)$', multiLine: true), r'$1')
-        .replaceAll(RegExp(r'^- \s+(.+)$|^-\s+(.+)$', multiLine: true), r'$1$2')
-        .replaceAll(RegExp(r'^\*\s+(.+)$', multiLine: true), r'$1')
-        .replaceAll(RegExp(r'^-? ?\[ \]\s+(.+)$', multiLine: true), r'$1')
-        .replaceAll(RegExp(r'^-? ?\[x\]\s+(.+)$', multiLine: true), r'$1')
-        .replaceAll(RegExp(r'\[\[note:([^\[\]]+)\]\]'), r'$1')
-        .replaceAll(RegExp(r'\[\[notebook:([^\[\]]+)\]\]'), r'$1')
-        .replaceAll(RegExp(r'\[([^\]]+)\]\(([^)]+)\)'), r'$1')
-        .replaceAll(RegExp(r'(?<!\[)\[([^\[\]]+)\](?![(\[])'), r'$1');
+        .replaceAllMapped(
+          RegExp(r'\*\*(.*?)\*\*|__(.*?)__'),
+          (match) => match.group(1) ?? match.group(2) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'\*(.*?)\*|_(.*?)_'),
+          (match) => match.group(1) ?? match.group(2) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'~~(.*?)~~'),
+          (match) => match.group(1) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'`(.*?)`'),
+          (match) => match.group(1) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'^#\s+(.+)$', multiLine: true),
+          (match) => match.group(1) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'^##\s+(.+)$', multiLine: true),
+          (match) => match.group(1) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'^###\s+(.+)$', multiLine: true),
+          (match) => match.group(1) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'^####\s+(.+)$', multiLine: true),
+          (match) => match.group(1) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'^#####\s+(.+)$', multiLine: true),
+          (match) => match.group(1) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'^\d+\.\s+(.+)$', multiLine: true),
+          (match) => match.group(1) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'^- \s+(.+)$|^-\s+(.+)$', multiLine: true),
+          (match) => match.group(1) ?? match.group(2) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'^\*\s+(.+)$', multiLine: true),
+          (match) => match.group(1) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'^-? ?\[ \]\s+(.+)$', multiLine: true),
+          (match) => match.group(1) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'^-? ?\[x\]\s+(.+)$', multiLine: true),
+          (match) => match.group(1) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'\[\[note:([^\[\]]+)\]\]'),
+          (match) => match.group(1) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'\[\[notebook:([^\[\]]+)\]\]'),
+          (match) => match.group(1) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'\[([^\]]+)\]\(([^)]+)\)'),
+          (match) => match.group(1) ?? '',
+        )
+        .replaceAllMapped(
+          RegExp(r'(?<!\[)\[([^\[\]]+)\](?![(\[])'),
+          (match) => match.group(1) ?? '',
+        );
   }
 
   static Map<String, int> getFormatStatistics(String text) {
