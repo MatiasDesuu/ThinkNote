@@ -391,7 +391,12 @@ class FormatUtils {
     return text.substring(0, start) + wrappedText + text.substring(end);
   }
 
-  static String removeFormatting(String text, int start, int end) {
+  static String removeFormatting(
+    String text,
+    int start,
+    int end,
+    FormatType formatType,
+  ) {
     if (start < 0 || end > text.length || start >= end) {
       return text;
     }
@@ -400,7 +405,7 @@ class FormatUtils {
     final selectedText = text.substring(start, end);
     final afterText = text.substring(end);
 
-    final cleanedText = FormatDetector.stripFormatting(selectedText);
+    final cleanedText = _removeSpecificFormat(selectedText, formatType);
     return beforeText + cleanedText + afterText;
   }
 
@@ -418,10 +423,91 @@ class FormatUtils {
     final hasFormat = _hasSpecificFormat(selectedText, formatType);
 
     if (hasFormat) {
-      return removeFormatting(text, start, end);
+      return removeFormatting(text, start, end, formatType);
     } else {
       return wrapWithFormat(text, start, end, formatType);
     }
+  }
+
+  static String _removeSpecificFormat(String text, FormatType formatType) {
+    switch (formatType) {
+      case FormatType.bold:
+        return _extractCapturedText(
+          text,
+          RegExp(r'^\*\*(.*)\*\*$|^__(.*)__$'),
+          [1, 2],
+        );
+      case FormatType.italic:
+        return _extractCapturedText(
+          text,
+          RegExp(r'^\*(.*)\*$|^_(.*)_$'),
+          [1, 2],
+        );
+      case FormatType.strikethrough:
+        return _extractCapturedText(text, RegExp(r'^~~(.*)~~$'), [1]);
+      case FormatType.code:
+        return _extractCapturedText(text, RegExp(r'^`(.*)`$'), [1]);
+      case FormatType.heading1:
+        return _extractCapturedText(text, RegExp(r'^#\s+(.*)$'), [1]);
+      case FormatType.heading2:
+        return _extractCapturedText(text, RegExp(r'^##\s+(.*)$'), [1]);
+      case FormatType.heading3:
+        return _extractCapturedText(text, RegExp(r'^###\s+(.*)$'), [1]);
+      case FormatType.heading4:
+        return _extractCapturedText(text, RegExp(r'^####\s+(.*)$'), [1]);
+      case FormatType.heading5:
+        return _extractCapturedText(text, RegExp(r'^#####\s+(.*)$'), [1]);
+      case FormatType.numbered:
+        return _extractCapturedText(text, RegExp(r'^\d+\.\s+(.*)$'), [1]);
+      case FormatType.bullet:
+        return _extractCapturedText(text, RegExp(r'^-\s+(.*)$'), [1]);
+      case FormatType.checkboxUnchecked:
+        return _extractCapturedText(text, RegExp(r'^-? ?\[ \]\s+(.*)$'), [1]);
+      case FormatType.checkboxChecked:
+        return _extractCapturedText(
+          text,
+          RegExp(r'^-? ?\[x\]\s+(.*)$', caseSensitive: false),
+          [1],
+        );
+      case FormatType.noteLink:
+        return _extractCapturedText(text, RegExp(r'^\[\[note:(.*)\]\]$'), [1]);
+      case FormatType.notebookLink:
+        return _extractCapturedText(text, RegExp(r'^\[\[notebook:(.*)\]\]$'), [1]);
+      case FormatType.link:
+        return _extractCapturedText(text, RegExp(r'^\[(.*)\]\((.*)\)$'), [1]);
+      case FormatType.url:
+        return text;
+      case FormatType.horizontalRule:
+        return text;
+      case FormatType.insertScript:
+        return text;
+      case FormatType.convertToScript:
+        return text;
+      case FormatType.taggedCode:
+        return _extractCapturedText(text, RegExp(r'^\[(.*)\]$'), [1]);
+      case FormatType.normal:
+        return text;
+    }
+  }
+
+  static String _extractCapturedText(
+    String text,
+    RegExp pattern,
+    List<int> preferredGroups,
+  ) {
+    final match = pattern.firstMatch(text);
+    if (match == null) {
+      return text;
+    }
+
+    for (final groupIndex in preferredGroups) {
+      final captured = match.group(groupIndex);
+      if (captured != null) {
+        return captured;
+      }
+    }
+
+    return text;
   }
 
   static bool _hasSpecificFormat(String text, FormatType formatType) {
