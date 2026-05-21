@@ -203,8 +203,9 @@ class ShortcutsHandler {
     required VoidCallback onToggleFavoritesPanel,
     required VoidCallback onToggleTrashPanel,
     required VoidCallback onToggleTemplatesPanel,
+    VoidCallback? onToggleUnifiedPanelMode,
   }) {
-    return {
+    final shortcuts = <ShortcutActivator, VoidCallback>{
       const SingleActivator(LogicalKeyboardKey.escape): onCloseDialog,
       SingleActivator(LogicalKeyboardKey.f2, includeRepeats: false):
           onToggleSidebar,
@@ -229,6 +230,13 @@ class ShortcutsHandler {
       primaryActivator(LogicalKeyboardKey.keyP): onToggleReadMode,
       primaryActivator(LogicalKeyboardKey.keyP, shift: true): onToggleSplitView,
     };
+
+    if (onToggleUnifiedPanelMode != null) {
+      shortcuts[primaryActivator(LogicalKeyboardKey.keyE, shift: true)] =
+          onToggleUnifiedPanelMode;
+    }
+
+    return shortcuts;
   }
 
   static bool handleGlobalKeyEvent(
@@ -253,6 +261,7 @@ class ShortcutsHandler {
     required VoidCallback onToggleFavoritesPanel,
     required VoidCallback onToggleTrashPanel,
     required VoidCallback onToggleTemplatesPanel,
+    VoidCallback? onToggleUnifiedPanelMode,
   }) {
     if (event is! KeyDownEvent) return false;
 
@@ -265,6 +274,10 @@ class ShortcutsHandler {
     if (isPrimaryModifierPressed && isShiftPressed && !isAltPressed) {
       if (key == LogicalKeyboardKey.keyN) {
         onCreateNotebook();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.keyE && onToggleUnifiedPanelMode != null) {
+        onToggleUnifiedPanelMode();
         return true;
       }
       if (key == LogicalKeyboardKey.keyF) {
@@ -428,6 +441,7 @@ class GlobalAppShortcuts extends StatefulWidget {
   final VoidCallback onToggleFavoritesPanel;
   final VoidCallback onToggleTrashPanel;
   final VoidCallback onToggleTemplatesPanel;
+  final VoidCallback? onToggleUnifiedPanelMode;
 
   final bool Function()? isEnabled;
 
@@ -454,6 +468,7 @@ class GlobalAppShortcuts extends StatefulWidget {
     required this.onToggleFavoritesPanel,
     required this.onToggleTrashPanel,
     required this.onToggleTemplatesPanel,
+    this.onToggleUnifiedPanelMode,
     this.isEnabled,
   });
 
@@ -506,6 +521,7 @@ class _GlobalAppShortcutsState extends State<GlobalAppShortcuts> {
       onToggleFavoritesPanel: widget.onToggleFavoritesPanel,
       onToggleTrashPanel: widget.onToggleTrashPanel,
       onToggleTemplatesPanel: widget.onToggleTemplatesPanel,
+      onToggleUnifiedPanelMode: widget.onToggleUnifiedPanelMode,
     );
   }
 

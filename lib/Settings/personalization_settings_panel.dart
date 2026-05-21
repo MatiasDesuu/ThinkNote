@@ -865,86 +865,79 @@ class PersonalizationSettingsPanelState
 
         const SizedBox(height: 16),
 
-        if (!_isCatppuccinEnabled) ...[
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.settings_rounded, color: colorScheme.primary),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Theme Options',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.settings_rounded, color: colorScheme.primary),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Theme Options',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Configure theme appearance and behavior',
-                    style: TextStyle(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  Row(
-                    children: [
-                      Expanded(child: Text('Light theme', style: textStyle)),
-                      Switch(
-                        value: !_isDarkTheme,
-                        onChanged: (value) => _toggleTheme(value),
-                      ),
-                    ],
-                  ),
-
-                  if (_isDarkTheme && !_isEInkEnabled) ...[
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('AMOLED Mode', style: textStyle),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Pitch black backgrounds for dark theme',
-                                style: TextStyle(
-                                  color: colorScheme.onSurfaceVariant,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Switch(
-                          value: _isAmoledEnabled,
-                          onChanged: _toggleAmoled,
-                        ),
-                      ],
                     ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Configure theme appearance and behavior',
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 16),
 
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Light theme', style: textStyle),
+                          if (_isCatppuccinEnabled) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Unavailable while Catppuccin theme is enabled',
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: !_isDarkTheme,
+                      onChanged:
+                          _isCatppuccinEnabled
+                              ? null
+                              : (value) => _toggleTheme(value),
+                    ),
+                  ],
+                ),
+
+                if (_isDarkTheme &&
+                    !_isEInkEnabled &&
+                    !_isCatppuccinEnabled) ...[
                   const SizedBox(height: 16),
-
                   Row(
                     children: [
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('E-Ink Mode', style: textStyle),
+                            Text('AMOLED Mode', style: textStyle),
                             const SizedBox(height: 4),
                             Text(
-                              'Pure black and white theme for e-ink displays. No colors, gray tones, or transparencies. When Light theme is on: white background with black elements. When Light theme is off: black background with white elements.',
+                              'Pitch black backgrounds for dark theme',
                               style: TextStyle(
                                 color: colorScheme.onSurfaceVariant,
                                 fontSize: 13,
@@ -953,11 +946,66 @@ class PersonalizationSettingsPanelState
                           ],
                         ),
                       ),
-                      Switch(value: _isEInkEnabled, onChanged: _toggleEInk),
+                      Switch(
+                        value: _isAmoledEnabled,
+                        onChanged: _toggleAmoled,
+                      ),
+                    ],
+                  ),
+                ],
+
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('E-Ink Mode', style: textStyle),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Pure black and white theme for e-ink displays. No colors, gray tones, or transparencies. When Light theme is on: white background with black elements. When Light theme is off: black background with white elements.',
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(value: _isEInkEnabled, onChanged: _toggleEInk),
+                  ],
+                ),
+
+                if (!_isEInkEnabled) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Color Mode', style: textStyle),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Applies dynamic colors to the entire interface. If disabled, only basic elements are colored.',
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _isColorMode,
+                        onChanged: _toggleColorMode,
+                      ),
                     ],
                   ),
 
-                  if (!_isEInkEnabled) ...[
+                  if (!_isColorMode) ...[
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -965,10 +1013,10 @@ class PersonalizationSettingsPanelState
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Color Mode', style: textStyle),
+                              Text('Monochrome Mode', style: textStyle),
                               const SizedBox(height: 4),
                               Text(
-                                'Applies dynamic colors to the entire interface. If disabled, only basic elements are colored.',
+                                'Uses white (dark theme) or black (light theme) accent colors instead of the selected color, keeping backgrounds the same.',
                                 style: TextStyle(
                                   color: colorScheme.onSurfaceVariant,
                                   fontSize: 13,
@@ -978,47 +1026,19 @@ class PersonalizationSettingsPanelState
                           ),
                         ),
                         Switch(
-                          value: _isColorMode,
-                          onChanged: _toggleColorMode,
+                          value: _isMonochromeEnabled,
+                          onChanged: _toggleMonochrome,
                         ),
                       ],
                     ),
-
-                    if (!_isColorMode) ...[
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Monochrome Mode', style: textStyle),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Uses white (dark theme) or black (light theme) accent colors instead of the selected color, keeping backgrounds the same.',
-                                  style: TextStyle(
-                                    color: colorScheme.onSurfaceVariant,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Switch(
-                            value: _isMonochromeEnabled,
-                            onChanged: _toggleMonochrome,
-                          ),
-                        ],
-                      ),
-                    ],
                   ],
                 ],
-              ),
+              ],
             ),
           ),
+        ),
 
-          const SizedBox(height: 16),
-        ],
+        const SizedBox(height: 16),
 
         Card(
           child: Padding(

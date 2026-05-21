@@ -36,6 +36,8 @@ class EditorSettingsCache {
   double? _wordsPerSecond;
   bool? _showBottomBar;
   double? _splitViewUpdateDelay;
+  bool? _useUnifiedNotebooksNotesPanel;
+  bool? _useMiddleAndDoubleClickToOpenUnifiedNotesPanel;
 
   double get fontSize => _fontSize ?? EditorSettings.defaultFontSize;
   double get lineSpacing => _lineSpacing ?? EditorSettings.defaultLineSpacing;
@@ -71,6 +73,12 @@ class EditorSettingsCache {
       _showBottomBar ?? EditorSettings.defaultShowBottomBar;
   double get splitViewUpdateDelay =>
       _splitViewUpdateDelay ?? EditorSettings.defaultSplitViewUpdateDelay;
+  bool get useUnifiedNotebooksNotesPanel =>
+      _useUnifiedNotebooksNotesPanel ??
+      EditorSettings.defaultUseUnifiedNotebooksNotesPanel;
+  bool get useMiddleAndDoubleClickToOpenUnifiedNotesPanel =>
+      _useMiddleAndDoubleClickToOpenUnifiedNotesPanel ??
+      EditorSettings.defaultUseMiddleAndDoubleClickToOpenUnifiedNotesPanel;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -94,6 +102,8 @@ class EditorSettingsCache {
         EditorSettings.getWordsPerSecond(),
         EditorSettings.getShowBottomBar(),
         EditorSettings.getSplitViewUpdateDelay(),
+        EditorSettings.getUseUnifiedNotebooksNotesPanel(),
+        EditorSettings.getUseMiddleAndDoubleClickToOpenUnifiedNotesPanel(),
       ]);
 
       _fontSize = results[0] as double;
@@ -113,6 +123,8 @@ class EditorSettingsCache {
       _wordsPerSecond = results[14] as double;
       _showBottomBar = results[15] as bool;
       _splitViewUpdateDelay = results[16] as double;
+      _useUnifiedNotebooksNotesPanel = results[17] as bool;
+      _useMiddleAndDoubleClickToOpenUnifiedNotesPanel = results[18] as bool;
       _isInitialized = true;
     } catch (e) {
       print('Error initializing editor settings cache: $e');
@@ -135,6 +147,10 @@ class EditorSettingsCache {
       _wordsPerSecond = EditorSettings.defaultWordsPerSecond;
       _showBottomBar = EditorSettings.defaultShowBottomBar;
       _splitViewUpdateDelay = EditorSettings.defaultSplitViewUpdateDelay;
+      _useUnifiedNotebooksNotesPanel =
+          EditorSettings.defaultUseUnifiedNotebooksNotesPanel;
+      _useMiddleAndDoubleClickToOpenUnifiedNotesPanel =
+          EditorSettings.defaultUseMiddleAndDoubleClickToOpenUnifiedNotesPanel;
       _isInitialized = true;
     }
   }
@@ -210,6 +226,14 @@ class EditorSettingsCache {
   void updateSplitViewUpdateDelay(double delay) {
     _splitViewUpdateDelay = delay;
   }
+
+  void updateUseUnifiedNotebooksNotesPanel(bool value) {
+    _useUnifiedNotebooksNotesPanel = value;
+  }
+
+  void updateUseMiddleAndDoubleClickToOpenUnifiedNotesPanel(bool value) {
+    _useMiddleAndDoubleClickToOpenUnifiedNotesPanel = value;
+  }
 }
 
 class EditorSettingsEvents {
@@ -235,6 +259,10 @@ class EditorSettingsEvents {
   static final _showBottomBarController = StreamController<bool>.broadcast();
   static final _splitViewUpdateDelayController =
       StreamController<double>.broadcast();
+  static final _useUnifiedNotebooksNotesPanelController =
+      StreamController<bool>.broadcast();
+  static final _useMiddleAndDoubleClickToOpenUnifiedNotesPanelController =
+      StreamController<bool>.broadcast();
 
   static Stream<double> get fontSizeStream => _fontSizeController.stream;
   static Stream<double> get lineSpacingStream => _lineSpacingController.stream;
@@ -264,6 +292,10 @@ class EditorSettingsEvents {
       _showBottomBarController.stream;
   static Stream<double> get splitViewUpdateDelayStream =>
       _splitViewUpdateDelayController.stream;
+  static Stream<bool> get useUnifiedNotebooksNotesPanelStream =>
+      _useUnifiedNotebooksNotesPanelController.stream;
+  static Stream<bool> get useMiddleAndDoubleClickToOpenUnifiedNotesPanelStream =>
+      _useMiddleAndDoubleClickToOpenUnifiedNotesPanelController.stream;
 
   static void notifyFontSizeChanged(double size) {
     _fontSizeController.add(size);
@@ -329,6 +361,16 @@ class EditorSettingsEvents {
     _splitViewUpdateDelayController.add(delay);
   }
 
+  static void notifyUseUnifiedNotebooksNotesPanelChanged(bool value) {
+    _useUnifiedNotebooksNotesPanelController.add(value);
+  }
+
+  static void notifyUseMiddleAndDoubleClickToOpenUnifiedNotesPanelChanged(
+    bool value,
+  ) {
+    _useMiddleAndDoubleClickToOpenUnifiedNotesPanelController.add(value);
+  }
+
   static void dispose() {
     _fontSizeController.close();
     _lineSpacingController.close();
@@ -345,6 +387,8 @@ class EditorSettingsEvents {
     _expandNotebooksOnLinkOpenController.close();
     _wordsPerSecondController.close();
     _splitViewUpdateDelayController.close();
+    _useUnifiedNotebooksNotesPanelController.close();
+    _useMiddleAndDoubleClickToOpenUnifiedNotesPanelController.close();
   }
 }
 
@@ -369,6 +413,10 @@ class EditorSettings {
   static const String _wordsPerSecondKey = 'words_per_second';
   static const String _showBottomBarKey = 'show_editor_bottom_bar';
   static const String _splitViewUpdateDelayKey = 'split_view_update_delay';
+  static const String _useUnifiedNotebooksNotesPanelKey =
+      'use_unified_notebooks_notes_panel';
+  static const String _useMiddleAndDoubleClickToOpenUnifiedNotesPanelKey =
+      'use_middle_and_double_click_to_open_unified_notes_panel';
   static const double defaultLineSpacing = 1.0;
 
   static const double defaultFontSize = 16.0;
@@ -387,6 +435,9 @@ class EditorSettings {
   static const double defaultWordsPerSecond = 5.0;
   static const bool defaultShowBottomBar = true;
   static const double defaultSplitViewUpdateDelay = 500.0;
+  static const bool defaultUseUnifiedNotebooksNotesPanel = false;
+  static const bool defaultUseMiddleAndDoubleClickToOpenUnifiedNotesPanel =
+      false;
 
   static const List<String> googleFonts = [
     'Roboto',
@@ -686,6 +737,39 @@ class EditorSettings {
     EditorSettingsEvents.notifyShowBottomBarChanged(value);
   }
 
+  static Future<bool> getUseUnifiedNotebooksNotesPanel() async {
+    return await PlatformSettings.get(
+      _useUnifiedNotebooksNotesPanelKey,
+      defaultUseUnifiedNotebooksNotesPanel,
+    );
+  }
+
+  static Future<void> setUseUnifiedNotebooksNotesPanel(bool value) async {
+    await PlatformSettings.set(_useUnifiedNotebooksNotesPanelKey, value);
+    EditorSettingsCache.instance.updateUseUnifiedNotebooksNotesPanel(value);
+    EditorSettingsEvents.notifyUseUnifiedNotebooksNotesPanelChanged(value);
+  }
+
+  static Future<bool> getUseMiddleAndDoubleClickToOpenUnifiedNotesPanel() async {
+    return await PlatformSettings.get(
+      _useMiddleAndDoubleClickToOpenUnifiedNotesPanelKey,
+      defaultUseMiddleAndDoubleClickToOpenUnifiedNotesPanel,
+    );
+  }
+
+  static Future<void> setUseMiddleAndDoubleClickToOpenUnifiedNotesPanel(
+    bool value,
+  ) async {
+    await PlatformSettings.set(
+      _useMiddleAndDoubleClickToOpenUnifiedNotesPanelKey,
+      value,
+    );
+    EditorSettingsCache.instance
+        .updateUseMiddleAndDoubleClickToOpenUnifiedNotesPanel(value);
+    EditorSettingsEvents
+        .notifyUseMiddleAndDoubleClickToOpenUnifiedNotesPanelChanged(value);
+  }
+
   static Future<double> getSplitViewUpdateDelay() async {
     return await PlatformSettings.get(
       _splitViewUpdateDelayKey,
@@ -729,6 +813,8 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
   double _wordsPerSecond = 5.0;
   double _splitViewUpdateDelay = 500.0;
   bool _showBottomBar = true;
+  bool _useUnifiedNotebooksNotesPanel = false;
+  bool _useMiddleAndDoubleClickToOpenUnifiedNotesPanel = false;
   bool _isLoading = true;
 
   @override
@@ -758,6 +844,10 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
     final wordsPerSecond = await EditorSettings.getWordsPerSecond();
     final splitViewUpdateDelay = await EditorSettings.getSplitViewUpdateDelay();
     final showBottomBar = await EditorSettings.getShowBottomBar();
+    final useUnifiedNotebooksNotesPanel =
+        await EditorSettings.getUseUnifiedNotebooksNotesPanel();
+    final useMiddleAndDoubleClickToOpenUnifiedNotesPanel =
+        await EditorSettings.getUseMiddleAndDoubleClickToOpenUnifiedNotesPanel();
     setState(() {
       _fontSize = fontSize;
       _lineSpacing = lineSpacing;
@@ -776,6 +866,9 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
       _wordsPerSecond = wordsPerSecond;
       _splitViewUpdateDelay = splitViewUpdateDelay;
       _showBottomBar = showBottomBar;
+      _useUnifiedNotebooksNotesPanel = useUnifiedNotebooksNotesPanel;
+      _useMiddleAndDoubleClickToOpenUnifiedNotesPanel =
+          useMiddleAndDoubleClickToOpenUnifiedNotesPanel;
       _isLoading = false;
     });
   }
@@ -884,6 +977,23 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
     EditorSettingsEvents.notifyShowBottomBarChanged(value);
   }
 
+  Future<void> _updateUseUnifiedNotebooksNotesPanel(bool value) async {
+    setState(() => _useUnifiedNotebooksNotesPanel = value);
+    await EditorSettings.setUseUnifiedNotebooksNotesPanel(value);
+    EditorSettingsEvents.notifyUseUnifiedNotebooksNotesPanelChanged(value);
+  }
+
+  Future<void> _updateUseMiddleAndDoubleClickToOpenUnifiedNotesPanel(
+    bool value,
+  ) async {
+    setState(() => _useMiddleAndDoubleClickToOpenUnifiedNotesPanel = value);
+    await EditorSettings.setUseMiddleAndDoubleClickToOpenUnifiedNotesPanel(
+      value,
+    );
+    EditorSettingsEvents
+        .notifyUseMiddleAndDoubleClickToOpenUnifiedNotesPanelChanged(value);
+  }
+
   void _showFontSelector() {
     showDialog(
       context: context,
@@ -967,6 +1077,72 @@ class EditorSettingsPanelState extends State<EditorSettingsPanel> {
                     Switch(
                       value: _isEditorCentered,
                       onChanged: _updateEditorCentered,
+                    ),
+                  ],
+                ),
+
+                if (_useUnifiedNotebooksNotesPanel) ...[
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Use middle click and double click to open notes panel',
+                                style: textStyle,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'In the unified panel, middle click and double click on a notebook switch directly to the notes view',
+                                style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value:
+                              _useMiddleAndDoubleClickToOpenUnifiedNotesPanel,
+                          onChanged:
+                              _updateUseMiddleAndDoubleClickToOpenUnifiedNotesPanel,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 20),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Unified notebooks and notes panel',
+                            style: textStyle,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Merge notebooks and notes into a single desktop panel with a mode switch in the header',
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: _useUnifiedNotebooksNotesPanel,
+                      onChanged: _updateUseUnifiedNotebooksNotesPanel,
                     ),
                   ],
                 ),

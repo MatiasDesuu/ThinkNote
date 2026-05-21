@@ -25,6 +25,8 @@ const Duration _loadTimeout = Duration(seconds: 10);
 class DatabaseSidebar extends StatefulWidget {
   final Notebook? selectedNotebook;
   final Function(Notebook) onNotebookSelected;
+  final Function(Notebook)? onNotebookMiddleClick;
+  final Function(Notebook)? onNotebookDoubleClick;
   final VoidCallback? onTrashUpdated;
   final VoidCallback? onExpansionChanged;
   final Function(Notebook)? onNotebookDeleted;
@@ -34,6 +36,8 @@ class DatabaseSidebar extends StatefulWidget {
     super.key,
     this.selectedNotebook,
     required this.onNotebookSelected,
+    this.onNotebookMiddleClick,
+    this.onNotebookDoubleClick,
     this.onTrashUpdated,
     this.onExpansionChanged,
     this.onNotebookDeleted,
@@ -938,7 +942,11 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                   }
                 },
                 onTertiaryTapDown: (details) {
-                  _handleChevronClick(notebook);
+                  if (widget.onNotebookMiddleClick != null) {
+                    widget.onNotebookMiddleClick!(notebook);
+                  } else {
+                    _handleChevronClick(notebook);
+                  }
                 },
                 child: _notebookRow(notebook, level),
               ),
@@ -1105,7 +1113,11 @@ class DatabaseSidebarState extends State<DatabaseSidebar>
                 int currMills = DateTime.now().millisecondsSinceEpoch;
                 int last = _lastClickTimes[notebook.id] ?? 0;
                 if ((currMills - last) < 500) {
-                  _handleChevronClick(notebook);
+                  if (widget.onNotebookDoubleClick != null) {
+                    widget.onNotebookDoubleClick!(notebook);
+                  } else {
+                    _handleChevronClick(notebook);
+                  }
                 } else {
                   widget.onNotebookSelected(notebook);
                 }

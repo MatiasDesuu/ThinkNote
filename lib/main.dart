@@ -30,6 +30,7 @@ import 'widgets/panels/notes_panel.dart';
 import 'widgets/immersive_notes_overlay.dart';
 import 'widgets/custom_snackbar.dart';
 import 'widgets/panels/calendar_panel.dart';
+import 'widgets/panels/unified_notebooks_notes_panel.dart';
 import 'widgets/search_screen_desktop.dart';
 import 'widgets/Editor/editor_tabs.dart';
 import 'widgets/Editor/search_handler.dart';
@@ -706,6 +707,8 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       GlobalKey<ResizablePanelState>();
   final GlobalKey<NotesPanelState> _notesPanelStateKey =
       GlobalKey<NotesPanelState>();
+  final GlobalKey<UnifiedNotebooksNotesPanelState> _unifiedPanelStateKey =
+      GlobalKey<UnifiedNotebooksNotesPanelState>();
   final GlobalKey<ResizablePanelLeftState> _calendarPanelKey =
       GlobalKey<ResizablePanelLeftState>();
   final GlobalKey<CalendarPanelState> _calendarPanelStateKey =
@@ -731,6 +734,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   String _searchQuery = '';
   bool _isAdvancedSearch = false;
   StreamSubscription? _hideTabsInImmersiveSubscription;
+  StreamSubscription<bool>? _unifiedPanelSettingsSubscription;
   late TabManager _tabManager;
   late final GlobalIconSidebarState _globalIconSidebarState;
   Timer? _dbChangeDebounceTimer;
@@ -783,9 +787,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
             await _saveLastSelectedNotebook(notebookId);
 
-            _notesPanelStateKey.currentState?.selectNoteAfterNotebookChange(
-              note,
-            );
+            _activeNotesPanelState?.selectNoteAfterNotebookChange(note);
           }
         } catch (e) {
           debugPrint('Error changing notebook from note link: $e');
@@ -794,7 +796,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
         debugPrint('DEBUG: Same notebook or widget not mounted');
 
         if (mounted) {
-          _notesPanelStateKey.currentState?.selectNoteAfterNotebookChange(note);
+          _activeNotesPanelState?.selectNoteAfterNotebookChange(note);
         }
       }
     };
@@ -834,6 +836,17 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
         .listen((hideTabs) {
           if (mounted) {
             setState(() {});
+          }
+        });
+
+    _unifiedPanelSettingsSubscription?.cancel();
+    _unifiedPanelSettingsSubscription = EditorSettingsEvents
+        .useUnifiedNotebooksNotesPanelStream
+        .listen((isEnabled) {
+          if (mounted) {
+            setState(() {
+              _useUnifiedNotebooksNotesPanel = isEnabled;
+            });
           }
         });
   }
@@ -917,9 +930,48 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
   bool _isNotesForcedOpenInImmersive = false;
   bool _isNotebooksPanelExpanded = true;
+  bool _isUnifiedPanelExpanded = true;
   bool _isCalendarPanelExpanded = true;
+  bool _useUnifiedNotebooksNotesPanel =
+      EditorSettingsCache.instance.useUnifiedNotebooksNotesPanel;
+
+  UnifiedNotebooksNotesPanelState? get _unifiedPanelState =>
+      _unifiedPanelStateKey.currentState;
+
+  DatabaseSidebarState? get _activeDatabaseSidebarState =>
+      _useUnifiedNotebooksNotesPanel
+          ? _unifiedPanelState?.databaseSidebarState
+          : _databaseSidebarKey.currentState;
+
+  NotesPanelState? get _activeNotesPanelState =>
+      _useUnifiedNotebooksNotesPanel
+          ? _unifiedPanelState?.notesPanelState
+          : _notesPanelStateKey.currentState;
+
+  ResizablePanelState? get _activeSidebarPanelState =>
+      _useUnifiedNotebooksNotesPanel
+          ? _unifiedPanelState?.panelState
+          : _sidebarKey.currentState;
+
+  ResizablePanelState? get _activeNotesPanelContainerState =>
+      _useUnifiedNotebooksNotesPanel
+          ? _unifiedPanelState?.panelState
+          : _notesPanelKey.currentState;
 
   bool _shouldShowNotebooksOverlay() {
+    if (_useUnifiedNotebooksNotesPanel) {
+      if (_immersiveModeService.isImmersiveMode) {
+        return false;
+      }
+
+      final panelState = _unifiedPanelState;
+      if (panelState != null) {
+        return !panelState.shouldRenderInline;
+      }
+
+      return !_isUnifiedPanelExpanded;
+    }
+
     if (_immersiveModeService.isImmersiveMode) {
       return false;
     }
@@ -958,16 +1010,21 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
   void _handleImmersiveModeChange() {
     if (_immersiveModeService.isImmersiveMode) {
+      final activeSidebarPanelState = _activeSidebarPanelState;
+      final activeNotesPanelState = _activeNotesPanelContainerState;
       _immersiveModeService.savePanelStates(
         iconSidebarExpanded: _iconSidebarKey.currentState?.isExpanded ?? true,
-        notebooksPanelExpanded: _sidebarKey.currentState?.isExpanded ?? true,
-        notesPanelExpanded: _notesPanelKey.currentState?.isExpanded ?? true,
+        notebooksPanelExpanded: activeSidebarPanelState?.isExpanded ?? true,
+        notesPanelExpanded: activeNotesPanelState?.isExpanded ?? true,
         calendarPanelExpanded:
             _calendarPanelKey.currentState?.isExpanded ?? true,
       );
 
-      _sidebarKey.currentState?.collapsePanel();
-      _notesPanelKey.currentState?.collapsePanel();
+      activeSidebarPanelState?.collapsePanel();
+      if (!_useUnifiedNotebooksNotesPanel ||
+          activeNotesPanelState != activeSidebarPanelState) {
+        activeNotesPanelState?.collapsePanel();
+      }
       _calendarPanelKey.currentState?.collapsePanel();
       _iconSidebarKey.currentState?.collapsePanel();
     } else {
@@ -977,12 +1034,18 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
         _iconSidebarKey.currentState?.expandPanel();
       }
 
-      if (savedStates['notebooks'] == true) {
-        _sidebarKey.currentState?.expandPanel();
-      }
+      if (_useUnifiedNotebooksNotesPanel) {
+        if (savedStates['notebooks'] == true || savedStates['notes'] == true) {
+          _unifiedPanelState?.expandPanel();
+        }
+      } else {
+        if (savedStates['notebooks'] == true) {
+          _sidebarKey.currentState?.expandPanel();
+        }
 
-      if (savedStates['notes'] == true) {
-        _notesPanelKey.currentState?.expandPanel();
+        if (savedStates['notes'] == true) {
+          _notesPanelKey.currentState?.expandPanel();
+        }
       }
 
       if (savedStates['calendar'] == true) {
@@ -1155,7 +1218,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       if (createdNote != null) {
         _tabManager.openTab(createdNote);
         _selectNote(createdNote);
-        _databaseSidebarKey.currentState?.reloadSidebar();
+        _activeDatabaseSidebarState?.reloadSidebar();
         DatabaseHelper.notifyDatabaseChanged();
         _focusEditor();
       }
@@ -1206,7 +1269,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       if (createdTodo != null) {
         _tabManager.openTab(createdTodo);
         _selectNote(createdTodo);
-        _databaseSidebarKey.currentState?.reloadSidebar();
+        _activeDatabaseSidebarState?.reloadSidebar();
         DatabaseHelper.notifyDatabaseChanged();
         _focusEditor();
       }
@@ -1275,7 +1338,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
         }
 
         _selectNote(createdNote);
-        _databaseSidebarKey.currentState?.reloadSidebar();
+        _activeDatabaseSidebarState?.reloadSidebar();
         DatabaseHelper.notifyDatabaseChanged();
         _focusEditor();
       }
@@ -1312,7 +1375,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
       if (createdNotebook != null) {
         if (_selectedNotebook != null && _selectedNotebook!.id != null) {
-          await _databaseSidebarKey.currentState?.forceExpandNotebook(
+          await _activeDatabaseSidebarState?.forceExpandNotebook(
             _selectedNotebook!,
           );
         }
@@ -1320,7 +1383,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
         setState(() {
           _selectedNotebook = createdNotebook;
         });
-        _databaseSidebarKey.currentState?.reloadSidebar();
+        _activeDatabaseSidebarState?.reloadSidebar();
       }
     } catch (e) {
       debugPrint('Error creating notebook: $e');
@@ -1558,7 +1621,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   }
 
   Future<List<Note>> _getNotesForNavigation(Note currentNote) async {
-    final notesPanel = _notesPanelStateKey.currentState;
+    final notesPanel = _activeNotesPanelState;
     if (notesPanel != null) {
       final notes = notesPanel.notes;
       if (notes.any((n) => n.id == currentNote.id)) {
@@ -1801,9 +1864,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       _selectedNotebook = notebook;
       _selectedTag = null;
     });
-    _databaseSidebarKey.currentState?.clearSelectedTag();
+    _activeDatabaseSidebarState?.clearSelectedTag();
     final expand = await getExpandSetting();
-    _databaseSidebarKey.currentState?.handleNotebookSelection(
+    _activeDatabaseSidebarState?.handleNotebookSelection(
       notebook,
       expand: expand,
     );
@@ -1825,7 +1888,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   );
 
   void _onTrashUpdated() {
-    _databaseSidebarKey.currentState?.reloadSidebar();
+    _activeDatabaseSidebarState?.reloadSidebar();
   }
 
   void _onNoteDeleted(Note deletedNote) {
@@ -1892,7 +1955,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     }
 
     if (mounted) {
-      _notesPanelStateKey.currentState?.reloadSidebar();
+      _activeNotesPanelState?.reloadSidebar();
     }
   }
 
@@ -1952,7 +2015,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
     if (mounted) {
       setState(() {});
-      _notesPanelStateKey.currentState?.reloadSidebar();
+      _activeNotesPanelState?.reloadSidebar();
     }
   }
 
@@ -1987,16 +2050,16 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       _selectedNotebook = notebook;
     });
     _selectNote(null);
-    _databaseSidebarKey.currentState?.reloadSidebar();
+    _activeDatabaseSidebarState?.reloadSidebar();
   }
 
   void _onNoteRestored(Note note) {
     _selectNote(note);
-    _databaseSidebarKey.currentState?.reloadSidebar();
+    _activeDatabaseSidebarState?.reloadSidebar();
   }
 
   void _onFavoritesUpdated() {
-    _databaseSidebarKey.currentState?.reloadSidebar();
+    _activeDatabaseSidebarState?.reloadSidebar();
     _favoritesPanelStateKey.currentState?.reloadFavorites();
   }
 
@@ -2013,6 +2076,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     _globalIconSidebarState.removeListener(_onIconSidebarStateChanged);
     _immersiveModeService.removeListener(_onImmersiveModeChanged);
     _hideTabsInImmersiveSubscription?.cancel();
+    _unifiedPanelSettingsSubscription?.cancel();
     _tabManager.dispose();
     super.dispose();
   }
@@ -2067,6 +2131,108 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
         },
         onNoteDeleted: _onNoteDeleted,
       ),
+    );
+  }
+
+  void _showUnifiedNotesMode() {
+    _unifiedPanelState?.showNotesMode();
+  }
+
+  void _resetSelectionFromPanelChange() {
+    _titleController.clear();
+    _noteController.clear();
+    _selectNote(null);
+  }
+
+  void _selectRootNotebook() {
+    final rootNotebook = Notebook(
+      id: null,
+      name: '',
+      parentId: null,
+      createdAt: DateTime.now(),
+      orderIndex: 0,
+    );
+
+    setState(() {
+      _selectedNotebook = rootNotebook;
+      _selectedTag = null;
+    });
+
+    _activeDatabaseSidebarState?.clearSelectedTag();
+    _titleController.clear();
+    _noteController.clear();
+    _selectNote(null);
+    _saveLastSelectedNotebook(null);
+  }
+
+  Widget _buildUnifiedPanel() {
+    return UnifiedNotebooksNotesPanel(
+      key: _unifiedPanelStateKey,
+      appFocusNode: _appFocusNode,
+      selectedNotebook: _selectedNotebook,
+      selectedTag: _selectedTag,
+      selectedNote: _selectedNote,
+      isImmersiveMode: _immersiveModeService.isImmersiveMode,
+      onRootSelected: _selectRootNotebook,
+      onExpandedChanged: (isExpanded) {
+        if (!mounted) return;
+        setState(() {
+          _isUnifiedPanelExpanded = isExpanded;
+          _isNotebooksPanelExpanded = isExpanded;
+        });
+      },
+      onNotebookSelected: (notebook) {
+        setState(() {
+          _selectedNotebook = notebook;
+          _selectedTag = null;
+        });
+
+        _activeDatabaseSidebarState?.clearSelectedTag();
+        _resetSelectionFromPanelChange();
+        _saveLastSelectedNotebook(notebook.id);
+      },
+      onTagSelected: (tag) {
+        setState(() {
+          _selectedTag = tag;
+          _selectedNotebook = null;
+        });
+        _resetSelectionFromPanelChange();
+        _saveLastSelectedNotebook(null);
+      },
+      onNotebookTrashUpdated: () {
+        _titleController.clear();
+        _noteController.clear();
+        _selectNote(null);
+        _saveLastSelectedNotebook(null);
+      },
+      onNotebookExpansionChanged: () {
+        setState(() {});
+      },
+      onNotebookDeleted: _onNotebookDeleted,
+      onNoteSelected: _onNoteSelected,
+      onNoteSelectedFromPanel: (note) {
+        if (mounted && _editorTabsKey.currentState != null) {
+          _editorTabsKey.currentState!.suppressNextUpdateAnimations();
+        }
+        _onNoteSelected(note);
+      },
+      onNoteOpenInNewTab: _onNoteOpenInNewTab,
+      onLocateInCalendar: _onLocateNoteInCalendar,
+      onNotesTrashUpdated: () {
+        _isLoadingNoteContent = true;
+        _titleController.clear();
+        _noteController.clear();
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            _isLoadingNoteContent = false;
+          }
+        });
+        _selectNote(null);
+      },
+      onNotesSortChanged: () {
+        setState(() {});
+      },
+      onNoteDeleted: _onNoteDeleted,
     );
   }
 
@@ -2194,6 +2360,10 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     final shouldShowNotebooksOverlay = _shouldShowNotebooksOverlay();
     final shouldShowCalendarOverlay = _shouldShowCalendarOverlay();
     final notebooksOverlayLeftOffset = _getNotebooksOverlayLeftOffset();
+    final shouldShowUnifiedImmersiveOverlay =
+        _useUnifiedNotebooksNotesPanel &&
+        _immersiveModeService.isImmersiveMode &&
+        !_isNotesForcedOpenInImmersive;
 
     return GlobalAppShortcuts(
       onCloseDialog: closeCurrentDialog,
@@ -2216,6 +2386,10 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       onToggleFavoritesPanel: _toggleFavoritesPanel,
       onToggleTrashPanel: _toggleTrashPanel,
       onToggleTemplatesPanel: _toggleTemplatesPanel,
+      onToggleUnifiedPanelMode:
+          _useUnifiedNotebooksNotesPanel
+              ? _toggleUnifiedNotebooksNotesMode
+              : null,
       child: Focus(
         focusNode: _appFocusNode,
         autofocus: true,
@@ -2223,20 +2397,33 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
           body: Stack(
             children: [
               ImmersiveNotesOverlay(
-                isImmersiveMode: shouldShowNotebooksOverlay,
-                overlayPanel: _buildNotebooksPanel(),
-                onExpand: () => _sidebarKey.currentState?.showOverlayPreview(),
+                isImmersiveMode:
+                    _useUnifiedNotebooksNotesPanel
+                        ? shouldShowNotebooksOverlay
+                        : shouldShowNotebooksOverlay,
+                overlayPanel:
+                    _useUnifiedNotebooksNotesPanel
+                        ? _buildUnifiedPanel()
+                        : _buildNotebooksPanel(),
+                onExpand:
+                    () => _activeSidebarPanelState?.showOverlayPreview(),
                 onCollapse:
-                    () => _sidebarKey.currentState?.hideOverlayPreview(),
+                    () => _activeSidebarPanelState?.hideOverlayPreview(),
                 panelLeftOffset: notebooksOverlayLeftOffset,
                 child: ImmersiveNotesOverlay(
                   isImmersiveMode:
-                      _immersiveModeService.isImmersiveMode &&
-                      !_isNotesForcedOpenInImmersive,
-                  overlayPanel: _buildNotesPanel(),
-                  onExpand: () => _notesPanelKey.currentState?.expandPanel(),
+                      _useUnifiedNotebooksNotesPanel
+                          ? shouldShowUnifiedImmersiveOverlay
+                          : _immersiveModeService.isImmersiveMode &&
+                              !_isNotesForcedOpenInImmersive,
+                  overlayPanel:
+                      _useUnifiedNotebooksNotesPanel
+                          ? _buildUnifiedPanel()
+                          : _buildNotesPanel(),
+                  onExpand:
+                      () => _activeNotesPanelContainerState?.expandPanel(),
                   onCollapse:
-                      () => _notesPanelKey.currentState?.collapsePanel(),
+                      () => _activeNotesPanelContainerState?.collapsePanel(),
                   child: ImmersiveNotesOverlay(
                     isImmersiveMode: shouldShowCalendarOverlay,
                     overlayPanel: _buildCalendarPanel(),
@@ -2287,10 +2474,19 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                           appFocusNode: _appFocusNode,
                           onForceSync: _refreshAllPanels,
                         ),
-                        if (!shouldShowNotebooksOverlay) _buildNotebooksPanel(),
-                        if (!_immersiveModeService.isImmersiveMode ||
-                            _isNotesForcedOpenInImmersive)
-                          _buildNotesPanel(),
+                        if (_useUnifiedNotebooksNotesPanel) ...[
+                          if ((!shouldShowNotebooksOverlay &&
+                                  !_immersiveModeService.isImmersiveMode) ||
+                              (_immersiveModeService.isImmersiveMode &&
+                                  _isNotesForcedOpenInImmersive))
+                            _buildUnifiedPanel(),
+                        ] else ...[
+                          if (!shouldShowNotebooksOverlay)
+                            _buildNotebooksPanel(),
+                          if (!_immersiveModeService.isImmersiveMode ||
+                              _isNotesForcedOpenInImmersive)
+                            _buildNotesPanel(),
+                        ],
                         Expanded(
                           child: Stack(
                             children: [
@@ -2402,7 +2598,7 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                       onTemplateApplied: (note) {
                         _tabManager.openTab(note);
                         _selectNote(note);
-                        _databaseSidebarKey.currentState?.reloadSidebar();
+                        _activeDatabaseSidebarState?.reloadSidebar();
                         DatabaseHelper.notifyDatabaseChanged();
                         _focusEditor();
                       },
@@ -2420,12 +2616,22 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   }
 
   void _toggleSidebar() {
+    if (_useUnifiedNotebooksNotesPanel) {
+      _toggleUnifiedPanelVisibility();
+      return;
+    }
+
     if (_sidebarKey.currentState != null) {
       _sidebarKey.currentState!.togglePanel();
     }
   }
 
   void _toggleNotesPanel() {
+    if (_useUnifiedNotebooksNotesPanel) {
+      _toggleUnifiedPanelVisibility();
+      return;
+    }
+
     if (_immersiveModeService.isImmersiveMode) {
       if (_notesPanelKey.currentState == null) return;
 
@@ -2451,6 +2657,92 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
       if (_notesPanelKey.currentState != null) {
         _notesPanelKey.currentState!.togglePanel();
       }
+    }
+  }
+
+  void _toggleUnifiedPanelForMode({required bool showNotes}) {
+    final unifiedPanelState = _unifiedPanelState;
+    if (unifiedPanelState == null) return;
+
+    final isChangingMode = unifiedPanelState.isShowingNotes != showNotes;
+    if (showNotes) {
+      unifiedPanelState.showNotesMode();
+    } else {
+      unifiedPanelState.showNotebooksMode();
+    }
+
+    if (_immersiveModeService.isImmersiveMode) {
+      final isExpanded = unifiedPanelState.isExpanded;
+      if (isExpanded && !isChangingMode) {
+        unifiedPanelState.collapsePanel();
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            setState(() {
+              _isNotesForcedOpenInImmersive = false;
+            });
+          }
+        });
+      } else {
+        setState(() {
+          _isNotesForcedOpenInImmersive = true;
+        });
+        if (!isExpanded) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _unifiedPanelState?.expandPanel();
+          });
+        }
+      }
+    } else {
+      if (unifiedPanelState.isExpanded) {
+        if (!isChangingMode) {
+          unifiedPanelState.togglePanel();
+        }
+      } else {
+        unifiedPanelState.expandPanel();
+      }
+    }
+  }
+
+  void _toggleUnifiedPanelVisibility() {
+    if (!_useUnifiedNotebooksNotesPanel) return;
+
+    final unifiedPanelState = _unifiedPanelState;
+    if (unifiedPanelState == null) return;
+
+    if (_immersiveModeService.isImmersiveMode) {
+      final isExpanded = unifiedPanelState.isExpanded;
+      if (isExpanded) {
+        unifiedPanelState.collapsePanel();
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            setState(() {
+              _isNotesForcedOpenInImmersive = false;
+            });
+          }
+        });
+      } else {
+        setState(() {
+          _isNotesForcedOpenInImmersive = true;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _unifiedPanelState?.expandPanel();
+        });
+      }
+    } else {
+      unifiedPanelState.togglePanel();
+    }
+  }
+
+  void _toggleUnifiedNotebooksNotesMode() {
+    if (!_useUnifiedNotebooksNotesPanel) return;
+
+    final unifiedPanelState = _unifiedPanelState;
+    if (unifiedPanelState == null) return;
+
+    if (unifiedPanelState.isShowingNotes) {
+      unifiedPanelState.showNotebooksMode();
+    } else {
+      unifiedPanelState.showNotesMode();
     }
   }
 
@@ -2556,9 +2848,9 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
 
     DatabaseHelper.notifyDatabaseChanged();
 
-    _databaseSidebarKey.currentState?.reloadSidebar();
+    _activeDatabaseSidebarState?.reloadSidebar();
 
-    _notesPanelStateKey.currentState?.reloadSidebar();
+    _activeNotesPanelState?.reloadSidebar();
 
     _calendarPanelStateKey.currentState?.reloadCalendar();
 
@@ -2722,8 +3014,13 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
   void _onOpenNotebookFromTab(EditorTab tab) {
     if (tab.note == null) return;
 
-    _sidebarKey.currentState?.expandPanel();
-    _notesPanelKey.currentState?.expandPanel();
+    if (_useUnifiedNotebooksNotesPanel) {
+      _showUnifiedNotesMode();
+      _unifiedPanelState?.expandPanel();
+    } else {
+      _sidebarKey.currentState?.expandPanel();
+      _notesPanelKey.currentState?.expandPanel();
+    }
 
     _onNoteSelected(tab.note!);
   }

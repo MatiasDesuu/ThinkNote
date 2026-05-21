@@ -18,6 +18,8 @@ class ResizablePanel extends StatefulWidget {
   final String title;
   final String preferencesKey;
   final Widget? trailing;
+  final Widget? headerLeading;
+  final double headerLeadingExclusionWidth;
   final bool showLeftSeparator;
   final VoidCallback? onTitleTap;
   final ValueChanged<bool>? onExpandedChanged;
@@ -31,6 +33,8 @@ class ResizablePanel extends StatefulWidget {
     required this.title,
     required this.preferencesKey,
     this.trailing,
+    this.headerLeading,
+    this.headerLeadingExclusionWidth = 0,
     this.showLeftSeparator = false,
     this.onTitleTap,
     this.onExpandedChanged,
@@ -327,7 +331,11 @@ class ResizablePanelState extends State<ResizablePanel>
                                     child: Center(
                                       child: Row(
                                         children: [
-                                          if (widget.title == 'Notebooks') ...[
+                                          if (widget.headerLeading != null) ...[
+                                            widget.headerLeading!,
+                                            const SizedBox(width: 8),
+                                          ] else if (widget.title ==
+                                              'Notebooks') ...[
                                             Icon(
                                               Icons.folder_rounded,
                                               size: 20,
@@ -386,7 +394,11 @@ class ResizablePanelState extends State<ResizablePanel>
                                 if (!Platform.isMacOS)
                                   Positioned(
                                     top: 0,
-                                    left: 0,
+                                    left:
+                                        widget.headerLeading != null
+                                            ? widget
+                                                .headerLeadingExclusionWidth
+                                            : 0,
                                     right: widget.trailing != null ? 100 : 0,
                                     height: 48,
                                     child: MoveWindow(),
