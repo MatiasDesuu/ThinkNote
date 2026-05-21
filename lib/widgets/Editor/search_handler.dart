@@ -170,6 +170,8 @@ class SearchTextEditingController extends TextEditingController {
   String get searchQuery => _searchQuery;
 
   void updateSearchData(String query, List<int> matches, int currentIndex) {
+    if (!hasListeners) return; // si ya fue disposed, no hacer nada
+
     if (_searchQuery == query &&
         _currentMatchIndex == currentIndex &&
         _matches.length == matches.length) {
@@ -179,6 +181,9 @@ class SearchTextEditingController extends TextEditingController {
     _matches = matches;
     _currentMatchIndex = currentIndex;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!hasListeners) {
+        return; // segunda guarda: el dispose puede ocurrir antes del callback
+      }
       notifyListeners();
     });
   }
@@ -288,6 +293,7 @@ class HighlightedTextField extends StatelessWidget {
                 style: textStyle,
                 maxLines: null,
                 expands: false,
+
                 decoration: InputDecoration(
                   border: InputBorder.none,
                   hintText: hintText,
@@ -296,6 +302,8 @@ class HighlightedTextField extends StatelessWidget {
                     fontSize: textStyle.fontSize,
                     height: textStyle.height,
                   ),
+                  contentPadding: EdgeInsets.zero,
+                  isDense: true,
                 ),
                 onChanged: (_) => onChanged(),
               ),
