@@ -13,6 +13,8 @@ class EditorBottomBar extends StatefulWidget {
   final VoidCallback onPreviousNote;
   final Function(FormatType) onFormatTap;
   final VoidCallback onInsertLinkTap;
+  final VoidCallback? onInsertFileLinkTap;
+  final VoidCallback? onInsertFolderLinkTap;
   final bool isReadMode;
 
   const EditorBottomBar({
@@ -23,6 +25,8 @@ class EditorBottomBar extends StatefulWidget {
     required this.onPreviousNote,
     required this.onFormatTap,
     required this.onInsertLinkTap,
+    this.onInsertFileLinkTap,
+    this.onInsertFolderLinkTap,
     this.isReadMode = false,
   });
 
@@ -156,10 +160,9 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                   iconData: Icons.format_bold_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.bold),
                   tooltipMessage: 'Bold',
-                  shortcutMessage:
-                      ShortcutsHandler.editorFormatShortcutLabel(
-                        FormatType.bold,
-                      ),
+                  shortcutMessage: ShortcutsHandler.editorFormatShortcutLabel(
+                    FormatType.bold,
+                  ),
                   iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
@@ -167,10 +170,9 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                   iconData: Icons.format_italic_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.italic),
                   tooltipMessage: 'Italic',
-                  shortcutMessage:
-                      ShortcutsHandler.editorFormatShortcutLabel(
-                        FormatType.italic,
-                      ),
+                  shortcutMessage: ShortcutsHandler.editorFormatShortcutLabel(
+                    FormatType.italic,
+                  ),
                   iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
@@ -178,10 +180,9 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                   iconData: Icons.format_strikethrough_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.strikethrough),
                   tooltipMessage: 'Strikethrough',
-                  shortcutMessage:
-                      ShortcutsHandler.editorFormatShortcutLabel(
-                        FormatType.strikethrough,
-                      ),
+                  shortcutMessage: ShortcutsHandler.editorFormatShortcutLabel(
+                    FormatType.strikethrough,
+                  ),
                   iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
@@ -189,10 +190,9 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                   iconData: Icons.code_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.code),
                   tooltipMessage: 'Inline Code',
-                  shortcutMessage:
-                      ShortcutsHandler.editorFormatShortcutLabel(
-                        FormatType.code,
-                      ),
+                  shortcutMessage: ShortcutsHandler.editorFormatShortcutLabel(
+                    FormatType.code,
+                  ),
                   iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
@@ -200,10 +200,9 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                   iconData: Icons.copy_all_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.taggedCode),
                   tooltipMessage: 'Copy Block',
-                  shortcutMessage:
-                      ShortcutsHandler.editorFormatShortcutLabel(
-                        FormatType.taggedCode,
-                      ),
+                  shortcutMessage: ShortcutsHandler.editorFormatShortcutLabel(
+                    FormatType.taggedCode,
+                  ),
                   iconSize: iconSize,
                 ),
                 const VerticalDivider(width: 16, indent: 8, endIndent: 8),
@@ -212,10 +211,9 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                   iconData: Icons.file_present_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.noteLink),
                   tooltipMessage: 'Note Link',
-                  shortcutMessage:
-                      ShortcutsHandler.editorFormatShortcutLabel(
-                        FormatType.noteLink,
-                      ),
+                  shortcutMessage: ShortcutsHandler.editorFormatShortcutLabel(
+                    FormatType.noteLink,
+                  ),
                   iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
@@ -223,10 +221,9 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                   iconData: Icons.book_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.notebookLink),
                   tooltipMessage: 'Notebook Link',
-                  shortcutMessage:
-                      ShortcutsHandler.editorFormatShortcutLabel(
-                        FormatType.notebookLink,
-                      ),
+                  shortcutMessage: ShortcutsHandler.editorFormatShortcutLabel(
+                    FormatType.notebookLink,
+                  ),
                   iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
@@ -234,24 +231,27 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                   iconData: Icons.link_rounded,
                   onPressed: widget.onInsertLinkTap,
                   tooltipMessage: 'Insert URL',
-                  shortcutMessage:
-                      ShortcutsHandler.editorFormatShortcutLabel(
-                        FormatType.link,
-                      ),
+                  shortcutMessage: ShortcutsHandler.editorFormatShortcutLabel(
+                    FormatType.link,
+                  ),
                   iconSize: iconSize,
                 ),
-                _buildTooltipIconButton(
-                  context,
-                  iconData: Icons.horizontal_rule_rounded,
-                  onPressed:
-                      () => widget.onFormatTap(FormatType.horizontalRule),
-                  tooltipMessage: 'Horizontal Divider',
-                  shortcutMessage:
-                      ShortcutsHandler.editorFormatShortcutLabel(
-                        FormatType.horizontalRule,
-                      ),
-                  iconSize: iconSize,
-                ),
+                if (widget.onInsertFileLinkTap != null && !isMobile)
+                  _buildTooltipIconButton(
+                    context,
+                    iconData: Icons.insert_drive_file_rounded,
+                    onPressed: widget.onInsertFileLinkTap!,
+                    tooltipMessage: 'Link File',
+                    iconSize: iconSize,
+                  ),
+                if (widget.onInsertFolderLinkTap != null && !isMobile)
+                  _buildTooltipIconButton(
+                    context,
+                    iconData: Icons.folder_special_rounded,
+                    onPressed: widget.onInsertFolderLinkTap!,
+                    tooltipMessage: 'Link Folder',
+                    iconSize: iconSize,
+                  ),
                 const VerticalDivider(width: 16, indent: 8, endIndent: 8),
                 GestureDetector(
                   onSecondaryTapDown:
@@ -265,12 +265,22 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                     iconData: Symbols.format_h1_rounded,
                     onPressed: () => widget.onFormatTap(FormatType.heading1),
                     tooltipMessage: 'Heading 1 (Right click for more)',
-                    shortcutMessage:
-                        ShortcutsHandler.editorFormatShortcutLabel(
-                          FormatType.heading1,
-                        ),
+                    shortcutMessage: ShortcutsHandler.editorFormatShortcutLabel(
+                      FormatType.heading1,
+                    ),
                     iconSize: iconSize,
                   ),
+                ),
+                _buildTooltipIconButton(
+                  context,
+                  iconData: Icons.horizontal_rule_rounded,
+                  onPressed:
+                      () => widget.onFormatTap(FormatType.horizontalRule),
+                  tooltipMessage: 'Horizontal Divider',
+                  shortcutMessage: ShortcutsHandler.editorFormatShortcutLabel(
+                    FormatType.horizontalRule,
+                  ),
+                  iconSize: iconSize,
                 ),
                 const VerticalDivider(width: 16, indent: 8, endIndent: 8),
                 _buildTooltipIconButton(
@@ -278,10 +288,9 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                   iconData: Icons.format_list_numbered_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.numbered),
                   tooltipMessage: 'Numbered List',
-                  shortcutMessage:
-                      ShortcutsHandler.editorFormatShortcutLabel(
-                        FormatType.numbered,
-                      ),
+                  shortcutMessage: ShortcutsHandler.editorFormatShortcutLabel(
+                    FormatType.numbered,
+                  ),
                   iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
@@ -289,10 +298,9 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                   iconData: Icons.format_list_bulleted_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.bullet),
                   tooltipMessage: 'Bullet List',
-                  shortcutMessage:
-                      ShortcutsHandler.editorFormatShortcutLabel(
-                        FormatType.bullet,
-                      ),
+                  shortcutMessage: ShortcutsHandler.editorFormatShortcutLabel(
+                    FormatType.bullet,
+                  ),
                   iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
@@ -301,10 +309,9 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                   onPressed:
                       () => widget.onFormatTap(FormatType.checkboxUnchecked),
                   tooltipMessage: 'Checkbox List',
-                  shortcutMessage:
-                      ShortcutsHandler.editorFormatShortcutLabel(
-                        FormatType.checkboxUnchecked,
-                      ),
+                  shortcutMessage: ShortcutsHandler.editorFormatShortcutLabel(
+                    FormatType.checkboxUnchecked,
+                  ),
                   iconSize: iconSize,
                 ),
                 const VerticalDivider(width: 16, indent: 8, endIndent: 8),
@@ -313,10 +320,9 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                   iconData: Icons.text_snippet_rounded,
                   onPressed: () => widget.onFormatTap(FormatType.insertScript),
                   tooltipMessage: 'Insert #script',
-                  shortcutMessage:
-                      ShortcutsHandler.editorFormatShortcutLabel(
-                        FormatType.insertScript,
-                      ),
+                  shortcutMessage: ShortcutsHandler.editorFormatShortcutLabel(
+                    FormatType.insertScript,
+                  ),
                   iconSize: iconSize,
                 ),
                 _buildTooltipIconButton(
@@ -325,10 +331,9 @@ class _EditorBottomBarState extends State<EditorBottomBar> {
                   onPressed:
                       () => widget.onFormatTap(FormatType.convertToScript),
                   tooltipMessage: 'Convert to Script Block',
-                  shortcutMessage:
-                      ShortcutsHandler.editorFormatShortcutLabel(
-                        FormatType.convertToScript,
-                      ),
+                  shortcutMessage: ShortcutsHandler.editorFormatShortcutLabel(
+                    FormatType.convertToScript,
+                  ),
                   iconSize: iconSize,
                 ),
               ],

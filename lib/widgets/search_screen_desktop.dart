@@ -262,14 +262,6 @@ class _SearchScreenDesktopState extends State<SearchScreenDesktop> {
                                     onPressed: _toggleAdvancedSearch,
                                   ),
                             ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: Icon(
-                                Icons.close_rounded,
-                                color: colorScheme.onSurface,
-                              ),
-                              onPressed: _closeSearch,
-                            ),
                           ],
                         ),
                       ),

@@ -46,13 +46,6 @@ class CustomDialog extends StatelessWidget {
                     Text(title, style: Theme.of(context).textTheme.titleMedium),
                     const Spacer(),
                     if (headerActions != null) ...headerActions!,
-                    IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
                   ],
                 ),
               ),

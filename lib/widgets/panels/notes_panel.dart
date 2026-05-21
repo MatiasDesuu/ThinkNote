@@ -1135,14 +1135,6 @@ class NotesPanelState extends State<NotesPanel> {
                             'Rename Note',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
-                          const Spacer(),
-                          IconButton(
-                            icon: Icon(
-                              Icons.close_rounded,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                            onPressed: () => Navigator.pop(context),
-                          ),
                         ],
                       ),
                     ),

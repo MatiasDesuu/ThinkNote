@@ -76,14 +76,6 @@ class _InsertLinkDialogState extends State<InsertLinkDialog> {
                       'Insert URL',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    const Spacer(),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: colorScheme.onSurface,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
                   ],
                 ),
               ),

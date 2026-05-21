@@ -145,15 +145,6 @@ class BookmarksDialogs {
                                 'New Bookmark',
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
-                              const Spacer(),
-                              IconButton(
-                                icon: Icon(
-                                  Icons.close_rounded,
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
-                                ),
-                                onPressed: () => Navigator.pop(context),
-                              ),
                             ],
                           ),
                         ),
@@ -406,14 +397,6 @@ class BookmarksDialogs {
                               'Edit Bookmark',
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
-                            const Spacer(),
-                            IconButton(
-                              icon: Icon(
-                                Icons.close_rounded,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              onPressed: () => Navigator.pop(context),
-                            ),
                           ],
                         ),
                       ),
@@ -642,13 +625,6 @@ class BookmarksDialogs {
                                 await tagsHandler.loadPatterns();
                                 setState(() {});
                               },
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.close_rounded,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              onPressed: () => Navigator.pop(context),
                             ),
                           ],
                         ),
@@ -931,14 +907,6 @@ class BookmarksDialogs {
                             Text(
                               'New Predefined Tag',
                               style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const Spacer(),
-                            IconButton(
-                              icon: Icon(
-                                Icons.close_rounded,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              onPressed: () => Navigator.pop(context),
                             ),
                           ],
                         ),

@@ -15,6 +15,7 @@ import '../../database/repositories/note_repository.dart';
 import '../../database/sync_service.dart';
 import '../../shortcuts_handler.dart';
 import '../../services/immersive_mode_service.dart';
+import '../../services/file_picker_service.dart';
 import '../find_bar.dart';
 import 'unified_text_handler.dart';
 import 'list_continuation_handler.dart';
@@ -1348,6 +1349,62 @@ class _NotaEditorState extends State<NotaEditor>
     _editorFocusNode.requestFocus();
   }
 
+  Future<void> _handleInsertFileLink() async {
+    final selection = widget.noteController.selection;
+    final selectionStart = selection.isValid ? selection.start : -1;
+    final selectionEnd = selection.isValid ? selection.end : -1;
+
+    final result = await FilePickerService.pickLocalFile();
+
+    if (!mounted || result == null || selectionStart < 0 || selectionEnd < 0) {
+      return;
+    }
+
+    final markdownLink =
+        '[${result['name']}](${Uri.file(result['path']!).toString()})';
+    final currentText = widget.noteController.text;
+    final newText = currentText.replaceRange(
+      selectionStart,
+      selectionEnd,
+      markdownLink,
+    );
+
+    widget.noteController.text = newText;
+    widget.noteController.selection = TextSelection.collapsed(
+      offset: selectionStart + markdownLink.length,
+    );
+    widget.onContentChanged();
+    _editorFocusNode.requestFocus();
+  }
+
+  Future<void> _handleInsertFolderLink() async {
+    final selection = widget.noteController.selection;
+    final selectionStart = selection.isValid ? selection.start : -1;
+    final selectionEnd = selection.isValid ? selection.end : -1;
+
+    final result = await FilePickerService.pickLocalFolder();
+
+    if (!mounted || result == null || selectionStart < 0 || selectionEnd < 0) {
+      return;
+    }
+
+    final markdownLink =
+        '[${result['name']}](${Uri.file(result['path']!).toString()})';
+    final currentText = widget.noteController.text;
+    final newText = currentText.replaceRange(
+      selectionStart,
+      selectionEnd,
+      markdownLink,
+    );
+
+    widget.noteController.text = newText;
+    widget.noteController.selection = TextSelection.collapsed(
+      offset: selectionStart + markdownLink.length,
+    );
+    widget.onContentChanged();
+    _editorFocusNode.requestFocus();
+  }
+
   void _handleFindInEditor() {
     if (_showFindBar) {
       _hideFindBar();
@@ -1676,6 +1733,8 @@ class _NotaEditorState extends State<NotaEditor>
                             onPreviousNote: () => widget.onPreviousNote?.call(),
                             onFormatTap: _handleFormat,
                             onInsertLinkTap: _handleInsertUrl,
+                            onInsertFileLinkTap: _handleInsertFileLink,
+                            onInsertFolderLinkTap: _handleInsertFolderLink,
                             isReadMode: _isReadMode,
                           ),
                         ),
