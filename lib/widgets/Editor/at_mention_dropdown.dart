@@ -201,10 +201,10 @@ class AtMentionDropdownController {
         ),
       ),
       AtMentionOption(
-        label: 'Attach File',
+        label: 'Link File',
         subtitle: 'Link a local file',
         icon: Icons.insert_drive_file_outlined,
-        onTap: () => _handleAttachFile(
+        onTap: () => _handleLinkFile(
           triggerIndex,
           currentText,
           currentSelection,
@@ -555,7 +555,7 @@ class AtMentionDropdownController {
     requestFocus();
   }
 
-  void _handleAttachFile(
+  void _handleLinkFile(
     int triggerIndex,
     String Function() currentText,
     TextSelection Function() currentSelection,

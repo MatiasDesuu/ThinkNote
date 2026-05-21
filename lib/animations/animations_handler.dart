@@ -108,7 +108,7 @@ class SaveButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomTooltip(
-      message: 'Save Note',
+      message: 'Save Note (Ctrl+S)',
       builder: (context, isHovering) {
         return IconButton(
           tooltip: '',

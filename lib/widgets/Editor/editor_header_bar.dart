@@ -202,7 +202,7 @@ class EditorHeaderBar extends StatelessWidget {
               child: DurationEstimatorDesktop(content: noteController.text),
             ),
           CustomTooltip(
-            message: 'Save note',
+            message: 'Save note (Ctrl+S)',
             builder:
                 (context, isHovering) =>
                     SaveButton(controller: saveController, onPressed: onSave),

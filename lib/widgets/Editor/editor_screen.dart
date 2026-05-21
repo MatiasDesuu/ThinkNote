@@ -22,6 +22,7 @@ import 'list_handler.dart';
 import 'search_handler.dart';
 import 'editor_header_bar.dart';
 import 'editor_tool_bar.dart';
+import 'insert_link_dialog.dart';
 import 'format_handler.dart';
 import '../../services/tab_manager.dart';
 import '../draggable_header.dart';
@@ -1313,6 +1314,40 @@ class _NotaEditorState extends State<NotaEditor>
     }
   }
 
+  Future<void> _handleInsertUrl() async {
+    final selection = widget.noteController.selection;
+    final selectionStart = selection.isValid ? selection.start : -1;
+    final selectionEnd = selection.isValid ? selection.end : -1;
+    final initialName =
+        selection.isValid && !selection.isCollapsed
+            ? widget.noteController.text.substring(selection.start, selection.end)
+            : '';
+
+    final result = await showDialog<MarkdownLinkInput>(
+      context: context,
+      builder: (context) => InsertLinkDialog(initialName: initialName),
+    );
+
+    if (!mounted || result == null || selectionStart < 0 || selectionEnd < 0) {
+      return;
+    }
+
+    final markdownLink = '[${result.name}](${result.url})';
+    final currentText = widget.noteController.text;
+    final newText = currentText.replaceRange(
+      selectionStart,
+      selectionEnd,
+      markdownLink,
+    );
+
+    widget.noteController.text = newText;
+    widget.noteController.selection = TextSelection.collapsed(
+      offset: selectionStart + markdownLink.length,
+    );
+    widget.onContentChanged();
+    _editorFocusNode.requestFocus();
+  }
+
   void _handleFindInEditor() {
     if (_showFindBar) {
       _hideFindBar();
@@ -1454,6 +1489,7 @@ class _NotaEditorState extends State<NotaEditor>
           onCreateScriptBlock: _handleCreateScriptBlock,
           onFindInEditor: _handleFindInEditor,
         ),
+        ...ShortcutsHandler.getEditorFormatShortcuts(),
         ShortcutsHandler.primaryActivator(LogicalKeyboardKey.keyS):
             const SaveIntent(),
       },
@@ -1470,6 +1506,18 @@ class _NotaEditorState extends State<NotaEditor>
           ),
           FindInEditorIntent: CallbackAction<FindInEditorIntent>(
             onInvoke: (_) => _handleFindInEditor(),
+          ),
+          InsertEditorLinkIntent: CallbackAction<InsertEditorLinkIntent>(
+            onInvoke: (_) {
+              _handleInsertUrl();
+              return null;
+            },
+          ),
+          ApplyEditorFormatIntent: CallbackAction<ApplyEditorFormatIntent>(
+            onInvoke: (intent) {
+              _handleFormat(intent.formatType);
+              return null;
+            },
           ),
         },
         child: LayoutBuilder(
@@ -1627,6 +1675,7 @@ class _NotaEditorState extends State<NotaEditor>
                             onNextNote: () => widget.onNextNote?.call(),
                             onPreviousNote: () => widget.onPreviousNote?.call(),
                             onFormatTap: _handleFormat,
+                            onInsertLinkTap: _handleInsertUrl,
                             isReadMode: _isReadMode,
                           ),
                         ),

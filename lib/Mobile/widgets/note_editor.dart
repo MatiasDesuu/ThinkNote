@@ -14,6 +14,7 @@ import '../../widgets/custom_snackbar.dart';
 import '../../Settings/editor_settings_panel.dart';
 import '../../widgets/Editor/list_continuation_handler.dart';
 import '../../widgets/Editor/editor_tool_bar.dart';
+import '../../widgets/Editor/insert_link_dialog.dart';
 import '../../widgets/Editor/format_handler.dart';
 import '../../widgets/Editor/unified_text_handler.dart';
 import 'note_statistics_drawer.dart';
@@ -537,6 +538,40 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
     widget.contentFocusNode.requestFocus();
   }
 
+  Future<void> _handleInsertUrl() async {
+    final selection = widget.contentController.selection;
+    if (!selection.isValid) return;
+
+    final selectionStart = selection.start;
+    final selectionEnd = selection.end;
+    final initialName =
+        selection.isCollapsed
+            ? ''
+            : widget.contentController.text.substring(selectionStart, selectionEnd);
+
+    final result = await showDialog<MarkdownLinkInput>(
+      context: context,
+      builder: (context) => InsertLinkDialog(initialName: initialName),
+    );
+
+    if (!mounted || result == null) return;
+
+    final markdownLink = '[${result.name}](${result.url})';
+    final currentText = widget.contentController.text;
+    final newText = currentText.replaceRange(
+      selectionStart,
+      selectionEnd,
+      markdownLink,
+    );
+
+    widget.contentController.text = newText;
+    widget.contentController.selection = TextSelection.collapsed(
+      offset: selectionStart + markdownLink.length,
+    );
+    widget.onContentChanged();
+    widget.contentFocusNode.requestFocus();
+  }
+
   bool _isLineFormat(FormatType type) {
     return type == FormatType.heading1 ||
         type == FormatType.heading2 ||
@@ -934,6 +969,7 @@ class _NoteEditorState extends State<NoteEditor> with TickerProviderStateMixin {
                                   onNextNote: _handleNextNote,
                                   onPreviousNote: _handlePreviousNote,
                                   onFormatTap: _handleFormat,
+                                  onInsertLinkTap: _handleInsertUrl,
                                   isReadMode: _isReadMode,
                                 ),
                             ],

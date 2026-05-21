@@ -78,6 +78,106 @@ class ShortcutsSettingsPanel extends StatelessWidget {
                   label: 'Find in note',
                   shortcut: 'Ctrl + F',
                 ),
+                const SizedBox(height: 12),
+                Text(
+                  'Formatting',
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Toggle bold',
+                  shortcut: 'Ctrl + B',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Toggle italic',
+                  shortcut: 'Ctrl + I',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Toggle strikethrough',
+                  shortcut: 'Ctrl + G',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Inline code',
+                  shortcut: 'Ctrl + Shift + K',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Copy block',
+                  shortcut: 'Ctrl + Shift + C',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Note link',
+                  shortcut: 'Ctrl + Alt + N',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Notebook link',
+                  shortcut: 'Ctrl + Alt + O',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Hyperlink',
+                  shortcut: 'Ctrl + K',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Horizontal divider',
+                  shortcut: 'Ctrl + Shift + H',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'File link',
+                  shortcut: 'Ctrl + Alt + F',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Folder link',
+                  shortcut: 'Ctrl + Alt + Shift + F',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Heading 1',
+                  shortcut: 'Ctrl + Alt + 1',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Heading 2',
+                  shortcut: 'Ctrl + Alt + 2',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Heading 3',
+                  shortcut: 'Ctrl + Alt + 3',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Numbered list',
+                  shortcut: 'Ctrl + Shift + 7',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Bullet list',
+                  shortcut: 'Ctrl + Shift + 8',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Checkbox list',
+                  shortcut: 'Ctrl + Shift + 9',
+                ),
+                _buildShortcutItem(
+                  context: context,
+                  label: 'Convert to Script Block',
+                  shortcut: 'Ctrl + Shift + D',
+                ),
                 _buildShortcutItem(
                   context: context,
                   label: 'Close current tab',

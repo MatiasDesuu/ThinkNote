@@ -2,12 +2,24 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'widgets/Editor/format_handler.dart';
+
 class CreateScriptBlockIntent extends Intent {
   const CreateScriptBlockIntent();
 }
 
 class FindInEditorIntent extends Intent {
   const FindInEditorIntent();
+}
+
+class ApplyEditorFormatIntent extends Intent {
+  final FormatType formatType;
+
+  const ApplyEditorFormatIntent(this.formatType);
+}
+
+class InsertEditorLinkIntent extends Intent {
+  const InsertEditorLinkIntent();
 }
 
 class GlobalSearchIntent extends Intent {
@@ -17,6 +29,8 @@ class GlobalSearchIntent extends Intent {
 class ShortcutsHandler {
   static bool get isMacOS => defaultTargetPlatform == TargetPlatform.macOS;
 
+  static String get primaryModifierLabel => isMacOS ? 'Cmd' : 'Ctrl';
+
   static bool get isPrimaryModifierPressed =>
       isMacOS
           ? HardwareKeyboard.instance.isMetaPressed
@@ -25,13 +39,147 @@ class ShortcutsHandler {
   static SingleActivator primaryActivator(
     LogicalKeyboardKey key, {
     bool shift = false,
+    bool alt = false,
   }) {
     return SingleActivator(
       key,
       control: !isMacOS,
       meta: isMacOS,
       shift: shift,
+      alt: alt,
     );
+  }
+
+  static String describePrimaryShortcut(
+    LogicalKeyboardKey key, {
+    bool shift = false,
+    bool alt = false,
+  }) {
+    final parts = <String>[primaryModifierLabel];
+
+    if (shift) {
+      parts.add('Shift');
+    }
+
+    if (alt) {
+      parts.add('Alt');
+    }
+
+    parts.add(_describeKey(key));
+    return parts.join('+');
+  }
+
+  static String? editorFormatShortcutLabel(FormatType formatType) {
+    switch (formatType) {
+      case FormatType.bold:
+        return describePrimaryShortcut(LogicalKeyboardKey.keyB);
+      case FormatType.italic:
+        return describePrimaryShortcut(LogicalKeyboardKey.keyI);
+      case FormatType.strikethrough:
+        return describePrimaryShortcut(LogicalKeyboardKey.keyG);
+      case FormatType.code:
+        return describePrimaryShortcut(LogicalKeyboardKey.keyK, shift: true);
+      case FormatType.heading1:
+        return describePrimaryShortcut(LogicalKeyboardKey.digit1, alt: true);
+      case FormatType.heading2:
+        return describePrimaryShortcut(LogicalKeyboardKey.digit2, alt: true);
+      case FormatType.heading3:
+        return describePrimaryShortcut(LogicalKeyboardKey.digit3, alt: true);
+      case FormatType.heading4:
+        return describePrimaryShortcut(LogicalKeyboardKey.digit4, alt: true);
+      case FormatType.heading5:
+        return describePrimaryShortcut(LogicalKeyboardKey.digit5, alt: true);
+      case FormatType.numbered:
+        return describePrimaryShortcut(
+          LogicalKeyboardKey.digit7,
+          shift: true,
+        );
+      case FormatType.bullet:
+        return describePrimaryShortcut(LogicalKeyboardKey.digit8, shift: true);
+      case FormatType.checkboxUnchecked:
+        return describePrimaryShortcut(
+          LogicalKeyboardKey.digit9,
+          shift: true,
+        );
+      case FormatType.convertToScript:
+        return describePrimaryShortcut(
+          LogicalKeyboardKey.keyD,
+          shift: true,
+        );
+      case FormatType.taggedCode:
+        return describePrimaryShortcut(LogicalKeyboardKey.keyC, shift: true);
+      case FormatType.noteLink:
+        return describePrimaryShortcut(LogicalKeyboardKey.keyN, alt: true);
+      case FormatType.notebookLink:
+        return describePrimaryShortcut(LogicalKeyboardKey.keyO, alt: true);
+      case FormatType.link:
+        return describePrimaryShortcut(LogicalKeyboardKey.keyK);
+      case FormatType.horizontalRule:
+        return describePrimaryShortcut(LogicalKeyboardKey.keyH, shift: true);
+      case FormatType.url:
+        return describePrimaryShortcut(LogicalKeyboardKey.keyF, alt: true);
+      default:
+        return null;
+    }
+  }
+
+  static Map<ShortcutActivator, Intent> getEditorFormatShortcuts() {
+    return {
+      primaryActivator(LogicalKeyboardKey.keyB):
+          const ApplyEditorFormatIntent(FormatType.bold),
+      primaryActivator(LogicalKeyboardKey.keyI):
+          const ApplyEditorFormatIntent(FormatType.italic),
+        primaryActivator(LogicalKeyboardKey.keyG):
+          const ApplyEditorFormatIntent(FormatType.strikethrough),
+      primaryActivator(LogicalKeyboardKey.keyK, shift: true):
+          const ApplyEditorFormatIntent(FormatType.code),
+      primaryActivator(LogicalKeyboardKey.digit1, alt: true):
+          const ApplyEditorFormatIntent(FormatType.heading1),
+      primaryActivator(LogicalKeyboardKey.digit2, alt: true):
+          const ApplyEditorFormatIntent(FormatType.heading2),
+      primaryActivator(LogicalKeyboardKey.digit3, alt: true):
+          const ApplyEditorFormatIntent(FormatType.heading3),
+      primaryActivator(LogicalKeyboardKey.digit4, alt: true):
+          const ApplyEditorFormatIntent(FormatType.heading4),
+      primaryActivator(LogicalKeyboardKey.digit5, alt: true):
+          const ApplyEditorFormatIntent(FormatType.heading5),
+        primaryActivator(LogicalKeyboardKey.digit7, shift: true):
+          const ApplyEditorFormatIntent(FormatType.numbered),
+      primaryActivator(LogicalKeyboardKey.digit8, shift: true):
+          const ApplyEditorFormatIntent(FormatType.bullet),
+      primaryActivator(LogicalKeyboardKey.digit9, shift: true):
+          const ApplyEditorFormatIntent(FormatType.checkboxUnchecked),
+        primaryActivator(LogicalKeyboardKey.keyC, shift: true):
+          const ApplyEditorFormatIntent(FormatType.taggedCode),
+        primaryActivator(LogicalKeyboardKey.keyN, alt: true):
+          const ApplyEditorFormatIntent(FormatType.noteLink),
+        primaryActivator(LogicalKeyboardKey.keyO, alt: true):
+          const ApplyEditorFormatIntent(FormatType.notebookLink),
+        primaryActivator(LogicalKeyboardKey.keyK):
+            const InsertEditorLinkIntent(),
+        primaryActivator(LogicalKeyboardKey.keyH, shift: true):
+          const ApplyEditorFormatIntent(FormatType.horizontalRule),
+        // File/folder links map to url format; folder link uses Ctrl+Alt+Shift+F
+        primaryActivator(LogicalKeyboardKey.keyF, alt: true):
+          const ApplyEditorFormatIntent(FormatType.url),
+        primaryActivator(LogicalKeyboardKey.keyF, alt: true, shift: true):
+          const ApplyEditorFormatIntent(FormatType.url),
+    };
+  }
+
+  static String _describeKey(LogicalKeyboardKey key) {
+    final label = key.keyLabel;
+
+    if (label.isNotEmpty) {
+      return label.toUpperCase();
+    }
+
+    final debugName = key.debugName;
+    if (debugName != null && debugName.isNotEmpty) {
+      return debugName.toUpperCase();
+    }
+
+    return key.toString();
   }
 
   static Map<ShortcutActivator, VoidCallback> getAppShortcuts({
