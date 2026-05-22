@@ -2500,6 +2500,8 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
                                       key: _editorTabsKey,
                                       tabs: _tabManager.tabs,
                                       activeTab: _tabManager.activeTab,
+                                      isCalendarPanelExpanded:
+                                        _isCalendarPanelExpanded,
                                       onTabSelected: _onTabSelected,
                                       onTabClosed: _onTabClosed,
                                       onTabTogglePin:
@@ -2660,48 +2662,6 @@ class _ThinkNoteHomeState extends State<ThinkNoteHome>
     }
   }
 
-  void _toggleUnifiedPanelForMode({required bool showNotes}) {
-    final unifiedPanelState = _unifiedPanelState;
-    if (unifiedPanelState == null) return;
-
-    final isChangingMode = unifiedPanelState.isShowingNotes != showNotes;
-    if (showNotes) {
-      unifiedPanelState.showNotesMode();
-    } else {
-      unifiedPanelState.showNotebooksMode();
-    }
-
-    if (_immersiveModeService.isImmersiveMode) {
-      final isExpanded = unifiedPanelState.isExpanded;
-      if (isExpanded && !isChangingMode) {
-        unifiedPanelState.collapsePanel();
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) {
-            setState(() {
-              _isNotesForcedOpenInImmersive = false;
-            });
-          }
-        });
-      } else {
-        setState(() {
-          _isNotesForcedOpenInImmersive = true;
-        });
-        if (!isExpanded) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _unifiedPanelState?.expandPanel();
-          });
-        }
-      }
-    } else {
-      if (unifiedPanelState.isExpanded) {
-        if (!isChangingMode) {
-          unifiedPanelState.togglePanel();
-        }
-      } else {
-        unifiedPanelState.expandPanel();
-      }
-    }
-  }
 
   void _toggleUnifiedPanelVisibility() {
     if (!_useUnifiedNotebooksNotesPanel) return;

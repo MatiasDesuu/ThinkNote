@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import '../../database/models/editor_tab.dart';
-import '../../services/immersive_mode_service.dart';
 import '../context_menu.dart';
 
 enum TabDisplayMode { full, compact, minimal, icon }
@@ -11,6 +10,7 @@ enum TabDisplayMode { full, compact, minimal, icon }
 class EditorTabs extends StatefulWidget {
   final List<EditorTab> tabs;
   final EditorTab? activeTab;
+  final bool isCalendarPanelExpanded;
   final Function(EditorTab) onTabSelected;
   final Function(EditorTab) onTabClosed;
   final Function(EditorTab)? onTabTogglePin;
@@ -22,6 +22,7 @@ class EditorTabs extends StatefulWidget {
     super.key,
     required this.tabs,
     this.activeTab,
+    required this.isCalendarPanelExpanded,
     required this.onTabSelected,
     required this.onTabClosed,
     this.onNewTab,
@@ -34,29 +35,39 @@ class EditorTabs extends StatefulWidget {
   State<EditorTabs> createState() => EditorTabsState();
 }
 
-class EditorTabsState extends State<EditorTabs> {
+class EditorTabsState extends State<EditorTabs> with TickerProviderStateMixin {
   final FocusNode _tabsFocusNode = FocusNode();
 
   static const double _kPinnedEmojiOnlyTabWidth = 44.0;
+  static const double _kTabBarHeight = 40.0;
+  static const Duration _kTabTransitionDuration = Duration(milliseconds: 180);
+  static const Duration _kHoverAnimDuration = Duration(milliseconds: 120);
+  static const Curve _kTabCurve = Curves.easeOutCubic;
+  static const Curve _kTabReverseCurve = Curves.easeInCubic;
 
-  int? _dragTargetIndex;
-  bool _dragTargetIsLeft = false;
   bool _isDragging = false;
+  String? _draggingTabKey;
+  int? _lastLiveReorderFrom;
+  int? _lastLiveReorderTo;
 
   final Map<int, Rect> _elementBounds = {};
+  final Set<int> _hoveredTabIndices = {};
 
-  double? _currentVisualLineX;
-
-  int? _hoveredTabIndex;
+  // Track per-tab close button hover
+  final Set<int> _closeHoveredIndices = {};
 
   final Map<String, bool> _isExpanded = {};
   final Map<String, bool> _isClosing = {};
+  final List<String> _mruTabKeys = [];
   final Set<String> _suppressNextOpen = {};
   bool _suppressNextUpdateAnimations = false;
   bool _skipAnimationsThisBuild = false;
   bool _initialPopulation = true;
   final Set<String> _noAnimateKeys = {};
-  static const Duration _kTabAnimDuration = Duration(milliseconds: 100);
+
+  // Opacity animation controllers for tab open/close
+  final Map<String, AnimationController> _opacityControllers = {};
+  final Map<String, Animation<double>> _opacityAnimations = {};
 
   @override
   void initState() {
@@ -83,7 +94,114 @@ class EditorTabsState extends State<EditorTabs> {
   @override
   void dispose() {
     _tabsFocusNode.dispose();
+    for (final ctrl in _opacityControllers.values) {
+      ctrl.dispose();
+    }
     super.dispose();
+  }
+
+  AnimationController _getOrCreateOpacityController(String key) {
+    if (!_opacityControllers.containsKey(key)) {
+      final ctrl = AnimationController(
+        vsync: this,
+        duration: _kTabTransitionDuration,
+        value: 0.0,
+      );
+      _opacityControllers[key] = ctrl;
+      _opacityAnimations[key] = CurvedAnimation(
+        parent: ctrl,
+        curve: _kTabCurve,
+        reverseCurve: _kTabReverseCurve,
+      );
+    }
+    return _opacityControllers[key]!;
+  }
+
+  void _setTabFullyVisible(String key) {
+    _isExpanded[key] = true;
+    _isClosing[key] = false;
+    final ctrl = _getOrCreateOpacityController(key);
+    ctrl.value = 1.0;
+  }
+
+  void _touchMruForTab(EditorTab? tab) {
+    if (tab == null) return;
+    final key = _tabKey(tab);
+    _mruTabKeys.remove(key);
+    _mruTabKeys.insert(0, key);
+  }
+
+  EditorTab? _pickTabToActivateAfterClose(EditorTab closingTab) {
+    final closingKey = _tabKey(closingTab);
+    final tabsByKey = {for (final t in widget.tabs) _tabKey(t): t};
+
+    for (final key in _mruTabKeys) {
+      if (key == closingKey) continue;
+      final candidate = tabsByKey[key];
+      if (candidate != null && !(_isClosing[key] ?? false)) {
+        return candidate;
+      }
+    }
+
+    final idx = widget.tabs.indexOf(closingTab);
+    if (idx != -1) {
+      if (idx < widget.tabs.length - 1) {
+        return widget.tabs[idx + 1];
+      }
+      if (idx > 0) {
+        return widget.tabs[idx - 1];
+      }
+    }
+
+    return null;
+  }
+
+  void _animateTabOpen(String key) {
+    if (_skipAnimationsThisBuild || _noAnimateKeys.contains(key)) {
+      _setTabFullyVisible(key);
+      return;
+    }
+
+    _isExpanded[key] = false;
+    _isClosing[key] = false;
+
+    final ctrl = _getOrCreateOpacityController(key);
+    ctrl.stop();
+    ctrl.value = 0.0;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _isExpanded[key] = true;
+      });
+      ctrl.forward(from: 0.0);
+    });
+  }
+
+  void _cleanupAnimationStateForRemovedTabs() {
+    final currentKeys = widget.tabs.map((t) => _tabKey(t)).toSet();
+    _mruTabKeys.removeWhere((key) => !currentKeys.contains(key));
+    final allKnownKeys = {
+      ..._isExpanded.keys,
+      ..._isClosing.keys,
+      ..._opacityControllers.keys,
+      ..._opacityAnimations.keys,
+    };
+
+    for (final key in allKnownKeys) {
+      if (currentKeys.contains(key) || (_isClosing[key] ?? false)) {
+        continue;
+      }
+      _isExpanded.remove(key);
+      _isClosing.remove(key);
+      _disposeOpacityController(key);
+    }
+  }
+
+  void _disposeOpacityController(String key) {
+    _opacityControllers[key]?.dispose();
+    _opacityControllers.remove(key);
+    _opacityAnimations.remove(key);
   }
 
   void requestFocus() {
@@ -95,6 +213,10 @@ class EditorTabsState extends State<EditorTabs> {
   @override
   void didUpdateWidget(EditorTabs oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    _touchMruForTab(widget.activeTab);
+
+    _cleanupAnimationStateForRemovedTabs();
 
     if (widget.activeTab != oldWidget.activeTab && widget.activeTab != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -110,46 +232,39 @@ class EditorTabsState extends State<EditorTabs> {
 
       for (final tab in widget.tabs) {
         final k = _tabKey(tab);
-        _isExpanded[k] = true;
-        _isClosing.remove(k);
-      }
-
-      return;
-    }
-
-    if (_suppressNextUpdateAnimations) {
-      _skipAnimationsThisBuild = true;
-      _suppressNextUpdateAnimations = false;
-      for (final tab in widget.tabs) {
-        final k = _tabKey(tab);
-        _isExpanded[k] = true;
-        _isClosing.remove(k);
+        _setTabFullyVisible(k);
       }
 
       return;
     }
 
     final oldKeys = oldWidget.tabs.map((t) => _tabKey(t)).toSet();
+    final newKeys = widget.tabs.map((t) => _tabKey(t)).toSet();
+    final hasStructuralChange =
+        oldWidget.tabs.length != widget.tabs.length ||
+        !oldKeys.containsAll(newKeys) ||
+        !newKeys.containsAll(oldKeys);
+
+    if (_suppressNextUpdateAnimations) {
+      _suppressNextUpdateAnimations = false;
+      if (!hasStructuralChange) {
+        _skipAnimationsThisBuild = true;
+        for (final tab in widget.tabs) {
+          final k = _tabKey(tab);
+          _setTabFullyVisible(k);
+        }
+
+        return;
+      }
+    }
 
     for (final tab in widget.tabs) {
       final key = _tabKey(tab);
       if (!oldKeys.contains(key)) {
-        _isExpanded[key] = false;
-        _isClosing[key] = false;
-
         if (_initialPopulation) {
-          _isExpanded[key] = true;
+          _setTabFullyVisible(key);
         } else {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-
-            Future.delayed(const Duration(milliseconds: 20), () {
-              if (!mounted) return;
-              setState(() {
-                _isExpanded[key] = true;
-              });
-            });
-          });
+          _animateTabOpen(key);
         }
       }
     }
@@ -169,23 +284,12 @@ class EditorTabsState extends State<EditorTabs> {
       if (wasEmpty && isNowWithNote) {
         final noteId = newTab.note?.id;
         if (noteId != null && _suppressNextOpen.remove('note-$noteId')) {
-          _isExpanded[key] = true;
+          _setTabFullyVisible(key);
         } else {
           if (_initialPopulation) {
-            _isExpanded[key] = true;
+            _setTabFullyVisible(key);
           } else {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted) return;
-              setState(() {
-                _isExpanded[key] = false;
-              });
-              Future.delayed(const Duration(milliseconds: 20), () {
-                if (!mounted) return;
-                setState(() {
-                  _isExpanded[key] = true;
-                });
-              });
-            });
+            _animateTabOpen(key);
           }
         }
       }
@@ -239,47 +343,56 @@ class EditorTabsState extends State<EditorTabs> {
   }
 
   void _handleTabSelection(EditorTab tab) {
+    _touchMruForTab(tab);
     widget.onTabSelected(tab);
   }
 
   void _updateDragTargetFromGlobalPosition(Offset globalPosition) {
-    for (int i = 0; i < widget.tabs.length; i++) {
-      final bounds = _elementBounds[i];
-      if (bounds != null && bounds.contains(globalPosition)) {
-        final localX = globalPosition.dx - bounds.left;
-        final isLeft = localX < bounds.width / 2;
+    if (!_isDragging ||
+        widget.onTabReorder == null ||
+        _draggingTabKey == null) {
+      return;
+    }
 
-        final visualLineX = isLeft ? bounds.left : bounds.right;
+    final draggingKey = _draggingTabKey!;
+    final draggedIndex = widget.tabs.indexWhere(
+      (t) => _tabKey(t) == draggingKey,
+    );
+    if (draggedIndex == -1) return;
 
-        bool sameVisualLine = false;
-        if (_currentVisualLineX != null) {
-          sameVisualLine = (visualLineX - _currentVisualLineX!).abs() < 5.0;
-        }
+    final tabBounds = _elementBounds.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    if (tabBounds.isEmpty) {
+      return;
+    }
 
-        if (!sameVisualLine) {
-          setState(() {
-            _dragTargetIndex = i;
-            _dragTargetIsLeft = isLeft;
-            _currentVisualLineX = visualLineX;
-          });
-        } else {
-          _dragTargetIndex = i;
-          _dragTargetIsLeft = isLeft;
-          _currentVisualLineX = visualLineX;
-        }
-        return;
+    final pointerX = globalPosition.dx;
+    int targetIndex = widget.tabs.length;
+    for (final entry in tabBounds) {
+      final centerX = entry.value.left + (entry.value.width / 2);
+      if (pointerX < centerX) {
+        targetIndex = entry.key;
+        break;
       }
     }
 
-    if (_dragTargetIndex != null) {
-      setState(() {
-        _dragTargetIndex = null;
-        _currentVisualLineX = null;
-      });
+    if (targetIndex == draggedIndex || targetIndex == draggedIndex + 1) {
+      return;
     }
+
+    if (_lastLiveReorderFrom == draggedIndex &&
+        _lastLiveReorderTo == targetIndex) {
+      return;
+    }
+
+    _lastLiveReorderFrom = draggedIndex;
+    _lastLiveReorderTo = targetIndex;
+    widget.onTabReorder!(
+      draggedIndex,
+      targetIndex.clamp(0, widget.tabs.length),
+    );
   }
 
-  // Builds emoji + rest-of-title as separate widgets to avoid mixed font metrics.
   Widget _buildTitleWithEmoji({
     required String title,
     required String emoji,
@@ -327,237 +440,414 @@ class EditorTabsState extends State<EditorTabs> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (widget.tabs.isEmpty) {
-      return const SizedBox.shrink();
-    }
+@override
+Widget build(BuildContext context) {
+  if (widget.tabs.isEmpty) {
+    return const SizedBox.shrink();
+  }
 
-    final isImmersiveMode = ImmersiveModeService().isImmersiveMode;
+  final reserveRightSpace = !widget.isCalendarPanelExpanded;
 
-    final availableWidth = MediaQuery.of(context).size.width;
-    final tabsCount = widget.tabs.length;
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final availableWidth = constraints.maxWidth;
+      final tabsCount = widget.tabs.length;
 
-    final minTabWidth = 120.0;
-    final maxTabWidth = 200.0;
-    final newTabButtonWidth = 40.0;
+      const double minTabWidth = 100.0;
+      const double maxTabWidth = 200.0;
+      const double newTabButtonWidth = 38.0;
 
-    final windowControlsWidth = isImmersiveMode ? 138.0 : 0.0;
-    final effectiveAvailableWidth = availableWidth - windowControlsWidth;
+      final windowControlsWidth = reserveRightSpace ? 138.0 : 0.0;
+      final effectiveAvailableWidth = availableWidth - windowControlsWidth;
 
-    final availableForTabs = effectiveAvailableWidth - newTabButtonWidth;
-    final double pinnedRatio = 0.7;
-    final double unpinnedRatio = 1.0;
-    final int pinnedCount = widget.tabs.where((t) => t.isPinned).length;
-    final int unpinnedCount = tabsCount - pinnedCount;
-    final double totalWeight =
-        pinnedCount * pinnedRatio + unpinnedCount * unpinnedRatio;
-    final unit = totalWeight > 0 ? (availableForTabs / totalWeight) : 0.0;
-    final rawPinnedWidth = unit * pinnedRatio;
-    final rawUnpinnedWidth = unit * unpinnedRatio;
+      final availableForTabs = effectiveAvailableWidth - newTabButtonWidth;
+      const double pinnedRatio = 0.7;
+      const double unpinnedRatio = 1.0;
 
-    final minPinnedWidth = 80.0;
-    final maxPinnedWidth = 140.0;
-    final minUnpinnedWidth = minTabWidth;
-    final maxUnpinnedWidth = maxTabWidth;
+      const double minPinnedWidth = 80.0;
+      const double maxPinnedWidth = 140.0;
+      const double minUnpinnedWidth = minTabWidth;
+      const double maxUnpinnedWidth = maxTabWidth;
 
-    final actualTabWidth = (availableForTabs / tabsCount).clamp(
-      minTabWidth,
-      maxTabWidth,
-    );
+      final tabWidths = _computeTabWidths(
+        tabs: widget.tabs,
+        availableForTabs: availableForTabs,
+        pinnedRatio: pinnedRatio,
+        unpinnedRatio: unpinnedRatio,
+        fixedEmojiOnlyWidth: _kPinnedEmojiOnlyTabWidth,
+        minPinnedWidth: minPinnedWidth,
+        maxPinnedWidth: maxPinnedWidth,
+        minUnpinnedWidth: minUnpinnedWidth,
+        maxUnpinnedWidth: maxUnpinnedWidth,
+      );
 
-    TabDisplayMode displayMode;
-    if (actualTabWidth >= 180) {
-      displayMode = TabDisplayMode.full;
-    } else if (actualTabWidth >= 140) {
-      displayMode = TabDisplayMode.compact;
-    } else if (actualTabWidth >= 100) {
-      displayMode = TabDisplayMode.minimal;
-    } else {
-      displayMode = TabDisplayMode.icon;
-    }
+      final actualTabWidth = tabsCount > 0 ? (availableForTabs / tabsCount) : 0.0;
 
-    for (final tab in widget.tabs) {
-      final key = _tabKey(tab);
-      _isExpanded.putIfAbsent(key, () => true);
-      _isClosing.putIfAbsent(key, () => false);
-    }
+      TabDisplayMode displayMode;
+      if (actualTabWidth >= 180) {
+        displayMode = TabDisplayMode.full;
+      } else if (actualTabWidth >= 140) {
+        displayMode = TabDisplayMode.compact;
+      } else if (actualTabWidth >= 100) {
+        displayMode = TabDisplayMode.minimal;
+      } else {
+        displayMode = TabDisplayMode.icon;
+      }
 
-    return SizedBox(
-      height: 40,
-      child: Stack(
-        children: [
-          Container(
-            height: 40,
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-          ),
+      for (final tab in widget.tabs) {
+        final key = _tabKey(tab);
+        _isExpanded.putIfAbsent(key, () => true);
+        _isClosing.putIfAbsent(key, () => false);
+        final ctrl = _getOrCreateOpacityController(key);
+        if (ctrl.value == 0.0 &&
+            (_isExpanded[key] ?? false) &&
+            !_isClosing[key]!) {
+          ctrl.value = 1.0;
+        }
+      }
 
-          if (!Platform.isMacOS)
-            if (!isImmersiveMode)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 40,
-                child: MoveWindow(),
-              )
-            else
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 138,
-                height: 40,
-                child: MoveWindow(),
-              ),
+      final colorScheme = Theme.of(context).colorScheme;
 
-          Padding(
-            padding: EdgeInsets.only(right: isImmersiveMode ? 138.0 : 0.0),
-            child: Container(
-              height: 40,
-              padding: EdgeInsets.zero,
-              child: Stack(
-                children: [
-                  SizedBox(
-                    width: effectiveAvailableWidth,
-                    child: Focus(
-                      focusNode: _tabsFocusNode,
-                      child: Listener(
-                        onPointerMove:
-                            _isDragging
-                                ? (event) {
-                                  _updateDragTargetFromGlobalPosition(
-                                    event.position,
-                                  );
-                                }
-                                : null,
-                        child: Row(
-                          children: [
-                            ...widget.tabs.asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final tab = entry.value;
-                              final isActive = widget.activeTab == tab;
+      return SizedBox(
+        height: _kTabBarHeight,
+        child: Stack(
+          children: [
+            Container(
+              height: _kTabBarHeight,
+              color: colorScheme.surfaceContainerLow,
+            ),
 
-                              final isPinnedEmojiOnly =
-                                  _isPinnedEmojiOnlyTab(tab);
+            if (!Platform.isMacOS)
+              if (!reserveRightSpace)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: _kTabBarHeight,
+                  child: MoveWindow(),
+                )
+              else
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 138,
+                  height: _kTabBarHeight,
+                  child: MoveWindow(),
+                ),
 
-                              final computedWidth =
-                                  isPinnedEmojiOnly
-                                      ? _kPinnedEmojiOnlyTabWidth
-                                      : (tab.isPinned
-                                          ? rawPinnedWidth.clamp(
-                                            minPinnedWidth,
-                                            maxPinnedWidth,
-                                          )
-                                          : rawUnpinnedWidth.clamp(
-                                            minUnpinnedWidth,
-                                            maxUnpinnedWidth,
-                                          ));
-
-                              final tabKey = _tabKey(tab);
-                              final isClosing = _isClosing[tabKey] ?? false;
-                              final isExpanded = _isExpanded[tabKey] ?? true;
-                              final targetWidth =
-                                  isClosing
-                                      ? 0.0
-                                      : (isExpanded ? computedWidth : 0.0);
-
-                              final animDuration =
-                                  (_skipAnimationsThisBuild ||
-                                          _noAnimateKeys.contains(tabKey))
-                                      ? Duration.zero
-                                      : _kTabAnimDuration;
-
-                              if (_skipAnimationsThisBuild) {
-                                WidgetsBinding.instance.addPostFrameCallback((
-                                  _,
-                                ) {
-                                  if (mounted) {
-                                    setState(() {
-                                      _skipAnimationsThisBuild = false;
-                                    });
-                                  }
-                                });
-                              }
-
-                              return Flexible(
-                                key: ValueKey(tabKey),
-                                child: AnimatedContainer(
-                                  width: targetWidth,
-                                  duration: animDuration,
-                                  curve: Curves.easeInOut,
-                                  child:
-                                      isClosing
-                                          ? Opacity(
-                                            opacity: 0.0,
-                                            child: SizedBox.shrink(),
-                                          )
-                                          : _buildDraggableTab(
-                                            context,
-                                            tab,
-                                            isActive,
-                                            index,
-                                            displayMode,
-                                            computedWidth,
-                                          ),
-                                ),
+            Padding(
+              padding: EdgeInsets.only(right: reserveRightSpace ? 138.0 : 0.0),
+              child: SizedBox(
+                width: effectiveAvailableWidth,
+                height: _kTabBarHeight,
+                child: Focus(
+                  focusNode: _tabsFocusNode,
+                  child: Listener(
+                    onPointerMove:
+                        _isDragging
+                            ? (event) {
+                              _updateDragTargetFromGlobalPosition(
+                                event.position,
                               );
-                            }),
-
-                            if (widget.onNewTab != null)
-                              Container(
-                                margin: const EdgeInsets.only(left: 4),
-                                decoration: BoxDecoration(
-                                  color:
-                                      Theme.of(
-                                        context,
-                                      ).colorScheme.surfaceContainerHigh,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.outlineVariant.withAlpha(50),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: InkWell(
-                                    mouseCursor: SystemMouseCursors.basic,
-                                    borderRadius: BorderRadius.circular(12),
-                                    onTap: widget.onNewTab,
-                                    onHover: (isHovered) {},
-                                    child: Container(
-                                      height: 30,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
-                                      child: Center(
-                                        child: Icon(
-                                          Icons.add_rounded,
-                                          size: 16,
-                                          color:
-                                              Theme.of(
-                                                context,
-                                              ).colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
+                            }
+                            : null,
+                    child: Stack(
+                      children: _buildAnimatedTabSlots(
+                        context: context,
+                        displayMode: displayMode,
+                        newTabButtonWidth: newTabButtonWidth,
+                        tabWidths: tabWidths,
                       ),
                     ),
                   ),
-                ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+  Widget _buildClosingTabPlaceholder(String tabKey) {
+    final anim = _opacityAnimations[tabKey];
+    if (anim != null) {
+      return FadeTransition(opacity: anim, child: const SizedBox.expand());
+    }
+    return const SizedBox.expand();
+  }
+
+  List<Widget> _buildAnimatedTabSlots({
+    required BuildContext context,
+    required TabDisplayMode displayMode,
+    required double newTabButtonWidth,
+    required List<double> tabWidths,
+  }) {
+    final slots = <Widget>[];
+    final tabLayouts = <_TabLayoutData>[];
+    double currentLeft = 0.0;
+
+    for (final entry in widget.tabs.asMap().entries) {
+      final index = entry.key;
+      final tab = entry.value;
+      final isActive = widget.activeTab == tab;
+      final computedWidth = tabWidths[index];
+
+      final tabKey = _tabKey(tab);
+      final isClosing = _isClosing[tabKey] ?? false;
+      final isExpanded = _isExpanded[tabKey] ?? true;
+      final targetWidth = isClosing ? 0.0 : (isExpanded ? computedWidth : 0.0);
+
+      final animDuration =
+          (_skipAnimationsThisBuild || _noAnimateKeys.contains(tabKey))
+              ? Duration.zero
+              : _kTabTransitionDuration;
+
+      if (_skipAnimationsThisBuild) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _skipAnimationsThisBuild = false;
+            });
+          }
+        });
+      }
+
+      final nextTab =
+          index < widget.tabs.length - 1 ? widget.tabs[index + 1] : null;
+      final nextIsActive = nextTab != null && widget.activeTab == nextTab;
+      final isHovered = _hoveredTabIndices.contains(index);
+      final nextIsHovered =
+          index < widget.tabs.length - 1
+              ? _hoveredTabIndices.contains(index + 1)
+              : false;
+      final showRightSeparator =
+          !isActive && !nextIsActive && !_isDragging && !isHovered && !nextIsHovered;
+
+      tabLayouts.add(
+        _TabLayoutData(
+          key: tabKey,
+          left: currentLeft,
+          width: targetWidth,
+          duration: animDuration,
+          tab: tab,
+          index: index,
+          isActive: isActive,
+          tabWidth: computedWidth,
+          showRightSeparator: showRightSeparator,
+          isClosing: isClosing,
+        ),
+      );
+
+      currentLeft += targetWidth;
+    }
+
+    final newTabLeft = currentLeft;
+
+    for (final layout in tabLayouts) {
+      slots.add(
+        AnimatedPositioned(
+          key: ValueKey(layout.key),
+          duration: layout.duration,
+          curve: _kTabCurve,
+          left: layout.left,
+          top: 0,
+          bottom: 0,
+          width: layout.width,
+          child:
+              layout.isClosing
+                  ? _buildClosingTabPlaceholder(layout.key)
+                  : _buildDraggableTab(
+                    context,
+                    layout.tab,
+                    layout.isActive,
+                    layout.index,
+                    displayMode,
+                    layout.tabWidth,
+                    layout.showRightSeparator,
+                  ),
+        ),
+      );
+    }
+
+    if (widget.onNewTab != null) {
+      slots.add(
+        AnimatedPositioned(
+          duration: _kTabTransitionDuration,
+          curve: _kTabCurve,
+          left: newTabLeft,
+          top: 0,
+          bottom: 0,
+          width: newTabButtonWidth,
+          child: _buildNewTabButton(context, Theme.of(context).colorScheme),
+        ),
+      );
+    }
+
+    return slots;
+  }
+
+  List<double> _computeTabWidths({
+    required List<EditorTab> tabs,
+    required double availableForTabs,
+    required double pinnedRatio,
+    required double unpinnedRatio,
+    required double fixedEmojiOnlyWidth,
+    required double minPinnedWidth,
+    required double maxPinnedWidth,
+    required double minUnpinnedWidth,
+    required double maxUnpinnedWidth,
+  }) {
+    final widths = List<double>.filled(tabs.length, 0.0);
+    final minWidths = List<double>.filled(tabs.length, 0.0);
+    final maxWidths = List<double>.filled(tabs.length, 0.0);
+    final weights = List<double>.filled(tabs.length, 0.0);
+    final flexIndices = <int>[];
+
+    double fixedTotal = 0.0;
+    double flexWeightTotal = 0.0;
+
+    for (int i = 0; i < tabs.length; i++) {
+      final tab = tabs[i];
+      final isPinnedEmojiOnly = _isPinnedEmojiOnlyTab(tab);
+
+      if (isPinnedEmojiOnly) {
+        widths[i] = fixedEmojiOnlyWidth;
+        fixedTotal += fixedEmojiOnlyWidth;
+        continue;
+      }
+
+      final minWidth = tab.isPinned ? minPinnedWidth : minUnpinnedWidth;
+      final maxWidth = tab.isPinned ? maxPinnedWidth : maxUnpinnedWidth;
+      final weight = tab.isPinned ? pinnedRatio : unpinnedRatio;
+
+      minWidths[i] = minWidth;
+      maxWidths[i] = maxWidth;
+      weights[i] = weight;
+      flexIndices.add(i);
+      flexWeightTotal += weight;
+    }
+
+    double remainingSpace = availableForTabs - fixedTotal;
+    if (remainingSpace < 0) remainingSpace = 0;
+
+    if (flexIndices.isNotEmpty) {
+      for (final i in flexIndices) {
+        final provisional =
+            flexWeightTotal > 0 ? (remainingSpace * weights[i] / flexWeightTotal) : 0.0;
+        widths[i] = provisional.clamp(minWidths[i], maxWidths[i]);
+      }
+
+      const double epsilon = 0.01;
+      double totalWidth = widths.fold(0.0, (sum, width) => sum + width);
+
+      if (totalWidth < availableForTabs - epsilon) {
+        double extra = availableForTabs - totalWidth;
+        var growable =
+            flexIndices.where((i) => widths[i] < maxWidths[i] - epsilon).toList();
+
+        while (extra > epsilon && growable.isNotEmpty) {
+          final share = extra / growable.length;
+          final nextGrowable = <int>[];
+
+          for (final i in growable) {
+            final capacity = maxWidths[i] - widths[i];
+            final delta = share < capacity ? share : capacity;
+            widths[i] += delta;
+            extra -= delta;
+
+            if (widths[i] < maxWidths[i] - epsilon) {
+              nextGrowable.add(i);
+            }
+          }
+
+          if (nextGrowable.length == growable.length) {
+            break;
+          }
+
+          growable = nextGrowable;
+        }
+      } else if (totalWidth > availableForTabs + epsilon) {
+        double shortage = totalWidth - availableForTabs;
+        var shrinkable =
+            flexIndices.where((i) => widths[i] > minWidths[i] + epsilon).toList();
+
+        while (shortage > epsilon && shrinkable.isNotEmpty) {
+          final share = shortage / shrinkable.length;
+          final nextShrinkable = <int>[];
+
+          for (final i in shrinkable) {
+            final room = widths[i] - minWidths[i];
+            final delta = share < room ? share : room;
+            widths[i] -= delta;
+            shortage -= delta;
+
+            if (widths[i] > minWidths[i] + epsilon) {
+              nextShrinkable.add(i);
+            }
+          }
+
+          if (nextShrinkable.length == shrinkable.length) {
+            break;
+          }
+
+          shrinkable = nextShrinkable;
+        }
+      }
+    }
+
+    return widths;
+  }
+
+  Widget _buildNewTabButton(BuildContext context, ColorScheme colorScheme) {
+    return _HoverButton(
+      hoverDuration: _kHoverAnimDuration,
+      builder:
+          (isHovered) => Container(
+            width: 32,
+            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 3),
+            decoration: BoxDecoration(
+              color:
+                  isHovered
+                      ? colorScheme.onSurface.withAlpha(12)
+                      : Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
+              child: InkWell(
+                mouseCursor: SystemMouseCursors.click,
+                borderRadius: BorderRadius.circular(6),
+                onTap: widget.onNewTab,
+                splashColor: colorScheme.primary.withAlpha(20),
+                highlightColor: Colors.transparent,
+                child: Center(
+                  child: AnimatedContainer(
+                    duration: _kHoverAnimDuration,
+                    child: Icon(
+                      Icons.add_rounded,
+                      size: 16,
+                      color:
+                          isHovered
+                              ? colorScheme.onSurface.withAlpha(200)
+                              : colorScheme.onSurfaceVariant.withAlpha(160),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
-        ],
-      ),
     );
+  }
+
+  void _resetDragState() {
+    _isDragging = false;
+    _draggingTabKey = null;
+    _lastLiveReorderFrom = null;
+    _lastLiveReorderTo = null;
+    _elementBounds.clear();
   }
 
   String _tabKey(EditorTab tab) {
@@ -570,35 +860,26 @@ class EditorTabsState extends State<EditorTabs> {
     final key = _tabKey(tab);
     if (_isClosing[key] == true) return;
 
+    if (widget.activeTab == tab) {
+      final nextTab = _pickTabToActivateAfterClose(tab);
+
+      if (nextTab != null) {
+        widget.onTabSelected(nextTab);
+      }
+    }
+
+    final ctrl = _getOrCreateOpacityController(key);
+
+    if (ctrl.value <= 0.0) {
+      ctrl.value = 1.0;
+    }
+
     setState(() {
       _isClosing[key] = true;
     });
 
-    Timer(_kTabAnimDuration + const Duration(milliseconds: 20), () {
-      if (mounted) {
-        setState(() {
-          _isClosing.remove(key);
-          _isExpanded.remove(key);
-        });
-      }
-
-      if (widget.activeTab == tab) {
-        final idx = widget.tabs.indexOf(tab);
-        EditorTab? nextTab;
-
-        if (idx != -1) {
-          if (idx < widget.tabs.length - 1) {
-            nextTab = widget.tabs[idx + 1];
-          } else if (idx > 0) {
-            nextTab = widget.tabs[idx - 1];
-          }
-        }
-
-        if (nextTab != null) {
-          widget.onTabSelected(nextTab);
-        }
-      }
-
+    ctrl.reverse().then((_) {
+      if (!mounted) return;
       widget.onTabClosed(tab);
     });
   }
@@ -614,116 +895,32 @@ class EditorTabsState extends State<EditorTabs> {
     int index,
     TabDisplayMode displayMode,
     double tabWidth,
+    bool showRightSeparator,
   ) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return DragTarget<int>(
-      onWillAcceptWithDetails: (details) {
-        return details.data != index;
-      },
-      onLeave: (data) {
-        if (_dragTargetIndex == index) {
-          setState(() {
-            _dragTargetIndex = null;
-            _currentVisualLineX = null;
-          });
-        }
-      },
-      onAcceptWithDetails: (details) {
-        if (widget.onTabReorder != null) {
-          final draggedIndex = details.data;
-          int targetIndex = index;
-
-          if (_dragTargetIndex == index) {
-            if (draggedIndex < index) {
-              targetIndex = _dragTargetIsLeft ? index : index + 1;
-            } else {
-              targetIndex = _dragTargetIsLeft ? index : index + 1;
-            }
-          } else {
-            if (draggedIndex < index) {
-              targetIndex = index;
-            } else {
-              targetIndex = index;
-            }
-          }
-
-          targetIndex = targetIndex.clamp(0, widget.tabs.length);
-
-          widget.onTabReorder!(draggedIndex, targetIndex);
-        }
-
-        setState(() {
-          _dragTargetIndex = null;
-          _currentVisualLineX = null;
-        });
-      },
-      builder: (context, candidateData, rejectedData) {
-        final isTarget = _dragTargetIndex == index && _isDragging;
-
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              final RenderBox renderBox =
-                  context.findRenderObject() as RenderBox;
-              final position = renderBox.localToGlobal(Offset.zero);
-              final size = renderBox.size;
-              _elementBounds[index] = Rect.fromLTWH(
-                position.dx,
-                position.dy,
-                size.width,
-                size.height,
-              );
-            });
-
-            return Row(
-              children: [
-                Container(
-                  width: isTarget && _dragTargetIsLeft ? 4 : 0,
-                  margin: EdgeInsets.symmetric(
-                    vertical: isTarget && _dragTargetIsLeft ? 8 : 0,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        isTarget && _dragTargetIsLeft
-                            ? colorScheme.primary.withAlpha(60)
-                            : Colors.transparent,
-                    borderRadius:
-                        isTarget && _dragTargetIsLeft
-                            ? BorderRadius.circular(2)
-                            : null,
-                  ),
-                ),
-
-                Expanded(
-                  child: _buildTabItem(
-                    tab,
-                    isActive,
-                    index,
-                    displayMode,
-                    tabWidth,
-                  ),
-                ),
-
-                Container(
-                  width: isTarget && !_dragTargetIsLeft ? 4 : 0,
-                  margin: EdgeInsets.symmetric(
-                    vertical: isTarget && !_dragTargetIsLeft ? 8 : 0,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        isTarget && !_dragTargetIsLeft
-                            ? colorScheme.primary.withAlpha(80)
-                            : Colors.transparent,
-                    borderRadius:
-                        isTarget && !_dragTargetIsLeft
-                            ? BorderRadius.circular(2)
-                            : null,
-                  ),
-                ),
-              ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          try {
+            final RenderBox renderBox = context.findRenderObject() as RenderBox;
+            final position = renderBox.localToGlobal(Offset.zero);
+            final size = renderBox.size;
+            _elementBounds[index] = Rect.fromLTWH(
+              position.dx,
+              position.dy,
+              size.width,
+              size.height,
             );
-          },
+          } catch (_) {}
+        });
+
+        return _buildTabItem(
+          tab,
+          isActive,
+          index,
+          displayMode,
+          tabWidth,
+          showRightSeparator,
         );
       },
     );
@@ -735,290 +932,224 @@ class EditorTabsState extends State<EditorTabs> {
     int index,
     TabDisplayMode displayMode,
     double tabWidth,
+    bool showRightSeparator,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
 
     final leadingEmoji = _leadingEmojiOrNull(tab.displayTitle);
     final isPinnedEmojiOnly = tab.isPinned && leadingEmoji != null;
 
-    return Draggable<int>(
-      data: index,
-      onDragStarted: () {
+    final tabKey = _tabKey(tab);
+    final opacityAnim = _opacityAnimations[tabKey];
+
+    Widget tabContent = _HoverBuilder(
+      hoverDuration: _kHoverAnimDuration,
+      onHoverChanged: (hovered) {
         setState(() {
-          _isDragging = true;
+          if (hovered) {
+            _hoveredTabIndices.add(index);
+          } else {
+            _hoveredTabIndices.remove(index);
+          }
         });
       },
-      onDragEnd: (details) {
-        setState(() {
-          _isDragging = false;
-          _dragTargetIndex = null;
-          _currentVisualLineX = null;
-          _elementBounds.clear();
-        });
+      builder: (isHovered) {
+        final isCloseHovered = _closeHoveredIndices.contains(index);
+        final showClose =
+            !isPinnedEmojiOnly && !tab.isPinned && (isActive || isHovered);
+
+        return Draggable<String>(
+          data: tabKey,
+          axis: Axis.horizontal,
+          feedbackOffset: const Offset(0, -3),
+          onDragStarted: () {
+            setState(() {
+              _isDragging = true;
+              _draggingTabKey = tabKey;
+              _lastLiveReorderFrom = null;
+              _lastLiveReorderTo = null;
+            });
+          },
+          onDragEnd: (details) {
+            setState(_resetDragState);
+          },
+          feedback: _buildDragFeedback(
+            context,
+            tab,
+            tabWidth,
+            isPinnedEmojiOnly,
+            leadingEmoji,
+            displayMode,
+            colorScheme,
+          ),
+          childWhenDragging: _buildDragPlaceholder(
+            tab,
+            tabWidth,
+            isPinnedEmojiOnly,
+            leadingEmoji,
+            displayMode,
+            colorScheme,
+          ),
+          child: _buildTabBody(
+            context,
+            tab,
+            isActive,
+            isHovered,
+            index,
+            displayMode,
+            tabWidth,
+            isPinnedEmojiOnly,
+            leadingEmoji,
+            showClose,
+            isCloseHovered,
+            showRightSeparator,
+            colorScheme,
+          ),
+        );
       },
-      feedback: Opacity(
-        opacity: 0.9,
-        child: Material(
-          elevation: 4,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            constraints: BoxConstraints(minWidth: tabWidth, maxWidth: tabWidth),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colorScheme.outline, width: 1),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(51),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            padding:
-                isPinnedEmojiOnly
-                    ? const EdgeInsets.symmetric(horizontal: 0, vertical: 4)
-                    : const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isPinnedEmojiOnly)
-                  Expanded(
-                    child: Center(
-                      child: Transform.translate(
-                        offset: const Offset(0, -1),
-                        child: Text(
-                          leadingEmoji,
-                          style: TextStyle(
-                            fontSize: 16,
-                            height: 1.0,
-                            leadingDistribution: TextLeadingDistribution.even,
-                            color: colorScheme.onSurface,
-                          ),
-                          strutStyle: const StrutStyle(
-                            forceStrutHeight: true,
-                            height: 1.0,
-                            leading: 0,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.clip,
-                          softWrap: false,
-                        ),
-                      ),
-                    ),
-                  )
-                else if (displayMode != TabDisplayMode.icon)
-                  Flexible(
-                    child:
-                        leadingEmoji != null
-                            ? _buildTitleWithEmoji(
-                              title: tab.displayTitle,
-                              emoji: leadingEmoji,
-                              textStyle: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurface,
-                              ),
-                              emojiColor: colorScheme.onSurface,
-                            )
-                            : Text(
-                              tab.displayTitle,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurface,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                  )
-                else
-                  Icon(
-                    Icons.description_outlined,
-                    size: 16,
-                    color: colorScheme.onSurface,
-                  ),
+    );
 
-                if (!isPinnedEmojiOnly &&
-                    tab.isPinned &&
-                    displayMode != TabDisplayMode.icon)
-                  Container(
-                    margin: const EdgeInsets.only(left: 6),
-                    child: Icon(
-                      Icons.push_pin_rounded,
-                      size: 14,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                if (tab.isDirty &&
-                    (displayMode == TabDisplayMode.full ||
-                        displayMode == TabDisplayMode.compact))
-                  Container(
-                    width: 6,
-                    height: 6,
-                    margin: const EdgeInsets.only(left: 6),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-              ],
+    if (opacityAnim != null) {
+      tabContent = FadeTransition(opacity: opacityAnim, child: tabContent);
+    }
+
+    return tabContent;
+  }
+
+  Widget _buildTabBody(
+    BuildContext context,
+    EditorTab tab,
+    bool isActive,
+    bool isHovered,
+    int index,
+    TabDisplayMode displayMode,
+    double tabWidth,
+    bool isPinnedEmojiOnly,
+    String? leadingEmoji,
+    bool showClose,
+    bool isCloseHovered,
+    bool showRightSeparator,
+    ColorScheme colorScheme,
+  ) {
+    // Colors
+    final activeTabColor = colorScheme.surface;
+    final hoverTabColor = colorScheme.onSurface.withAlpha(10);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Stack(
+        children: [
+          // Main tab container
+          Positioned.fill(
+            child: AnimatedContainer(
+              duration: _kHoverAnimDuration,
+              curve: _kTabCurve,
+              decoration: BoxDecoration(
+                color:
+                    isActive
+                        ? activeTabColor
+                        : (isHovered ? hoverTabColor : Colors.transparent),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(8),
+                  topRight: Radius.circular(8),
+                ),
+                // Subtle top border for active tab
+                border:
+                    isActive
+                        ? Border(
+                          left: BorderSide(
+                            color: colorScheme.outlineVariant.withAlpha(60),
+                            width: 1,
+                          ),
+                          right: BorderSide(
+                            color: colorScheme.outlineVariant.withAlpha(60),
+                            width: 1,
+                          ),
+                          top: BorderSide(
+                            color: colorScheme.outlineVariant.withAlpha(60),
+                            width: 1,
+                          ),
+                        )
+                        : null,
+              ),
             ),
           ),
-        ),
-      ),
-      childWhenDragging: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        constraints: BoxConstraints(minWidth: tabWidth, maxWidth: tabWidth),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: colorScheme.outline.withAlpha(50),
-            width: 1,
-            style: BorderStyle.solid,
-          ),
-        ),
-        child: Container(
-          height: 30,
-          padding:
-              isPinnedEmojiOnly
-                  ? const EdgeInsets.symmetric(horizontal: 0, vertical: 4)
-                  : const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          child: Row(
-            children: [
-              if (isPinnedEmojiOnly)
-                Expanded(
-                  child: Center(
-                    child: Transform.translate(
-                      offset: const Offset(0, -1),
-                      child: Text(
-                        leadingEmoji,
-                        style: TextStyle(
-                          fontSize: 16,
-                          height: 1.0,
-                          leadingDistribution: TextLeadingDistribution.even,
-                          color: colorScheme.onSurfaceVariant.withAlpha(140),
-                        ),
-                        strutStyle: const StrutStyle(
-                          forceStrutHeight: true,
-                          height: 1.0,
-                          leading: 0,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.clip,
-                        softWrap: false,
-                      ),
-                    ),
-                  ),
-                )
-              else if (displayMode != TabDisplayMode.icon)
-                Expanded(
-                  child:
-                      leadingEmoji != null
-                          ? _buildTitleWithEmoji(
-                            title: tab.displayTitle,
-                            emoji: leadingEmoji,
-                            textStyle: TextStyle(
-                              fontSize: 13,
-                              color: colorScheme.onSurfaceVariant.withAlpha(100),
-                            ),
-                            emojiColor:
-                                colorScheme.onSurfaceVariant.withAlpha(100),
-                          )
-                          : Text(
-                            tab.displayTitle,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: colorScheme.onSurfaceVariant.withAlpha(100),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                )
-              else
-                Expanded(
-                  child: Center(
-                    child: Icon(
-                      Icons.description_outlined,
-                      size: 16,
-                      color: colorScheme.onSurfaceVariant.withAlpha(100),
-                    ),
-                  ),
-                ),
 
-              if (!isPinnedEmojiOnly &&
-                  tab.isPinned &&
-                  displayMode != TabDisplayMode.icon)
-                Container(
-                  margin: const EdgeInsets.only(left: 6),
-                  child: Icon(
-                    Icons.push_pin_rounded,
-                    size: 14,
-                    color: colorScheme.onSurfaceVariant.withAlpha(140),
+          // Active tab primary indicator (bottom)
+          if (isActive)
+            Positioned(
+              bottom: 0,
+              left: 6,
+              right: 6,
+              child: AnimatedContainer(
+                duration: _kTabTransitionDuration,
+                curve: _kTabCurve,
+                height: 2,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(2),
+                    topRight: Radius.circular(2),
                   ),
+
                 ),
-            ],
-          ),
-        ),
-      ),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        constraints: BoxConstraints(minWidth: tabWidth, maxWidth: tabWidth),
-        decoration: BoxDecoration(
-          color:
-              isActive
-                  ? colorScheme.surfaceContainerHighest
-                  : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withAlpha(50),
-            width: 1,
-          ),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          child: Listener(
-            onPointerDown: (event) {
-              if (event.buttons == 4 && !tab.isPinned) {
-                _requestCloseTab(tab);
-              }
-            },
-            child: InkWell(
-              mouseCursor: SystemMouseCursors.basic,
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => _handleTabSelection(tab),
-              onSecondaryTapDown:
-                  (details) =>
-                      _showTabContextMenu(context, details.globalPosition, tab),
-              onHover: (isHovered) {
-                setState(() {
-                  if (isHovered) {
-                    _hoveredTabIndex = index;
-                  } else if (_hoveredTabIndex == index) {
-                    _hoveredTabIndex = null;
-                  }
-                });
-              },
+              ),
+            ),
+
+          // Right separator between inactive tabs
+          if (showRightSeparator && !isActive)
+            Positioned(
+              right: 0,
+              top: 8,
+              bottom: 8,
               child: Container(
-                height: 30,
-                padding:
-                    isPinnedEmojiOnly
-                        ? const EdgeInsets.symmetric(horizontal: 0, vertical: 4)
-                        : const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                child: Row(
-                  children: [
-                    if (isPinnedEmojiOnly)
-                      Expanded(
-                        child: Center(
-                          child: Transform.translate(
+                width: 1,
+                color: colorScheme.outline.withAlpha(100),
+              ),
+            ),
+
+          // Clickable content area
+          Positioned.fill(
+            child: Material(
+              color: Colors.transparent,
+              child: Listener(
+                onPointerDown: (event) {
+                  if (event.buttons == 4 && !tab.isPinned) {
+                    _requestCloseTab(tab);
+                  }
+                },
+                child: InkWell(
+                  mouseCursor: SystemMouseCursors.basic,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
+                  ),
+                  splashColor: colorScheme.primary.withAlpha(15),
+                  highlightColor: Colors.transparent,
+                  onTap: () => _handleTabSelection(tab),
+                  onSecondaryTapDown:
+                      (details) => _showTabContextMenu(
+                        context,
+                        details.globalPosition,
+                        tab,
+                      ),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: isPinnedEmojiOnly ? 0 : 10,
+                      right: isPinnedEmojiOnly ? 0 : (showClose ? 4 : 10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment:
+                          isPinnedEmojiOnly
+                              ? MainAxisAlignment.center
+                              : MainAxisAlignment.start,
+                      children: [
+                        // Tab title / emoji content
+                        if (isPinnedEmojiOnly)
+                          Transform.translate(
                             offset: const Offset(0, -1),
                             child: Text(
-                              leadingEmoji,
+                              leadingEmoji!,
                               style: TextStyle(
                                 fontSize: 16,
                                 height: 1.0,
@@ -1038,137 +1169,287 @@ class EditorTabsState extends State<EditorTabs> {
                               overflow: TextOverflow.clip,
                               softWrap: false,
                             ),
-                          ),
-                        ),
-                      )
-                    else if (displayMode != TabDisplayMode.icon)
-                      Expanded(
-                        child:
-                            leadingEmoji != null
-                                ? _buildTitleWithEmoji(
-                                  title: tab.displayTitle,
-                                  emoji: leadingEmoji,
-                                  textStyle: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight:
-                                        isActive
-                                            ? FontWeight.w600
-                                            : FontWeight.normal,
-                                    color:
-                                        isActive
-                                            ? colorScheme.onSurface
-                                            : colorScheme.onSurfaceVariant,
-                                  ),
-                                  emojiColor:
-                                      isActive
-                                          ? colorScheme.onSurface
-                                          : colorScheme.onSurfaceVariant,
-                                )
-                                : Text(
-                                  tab.displayTitle,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight:
-                                        isActive
-                                            ? FontWeight.w600
-                                            : FontWeight.normal,
-                                    color:
-                                        isActive
-                                            ? colorScheme.onSurface
-                                            : colorScheme.onSurfaceVariant,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  softWrap: false,
-                                ),
-                      )
-                    else
-                      Expanded(
-                        child: Center(
-                          child: Icon(
-                            Icons.description_outlined,
-                            size: 16,
-                            color:
-                                isActive
-                                    ? colorScheme.onPrimaryContainer
-                                    : colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-
-                    if (!isPinnedEmojiOnly &&
-                        tab.isPinned &&
-                        displayMode != TabDisplayMode.icon)
-                      Container(
-                        margin: const EdgeInsets.only(left: 6),
-                        child: Icon(
-                          Icons.push_pin_rounded,
-                          size: 14,
-                          color:
-                              isActive
-                                  ? colorScheme.onSurface.withAlpha(200)
-                                  : colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-
-                    if (tab.isDirty &&
-                        (displayMode == TabDisplayMode.full ||
-                            displayMode == TabDisplayMode.compact))
-                      Container(
-                        width: 6,
-                        height: 6,
-                        margin: const EdgeInsets.only(left: 6),
-                        decoration: BoxDecoration(
-                          color:
-                              isActive
-                                  ? colorScheme.primary
-                                  : colorScheme.primary,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-
-                    if (((displayMode == TabDisplayMode.full ||
-                                displayMode == TabDisplayMode.compact) ||
-                            (displayMode == TabDisplayMode.minimal &&
-                                (isActive || _hoveredTabIndex == index))) &&
-                        !tab.isPinned) ...[
-                      const SizedBox(width: 8),
-                      Material(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                        child: InkWell(
-                          mouseCursor: SystemMouseCursors.basic,
-                          borderRadius: BorderRadius.circular(8),
-                          onTap: () => _requestCloseTab(tab),
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
+                          )
+                        else if (displayMode != TabDisplayMode.icon)
+                          Expanded(
+                            child:
+                                leadingEmoji != null
+                                    ? _buildTitleWithEmoji(
+                                      title: tab.displayTitle,
+                                      emoji: leadingEmoji,
+                                      textStyle: TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight:
+                                            isActive
+                                                ? FontWeight.w500
+                                                : FontWeight.normal,
+                                        color:
+                                            isActive
+                                                ? colorScheme.onSurface
+                                                : colorScheme.onSurfaceVariant,
+                                      ),
+                                      emojiColor:
+                                          isActive
+                                              ? colorScheme.onSurface
+                                              : colorScheme.onSurfaceVariant,
+                                    )
+                                    : Text(
+                                      tab.displayTitle,
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight:
+                                            isActive
+                                                ? FontWeight.w500
+                                                : FontWeight.normal,
+                                        color:
+                                            isActive
+                                                ? colorScheme.onSurface
+                                                : colorScheme.onSurfaceVariant,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: false,
+                                    ),
+                          )
+                        else
+                          Expanded(
+                            child: Center(
+                              child: Icon(
+                                Icons.description_outlined,
+                                size: 15,
+                                color:
+                                    isActive
+                                        ? colorScheme.onSurface
+                                        : colorScheme.onSurfaceVariant,
+                              ),
                             ),
+                          ),
+
+                        // Pin icon for non-emoji-only pinned tabs
+                        if (!isPinnedEmojiOnly &&
+                            tab.isPinned &&
+                            displayMode != TabDisplayMode.icon)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
                             child: Icon(
-                              Icons.close_rounded,
-                              size: 16,
+                              Icons.push_pin_rounded,
+                              size: 12,
                               color:
                                   isActive
-                                      ? colorScheme.onSurfaceVariant.withAlpha(
-                                        150,
-                                      )
-                                      : colorScheme.onSurfaceVariant,
+                                      ? colorScheme.primary
+                                      : colorScheme.onSurfaceVariant.withAlpha(
+                                        160,
+                                      ),
                             ),
                           ),
-                        ),
-                      ),
-                    ],
-                  ],
+
+                        // Close button or dirty indicator
+                        if (showClose)
+                          _buildCloseOrDirtyButton(
+                            tab,
+                            index,
+                            isActive,
+                            isHovered,
+                            colorScheme,
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCloseOrDirtyButton(
+    EditorTab tab,
+    int index,
+    bool isActive,
+    bool isHovered,
+    ColorScheme colorScheme,
+  ) {
+    final isCloseHovered = _closeHoveredIndices.contains(index);
+    // Show dirty dot when: tab is dirty, not hovered on close button
+    final showDirtyDot = tab.isDirty && !isCloseHovered;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _closeHoveredIndices.add(index)),
+      onExit: (_) => setState(() => _closeHoveredIndices.remove(index)),
+      child: GestureDetector(
+        onTap: () => _requestCloseTab(tab),
+        child: AnimatedContainer(
+          duration: _kHoverAnimDuration,
+          width: 18,
+          height: 18,
+          margin: const EdgeInsets.only(left: 4),
+          decoration: BoxDecoration(
+            color:
+                isCloseHovered
+                    ? colorScheme.onSurface.withAlpha(18)
+                    : Colors.transparent,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Center(
+            child: AnimatedSwitcher(
+              duration: _kHoverAnimDuration,
+              transitionBuilder: (child, anim) {
+                final curved = CurvedAnimation(
+                  parent: anim,
+                  curve: _kTabCurve,
+                  reverseCurve: _kTabReverseCurve,
+                );
+                return ScaleTransition(
+                  scale: curved,
+                  child: FadeTransition(opacity: curved, child: child),
+                );
+              },
+              child:
+                  showDirtyDot
+                      ? Container(
+                        key: const ValueKey('dot'),
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                      )
+                      : Icon(
+                        key: const ValueKey('x'),
+                        Icons.close_rounded,
+                        size: 13,
+                        color:
+                            isCloseHovered
+                                ? colorScheme.onSurface.withAlpha(220)
+                                : (isActive
+                                    ? colorScheme.onSurface.withAlpha(140)
+                                    : colorScheme.onSurfaceVariant.withAlpha(
+                                      140,
+                                    )),
+                      ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildDragFeedback(
+    BuildContext context,
+    EditorTab tab,
+    double tabWidth,
+    bool isPinnedEmojiOnly,
+    String? leadingEmoji,
+    TabDisplayMode displayMode,
+    ColorScheme colorScheme,
+  ) {
+    return Material(
+      elevation: 0,
+      color: Colors.transparent,
+      child: Container(
+        constraints: BoxConstraints(minWidth: tabWidth, maxWidth: tabWidth),
+        height: _kTabBarHeight,
+        padding: const EdgeInsets.only(top: 3),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(8),
+              topRight: Radius.circular(8),
+            ),
+            border: Border(
+              top: BorderSide(
+                color: colorScheme.outlineVariant.withAlpha(90),
+                width: 1,
+              ),
+              left: BorderSide(
+                color: colorScheme.outlineVariant.withAlpha(90),
+                width: 1,
+              ),
+              right: BorderSide(
+                color: colorScheme.outlineVariant.withAlpha(90),
+                width: 1,
+              ),
+            ),
+          ),
+          child: Container(
+            padding:
+                isPinnedEmojiOnly
+                    ? const EdgeInsets.symmetric(horizontal: 0, vertical: 4)
+                    : const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isPinnedEmojiOnly)
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        leadingEmoji!,
+                        style: TextStyle(
+                          fontSize: 16,
+                          height: 1.0,
+                          color: colorScheme.onSurface,
+                        ),
+                        maxLines: 1,
+                      ),
+                    ),
+                  )
+                else if (displayMode != TabDisplayMode.icon)
+                  Flexible(
+                    child:
+                        leadingEmoji != null
+                            ? _buildTitleWithEmoji(
+                              title: tab.displayTitle,
+                              emoji: leadingEmoji,
+                              textStyle: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.onSurface,
+                              ),
+                              emojiColor: colorScheme.onSurface,
+                            )
+                            : Text(
+                              tab.displayTitle,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.onSurface,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                  )
+                else
+                  Expanded(
+                    child: Center(
+                      child: Icon(
+                        Icons.description_outlined,
+                        size: 15,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDragPlaceholder(
+    EditorTab tab,
+    double tabWidth,
+    bool isPinnedEmojiOnly,
+    String? leadingEmoji,
+    TabDisplayMode displayMode,
+    ColorScheme colorScheme,
+  ) {
+    return const SizedBox.expand();
   }
 
   void _showTabContextMenu(
@@ -1206,7 +1487,7 @@ class EditorTabsState extends State<EditorTabs> {
           final keepKey = _tabKey(tab);
           _noAnimateKeys.add(keepKey);
 
-          Timer(_kTabAnimDuration + const Duration(milliseconds: 80), () {
+          Timer(_kTabTransitionDuration + const Duration(milliseconds: 60), () {
             if (mounted) {
               setState(() {
                 _noAnimateKeys.remove(keepKey);
@@ -1236,6 +1517,95 @@ class EditorTabsState extends State<EditorTabs> {
       context: context,
       tapPosition: position,
       items: items,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helper: Hover-aware builder widget
+// ---------------------------------------------------------------------------
+class _HoverBuilder extends StatefulWidget {
+  final Duration hoverDuration;
+  final ValueChanged<bool>? onHoverChanged;
+  final Widget Function(bool isHovered) builder;
+
+  const _HoverBuilder({
+    required this.hoverDuration,
+    this.onHoverChanged,
+    required this.builder,
+  });
+
+  @override
+  State<_HoverBuilder> createState() => _HoverBuilderState();
+}
+
+class _HoverBuilderState extends State<_HoverBuilder> {
+  bool _isHovered = false;
+
+  void _setHovered(bool value) {
+    if (_isHovered == value) return;
+    setState(() => _isHovered = value);
+    widget.onHoverChanged?.call(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => _setHovered(true),
+      onExit: (_) => _setHovered(false),
+      child: widget.builder(_isHovered),
+    );
+  }
+}
+
+class _TabLayoutData {
+  final String key;
+  final double left;
+  final double width;
+  final Duration duration;
+  final EditorTab tab;
+  final int index;
+  final bool isActive;
+  final double tabWidth;
+  final bool showRightSeparator;
+  final bool isClosing;
+
+  const _TabLayoutData({
+    required this.key,
+    required this.left,
+    required this.width,
+    required this.duration,
+    required this.tab,
+    required this.index,
+    required this.isActive,
+    required this.tabWidth,
+    required this.showRightSeparator,
+    required this.isClosing,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Helper: Hover-aware button wrapper
+// ---------------------------------------------------------------------------
+class _HoverButton extends StatefulWidget {
+  final Duration hoverDuration;
+  final Widget Function(bool isHovered) builder;
+
+  const _HoverButton({required this.hoverDuration, required this.builder});
+
+  @override
+  State<_HoverButton> createState() => _HoverButtonState();
+}
+
+class _HoverButtonState extends State<_HoverButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: widget.builder(_isHovered),
     );
   }
 }
